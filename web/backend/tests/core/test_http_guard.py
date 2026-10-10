@@ -15,7 +15,7 @@ def _make(web_settings, fake_time, clock, **kw):
 
 
 def test_host_not_allowed_rejected(client):
-    """TC-WA-@@@ 허용 목록 밖 Host(DNS 리바인딩)는 403 host_not_allowed."""
+    """TC-WA-001 허용 목록 밖 Host(DNS 리바인딩)는 403 host_not_allowed."""
     r = client.get("/api/v1/auth/me", headers={"Host": "evil.example:8080"})
     assert r.status_code == 403
     assert r.json()["code"] == "host_not_allowed"
@@ -23,34 +23,34 @@ def test_host_not_allowed_rejected(client):
 
 
 def test_host_localhost_and_case_insensitive_allowed(client):
-    """TC-WA-@@@ localhost:8080 과 대소문자 다른 Host 는 허용."""
+    """TC-WA-002 localhost:8080 과 대소문자 다른 Host 는 허용."""
     assert client.get("/api/v1/auth/me", headers={"Host": "localhost:8080"}).status_code == 200
     assert client.get("/api/v1/auth/me", headers={"Host": "LocalHost:8080"}).status_code == 200
 
 
 @pytest.mark.parametrize("host", ["127.0.0.1", "127.0.0.1:9999", "", "127.0.0.1:8080.evil.com"])
 def test_host_port_mismatch_or_missing_rejected(client, host):
-    """TC-WA-@@@ 포트가 없거나 다르거나 빈 Host 는 거부."""
+    """TC-WA-003 포트가 없거나 다르거나 빈 Host 는 거부."""
     r = client.get("/api/v1/auth/me", headers={"Host": host})
     assert r.status_code == 403
 
 
 def test_health_exempt_from_host_check(client):
-    """TC-WA-@@@ 컨테이너 헬스체크는 Host 검증을 받지 않는다(민감 정보 없음)."""
+    """TC-WA-004 컨테이너 헬스체크는 Host 검증을 받지 않는다(민감 정보 없음)."""
     r = client.get("/healthz", headers={"Host": "api:8000"})
     assert r.status_code == 200 and r.json() == {"status": "ok"}
     assert client.get("/api/healthz", headers={"Host": "api:8000"}).status_code == 200
 
 
 def test_oversized_content_length_rejected(client):
-    """TC-WA-@@@ Content-Length 가 1MB 를 넘으면 413 payload_too_large."""
+    """TC-WA-005 Content-Length 가 1MB 를 넘으면 413 payload_too_large."""
     r = client.post("/api/v1/auth/session", content=b"x" * (1024 * 1024 + 1), headers={"Origin": ORIGIN, "content-type": "application/json"})
     assert r.status_code == 413
     assert r.json()["code"] == "payload_too_large"
 
 
 def test_oversized_chunked_body_rejected(client):
-    """TC-WA-@@@ Content-Length 없는 chunked 본문도 1MB 를 넘으면 413."""
+    """TC-WA-006 Content-Length 없는 chunked 본문도 1MB 를 넘으면 413."""
     def gen():
         for _ in range(20):
             yield b"x" * 100_000
@@ -61,13 +61,13 @@ def test_oversized_chunked_body_rejected(client):
 
 
 def test_body_under_limit_not_rejected(client):
-    """TC-WA-@@@ 한도 이하 본문은 크기 제한에 걸리지 않는다."""
+    """TC-WA-007 한도 이하 본문은 크기 제한에 걸리지 않는다."""
     r = client.post("/api/v1/auth/session", json={"pin": "1" * 60}, headers={"Origin": ORIGIN})
     assert r.status_code == 200
 
 
 def test_global_rate_limit_and_recovery(web_settings, engine, clock, fake_time):
-    """TC-WA-@@@ 전역 속도 제한 초과 시 429 + Retry-After, 시간이 지나면 회복."""
+    """TC-WA-008 전역 속도 제한 초과 시 429 + Retry-After, 시간이 지나면 회복."""
     app = _make(web_settings, fake_time, clock, rate_limits=RateLimits(global_per_min=3, write_per_min=100, auth_per_min=100))
     with TestClient(app, base_url=ORIGIN) as c:
         for _ in range(3):
@@ -81,7 +81,7 @@ def test_global_rate_limit_and_recovery(web_settings, engine, clock, fake_time):
 
 
 def test_auth_rate_limit_bucket(web_settings, engine, clock, fake_time):
-    """TC-WA-@@@ 세션 발급은 별도의 더 낮은 한도를 가진다."""
+    """TC-WA-009 세션 발급은 별도의 더 낮은 한도를 가진다."""
     app = _make(web_settings, fake_time, clock, rate_limits=RateLimits(global_per_min=100, write_per_min=100, auth_per_min=2))
     with TestClient(app, base_url=ORIGIN) as c:
         h = {"Origin": ORIGIN}
@@ -92,7 +92,7 @@ def test_auth_rate_limit_bucket(web_settings, engine, clock, fake_time):
 
 
 def test_write_rate_limit_bucket(web_settings, engine, clock, fake_time):
-    """TC-WA-@@@ 상태 변경 메서드는 쓰기 한도를 따로 센다(읽기는 영향 없음)."""
+    """TC-WA-010 상태 변경 메서드는 쓰기 한도를 따로 센다(읽기는 영향 없음)."""
     app = _make(web_settings, fake_time, clock, rate_limits=RateLimits(global_per_min=100, write_per_min=2, auth_per_min=100))
     with TestClient(app, base_url=ORIGIN) as c:
         csrf = login(c)  # 쓰기 1회
@@ -103,7 +103,7 @@ def test_write_rate_limit_bucket(web_settings, engine, clock, fake_time):
 
 
 def test_rejected_requests_do_not_consume_budget(web_settings, engine, clock, fake_time):
-    """TC-WA-@@@ 잘못된 Host 요청은 속도 제한 예산을 쓰지 않는다."""
+    """TC-WA-011 잘못된 Host 요청은 속도 제한 예산을 쓰지 않는다."""
     app = _make(web_settings, fake_time, clock, rate_limits=RateLimits(global_per_min=2, write_per_min=100, auth_per_min=100))
     with TestClient(app, base_url=ORIGIN) as c:
         for _ in range(5):
@@ -112,7 +112,7 @@ def test_rejected_requests_do_not_consume_budget(web_settings, engine, clock, fa
 
 
 def test_security_headers_on_api_response(client):
-    """TC-WA-@@@ API 응답에 보안 헤더와 요청 ID 가 붙는다."""
+    """TC-WA-012 API 응답에 보안 헤더와 요청 ID 가 붙는다."""
     r = client.get("/api/v1/auth/me")
     h = r.headers
     assert h["x-content-type-options"] == "nosniff"
@@ -125,20 +125,20 @@ def test_security_headers_on_api_response(client):
 
 
 def test_security_headers_on_error_responses(client):
-    """TC-WA-@@@ 거부(403)·404 응답에도 보안 헤더가 붙는다."""
+    """TC-WA-013 거부(403)·404 응답에도 보안 헤더가 붙는다."""
     for r in (client.get("/api/v1/auth/me", headers={"Host": "evil:1"}), client.get("/api/v1/nope")):
         assert r.headers["x-content-type-options"] == "nosniff"
         assert "frame-ancestors 'none'" in r.headers["content-security-policy"]
 
 
 def test_docs_disabled_by_default(client):
-    """TC-WA-@@@ enable_docs 가 꺼져 있으면 /docs, /redoc, /openapi.json 이 없다."""
+    """TC-WA-014 enable_docs 가 꺼져 있으면 /docs, /redoc, /openapi.json 이 없다."""
     for p in ("/docs", "/redoc", "/openapi.json"):
         assert client.get(p).status_code == 404
 
 
 def test_docs_enabled_when_configured(web_settings, engine, clock, fake_time):
-    """TC-WA-@@@ enable_docs 이면 /docs 가 열린다."""
+    """TC-WA-015 enable_docs 이면 /docs 가 열린다."""
     from dataclasses import replace
     app = _make(replace(web_settings, enable_docs=True), fake_time, clock)
     with TestClient(app, base_url=ORIGIN) as c:
@@ -147,7 +147,7 @@ def test_docs_enabled_when_configured(web_settings, engine, clock, fake_time):
 
 
 def test_websocket_rejected(client):
-    """TC-WA-@@@ 웹소켓 연결은 지원하지 않고 닫는다."""
+    """TC-WA-016 웹소켓 연결은 지원하지 않고 닫는다."""
     with pytest.raises(WebSocketDisconnect):
         with client.websocket_connect("/api/v1/ws"):
             pass

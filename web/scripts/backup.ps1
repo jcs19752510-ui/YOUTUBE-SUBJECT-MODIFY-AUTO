@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   데이터베이스를 백업합니다(pg_dump 사용자 정의 형식, 소유자 계정 사용).
 .DESCRIPTION
@@ -41,7 +41,7 @@ if ($list.ExitCode -ne 0) {
 # 바이너리를 PowerShell 리디렉션으로 받으면 손상될 수 있어, 컨테이너 안에 만든 파일을 docker compose cp 로 꺼낸다.
 Push-Location $YtwebBackupDir
 try {
-    $cp = Invoke-Compose -ArgList @('cp', "db:/backups/$name", ".\$name")
+    $cp = Invoke-Compose -ArgList @('cp', "db:/backups/$name", "./$name")
 } finally {
     Pop-Location
 }

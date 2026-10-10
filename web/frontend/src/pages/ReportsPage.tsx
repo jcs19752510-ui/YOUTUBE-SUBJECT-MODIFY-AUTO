@@ -25,7 +25,7 @@ function metricFmt(key: string, v: number | null): string {
 
 function ReportCard({ r }: { r: VideoReport }) {
   return (
-    <Card title={r.title ?? r.video_id} headingLevel={3}>
+    <Card title={r.title ?? r.video_id}>
       <p className="muted mono">{r.video_id}</p>
       {r.status === 'no_change' && (
         <>

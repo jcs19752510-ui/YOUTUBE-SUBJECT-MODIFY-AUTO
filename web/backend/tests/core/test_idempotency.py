@@ -32,7 +32,7 @@ def _run(db, h, key=KEY, route="POST /x", request=None, now=NOW, required=True):
 
 
 def test_missing_key_required(db):
-    """TC-WA-@@@ 키가 없으면 400 idempotency_key_required 이고 핸들러는 실행되지 않는다."""
+    """TC-WA-086 키가 없으면 400 idempotency_key_required 이고 핸들러는 실행되지 않는다."""
     h = Counter()
     with pytest.raises(ProblemError) as e:
         _run(db, h, key=None)
@@ -42,14 +42,14 @@ def test_missing_key_required(db):
 
 
 def test_missing_key_optional_runs_handler(db):
-    """TC-WA-@@@ required=False 이면 키 없이도 핸들러가 실행되고 키 행은 만들지 않는다."""
+    """TC-WA-087 required=False 이면 키 없이도 핸들러가 실행되고 키 행은 만들지 않는다."""
     h = Counter()
     assert _run(db, h, key=None, required=False) == (201, {"n": 1, "title": "한글"})
     assert db.execute(select(func.count()).select_from(IdempotencyKey)).scalar_one() == 0
 
 
 def test_replay_returns_stored_response_without_rerun(db):
-    """TC-WA-@@@ 같은 키+같은 요청은 저장된 응답을 재생하고 핸들러를 다시 실행하지 않는다."""
+    """TC-WA-088 같은 키+같은 요청은 저장된 응답을 재생하고 핸들러를 다시 실행하지 않는다."""
     h = Counter()
     first = _run(db, h)
     db.commit()
@@ -58,7 +58,7 @@ def test_replay_returns_stored_response_without_rerun(db):
 
 
 def test_replay_ignores_request_key_order(db):
-    """TC-WA-@@@ 요청 dict 의 키 순서가 달라도 같은 요청으로 본다."""
+    """TC-WA-089 요청 dict 의 키 순서가 달라도 같은 요청으로 본다."""
     h = Counter()
     _run(db, h, request={"a": 1, "b": [1, 2]})
     db.commit()
@@ -67,7 +67,7 @@ def test_replay_ignores_request_key_order(db):
 
 
 def test_same_key_different_request_conflicts(db):
-    """TC-WA-@@@ 같은 키로 다른 요청을 보내면 422 idempotency_key_reuse."""
+    """TC-WA-090 같은 키로 다른 요청을 보내면 422 idempotency_key_reuse."""
     h = Counter()
     _run(db, h)
     db.commit()
@@ -77,7 +77,7 @@ def test_same_key_different_request_conflicts(db):
 
 
 def test_same_key_different_route_conflicts(db):
-    """TC-WA-@@@ 같은 키를 다른 경로에 쓰면 422 idempotency_key_reuse."""
+    """TC-WA-091 같은 키를 다른 경로에 쓰면 422 idempotency_key_reuse."""
     h = Counter()
     _run(db, h)
     db.commit()
@@ -88,14 +88,14 @@ def test_same_key_different_route_conflicts(db):
 
 @pytest.mark.parametrize("bad", ["short", "has space 12345", "x" * 81, "한글키한글키한글키", "a;b;c;d;e;f;g"])
 def test_invalid_key_format(db, bad):
-    """TC-WA-@@@ 키 형식(영문·숫자·._:-, 8~80자) 위반은 400 idempotency_key_invalid."""
+    """TC-WA-092 키 형식(영문·숫자·._:-, 8~80자) 위반은 400 idempotency_key_invalid."""
     with pytest.raises(ProblemError) as e:
         _run(db, Counter(), key=bad)
     assert e.value.status == 400 and e.value.code == "idempotency_key_invalid"
 
 
 def test_handler_failure_does_not_consume_key(db):
-    """TC-WA-@@@ 핸들러가 실패해 롤백되면 키가 남지 않아 같은 키로 재시도할 수 있다."""
+    """TC-WA-093 핸들러가 실패해 롤백되면 키가 남지 않아 같은 키로 재시도할 수 있다."""
     def boom():
         raise ProblemError(409, "x", "충돌")
 
@@ -107,7 +107,7 @@ def test_handler_failure_does_not_consume_key(db):
 
 
 def test_in_progress_key_conflicts(db):
-    """TC-WA-@@@ 응답이 아직 저장되지 않은(처리 중) 키는 409 idempotency_in_progress."""
+    """TC-WA-094 응답이 아직 저장되지 않은(처리 중) 키는 409 idempotency_in_progress."""
     db.add(IdempotencyKey(key=KEY, route="POST /x", request_hash=__import__("ytweb.core.canonical", fromlist=["x"]).sha256_hex('{"a":1}'), created_at=NOW))
     db.commit()
     with pytest.raises(ProblemError) as e:
@@ -116,7 +116,7 @@ def test_in_progress_key_conflicts(db):
 
 
 def test_expired_key_is_reusable(db):
-    """TC-WA-@@@ 24시간이 지난 키는 만료로 보고 새로 실행한다."""
+    """TC-WA-095 24시간이 지난 키는 만료로 보고 새로 실행한다."""
     h = Counter()
     _run(db, h)
     db.commit()
@@ -126,7 +126,7 @@ def test_expired_key_is_reusable(db):
 
 
 def test_non_json_native_body_is_encoded(db):
-    """TC-WA-@@@ datetime 등 직렬화 가능한 값은 JSON 으로 변환돼 저장·재생된다(첫 응답과 재생 응답이 동일)."""
+    """TC-WA-096 datetime 등 직렬화 가능한 값은 JSON 으로 변환돼 저장·재생된다(첫 응답과 재생 응답이 동일)."""
     def h():
         return 200, {"at": NOW}
 
@@ -136,7 +136,7 @@ def test_non_json_native_body_is_encoded(db):
 
 
 def test_http_end_to_end_replay(app, client, csrf):
-    """TC-WA-@@@ HTTP 경로에서 같은 Idempotency-Key 재전송은 같은 응답을 재생하고 부작용이 1회뿐."""
+    """TC-WA-097 HTTP 경로에서 같은 Idempotency-Key 재전송은 같은 응답을 재생하고 부작용이 1회뿐."""
     calls = []
     r = APIRouter()
 

@@ -216,3 +216,6 @@ ul.row {
 .stack > .badge {
   align-self: flex-start;
 }
+.table thead th {
+  vertical-align: middle;
+}

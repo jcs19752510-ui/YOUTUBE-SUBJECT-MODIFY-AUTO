@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   백업 파일로 데이터베이스를 복원합니다. 현재 데이터는 덮어써집니다.
 .PARAMETER File
@@ -64,9 +64,19 @@ Write-Info '웹·API·워커를 잠시 멈춥니다.'
 [void](Invoke-Compose -ArgList @('stop', 'web', 'api', 'worker') -Quiet)
 
 $ok = $false
-Push-Location (Split-Path -Parent $File)
+# docker cp 는 원본 파일의 모드를 그대로 가져가므로, 컨테이너 안의 비루트 postgres 가 읽을 수 있게 임시 사본(읽기 허용)을 쓴다.
+$tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ('ytweb-restore-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
 try {
-    $cp = Invoke-Compose -ArgList @('cp', ".\$leaf", "db:/backups/$leaf")
+    $tmpFile = Join-Path $tmpDir $leaf
+    Copy-Item -LiteralPath $File -Destination $tmpFile
+    if ($env:OS -ne 'Windows_NT') { try { [System.IO.File]::SetUnixFileMode($tmpFile, 'UserRead,GroupRead,OtherRead') } catch { } }
+    Push-Location $tmpDir
+    try {
+        $cp = Invoke-Compose -ArgList @('cp', "./$leaf", "db:/backups/$leaf")
+    } finally {
+        Pop-Location
+    }
     if ($cp.ExitCode -eq 0) {
         Write-Info '복원 중(하나의 트랜잭션으로 처리되어, 실패하면 기존 데이터는 그대로 남습니다)'
         $rs = Invoke-Compose -ArgList @('exec', '-T', 'db', 'ytweb-db', 'restore', $leaf)
@@ -74,7 +84,7 @@ try {
         [void](Invoke-Compose -ArgList @('exec', '-T', 'db', 'ytweb-db', 'remove', $leaf) -Quiet)
     }
 } finally {
-    Pop-Location
+    Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Write-Info '서비스를 다시 시작합니다(필요한 마이그레이션이 자동 적용됩니다).'

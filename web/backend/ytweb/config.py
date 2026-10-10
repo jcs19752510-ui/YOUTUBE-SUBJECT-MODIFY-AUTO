@@ -8,11 +8,11 @@ from pathlib import Path
 MODES = ("demo",)  # M1은 데모 모드뿐. 'live'는 M3에서 추가한다(DEC-038, WEB_DESIGN §0).
 
 
-def _read_secret(file_var: str, plain_var: str | None = None) -> str | None:
-    path = os.environ.get(file_var)
+def _read_secret(env: dict[str, str], file_var: str, plain_var: str | None = None) -> str | None:
+    path = env.get(file_var)
     if path:
         return Path(path).read_text(encoding="utf-8").strip()
-    return os.environ.get(plain_var) if plain_var else None
+    return env.get(plain_var) if plain_var else None
 
 
 @dataclass(frozen=True)
@@ -38,14 +38,14 @@ def load_web_settings(env: dict[str, str] | None = None) -> WebSettings:
     hosts = tuple(h.strip() for h in e.get("YTWEB_ALLOWED_HOSTS", f"127.0.0.1:{port},localhost:{port}").split(",") if h.strip())
     url = e.get("YTWEB_DATABASE_URL")
     if not url:
-        pw = _read_secret("YTWEB_DB_PASSWORD_FILE") if "YTWEB_DB_PASSWORD_FILE" in e else None
+        pw = _read_secret(e, "YTWEB_DB_PASSWORD_FILE")
         if pw is None:
             raise ValueError("YTWEB_DATABASE_URL 또는 YTWEB_DB_PASSWORD_FILE 이 필요합니다.")
         user = e.get("YTWEB_DB_USER", "ytweb_app")
         host = e.get("YTWEB_DB_HOST", "db")
         name = e.get("YTWEB_DB_NAME", "ytweb")
-        from urllib.parse import quote
-        url = f"postgresql+psycopg://{quote(user)}:{quote(pw)}@{host}:5432/{quote(name)}"
+        from sqlalchemy.engine import URL
+        url = URL.create("postgresql+psycopg", username=user, password=pw, host=host, port=5432, database=name).render_as_string(hide_password=False)
     return WebSettings(
         mode=mode,
         database_url=url,

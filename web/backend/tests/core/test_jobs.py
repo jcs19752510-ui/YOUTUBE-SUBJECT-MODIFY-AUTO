@@ -26,14 +26,14 @@ def _clean_handlers():
 
 
 def test_enqueue_creates_queued_job(db):
-    """TC-WA-@@@ enqueue 는 queued 상태·payload·total·run_after=now 인 작업을 만든다."""
+    """TC-WA-098 enqueue 는 queued 상태·payload·total·run_after=now 인 작업을 만든다."""
     j = jobs.enqueue(db, type="videos.sync", payload={"a": 1}, total=5, now=T0)
     assert len(j.id) == 36 and j.status == "queued" and j.payload == {"a": 1}
     assert j.total == 5 and j.progress == 0 and j.attempts == 0 and j.run_after == T0
 
 
 def test_claim_marks_running_once(db):
-    """TC-WA-@@@ claim 은 running/locked_by/attempts=1 로 바꾸고, 같은 작업을 두 번 주지 않는다."""
+    """TC-WA-099 claim 은 running/locked_by/attempts=1 로 바꾸고, 같은 작업을 두 번 주지 않는다."""
     j = jobs.enqueue(db, type="t", payload={}, now=T0)
     got = jobs.claim(db, worker_id="w1", now=T0)
     assert got.id == j.id and got.status == "running" and got.locked_by == "w1" and got.attempts == 1 and got.locked_at == T0
@@ -41,7 +41,7 @@ def test_claim_marks_running_once(db):
 
 
 def test_claim_respects_run_after_and_fifo(db):
-    """TC-WA-@@@ run_after 이전 작업은 건너뛰고, due 작업은 오래된 순서로 가져간다."""
+    """TC-WA-100 run_after 이전 작업은 건너뛰고, due 작업은 오래된 순서로 가져간다."""
     later = jobs.enqueue(db, type="t", payload={"n": "later"}, now=T0 + timedelta(hours=1))
     first = jobs.enqueue(db, type="t", payload={"n": 1}, now=T0)
     second = jobs.enqueue(db, type="t", payload={"n": 2}, now=T0 + timedelta(seconds=1))
@@ -52,7 +52,7 @@ def test_claim_respects_run_after_and_fifo(db):
 
 
 def test_process_next_success_records_result(factory):
-    """TC-WA-@@@ 핸들러 반환값이 result 로 저장되고 succeeded/finished_at 이 기록된다."""
+    """TC-WA-101 핸들러 반환값이 result 로 저장되고 succeeded/finished_at 이 기록된다."""
     jobs.register_handler("t", lambda f, job: {"ok": job.payload["x"]})
     with factory() as s:
         j = jobs.enqueue(s, type="t", payload={"x": 7}, now=T0)
@@ -67,7 +67,7 @@ def test_process_next_success_records_result(factory):
 
 
 def test_process_next_failure_recorded_without_trace(factory, caplog):
-    """TC-WA-@@@ 핸들러 예외는 작업을 failed 로 만들고, 저장되는 error 에는 예외 메시지·경로가 없다."""
+    """TC-WA-102 핸들러 예외는 작업을 failed 로 만들고, 저장되는 error 에는 예외 메시지·경로가 없다."""
     def boom(f, job):
         raise RuntimeError("secret /home/user/x.py")
 
@@ -83,7 +83,7 @@ def test_process_next_failure_recorded_without_trace(factory, caplog):
 
 
 def test_process_next_problem_error_uses_code(factory):
-    """TC-WA-@@@ ProblemError 로 실패하면 error 에 code 와 제목이 남는다."""
+    """TC-WA-103 ProblemError 로 실패하면 error 에 code 와 제목이 남는다."""
     def boom(f, job):
         raise ProblemError(409, "limit_reached", "한도 도달")
 
@@ -97,7 +97,7 @@ def test_process_next_problem_error_uses_code(factory):
 
 
 def test_process_next_without_handler_fails(factory):
-    """TC-WA-@@@ 처리기가 없는 작업 유형은 failed(no_handler)."""
+    """TC-WA-104 처리기가 없는 작업 유형은 failed(no_handler)."""
     with factory() as s:
         jid = jobs.enqueue(s, type="unknown.type", payload={}, now=T0).id
         s.commit()
@@ -108,7 +108,7 @@ def test_process_next_without_handler_fails(factory):
 
 
 def test_requeue_stale_running_job(db):
-    """TC-WA-@@@ 임계 시간 넘게 running 인 작업은 queued 로 재큐되고 잠금이 풀린다. 최근 작업은 그대로."""
+    """TC-WA-105 임계 시간 넘게 running 인 작업은 queued 로 재큐되고 잠금이 풀린다. 최근 작업은 그대로."""
     old = jobs.enqueue(db, type="t", payload={}, now=T0)
     fresh = jobs.enqueue(db, type="t", payload={}, now=T0)
     jobs.claim(db, worker_id="w1", now=T0)
@@ -123,7 +123,7 @@ def test_requeue_stale_running_job(db):
 
 
 def test_requeue_stale_gives_up_after_max_attempts(db):
-    """TC-WA-@@@ 재시도 횟수를 넘은 stale 작업은 failed(worker_lost) 로 끝낸다."""
+    """TC-WA-106 재시도 횟수를 넘은 stale 작업은 failed(worker_lost) 로 끝낸다."""
     j = jobs.enqueue(db, type="t", payload={}, now=T0)
     jobs.claim(db, worker_id="w", now=T0)
     db.execute(update(Job).where(Job.id == j.id).values(attempts=jobs.MAX_ATTEMPTS))
@@ -136,7 +136,7 @@ def test_requeue_stale_gives_up_after_max_attempts(db):
 
 
 def test_update_progress_and_heartbeat(db):
-    """TC-WA-@@@ update_progress 는 progress/total 을 갱신하고 running 작업의 locked_at 도 갱신한다."""
+    """TC-WA-107 update_progress 는 progress/total 을 갱신하고 running 작업의 locked_at 도 갱신한다."""
     j = jobs.enqueue(db, type="t", payload={}, total=3, now=T0)
     jobs.claim(db, worker_id="w", now=T0)
     jobs.update_progress(db, j.id, progress=2, total=9)
@@ -147,7 +147,7 @@ def test_update_progress_and_heartbeat(db):
 
 
 def test_complete_and_fail_only_touch_running(db):
-    """TC-WA-@@@ complete/fail 은 running 상태에서만 반영된다(이미 끝난 작업을 덮어쓰지 않음)."""
+    """TC-WA-108 complete/fail 은 running 상태에서만 반영된다(이미 끝난 작업을 덮어쓰지 않음)."""
     j = jobs.enqueue(db, type="t", payload={}, now=T0)
     jobs.complete(db, j.id, result={"a": 1}, now=T0)
     db.expire_all()
@@ -160,7 +160,7 @@ def test_complete_and_fail_only_touch_running(db):
 
 
 def test_worker_tick_processes_all_due_and_calls_scheduler(factory):
-    """TC-WA-@@@ tick 은 due 작업을 모두 처리하고 배치 스케줄러(run_due_items)를 호출한다."""
+    """TC-WA-109 tick 은 due 작업을 모두 처리하고 배치 스케줄러(run_due_items)를 호출한다."""
     seen = []
     jobs.register_handler("t", lambda f, job: seen.append(job.payload["i"]) or None)
     with factory() as s:
@@ -174,7 +174,7 @@ def test_worker_tick_processes_all_due_and_calls_scheduler(factory):
 
 
 def test_worker_stop_finishes_current_job_then_exits(factory):
-    """TC-WA-@@@ 작업 도중 종료 신호(SIGTERM)가 와도 현재 작업은 끝까지 마치고(succeeded) 다음 작업은 시작하지 않는다."""
+    """TC-WA-110 작업 도중 종료 신호(SIGTERM)가 와도 현재 작업은 끝까지 마치고(succeeded) 다음 작업은 시작하지 않는다."""
     w = Worker(factory, clock=FakeClock())
 
     def handler(f, job):
@@ -193,7 +193,7 @@ def test_worker_stop_finishes_current_job_then_exits(factory):
 
 
 def test_worker_scheduler_error_does_not_crash(factory):
-    """TC-WA-@@@ 배치 스케줄러가 예외를 던져도 tick 은 계속된다."""
+    """TC-WA-111 배치 스케줄러가 예외를 던져도 tick 은 계속된다."""
     def bad(f, now):
         raise RuntimeError("x")
 
@@ -201,7 +201,7 @@ def test_worker_scheduler_error_does_not_crash(factory):
 
 
 def test_worker_run_loop_stops_on_request(factory):
-    """TC-WA-@@@ run() 루프는 request_stop 후 종료한다."""
+    """TC-WA-112 run() 루프는 request_stop 후 종료한다."""
     w = Worker(factory, clock=FakeClock(), poll_seconds=0.01)
     t = threading.Thread(target=w.run)
     t.start()
@@ -211,7 +211,7 @@ def test_worker_run_loop_stops_on_request(factory):
 
 
 def test_worker_maintenance_purges_expired(factory):
-    """TC-WA-@@@ 유지보수 틱이 만료 세션·오래된 멱등성 키를 지우고 stale 작업을 재큐한다."""
+    """TC-WA-113 유지보수 틱이 만료 세션·오래된 멱등성 키를 지우고 stale 작업을 재큐한다."""
     clock = FakeClock()
     with factory() as s:
         s.add(SessionRow(id="a" * 64, csrf_token="c", created_at=T0 - timedelta(days=2), expires_at=T0 - timedelta(days=1), last_seen=T0))
@@ -229,6 +229,6 @@ def test_worker_maintenance_purges_expired(factory):
 
 
 def test_load_domain_handlers_never_raises():
-    """TC-WA-@@@ 도메인 모듈이 없거나 일부 깨져 있어도 워커 시작 로직은 예외 없이 (함수|None)을 돌려준다."""
+    """TC-WA-114 도메인 모듈이 없거나 일부 깨져 있어도 워커 시작 로직은 예외 없이 (함수|None)을 돌려준다."""
     fn = load_domain_handlers()
     assert fn is None or callable(fn)

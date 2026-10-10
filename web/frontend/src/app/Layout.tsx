@@ -37,6 +37,8 @@ export function Layout() {
   }, [pathname]);
 
   const online = conn.state === 'online';
+  const offline = conn.state === 'offline' || conn.state === 'error';
+  const statusLabel = online ? ko.conn.online : offline ? ko.conn.offline : ko.conn.sessionNeeded;
   return (
     <div className="app">
       <a
@@ -73,7 +75,7 @@ export function Layout() {
         <div className="row">
           <span className="conn" role="status">
             <span aria-hidden="true">{online ? '●' : '○'}</span>
-            {online ? ko.conn.online : ko.conn.offline}
+            {statusLabel}
           </span>
           <Button size="sm" onClick={logout}>
             {ko.conn.logout}
@@ -81,7 +83,7 @@ export function Layout() {
         </div>
       </header>
       <main className="main" id="main" tabIndex={-1}>
-        {!online && (
+        {offline && (
           <div className="stack">
             <Callout tone="danger" role="alert" title={ko.conn.offlineTitle}>
               <p>{ko.conn.offlineBanner}</p>

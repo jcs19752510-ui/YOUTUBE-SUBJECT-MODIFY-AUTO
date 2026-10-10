@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   데모 데이터를 초기화합니다(확인 문구 필요).
 .DESCRIPTION

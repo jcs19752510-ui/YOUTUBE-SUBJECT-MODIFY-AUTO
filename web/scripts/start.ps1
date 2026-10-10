@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   ytitle 웹(데모 모드)을 시작합니다. 처음 한 번 실행하면 필요한 준비를 모두 합니다.
 .DESCRIPTION

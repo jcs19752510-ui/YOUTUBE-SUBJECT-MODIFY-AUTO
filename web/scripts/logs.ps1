@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   서비스 로그를 봅니다. 비밀번호는 로그에 기록되지 않습니다.
 .PARAMETER Service

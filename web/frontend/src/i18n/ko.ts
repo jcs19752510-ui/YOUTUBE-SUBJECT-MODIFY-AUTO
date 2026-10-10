@@ -31,6 +31,7 @@ export const ko = {
   conn: {
     online: '서버 연결됨',
     offline: '서버 연결 끊김',
+    sessionNeeded: '세션 확인 필요',
     starting: '연결 중',
     logout: '로그아웃',
     loggedOutTitle: '로그아웃되었습니다',

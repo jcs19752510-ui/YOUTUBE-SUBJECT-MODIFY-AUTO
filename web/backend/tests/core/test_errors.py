@@ -9,14 +9,14 @@ from ytweb.core.errors import ProblemError, problem_body
 
 
 def test_problem_body_shape():
-    """TC-WA-@@@ problem_body 는 type,title,status,detail,code,hint 를 가진다."""
+    """TC-WA-017 problem_body 는 type,title,status,detail,code,hint 를 가진다."""
     b = problem_body(409, "x_y", "제목", "상세", "힌트")
     assert set(b) == {"type", "title", "status", "detail", "code", "hint"}
     assert b["status"] == 409 and b["code"] == "x_y" and b["type"].endswith("x_y")
 
 
 def test_problem_error_converted_with_headers(app):
-    """TC-WA-@@@ ProblemError 는 application/problem+json 으로 변환되고 사용자 지정 헤더가 유지된다."""
+    """TC-WA-018 ProblemError 는 application/problem+json 으로 변환되고 사용자 지정 헤더가 유지된다."""
     r = APIRouter()
 
     @r.get("/api/v1/_t/problem")
@@ -33,7 +33,7 @@ def test_problem_error_converted_with_headers(app):
 
 
 def test_unhandled_exception_hides_internals(app):
-    """TC-WA-@@@ 처리되지 않은 예외는 500 internal_error 이고 스택트레이스·경로·예외 메시지가 응답에 없다."""
+    """TC-WA-019 처리되지 않은 예외는 500 internal_error 이고 스택트레이스·경로·예외 메시지가 응답에 없다."""
     r = APIRouter()
 
     @r.get("/api/v1/_t/boom")
@@ -52,7 +52,7 @@ def test_unhandled_exception_hides_internals(app):
 
 
 def test_unhandled_exception_logged_with_trace(app, caplog):
-    """TC-WA-@@@ 500 의 원인은 서버 로그에 남는다(응답에는 없음)."""
+    """TC-WA-020 500 의 원인은 서버 로그에 남는다(응답에는 없음)."""
     import logging
     records: list[logging.LogRecord] = []
 
@@ -78,7 +78,7 @@ def test_unhandled_exception_logged_with_trace(app, caplog):
 
 
 def test_validation_error_is_problem_and_does_not_echo_input(client, csrf):
-    """TC-WA-@@@ 검증 실패는 422 validation_error 이고 입력값을 되돌려 보내지 않는다."""
+    """TC-WA-021 검증 실패는 422 validation_error 이고 입력값을 되돌려 보내지 않는다."""
     r = client.post("/api/v1/auth/session", json={"pin": 123, "extra": "TOPSECRETVALUE"}, headers={"Origin": ORIGIN})
     assert r.status_code == 422
     j = r.json()
@@ -88,7 +88,7 @@ def test_validation_error_is_problem_and_does_not_echo_input(client, csrf):
 
 
 def test_not_found_and_method_not_allowed_are_problem(client):
-    """TC-WA-@@@ 404/405 도 problem+json."""
+    """TC-WA-022 404/405 도 problem+json."""
     r = client.get("/api/v1/does-not-exist")
     assert r.status_code == 404 and r.json()["code"] == "not_found"
     r = client.put("/api/v1/audit", headers={"Origin": ORIGIN})
@@ -97,7 +97,7 @@ def test_not_found_and_method_not_allowed_are_problem(client):
 
 
 def test_invalid_json_body_is_422(client, csrf):
-    """TC-WA-@@@ 깨진 JSON 본문은 422 problem+json(서버 오류 아님)."""
+    """TC-WA-023 깨진 JSON 본문은 422 problem+json(서버 오류 아님)."""
     r = client.patch("/api/v1/settings", content=b"{not json", headers={**hdr(csrf), "content-type": "application/json"})
     assert r.status_code == 422
     assert r.json()["code"] == "validation_error"

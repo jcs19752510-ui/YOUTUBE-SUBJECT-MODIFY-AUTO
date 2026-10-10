@@ -16,13 +16,13 @@ from ytweb.db.models import SettingKV
 
 
 def test_kst_today_boundary():
-    """TC-WA-@@@ UTC 14:59 는 같은 날, 15:00 은 KST 로 다음 날."""
+    """TC-WA-133 UTC 14:59 는 같은 날, 15:00 은 KST 로 다음 날."""
     assert kst_today(datetime(2026, 10, 10, 14, 59, tzinfo=timezone.utc)) == date(2026, 10, 10)
     assert kst_today(datetime(2026, 10, 10, 15, 0, tzinfo=timezone.utc)) == date(2026, 10, 11)
 
 
 def test_pt_date_handles_dst_and_boundary():
-    """TC-WA-@@@ 태평양 시간 기준일(서머타임 UTC-7, 표준시 UTC-8)."""
+    """TC-WA-134 태평양 시간 기준일(서머타임 UTC-7, 표준시 UTC-8)."""
     assert pt_date(datetime(2026, 10, 10, 6, 59, tzinfo=timezone.utc)) == date(2026, 10, 9)
     assert pt_date(datetime(2026, 10, 10, 7, 0, tzinfo=timezone.utc)) == date(2026, 10, 10)
     assert pt_date(datetime(2026, 12, 10, 7, 59, tzinfo=timezone.utc)) == date(2026, 12, 9)
@@ -30,7 +30,7 @@ def test_pt_date_handles_dst_and_boundary():
 
 
 def test_clock_rejects_naive_and_utcnow_is_aware():
-    """TC-WA-@@@ naive datetime 은 거부, utcnow 는 tz-aware UTC."""
+    """TC-WA-135 naive datetime 은 거부, utcnow 는 tz-aware UTC."""
     with pytest.raises(ValueError):
         kst_today(datetime(2026, 1, 1))
     with pytest.raises(ValueError):
@@ -39,14 +39,14 @@ def test_clock_rejects_naive_and_utcnow_is_aware():
 
 
 def test_discover_routers_finds_core_modules():
-    """TC-WA-@@@ 라우터 자동 탐색이 health/auth/settings/audit 를 찾는다(router 속성이 없는 모듈은 제외)."""
+    """TC-WA-136 라우터 자동 탐색이 health/auth/settings/audit 를 찾는다(router 속성이 없는 모듈은 제외)."""
     found = discover_routers()
     for name in CORE_ROUTERS:
         assert name in found
 
 
 def test_discovery_default_includes_core_routes(web_settings, engine, monkeypatch):
-    """TC-WA-@@@ router_modules 를 생략하면 자동 탐색으로 핵심 경로가 등록된다."""
+    """TC-WA-137 router_modules 를 생략하면 자동 탐색으로 핵심 경로가 등록된다."""
     with TestClient(create_app(web_settings), base_url=ORIGIN) as c:
         assert c.get("/healthz").status_code == 200
         assert c.get("/readyz").status_code == 200
@@ -56,7 +56,7 @@ def test_discovery_default_includes_core_routes(web_settings, engine, monkeypatc
 
 
 def test_deps_expose_app_state(app, client):
-    """TC-WA-@@@ get_web_settings/get_policy/get_clock 이 앱 상태의 값을 돌려준다."""
+    """TC-WA-138 get_web_settings/get_policy/get_clock 이 앱 상태의 값을 돌려준다."""
     r = APIRouter()
 
     @r.get("/api/v1/_t/deps")
@@ -70,7 +70,7 @@ def test_deps_expose_app_state(app, client):
 
 
 def test_get_session_commits_on_success_and_rolls_back_on_error(app, client, db):
-    """TC-WA-@@@ get_session: 정상 종료는 commit, 예외는 rollback."""
+    """TC-WA-139 get_session: 정상 종료는 commit, 예외는 rollback."""
     from datetime import datetime, timezone
     r = APIRouter()
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -96,13 +96,13 @@ def test_get_session_commits_on_success_and_rolls_back_on_error(app, client, db)
 
 
 def test_readyz_ok_and_api_alias(client):
-    """TC-WA-@@@ /readyz 와 /api/readyz 는 DB 연결 시 ok + mode."""
+    """TC-WA-140 /readyz 와 /api/readyz 는 DB 연결 시 ok + mode."""
     for p in ("/readyz", "/api/readyz"):
         assert client.get(p).json() == {"status": "ok", "db": "ok", "mode": "demo"}
 
 
 def test_readyz_db_down_returns_503_without_details(client, app):
-    """TC-WA-@@@ DB 연결 실패 시 503 degraded 이고 오류 상세는 노출하지 않는다."""
+    """TC-WA-141 DB 연결 실패 시 503 degraded 이고 오류 상세는 노출하지 않는다."""
     class Broken:
         def connect(self):
             from sqlalchemy.exc import OperationalError
@@ -126,19 +126,19 @@ def static_app(web_settings, engine, tmp_path, monkeypatch):
 
 
 def test_static_serves_index_and_assets(static_app):
-    """TC-WA-@@@ YTWEB_STATIC_DIR 가 있으면 / 는 index.html, 정적 자산은 그대로 서빙."""
+    """TC-WA-142 YTWEB_STATIC_DIR 가 있으면 / 는 index.html, 정적 자산은 그대로 서빙."""
     assert "INDEX" in static_app.get("/").text
     r = static_app.get("/assets/app.js")
     assert r.status_code == 200 and "console.log" in r.text
 
 
 def test_static_spa_fallback_for_client_routes(static_app):
-    """TC-WA-@@@ 클라이언트 라우트(/videos/abc)는 index.html 로 대체된다."""
+    """TC-WA-143 클라이언트 라우트(/videos/abc)는 index.html 로 대체된다."""
     assert "INDEX" in static_app.get("/videos/abc").text
 
 
 def test_static_does_not_swallow_api_or_health(static_app):
-    """TC-WA-@@@ /api 아래 없는 경로는 index 가 아니라 404 problem+json, healthz 는 JSON."""
+    """TC-WA-144 /api 아래 없는 경로는 index 가 아니라 404 problem+json, healthz 는 JSON."""
     r = static_app.get("/api/v1/nothing")
     assert r.status_code == 404 and r.json()["code"] == "not_found"
     assert static_app.get("/healthz").json() == {"status": "ok"}
@@ -146,13 +146,13 @@ def test_static_does_not_swallow_api_or_health(static_app):
 
 @pytest.mark.parametrize("path", ["/../secret.txt", "/%2e%2e/secret.txt", "/assets/../../secret.txt", "/..%2fsecret.txt"])
 def test_static_path_traversal_blocked(static_app, path):
-    """TC-WA-@@@ 경로 이동(../) 으로 정적 폴더 밖 파일을 읽을 수 없다."""
+    """TC-WA-145 경로 이동(../) 으로 정적 폴더 밖 파일을 읽을 수 없다."""
     r = static_app.get(path)
     assert "TOPSECRET" not in r.text
 
 
 def test_static_ignored_when_dir_missing(web_settings, engine, tmp_path, monkeypatch):
-    """TC-WA-@@@ 폴더가 없으면 정적 서빙을 켜지 않는다(404)."""
+    """TC-WA-146 폴더가 없으면 정적 서빙을 켜지 않는다(404)."""
     monkeypatch.setenv("YTWEB_STATIC_DIR", str(tmp_path / "nope"))
     with TestClient(create_app(web_settings, router_modules=CORE_ROUTERS), base_url=ORIGIN) as c:
         assert c.get("/").status_code == 404

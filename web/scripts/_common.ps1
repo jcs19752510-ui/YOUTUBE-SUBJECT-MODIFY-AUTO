@@ -1,4 +1,4 @@
-# 공통 함수 모음. 다른 스크립트가 `. (Join-Path $PSScriptRoot '_common.ps1')` 로 불러온다. 직접 실행하지 않는다.
+﻿# 공통 함수 모음. 다른 스크립트가 `. (Join-Path $PSScriptRoot '_common.ps1')` 로 불러온다. 직접 실행하지 않는다.
 # Windows PowerShell 5.1 과 PowerShell 7 모두에서 동작하도록 작성했다.
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
