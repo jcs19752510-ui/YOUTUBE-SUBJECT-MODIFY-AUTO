@@ -154,4 +154,18 @@ def test_rollback_live_end_to_end_via_cli(project, tmp_path, streams, monkeypatc
     world.close()
 
 
+def test_rollback_live_verification_failure_exit_1(project, tmp_path, streams, monkeypatch):
+    """TC-685: 롤백 후 검증이 실패하면 종료 코드 1이고 경보를 출력한다(자동 재시도 없음). [SEC-010, FR-011]"""
+    from wu5_support import World, block_network, cli_run, patch_services
+    block_network(monkeypatch)
+    world = World(project, tmp_path)
+    patch_services(monkeypatch, world)
+    assert cli_run(world, streams, ["apply", "--candidate", str(world.cid), "--live"]) == 0
+    chg = world.changes()[0]["id"]
+    world.server.ignore_update = True
+    assert cli_run(world, streams, ["rollback", "--change", str(chg), "--approver", "홍길동", "--live"]) == 1
+    assert "롤백 호출은 끝났지만 검증이 통과하지 못했습니다" in streams.out.getvalue() and len(world.server.update_calls) == 2
+    world.close()
+
+
 SNIPPET_VID = "abc123DEF45"
