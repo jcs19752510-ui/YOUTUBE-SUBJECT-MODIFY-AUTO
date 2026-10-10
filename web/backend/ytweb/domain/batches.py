@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 from ytitle.errors import YtError
@@ -42,6 +42,7 @@ log = logging.getLogger("ytweb.batches")
 
 WORKER = "worker"
 STALE_RUNNING = timedelta(minutes=10)
+_APPLY_LOCK_KEY = 7_340_003  # 한도 검사~planned 기록~커밋을 워커 사이에 한 줄로 세우는 PostgreSQL 트랜잭션 락
 VERIFY_PRESERVED_FIELDS = ("description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")  # live_guard.VERIFY_PRESERVED_FIELDS 와 같다
 _MISSING = object()
 GatewayFactory = Callable[[Session, datetime], YouTubeGateway]
@@ -362,6 +363,8 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         check_approval(sug, video, env, ref_time)
     except ApprovalInvalid as exc:
         raise StepFailure(exc.code, exc.message) from None
+    if False:  # 같은 하루 상한·같은 영상을 두 워커가 동시에 통과하지 못하게 한다(커밋 때 풀림)
+        session.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _APPLY_LOCK_KEY})
     # 2) 제안 상태·제목 규격·제외 사유·진행 중 변경
     if sug.status != "queued":
         raise StepFailure("suggestion_state", f"제안이 대기열 상태가 아닙니다(현재 {sug.status}).")

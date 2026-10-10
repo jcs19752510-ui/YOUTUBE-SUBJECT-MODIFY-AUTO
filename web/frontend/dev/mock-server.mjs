@@ -996,9 +996,13 @@ async function handle(st, req, url, body, session) {
 
 const settingsDto = (st) => ({
   ...st.settings,
-  pin_set: st.pin !== null,
-  live_enabled: false,
-  allowed_video_ids: [],
+  pin_enabled: st.pin !== null,
+  mode: 'demo',
+  read_only: {
+    enable_live: false,
+    live_allowlist: [],
+    note: '라이브 반영 허용과 허용 영상 목록은 화면에서 바꿀 수 없습니다.',
+  },
 });
 function addSuggestion(st, v, title, source) {
   const s = {

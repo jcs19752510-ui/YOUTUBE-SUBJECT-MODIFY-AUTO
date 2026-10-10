@@ -260,8 +260,11 @@ describe('설정', () => {
     tone: ['친근하게'],
     pin_enabled: false,
     mode: 'demo',
-    read_only: { enable_live: false, live_allowlist: ['abcdefghijk'], note: '화면에서 바꿀 수 없습니다.' },
-  };
+    read_only: {
+      enable_live: false,
+      live_allowlist: ['abcdefghijk'],
+      note: '화면에서 바꿀 수 없습니다.',
+    },
   };
 
   it('TC-WF-067 라이브 허용과 허용 영상 목록은 읽기 전용으로만 보이고 "이 화면에서는 켤 수 없습니다"를 안내한다', async () => {
@@ -307,7 +310,7 @@ describe('설정', () => {
     expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
       daily_apply_cap: 5,
       suggestions_per_video: 3,
-      tone: '친근하게',
+      tone: ['친근하게'],
     });
     expect(await screen.findByText('설정을 저장했습니다.')).toBeInTheDocument();
   });
@@ -316,7 +319,7 @@ describe('설정', () => {
     const user = userEvent.setup();
     const { client, calls } = await connectedClient([
       route('GET', '/api/v1/settings', () => json(200, { ...data, pin_enabled: true })),
-      route('PATCH', '/api/v1/settings', () => json(200, data)),
+      route('PATCH', '/api/v1/settings', () => json(200, { ...data, pin_enabled: true })),
     ]);
     renderWithApp(<SettingsPage />, client, '/settings?tab=pin');
     await screen.findByText('현재 PIN 이 설정되어 있습니다.');
@@ -364,7 +367,9 @@ describe('설정', () => {
     await user.type(screen.getByLabelText('PIN 한 번 더 입력'), '246810');
     await user.click(screen.getByRole('button', { name: 'PIN 설정' }));
     await waitFor(() =>
-      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ pin: { action: 'set', new_pin: '246810' } }),
+      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+        pin: { action: 'set', new_pin: '246810' },
+      }),
     );
   });
 
@@ -383,7 +388,11 @@ describe('설정', () => {
     await user.clear(tone);
     await user.type(tone, '차분하게, 정보 전달');
     await user.click(screen.getByRole('button', { name: '저장' }));
-    await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toMatchObject({ tone: ['차분하게', '정보 전달'] }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'PATCH')?.body).toMatchObject({
+        tone: ['차분하게', '정보 전달'],
+      }),
+    );
   });
 
   it('TC-WF-071 감사 로그 탭은 읽기 전용이며 무결성 결과를 글자로 알린다', async () => {

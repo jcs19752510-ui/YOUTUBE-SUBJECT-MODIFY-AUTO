@@ -158,6 +158,9 @@ def seed_demo(session: Session, now: datetime, policy: Settings, *, count: int =
         if vid not in touched or video.exclusion_reasons is None:
             video.is_short = fields["duration_sec"] <= policy.shorts_max_seconds
             video.exclusion_reasons = exclusion_reasons(video, policy)
+    session.flush()  # 스냅샷은 영상 행을 외래키로만 참조한다(ORM 관계 없음) — 영상을 먼저 확정해야 PostgreSQL 에서 순서가 맞는다
+    for i in range(1, count + 1):
+        vid = f"demoVid{i:04d}"
         metrics = _before_metrics(i, today)
         if metrics is not None and vid not in have_snapshot:
             session.add(MetricsSnapshot(video_id=vid, taken_at=now, phase="before", source="demo", **metrics))
