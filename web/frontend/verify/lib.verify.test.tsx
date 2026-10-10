@@ -74,7 +74,8 @@ describe('제목 비교 diffTitles (W-006)', () => {
     const p = diffTitles(a, b);
     expect(before(p)).toBe(a);
     expect(after(p)).toBe(b);
-    for (const part of p) expect(part.text.isWellFormed()).toBe(true); // 서로게이트 쌍이 깨지지 않음
+    for (const part of p)
+      expect((part.text as string & { isWellFormed(): boolean }).isWellFormed()).toBe(true); // 서로게이트 쌍이 깨지지 않음
   });
 
   it('TC-VF-111 무작위 400쌍(시드 고정)에서 복원 가능·빈 조각 없음·인접 같은 종류 없음·최적(LCS 길이 일치)을 만족한다', () => {
