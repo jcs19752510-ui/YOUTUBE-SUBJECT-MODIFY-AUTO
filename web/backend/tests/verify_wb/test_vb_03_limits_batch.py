@@ -557,3 +557,15 @@ def test_tc_vb_124_cancelled_batch_item_not_applied_if_claimed_late(seeded, db, 
     g = Faulty(db, clock)
     out = apply_one(db, item_id, now=clock(), env=env, gateway=g)
     assert out.status == "not_pending" and g.updates == 0 and changes(db) == []
+
+
+@pytest.mark.xfail(strict=True, reason="OPEN DEF-VB-01: 오늘 상한이 찬 뒤 도달한 항목(동시 틱 경쟁 포함)이 pending 으로 이월되지 않고 limit_daily 로 skipped(영구) 처리됨 — W-008 '초과분은 다음 날 자동 예약'과 불일치")
+def test_tc_vb_098_over_cap_item_should_carry_over_not_be_skipped(seeded, db, env, clock):
+    set_cap(db, clock, 1)
+    b, sugs = queued(db, env, clock(), 2)
+    from tests.verify_wb.vbh import set_all_due
+    set_all_due(db, b.id, clock().date())
+    g = Faulty(db, clock)
+    assert apply_one(db, b.items[0].id, now=clock(), env=env, gateway=g).status == "success"
+    out = apply_one(db, b.items[1].id, now=clock(), env=env, gateway=g)
+    assert out.status in ("not_pending", "deferred") or db.get(BatchItem, b.items[1].id).status == "pending"

@@ -629,6 +629,53 @@ describe('배치 진행 화면', () => {
   });
 });
 
+// ---------- 서버 계약의 상태 값 표기 (WEB_DESIGN §3: Batch.status = draft|queued|running|paused|done|cancelled, Job.type = videos.sync|suggestions.generate|batch.execute) ----------
+describe('서버 상태 값의 한국어 표기', () => {
+  const asciiOnly = (t: string) => /^[a-z._]+$/.test(t.trim());
+
+  for (const st of ['queued', 'paused'])
+    it.fails(
+      `TC-VF-182 배치 상태 "${st}" 가 영문 원문이 아닌 한국어로 표시된다 [DEF-6-010]`,
+      async () => {
+        // 결함 DEF-6-010(Low): ko.batchStatus 에 queued(실행 직후 실제 서버가 쓰는 값)·paused 가 없어 영문 원문이 그대로 보인다.
+        const run = draftBatch({ status: st });
+        mountApp([route('GET', '/api/v1/batches/7', () => json(200, run))], '/batches/7');
+        await screen.findByText(ko.batches.progressTitle);
+        const badge = document.querySelector('main .card .badge, main .badge');
+        expect(badge).not.toBeNull();
+        expect(asciiOnly(badge!.textContent ?? '')).toBe(false);
+      },
+    );
+
+  it.fails(
+    'TC-VF-183 홈의 "진행 중인 작업" 이 서버 작업 종류 코드(videos.sync 등)를 한국어로 바꿔 보여 준다 [DEF-6-011]',
+    async () => {
+      // 결함 DEF-6-011(Low): ko.home.activeJob 에 type 원문을 그대로 넣는다.
+      mountApp(
+        [
+          route('GET', '/api/v1/dashboard', () =>
+            json(
+              200,
+              dashboard({
+                active_job: {
+                  id: 'j1',
+                  type: 'videos.sync',
+                  status: 'running',
+                  progress: 1,
+                  total: 4,
+                },
+              }),
+            ),
+          ),
+        ],
+        '/',
+      );
+      const line = await screen.findByText(/진행 중인 작업/);
+      expect(line.textContent).not.toMatch(/videos\.sync/);
+    },
+  );
+});
+
 // ---------- 이력 필터 (W-011) ----------
 describe('이력 화면', () => {
   it('TC-VF-174 영상 ID·결과 필터는 서버 질의로 가며(앞뒤 공백 제거), 필터를 걸면 1쪽으로 돌아간다', async () => {
