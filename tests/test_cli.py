@@ -133,3 +133,51 @@ def test_global_options_honored_before_and_after_subcommand(project, streams, tm
     streams.out.truncate(0), streams.out.seek(0)
     assert cli.main(["--plain", "purge", "--before", "2026-01-01", "--base-dir", str(other)], out=streams.out, err=streams.err, env={}) == 0
     assert "----" not in streams.out.getvalue()
+
+
+def test_default_base_dir_is_project_root_regardless_of_cwd(tmp_path, monkeypatch):
+    """TC-103: --base-dir이 없으면 소스 폴더의 프로젝트 루트를 기준으로 삼는다(실행한 폴더와 무관). [FR-017, NFR-007]"""
+    root = cli.project_root()
+    assert (root / "pyproject.toml").is_file() and (root / "src" / "ytitle" / "cli.py").is_file()
+    monkeypatch.chdir(tmp_path)
+    assert cli.project_root() == root and cli.project_root() != tmp_path
+
+
+def test_project_root_falls_back_to_cwd_outside_source_tree(tmp_path, monkeypatch):
+    """TC-104: 소스 트리 밖(설치형)에서는 현재 폴더를 기준으로 삼는다. pyproject.toml만 있고 src가 없는 폴더도 소스 트리로 보지 않는다. [FR-017]"""
+    monkeypatch.chdir(tmp_path)
+    fake = tmp_path / "site-packages" / "ytitle" / "cli.py"
+    fake.parent.mkdir(parents=True)
+    fake.write_text("", encoding="utf-8")
+    assert cli.project_root(str(fake)) == tmp_path
+    half = tmp_path / "half"
+    (half / "src" / "ytitle").mkdir(parents=True)
+    (half / "pyproject.toml").write_text("", encoding="utf-8")
+    (half / "src" / "ytitle" / "cli.py").write_text("", encoding="utf-8")
+    assert cli.project_root(str(half / "src" / "ytitle" / "cli.py")) == half.resolve()
+    (half / "pyproject.toml").unlink()
+    assert cli.project_root(str(half / "src" / "ytitle" / "cli.py")) == tmp_path
+    only = tmp_path / "only"   # pyproject.toml만 있고 src/ytitle/cli.py는 없는 폴더
+    (only / "x" / "y").mkdir(parents=True)
+    (only / "pyproject.toml").write_text("", encoding="utf-8")
+    (only / "x" / "y" / "cli.py").write_text("", encoding="utf-8")
+    assert cli.project_root(str(only / "x" / "y" / "cli.py")) == tmp_path
+
+
+def test_default_run_writes_data_under_project_root_not_cwd(tmp_path, monkeypatch, streams):
+    """TC-105: --base-dir 없이 실행하면 데이터 폴더(DB·로그)가 프로젝트 루트의 설정이 가리키는 곳에 생기고 현재 폴더에는 아무것도 만들지 않는다. [FR-017]"""
+    import os
+
+    seen = {}
+
+    def fake_load(base_dir, env):
+        seen["base"] = base_dir
+        raise SystemExit(0)
+
+    monkeypatch.setattr(cli, "load_settings", fake_load)
+    monkeypatch.chdir(tmp_path)
+    try:
+        cli.main(["auth"], out=streams.out, err=streams.err, env={})
+    except SystemExit:
+        pass
+    assert seen["base"] == cli.project_root() and os.listdir(tmp_path) == []

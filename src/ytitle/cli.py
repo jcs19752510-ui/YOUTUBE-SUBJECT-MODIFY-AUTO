@@ -8,6 +8,7 @@ import logging
 import pkgutil
 import sys
 import uuid
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Callable, Mapping, TextIO
 
@@ -91,6 +92,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def project_root(module_file: str | None = None) -> Path:
+    """기본 기준 폴더. 소스 폴더에서 실행 중이면 프로젝트 루트(`pyproject.toml`과 `src/ytitle/cli.py`가 있는 곳)로 고정한다.
+    어느 폴더에서 실행해도 `data/`·`config/` 등을 같은 자리에 쓰게 하기 위해서다. 설치형(소스 트리 밖)이면 현재 폴더를 쓴다."""
+    here = Path(module_file or __file__).resolve()
+    root = here.parents[2]
+    if (root / "pyproject.toml").is_file() and (root / "src" / "ytitle" / "cli.py").is_file():
+        return root
+    return Path.cwd()
+
+
 def main(
     argv: list[str] | None = None,
     *,
@@ -114,9 +125,7 @@ def main(
         parser.print_help(out)
         return 0
 
-    from pathlib import Path
-
-    base_dir = Path(args.base_dir) if args.base_dir else Path.cwd()
+    base_dir = Path(args.base_dir) if args.base_dir else project_root()
     run_id = uuid.uuid4().hex[:12]
     clock = clock or SystemClock()
     ui_opts = UiOptions(plain=args.plain, color=args.color)

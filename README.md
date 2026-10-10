@@ -14,7 +14,7 @@ python -m ytitle --help     # 명령 목록
 ```
 Linux/macOS는 `python3 -m venv .venv`, `source .venv/bin/activate`만 다릅니다. PowerShell에서 스크립트 실행이 막히면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`가 필요할 수 있습니다.
 
-- **항상 이 프로젝트 폴더에서 실행하세요.** 지금은 실행한 폴더에 `data/`를 만듭니다.
+- 어느 폴더에서 실행해도 기록(`data/`)과 설정(`config/`)은 항상 이 프로젝트 폴더 기준으로 만들어집니다(`--base-dir`로 바꿀 수 있습니다).
 - 구글 로그인(`auth --read`)은 구글 클라우드 설정이 먼저 필요합니다: `docs/yt/03_manual_setup.md`
 - 실제 수정을 켜려면 `config/settings.local.yaml.example`을 `config/settings.local.yaml`로 복사해 고칩니다(처음에는 그대로 두세요).
 - 설계: `docs/yt/DESIGN.md`, 진행 상태: `docs/harness/STATE.md`, 단위별 테스트 결과서: `docs/harness/units/`
