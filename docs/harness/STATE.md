@@ -60,3 +60,9 @@
 - **재개 순서(사용자 지시가 있을 때)**: ①전체 스택 통합 시험(`-p harness-tmp-int`, 포트 18080) ②독립 검증 4건 ③문서 개정 3건(코드 기준 as-built) ④후속: 데모 최소 노출수 0(DEC-042 D1, 코드 미반영), 프런트 운영 빌드에서 테스트 제외(DEC-041), 워커 하트비트, 감사 키 백업 안내 ⑤선생님 PC에서 `web/scripts/start.ps1`로 첫 화면 확인(README §8)
 - **임시 산출물(규칙 K, 사용자 삭제 승인 대기)**: 이미지 `harness-tmp-int-*`·`harness-tmp-vinf*-*` 6개와 컨테이너·볼륨 `harness-tmp-vinf*`, `.harness-tmp/` 아래 가상환경·변이 복사본(약 2GB), 임시 PostgreSQL(`.harness-tmp/pg`, 127.0.0.1:54329)·dockerd 프로세스. 저장소에는 포함되지 않음(.gitignore)
 - **진행률(추정)**: 전체 약 68%, M1 기준 약 93%. 세션 사용량은 계정 값을 읽을 수 없어 추정(마지막 사용자 제공 값: 현재 세션 1%, 이번 주 14%)
+
+## 7. 웹 전환 트랙 — 재개 웨이브 1 중지 기록 (2026-10-10, 사용자 지시로 중지)
+- **완료·푸시**: 문서 개정 3건(2단계 `02_planning/02_risk_assessment/threat_model`, 3단계 `DESIGN/WEB_DESIGN/openapi.json/API.md`, 4단계 `04_ux_design`) + 검증 로그 `verify-log_02_planning_web/DESIGN_web/04_ux_design_web`. 각 문서 상단 '검증 대기 항목' 표와 질문 목록(Q-W·Q-UX)이 남아 있음(사용자 답변 대기, 결정 미기록)
+- **중지(미완료)**: 6단계 독립 검증 4건(W-BE-A/W-BE-B/W-FE/W-INF) — 시험 파일·변이 점검 진행분만 WIP 저장, 결과서 `web-WU-*-test.md`·검증 로그 없음. 7단계 통합 시험은 6단계 PASS 전이라 미착수
+- **재개 순서**: ①6단계 독립 검증 4건 재투입(공통 지시서 내용은 이 세션 scratchpad라 소실 — 새 세션에서 재작성) ②7단계 통합 ③문서의 '검증 대기 항목' 반영 ④사용자 질문 일괄 확인
+- **정리 상태**: 컨테이너·테스트 프로세스 중지함. 임시 PostgreSQL(127.0.0.1:54329)·dockerd·`.harness-tmp/`(약 1.8GB)·`harness-tmp-vinf*` 이미지·볼륨은 남아 있음(저장소 미포함, 컨테이너 회수 시 소멸)
