@@ -206,12 +206,13 @@
 ## 6. 결함(Defect) 목록
 | ID | 설명 | 재현 절차 | 심각도 | 상태 | 조치 내용 |
 |----|------|-----------|--------|------|-----------|
+| DEF-6-023 | [테스트 결함] 오케스트레이터 독립 변이 점검 1회차(93개 중 91개 적발)에서 apply 후보번호 범위 검사 제거·approve 덮어쓰기 확인 제거 2곳을 놓침(관찰 가능한 차이가 문구·질문 순서뿐이라 종료 코드만 보던 테스트가 통과) | 독립 변이 점검 | Medium | Fixed | TC-953, TC-974 단언 보강 후 재점검 |
 | DEF-6-021 | [테스트 결함] 서브에이전트 자체 변이 점검 1회차에서 출력 문구·Ctrl+C 처리·롤백 길이 면제·승인자 조기 검증·롤백 종료 코드 등 7곳을 놓침 | 자체 변이 점검 | Medium | Fixed | 테스트 보강 후 2회차 생존 0건(동치 변이 2건 제외) |
 
 - 서브에이전트가 이 단위 안에서 수정·재검증. 오케스트레이터 독립 변이 점검 결과는 부록 A.
 
 ## 7. 테스트 환경 정리(Teardown) 확인 — 규칙 K
-- 이번 테스트에서 생성한 임시 아티팩트: `.harness-tmp/junit_06.xml`, `.harness-tmp/junit_py311.xml`, `.harness-tmp/junit_py313.xml`, `.harness-tmp/junit_regress.xml`, `.harness-tmp/venv_agent_demo`, `.harness-tmp/venv_agent_docs`, `.harness-tmp/venv_agent_it_fab`, `.harness-tmp/venv_agent_it_fd`, `.harness-tmp/venv_py311`, `.harness-tmp/venv_py312`, `.harness-tmp/venv_py313` (+ 변이 점검용 임시 사본 `.harness-tmp/mut_06/`, 편집 설치로 생긴 `src/*.egg-info`, 캐시 `__pycache__`/`.coverage`)
+- 이번 테스트에서 생성한 임시 아티팩트: `.harness-tmp/junit_06.xml`, `.harness-tmp/junit_py311.xml`, `.harness-tmp/junit_py313.xml`, `.harness-tmp/junit_regress.xml`, `.harness-tmp/venv_py311`, `.harness-tmp/venv_py312`, `.harness-tmp/venv_py313` (+ 변이 점검용 임시 사본 `.harness-tmp/mut_06/`, 편집 설치로 생긴 `src/*.egg-info`, 캐시 `__pycache__`/`.coverage`)
 - 위 아티팩트를 전부 `.harness-tmp/` 하위에서만 생성했는가 (규칙 K 1번): [x] 예 [ ] 아니오 — 예외: 편집 설치가 `src/ytitle.egg-info/`를 만들고 파이썬이 `__pycache__`를 만든다(둘 다 `.gitignore` 대상이며 정리 대상에 포함)
 - 정리(삭제) 완료 여부: 예. 결과서 생성 스크립트가 `.harness-tmp/`, `data/`, `.coverage`, `src/*.egg-info`, `__pycache__`를 삭제했다
 - **정리 후 점검**: 이 스크립트는 git을 실행하지 않는다(커밋·푸시는 오케스트레이터가 DEC-027에 따라 별도 수행). 파일시스템 점검 결과: 잔여물 없음 (점검 목록: .harness-tmp, .venv*, venv, *.egg-info, .pytest_cache, .coverage*, __pycache__, data)
@@ -223,8 +224,8 @@
 - 결정 대기: unit-5-note의 질문 5가지(HMAC 서명 추가, planned 정리 방법, 불확실 결과 규칙, 롤백 승인 파일, 읽기 전용 필드 검증)
 
 ## 9. 결론 및 판정
-- 판정: **FAIL**
-- 근거: 실패 TC 0건, 미수행 TC 0건(-), AC↔TC 추적 문제 0건, 정적 분석(pyflakes) 통과, 변이 점검 91/93 잡아냄, Open 결함 0건
+- 판정: **PASS**
+- 근거: 실패 TC 0건, 미수행 TC 0건(-), AC↔TC 추적 문제 0건, 정적 분석(pyflakes) 통과, 변이 점검 93/93 잡아냄, Open 결함 0건
 - 실제 구글 쓰기는 12단계 사용자 승인 전까지 실행하지 않는다.
 
 ## 10. 내부 검증 (최소 2회)
@@ -319,12 +320,12 @@
 | 승인: 계획 해시 형식 검사 제거 | `approvals.py` | 잡아냄(테스트 실패) |
 | 승인: 만료 시각 계산(TTL 2배) | `approvals.py` | 잡아냄(테스트 실패) |
 | 활성 승인 조회: 사용된 것도 활성 | `approvals.py` | 잡아냄(테스트 실패) |
-| apply 명령: 후보번호 범위 검사 제거 | `commands/apply.py` | 놓침(테스트 통과) ⚠ |
+| apply 명령: 후보번호 범위 검사 제거 | `commands/apply.py` | 잡아냄(테스트 실패) |
 | apply 명령: --live 실패해도 종료 0 | `commands/apply.py` | 잡아냄(테스트 실패) |
 | apply 모의 실행: 차단돼도 종료 0 | `commands/apply.py` | 잡아냄(테스트 실패) |
 | apply 모의 실행: 1단계 차단을 막힘으로 셈 | `commands/apply.py` | 잡아냄(테스트 실패) |
 | approve 명령: 영상 ID 확인 제거 | `commands/approve.py` | 잡아냄(테스트 실패) |
-| approve 명령: 덮어쓰기 확인 제거 | `commands/approve.py` | 놓침(테스트 통과) ⚠ |
+| approve 명령: 덮어쓰기 확인 제거 | `commands/approve.py` | 잡아냄(테스트 실패) |
 | approve 명령: 제한 미통과여도 승인 | `commands/approve.py` | 잡아냄(테스트 실패) |
 | approve 명령: 실패 시 승인 파일 정리 제거 | `commands/approve.py` | 잡아냄(테스트 실패) |
 | approve 명령: 후보 상태 전이 제거 | `commands/approve.py` | 잡아냄(테스트 실패) |

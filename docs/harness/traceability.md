@@ -39,7 +39,7 @@
 | POL-002 | POL | 검증 리포트·dry-run 출력·성과 리포트에 "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다" 문구를 표기 (02 §7-1) | `04_ux_design.md` 면책 문구 규칙 | WU-3, WU-4, WU-6 | Done | TC-049, TC-055, TC-275, TC-344, TC-500, TC-649, TC-662, TC-663 |  |  | 규칙 I 보수 적용(DEC-012) |
 | POL-003 | POL | 공식 A/B 불가 영상군(Shorts, 예약 라이브, 프리미어, 비공개, 아동용)에는 공식 A/B가 가능하다고 가정하지 않으며, 순차 교체 모드에서도 기본 제외 (02 §7-1) | 5-3 sequential_mode, 8-4 | WU-4 | Done | TC-447, TC-448, TC-449, TC-507, TC-509 |  |  |  |
 | POL-004 | POL | 후보 파일의 source(예: human, ai-assisted) 필드를 필수 기록해, 향후 AI 관련 고지 의무가 확인되면 대응 가능하게 한다 (02 §7-1) | 4-3 EVT-201 source | WU-3 | Done | TC-314 |  |  |  |
-| SEC-001 | SEC | 사람 승인 없이 videos.update 호출 금지. 기본값은 항상 dry-run (02 §7-1) | 5-2, 6-1 | WU-0, WU-5 | In Progress | TC-004, TC-005, TC-042, TC-047, TC-048, TC-058, TC-060, TC-064, TC-067, TC-098, TC-262, TC-263, TC-286, TC-359, TC-432, TC-434, TC-450, TC-451, TC-452, TC-453, TC-464, TC-465, TC-466, TC-476, TC-498, TC-501, TC-502, TC-504, TC-521, TC-570, TC-571, TC-574, TC-575, TC-576, TC-577, TC-578, TC-582, TC-599, TC-653, TC-677, TC-682, TC-906, TC-911, TC-912, TC-915, TC-917, TC-922, TC-923, TC-928, TC-950, TC-951, TC-955, TC-956, TC-960, TC-961 |  |  |  |
+| SEC-001 | SEC | 사람 승인 없이 videos.update 호출 금지. 기본값은 항상 dry-run (02 §7-1) | 5-2, 6-1 | WU-0, WU-5 | Done | TC-004, TC-005, TC-042, TC-047, TC-048, TC-058, TC-060, TC-064, TC-067, TC-098, TC-262, TC-263, TC-286, TC-359, TC-432, TC-434, TC-450, TC-451, TC-452, TC-453, TC-464, TC-465, TC-466, TC-476, TC-498, TC-501, TC-502, TC-504, TC-521, TC-570, TC-571, TC-574, TC-575, TC-576, TC-577, TC-578, TC-582, TC-599, TC-653, TC-677, TC-682, TC-906, TC-911, TC-912, TC-915, TC-917, TC-922, TC-923, TC-928, TC-950, TC-951, TC-955, TC-956, TC-960, TC-961 |  |  |  |
 | SEC-002 | SEC | 일일 쿼터 상한을 설정으로 두고(기본 60% 이하) 초과 시 즉시 중단 (02 §7-1) | 5-2, 6-1 | WU-2 | Done | TC-200, TC-201, TC-202, TC-203, TC-204, TC-206, TC-207, TC-212, TC-214, TC-220, TC-223, TC-224, TC-226, TC-235, TC-236, TC-240, TC-241, TC-243, TC-247, TC-250, TC-252, TC-257, TC-258, TC-260, TC-283, TC-284, TC-445, TC-506, TC-574, TC-579, TC-588, TC-595, TC-904, TC-966 |  |  |  |
 | SEC-003 | SEC | 재시도 최대 2회(지수 백오프), 무한 재시도 금지 (02 §7-1) | 4-2, 6-1 | WU-0 | Done | TC-015, TC-016, TC-017, TC-018, TC-250, TC-251, TC-252, TC-253, TC-254, TC-255, TC-266, TC-587, TC-588, TC-589, TC-590, TC-934 |  |  |  |
 | SEC-004 | SEC | 교체 주기: 동일 영상 최소 72시간, 영상당 총 변경 횟수 상한(기본 3회), 최소 노출 수 충족(기본 1,000회) 전 재변경 금지. 모두 설정값 (02 §7-1) | 5-2, 6-1 | WU-4 | Done | TC-001, TC-400, TC-403, TC-405, TC-411, TC-419, TC-444, TC-467, TC-505, TC-574, TC-972 |  |  |  |
@@ -65,7 +65,7 @@
 | EVT-004 | EVT | CLI plan dry-run diff. 쓰기 API·읽기 API 호출 없음(마지막 fetch로 저장된 videos.snippet_json 사용, 저장 시각이 24시간보다 오래되면 fetch를 다시 하라고 경고). 계획 해시 plan_hash = SH (DESIGN §4-1) | DESIGN 4-1 | WU-4 | Done | TC-421, TC-422, TC-432, TC-438, TC-442, TC-443, TC-500, TC-501, TC-503, TC-504, TC-507, TC-964, TC-980 |  |  |  |
 | EVT-005 | EVT | CLI approve 사람의 승인 파일 생성(계획 해시 바인딩, 만료 포함) (DESIGN §4-1) | DESIGN 4-1 | WU-5 | Done | TC-970, TC-978 |  |  |  |
 | EVT-006 | EVT | CLI apply 후보 1건씩만 처리. 5-2의 안전 게이트를 모두 통과해야 실행. 기본(옵션 없음)은 dry-run (DESIGN §4-1) | DESIGN 4-1 | WU-5 | Done | TC-950, TC-951, TC-953, TC-954 |  |  |  |
-| EVT-007 | EVT | CLI rollback 이전 제목 복원(복원도 이력 기록). 게이트: --live + enable_live + 영상 ID 직접 입력 확인 + 허용 목록 (DESIGN §4-1) | DESIGN 4-1 | WU-4, WU-5 | In Progress | TC-498, TC-520, TC-522, TC-683, TC-684, TC-913, TC-983, TC-984 |  |  |  |
+| EVT-007 | EVT | CLI rollback 이전 제목 복원(복원도 이력 기록). 게이트: --live + enable_live + 영상 ID 직접 입력 확인 + 허용 목록 (DESIGN §4-1) | DESIGN 4-1 | WU-4, WU-5 | Done | TC-498, TC-520, TC-522, TC-683, TC-684, TC-913, TC-983, TC-984 |  |  |  |
 | EVT-008 | EVT | CLI report 변경 전후 비교 리포트와 CSV 가져오기 (DESIGN §4-1) | DESIGN 4-1 | WU-6 | Done | TC-623, TC-660, TC-661, TC-674, TC-684 |  |  |  |
 | EVT-009 | EVT | CLI purge 오래된 이력 삭제(자동 DB 사본, 확인 필요) (DESIGN §4-1) | DESIGN 4-1 | WU-0 | Done |  |  |  |  |
 | EVT-101 | EVT | channels.list (mine=true, part=contentDetails) — 업로드 재생목록 ID 획득 (DESIGN §4-2) | DESIGN 4-2 | WU-2 | Done |  |  |  |  |
@@ -83,7 +83,7 @@
 | UX-003 | UX | 계획 확인(dry-run): plan --candidate N → SCR-003 diff와 계획 해시 → 마음에 들면 UX-004, 아니면 후보 수정 (04_ux §1) | 04_ux 1 | WU-4 | Done | TC-511 |  |  |  |
 | UX-004 | UX | 승인: approve --candidate N --approver 이름 → SCR-004 승인 완료(만료 시각 표시) (04_ux §1) | 04_ux 1 | WU-5 | Done |  |  |  |  |
 | UX-005 | UX | 실제 적용: apply --candidate N --live → SCR-005 적용 전 요약(영상 ID 직접 입력으로 확인) → 적용 → SCR-006  (04_ux §1) | 04_ux 1 | WU-5 | Done |  |  |  |  |
-| UX-006 | UX | 되돌리기: rollback --change N --live → SCR-005와 같은 확인 → SCR-006 결과 (04_ux §1) | 04_ux 1 | WU-4, WU-5 | In Progress |  |  |  |  |
+| UX-006 | UX | 되돌리기: rollback --change N --live → SCR-005와 같은 확인 → SCR-006 결과 (04_ux §1) | 04_ux 1 | WU-4, WU-5 | Done |  |  |  |  |
 | UX-007 | UX | 성과 보기: report --video ID (또는 --import-csv) → SCR-008 (04_ux §1) | 04_ux 1 | WU-6 | Done | TC-666 |  |  |  |
 | UX-008 | UX | 문제 해결: 오류 발생 → SCR-009 오류 안내 → 안내된 명령 실행 → 재시도 (04_ux §1) | 04_ux 1 | WU-0 | Done |  |  |  |  |
 | UX-009 | UX | 오래된 기록 정리: purge --before 날짜 → SCR-010 삭제 대상·자동 DB 사본·보존 목록 확인 → 확인 입력 → 완료 (04_ux §1) | 04_ux 1 | WU-0 | Done |  |  |  |  |

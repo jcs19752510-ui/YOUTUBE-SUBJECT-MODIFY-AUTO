@@ -1,3 +1,27 @@
+# ytitle — 유튜브 제목 안전 수정 도구 (시니어 생활팁)
+
+제목 후보를 검사하고, 사람이 승인한 것만 바꾸고, 기록하고, 되돌리는 로컬 명령어 도구입니다. 아무 옵션 없이 쓰면 항상 모의 실행이라 유튜브를 바꾸지 않습니다.
+
+## 시작하기 (Windows PowerShell)
+```
+git pull origin PROD_SCH
+py -3.12 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+pip install -e .
+pytest                      # 구글 연결 없이 전체 테스트
+python -m ytitle --help     # 명령 목록
+```
+Linux/macOS는 `python3 -m venv .venv`, `source .venv/bin/activate`만 다릅니다. PowerShell에서 스크립트 실행이 막히면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`가 필요할 수 있습니다.
+
+- **항상 이 프로젝트 폴더에서 실행하세요.** 지금은 실행한 폴더에 `data/`를 만듭니다.
+- 구글 로그인(`auth --read`)은 구글 클라우드 설정이 먼저 필요합니다: `docs/yt/03_manual_setup.md`
+- 실제 수정을 켜려면 `config/settings.local.yaml.example`을 `config/settings.local.yaml`로 복사해 고칩니다(처음에는 그대로 두세요).
+- 설계: `docs/yt/DESIGN.md`, 진행 상태: `docs/harness/STATE.md`, 단위별 테스트 결과서: `docs/harness/units/`
+- 이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.
+
+---
+
 # 13단계 개발 하네스 시스템 (범용 템플릿)
 
 20년차 개발/기획/설계/보안/디자인 담당자 기준으로 구성한 재사용 가능한 개발 파이프라인 하네스입니다.
