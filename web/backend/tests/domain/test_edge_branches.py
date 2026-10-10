@@ -5,15 +5,13 @@ import dataclasses
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 
 from ytweb.core.errors import ProblemError
 from ytweb.core.settings_store import set_web_setting
 from ytweb.db.models import Batch, BatchItem, Change, Suggestion, Video
 from ytweb.domain import common
-from ytweb.domain.batches import apply_one, create_draft, execute_batch, recover_running_items, verify_snippet
+from ytweb.domain.batches import apply_one, create_draft, recover_running_items, verify_snippet
 from ytweb.domain.changes import rollback_change
-from ytweb.domain.limits_quota import reserve_calls
 from ytweb.domain.suggestions import approve, edit_title, release_after_item
 
 from tests.domain.helpers import FaultyGateway, approved, approved_many, eligible_video_ids, queued_batch, suggest

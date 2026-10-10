@@ -13,7 +13,6 @@ from ytweb.db.models import Change, MetricsSnapshot, Video
 from ytweb.domain.seed import DEFAULT_COUNT, build_video_fields, seed_demo
 from ytweb.domain.suggestions import validate_title
 from ytweb.youtube.base import GatewayError
-from ytweb.youtube.mock import MockYouTubeGateway
 
 from tests.domain.helpers import eligible_video_ids
 

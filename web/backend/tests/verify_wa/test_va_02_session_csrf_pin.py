@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import re
 from datetime import timedelta
 
@@ -362,9 +363,11 @@ def test_pin_hash_scheme_salt_and_params(client, engine):
     csrf = login(client)
     _set_pin(client, csrf, "9753")
     with engine.connect() as c:
-        dump = repr(c.execute(text("select * from settings_kv")).fetchall())
-    assert "9753" not in dump.replace("scrypt", "") or "scrypt$" in dump  # 평문 키/값 형태로는 없다
-    assert re.search(r"'pin_hash', 'scrypt\$16384\$8\$1\$", dump) or "scrypt$16384$8$1$" in dump
+        stored = json.loads(c.execute(text("select value from settings_kv where key='pin_hash'")).scalar_one())
+        keys = [k for (k,) in c.execute(text("select key from settings_kv"))]
+    assert isinstance(stored, str) and stored.startswith("scrypt$16384$8$1$") and stored != "9753"
+    assert pin_mod.verify_pin_hash("9753", stored) and not pin_mod.verify_pin_hash("9754", stored)
+    assert "pin" not in keys  # 평문 PIN 용 키가 따로 없다
 
 
 @pytest.mark.parametrize("stored", ["", "scrypt", "scrypt$a$b$c$d$e", "md5$16384$8$1$AAAA$AAAA", "scrypt$0$8$1$AAAA$AAAA",
@@ -416,7 +419,7 @@ def test_pin_never_in_audit_rows_or_responses(client, engine):
         client.post("/api/v1/auth/session", json={"pin": "00009999"}, headers={"Origin": ORIGIN})
     with engine.connect() as c:
         rows = c.execute(text("select action, detail, target_id from audit_log order by id")).fetchall()
-        kv = c.execute(text("select value from settings_kv where key='pin_hash'")).scalar_one()
+        kv = json.loads(c.execute(text("select value from settings_kv where key='pin_hash'")).scalar_one())
     blob = repr(rows) + r.text
     for secret in (SECRET_PIN, "00009999", tok, csrf, str(kv)):
         assert secret not in blob

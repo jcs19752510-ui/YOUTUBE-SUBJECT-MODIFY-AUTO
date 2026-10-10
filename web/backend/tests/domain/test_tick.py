@@ -8,9 +8,9 @@ from sqlalchemy import func, select
 
 from ytweb.core import jobs
 from ytweb.core.settings_store import set_web_setting
-from ytweb.db.models import Batch, BatchItem, Change, Job, Suggestion, Video
+from ytweb.db.models import Batch, Change, Job, Suggestion, Video
 from ytweb.domain import handlers
-from ytweb.domain.batches import cancel_batch, create_draft, execute_batch, recover_running_items, run_due_items
+from ytweb.domain.batches import cancel_batch, create_draft, recover_running_items, run_due_items
 from ytweb.domain.common import set_default_env
 from ytweb.worker import Worker, load_domain_handlers
 

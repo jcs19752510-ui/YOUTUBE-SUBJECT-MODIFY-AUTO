@@ -6,7 +6,6 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
-from ytweb.core import jobs
 from ytweb.core.settings_store import set_web_setting
 from ytweb.db.models import Suggestion, Video
 from ytweb.domain.batches import apply_one, cancel_batch, create_draft, execute_batch
@@ -89,7 +88,6 @@ def test_tc_wb_118_video_detail_contents(seeded, env, clock, gw):
     assert d["limits"] == {"allowed": True, "reasons": [], "next_allowed_at": None}
     assert d["preserved"]["category_id"] and d["preserved"]["tags"] and d["preserved"]["default_language"] == "ko" and d["preserved"]["description_chars"] > 10
     assert d["description_excerpt"]
-    e = None
     with pytest.raises(ProblemError) as e:
         video_detail(seeded, "zzzzzzzzzzz", now=clock(), env=env)
     assert e.value.status == 404

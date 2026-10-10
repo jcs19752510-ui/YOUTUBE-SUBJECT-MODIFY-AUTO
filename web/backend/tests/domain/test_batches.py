@@ -11,7 +11,7 @@ from ytweb.core.errors import ProblemError
 from ytweb.core.settings_store import set_web_setting
 from ytweb.db.models import Batch, BatchItem, Job, Suggestion, Video
 from ytweb.domain.batches import apply_one, cancel_batch, create_draft, execute_batch
-from ytweb.domain.suggestions import approve, expire_stale_approvals
+from ytweb.domain.suggestions import approve
 
 from tests.domain.helpers import approved, approved_many, eligible_video_ids, queued_batch, suggest
 
