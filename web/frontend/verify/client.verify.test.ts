@@ -32,7 +32,9 @@ afterEach(() => {
 
 describe('CSRF·Idempotency-Key 부착 규칙', () => {
   it('TC-VF-001 GET 엔드포인트 전부는 X-CSRF-Token 도 Idempotency-Key 도 보내지 않는다', async () => {
-    const { client, calls } = await connectedClient([() => ok({ items: [], total: 0, page: 1, page_size: 1 })]);
+    const { client, calls } = await connectedClient([
+      () => ok({ items: [], total: 0, page: 1, page_size: 1 }),
+    ]);
     const api = createEndpoints(client);
     await api.dashboard();
     await api.videos({ page: 1 });
@@ -75,7 +77,9 @@ describe('CSRF·Idempotency-Key 부착 규칙', () => {
   });
 
   it('TC-VF-003 DELETE(로그아웃)도 CSRF 토큰을 보낸다', async () => {
-    const { client, calls } = await connectedClient([route('DELETE', '/api/v1/auth/session', () => json(204, null))]);
+    const { client, calls } = await connectedClient([
+      route('DELETE', '/api/v1/auth/session', () => json(204, null)),
+    ]);
     await client.logout();
     const del = calls.find((c) => c.method === 'DELETE');
     expect(del?.headers['x-csrf-token']).toBe('csrf-1');
@@ -101,7 +105,10 @@ describe('CSRF·Idempotency-Key 부착 규칙', () => {
     expect(keyed['/api/v1/batches']).toBe('KEY-A');
     expect(keyed['/api/v1/batches/1/execute']).toBe('KEY-B');
     expect(keyed['/api/v1/changes/1/rollback']).toBe('KEY-C');
-    const others = Object.entries(keyed).filter(([p]) => !['/api/v1/batches', '/api/v1/batches/1/execute', '/api/v1/changes/1/rollback'].includes(p));
+    const others = Object.entries(keyed).filter(
+      ([p]) =>
+        !['/api/v1/batches', '/api/v1/batches/1/execute', '/api/v1/changes/1/rollback'].includes(p),
+    );
     expect(others.length).toBeGreaterThanOrEqual(8);
     for (const [p, k] of others) expect(k, p).toBeUndefined();
   });
@@ -110,7 +117,9 @@ describe('CSRF·Idempotency-Key 부착 규칙', () => {
     const { client, calls } = await connectedClient([() => ok({})]);
     await client.request('POST', '/api/v1/batches', { body: {}, risky: true });
     await client.request('POST', '/api/v1/batches', { body: {}, risky: true });
-    const keys = calls.filter((c) => c.path === '/api/v1/batches').map((c) => c.headers['idempotency-key']);
+    const keys = calls
+      .filter((c) => c.path === '/api/v1/batches')
+      .map((c) => c.headers['idempotency-key']);
     expect(keys[0]).toMatch(/^[0-9a-f-]{32,36}$/);
     expect(keys[0]).not.toBe(keys[1]);
   });
@@ -211,7 +220,9 @@ describe('Idempotency-Key 재사용 규칙', () => {
   });
 
   it('TC-VF-013 crypto.randomUUID 가 없는 환경에서도 32자리 16진수 키를 만든다', () => {
-    vi.stubGlobal('crypto', { getRandomValues: (b: Uint8Array) => globalThis.crypto && b.fill(171) });
+    vi.stubGlobal('crypto', {
+      getRandomValues: (b: Uint8Array) => globalThis.crypto && b.fill(171),
+    });
     const k = newKey();
     expect(k).toMatch(/^[0-9a-f]{32}$/);
   });
@@ -235,7 +246,11 @@ describe('401 재발급 1회와 재시도', () => {
       }),
     ]);
     await client.bootstrap();
-    await client.request('POST', '/api/v1/batches/1/execute', { body: {}, risky: true, idempotencyKey: 'KEEP' });
+    await client.request('POST', '/api/v1/batches/1/execute', {
+      body: {},
+      risky: true,
+      idempotencyKey: 'KEEP',
+    });
     const ex = calls.filter((c) => c.path === '/api/v1/batches/1/execute');
     expect(ex).toHaveLength(2);
     expect(ex[0]?.headers['idempotency-key']).toBe('KEEP');
@@ -266,10 +281,14 @@ describe('401 재발급 1회와 재시도', () => {
     const { client, calls } = makeClient([
       runawayGuard(),
       ...authedHandlers,
-      route('POST', '/api/v1/batches/1/cancel', () => problem(401, 'session_required', '세션 만료')),
+      route('POST', '/api/v1/batches/1/cancel', () =>
+        problem(401, 'session_required', '세션 만료'),
+      ),
     ]);
     await client.bootstrap();
-    await expect(client.request('POST', '/api/v1/batches/1/cancel', { body: {} })).rejects.toMatchObject({
+    await expect(
+      client.request('POST', '/api/v1/batches/1/cancel', { body: {} }),
+    ).rejects.toMatchObject({
       status: 401,
       code: 'session_required',
     });
@@ -306,9 +325,13 @@ describe('401 재발급 1회와 재시도', () => {
 
   it('TC-VF-019 CSRF 와 무관한 403(origin_not_allowed 등)은 재발급·재시도를 하지 않는다', async () => {
     const { client, calls } = await connectedClient([
-      route('POST', '/api/v1/suggestions/1/reject', () => problem(403, 'origin_not_allowed', 'Origin')),
+      route('POST', '/api/v1/suggestions/1/reject', () =>
+        problem(403, 'origin_not_allowed', 'Origin'),
+      ),
     ]);
-    await expect(client.request('POST', '/api/v1/suggestions/1/reject', { body: {} })).rejects.toMatchObject({
+    await expect(
+      client.request('POST', '/api/v1/suggestions/1/reject', { body: {} }),
+    ).rejects.toMatchObject({
       code: 'origin_not_allowed',
     });
     expect(calls.filter((c) => c.path === '/api/v1/suggestions/1/reject')).toHaveLength(1);
@@ -342,7 +365,9 @@ describe('401 재발급 1회와 재시도', () => {
       }),
     ]);
     await client.bootstrap();
-    await expect(client.request('POST', '/api/v1/batches/1/cancel', { body: {} })).rejects.toMatchObject({
+    await expect(
+      client.request('POST', '/api/v1/batches/1/cancel', { body: {} }),
+    ).rejects.toMatchObject({
       code: 'session_expired',
     });
     expect(client.getSnapshot()).toMatchObject({ state: 'pin_required', expired: true });
@@ -353,7 +378,11 @@ describe('401 재발급 1회와 재시도', () => {
     let authed = false;
     const { client, calls } = makeClient([
       route('GET', '/api/v1/auth/me', () =>
-        json(200, { authenticated: authed, pin_required: !authed, csrf_token: authed ? 'c' : null }),
+        json(200, {
+          authenticated: authed,
+          pin_required: !authed,
+          csrf_token: authed ? 'c' : null,
+        }),
       ),
       route('POST', '/api/v1/auth/session', () => {
         authed = true;
@@ -375,11 +404,14 @@ describe('401 재발급 1회와 재시도', () => {
 describe('오류 형태 구분', () => {
   it('TC-VF-023 problem+json 의 필드가 문자열이 아니어도(숫자·객체·배열) 안전한 기본값으로 바꾼다', async () => {
     const { client } = await connectedClient([
-      route('GET', '/api/v1/dashboard', () =>
-        new Response(JSON.stringify({ title: 42, detail: { a: 1 }, code: 7, hint: ['x'] }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/problem+json' },
-        }),
+      route(
+        'GET',
+        '/api/v1/dashboard',
+        () =>
+          new Response(JSON.stringify({ title: 42, detail: { a: 1 }, code: 7, hint: ['x'] }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/problem+json' },
+          }),
       ),
     ]);
     const e = await client.request('GET', '/api/v1/dashboard').catch((x: unknown) => x);
@@ -398,8 +430,12 @@ describe('오류 형태 구분', () => {
     ['문자열', '"boom"'],
     ['빈 본문', ''],
   ])('TC-VF-024 오류 본문이 %s 이어도 ApiError 로 바뀐다', async (_n, body) => {
-    const { client } = await connectedClient([route('GET', '/api/v1/dashboard', () => new Response(body, { status: 500 }))]);
-    const e = (await client.request('GET', '/api/v1/dashboard').catch((x: unknown) => x)) as ApiError;
+    const { client } = await connectedClient([
+      route('GET', '/api/v1/dashboard', () => new Response(body, { status: 500 })),
+    ]);
+    const e = (await client
+      .request('GET', '/api/v1/dashboard')
+      .catch((x: unknown) => x)) as ApiError;
     expect(e).toBeInstanceOf(ApiError);
     expect(e.code).toBe('http_500');
     expect(e.title).toBe('요청을 처리하지 못했습니다');
@@ -408,17 +444,28 @@ describe('오류 형태 구분', () => {
   it('TC-VF-025 프록시가 돌려준 HTML 오류 페이지(502)는 코드 http_502 로만 알리고 HTML 을 화면용 문구에 싣지 않는다', async () => {
     const html = '<html><body><h1>502 Bad Gateway</h1><script>alert(1)</script></body></html>';
     const { client } = await connectedClient([
-      route('GET', '/api/v1/dashboard', () => new Response(html, { status: 502, headers: { 'Content-Type': 'text/html' } })),
+      route(
+        'GET',
+        '/api/v1/dashboard',
+        () => new Response(html, { status: 502, headers: { 'Content-Type': 'text/html' } }),
+      ),
     ]);
-    const e = (await client.request('GET', '/api/v1/dashboard').catch((x: unknown) => x)) as ApiError;
+    const e = (await client
+      .request('GET', '/api/v1/dashboard')
+      .catch((x: unknown) => x)) as ApiError;
     expect(e.code).toBe('http_502');
     expect(e.status).toBe(502);
     expect(`${e.title}${e.detail}${e.hint}`).not.toMatch(/<|script|Bad Gateway/);
   });
 
   it('TC-VF-026 200 인데 JSON 이 깨진 응답은 bad_response 로 구분한다', async () => {
-    const { client } = await connectedClient([route('GET', '/api/v1/dashboard', () => new Response('{"a":', { status: 200 }))]);
-    await expect(client.request('GET', '/api/v1/dashboard')).rejects.toMatchObject({ code: 'bad_response', status: 200 });
+    const { client } = await connectedClient([
+      route('GET', '/api/v1/dashboard', () => new Response('{"a":', { status: 200 })),
+    ]);
+    await expect(client.request('GET', '/api/v1/dashboard')).rejects.toMatchObject({
+      code: 'bad_response',
+      status: 200,
+    });
   });
 
   it('TC-VF-027 200 빈 본문과 204 는 undefined 로 처리하고 오류로 보지 않는다', async () => {
@@ -432,14 +479,23 @@ describe('오류 형태 구분', () => {
 
   it('TC-VF-028 429 의 Retry-After 는 안내에 넣고, 다른 상태 코드의 Retry-After 는 무시한다', async () => {
     const { client } = await connectedClient([
-      route('GET', '/api/v1/a', () =>
-        new Response(JSON.stringify({ code: 'rate_limited', title: '많음', hint: '잠시' }), {
-          status: 429,
-          headers: { 'Retry-After': '17' },
-        }),
+      route(
+        'GET',
+        '/api/v1/a',
+        () =>
+          new Response(JSON.stringify({ code: 'rate_limited', title: '많음', hint: '잠시' }), {
+            status: 429,
+            headers: { 'Retry-After': '17' },
+          }),
       ),
-      route('GET', '/api/v1/b', () =>
-        new Response(JSON.stringify({ code: 'x', title: 't' }), { status: 503, headers: { 'Retry-After': '99' } }),
+      route(
+        'GET',
+        '/api/v1/b',
+        () =>
+          new Response(JSON.stringify({ code: 'x', title: 't' }), {
+            status: 503,
+            headers: { 'Retry-After': '99' },
+          }),
       ),
     ]);
     const a = (await client.request('GET', '/api/v1/a').catch((x: unknown) => x)) as ApiError;
@@ -459,7 +515,9 @@ describe('오류 형태 구분', () => {
       ...authedHandlers,
       route('GET', '/api/v1/dashboard', () => ok({})),
     ]);
-    const e = (await client.request('GET', '/api/v1/dashboard').catch((x: unknown) => x)) as ApiError;
+    const e = (await client
+      .request('GET', '/api/v1/dashboard')
+      .catch((x: unknown) => x)) as ApiError;
     expect(e).toMatchObject({ status: 0, code: 'network_error' });
     expect(e.isNetwork).toBe(true);
     expect(client.getSnapshot().state).toBe('offline');
@@ -470,7 +528,9 @@ describe('오류 형태 구분', () => {
   });
 
   it('TC-VF-030 서버가 오류 응답(500)을 주는 것은 네트워크 끊김이 아니다: 상태는 online 유지', async () => {
-    const { client } = await connectedClient([route('GET', '/api/v1/dashboard', () => problem(500, 'boom', '서버 오류'))]);
+    const { client } = await connectedClient([
+      route('GET', '/api/v1/dashboard', () => problem(500, 'boom', '서버 오류')),
+    ]);
     await client.request('GET', '/api/v1/dashboard').catch(() => undefined);
     expect(client.getSnapshot().state).toBe('online');
   });
@@ -496,38 +556,71 @@ describe('오류 형태 구분', () => {
   });
 
   // 결함 DEF-6-001(Low): 응답이 오지 않는 서버에 대한 시간 제한이 없다. 고쳐지면 .fails 를 제거할 것.
-  it.fails('TC-VF-032 응답이 영영 오지 않으면 일정 시간 뒤 연결 끊김 오류로 끝난다(시간 제한) [DEF-6-001]', async () => {
-    vi.useFakeTimers();
-    const client = new ApiClient({ fetchImpl: (() => new Promise<Response>(() => undefined)) as typeof fetch });
-    let settled = false;
-    const p = client.request('GET', '/api/v1/dashboard').then(
-      () => (settled = true),
-      () => (settled = true),
-    );
-    await vi.advanceTimersByTimeAsync(10 * 60 * 1000); // 10분
-    expect(settled).toBe(true);
-    void p;
-  });
+  it.fails(
+    'TC-VF-032 응답이 영영 오지 않으면 일정 시간 뒤 연결 끊김 오류로 끝난다(시간 제한) [DEF-6-001]',
+    async () => {
+      vi.useFakeTimers();
+      const client = new ApiClient({
+        fetchImpl: (() => new Promise<Response>(() => undefined)) as typeof fetch,
+      });
+      let settled = false;
+      const p = client.request('GET', '/api/v1/dashboard').then(
+        () => (settled = true),
+        () => (settled = true),
+      );
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000); // 10분
+      expect(settled).toBe(true);
+      void p;
+    },
+  );
 
   it('TC-VF-033 오류 분류(isLimit): 서버가 실제로 내는 코드 중 한도 계열만 true 다', () => {
     const mk = (status: number, code: string) => new ApiError({ status, code, title: 't' });
-    const limit = [mk(429, 'rate_limited'), mk(429, 'quota_exhausted'), mk(409, 'limit_reached'), mk(429, 'pin_locked')];
+    const limit = [
+      mk(429, 'rate_limited'),
+      mk(429, 'quota_exhausted'),
+      mk(409, 'limit_reached'),
+      mk(429, 'pin_locked'),
+    ];
     for (const e of limit) expect(e.isLimit, e.code).toBe(true);
     const notLimit = [
-      'ai_no_candidates', 'ai_unavailable', 'already_in_batch', 'batch_empty', 'batch_not_found',
-      'confirm_text_mismatch', 'csrf_invalid', 'duplicate_suggestion', 'gateway_error', 'idempotency_key_required',
-      'pin_invalid', 'precheck_stale', 'schedule_overflow', 'session_required', 'suggestion_blocked',
-      'title_too_long', 'typed_video_id_mismatch', 'validation_error', 'video_excluded',
+      'ai_no_candidates',
+      'ai_unavailable',
+      'already_in_batch',
+      'batch_empty',
+      'batch_not_found',
+      'confirm_text_mismatch',
+      'csrf_invalid',
+      'duplicate_suggestion',
+      'gateway_error',
+      'idempotency_key_required',
+      'pin_invalid',
+      'precheck_stale',
+      'schedule_overflow',
+      'session_required',
+      'suggestion_blocked',
+      'title_too_long',
+      'typed_video_id_mismatch',
+      'validation_error',
+      'video_excluded',
     ];
     for (const c of notLimit) expect(mk(400, c).isLimit, c).toBe(false);
   });
 
   // 결함 DEF-6-002(Low, 잠복): 한도 판별 정규식 /rate/ 가 generate·operate 같은 단어에도 걸린다.
-  it.fails('TC-VF-034 "generate_failed" 같은 한도와 무관한 코드를 한도 초과로 분류하지 않는다 [DEF-6-002]', () => {
-    for (const code of ['generate_failed', 'migrate_error', 'operate_failed', 'accurate_mismatch']) {
-      expect(new ApiError({ status: 500, code, title: 't' }).isLimit, code).toBe(false);
-    }
-  });
+  it.fails(
+    'TC-VF-034 "generate_failed" 같은 한도와 무관한 코드를 한도 초과로 분류하지 않는다 [DEF-6-002]',
+    () => {
+      for (const code of [
+        'generate_failed',
+        'migrate_error',
+        'operate_failed',
+        'accurate_mismatch',
+      ]) {
+        expect(new ApiError({ status: 500, code, title: 't' }).isLimit, code).toBe(false);
+      }
+    },
+  );
 });
 
 describe('세션 수명', () => {
@@ -576,21 +669,31 @@ describe('세션 수명', () => {
   });
 
   it('TC-VF-038 오류·재시도 경로에서 console 로 토큰·PIN 을 출력하지 않는다', async () => {
-    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => undefined));
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) =>
+      vi.spyOn(console, m).mockImplementation(() => undefined),
+    );
     const { client } = makeClient([
-      route('GET', '/api/v1/auth/me', () => json(200, { authenticated: false, pin_required: true, csrf_token: null })),
+      route('GET', '/api/v1/auth/me', () =>
+        json(200, { authenticated: false, pin_required: true, csrf_token: null }),
+      ),
       route('POST', '/api/v1/auth/session', () => problem(401, 'pin_invalid', 'PIN 불일치')),
     ]);
     await client.bootstrap();
     await client.submitPin('424242').catch(() => undefined);
-    const out = spies.flatMap((s) => s.mock.calls).flat().map(String).join(' ');
+    const out = spies
+      .flatMap((s) => s.mock.calls)
+      .flat()
+      .map(String)
+      .join(' ');
     expect(out).not.toContain('424242');
     expect(out).not.toContain('csrf-1');
   });
 
   it('TC-VF-039 PIN 이 필요한 서버에서 틀린 PIN 은 pin_required 상태를 유지하고 error 상태로 바뀌지 않는다', async () => {
     const { client } = makeClient([
-      route('GET', '/api/v1/auth/me', () => json(200, { authenticated: false, pin_required: true, csrf_token: null })),
+      route('GET', '/api/v1/auth/me', () =>
+        json(200, { authenticated: false, pin_required: true, csrf_token: null }),
+      ),
       route('POST', '/api/v1/auth/session', () => problem(401, 'pin_invalid', 'PIN 불일치')),
     ]);
     await client.bootstrap();

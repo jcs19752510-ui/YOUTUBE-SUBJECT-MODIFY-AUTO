@@ -6,7 +6,14 @@ import type { SettingsData } from '../src/api/types';
 import { App } from '../src/app/App';
 import { SettingsPage } from '../src/pages/SettingsPage';
 import { dashboard } from '../src/test/fixtures';
-import { connectedClient, json, problem, renderWithApp, route, type Handler } from '../src/test/utils';
+import {
+  connectedClient,
+  json,
+  problem,
+  renderWithApp,
+  route,
+  type Handler,
+} from '../src/test/utils';
 
 const base: SettingsData = {
   daily_apply_cap: 10,
@@ -31,8 +38,11 @@ const field = (re: RegExp) => screen.getByLabelText(re) as HTMLInputElement;
 const saveBtn = () => screen.getByRole('button', { name: '저장' });
 
 describe('설정: 라이브 허용은 편집 불가 (W-014, 요청서 설정 화면)', () => {
-  it('TC-VF-@@@ 안전 설정 탭의 입력 요소는 하루 상한·영상당 제안 수·말투 3개뿐이고 체크박스·스위치·라디오가 없다', async () => {
-    await goSettings({ ...base, read_only: { enable_live: true, live_allowlist: ['vidAAAAAAA1', 'vidBBBBBBB2'], note: 'n' } });
+  it('TC-VF-069 안전 설정 탭의 입력 요소는 하루 상한·영상당 제안 수·말투 3개뿐이고 체크박스·스위치·라디오가 없다', async () => {
+    await goSettings({
+      ...base,
+      read_only: { enable_live: true, live_allowlist: ['vidAAAAAAA1', 'vidBBBBBBB2'], note: 'n' },
+    });
     expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
     expect(screen.getAllByRole('textbox')).toHaveLength(1);
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
@@ -41,8 +51,11 @@ describe('설정: 라이브 허용은 편집 불가 (W-014, 요청서 설정 화
     expect(screen.queryAllByRole('combobox')).toHaveLength(0);
   });
 
-  it('TC-VF-@@@ 서버가 enable_live=true 를 주어도 켜짐은 글자(▲ 기호 포함)로만 보이고 조작 버튼이 없다', async () => {
-    await goSettings({ ...base, read_only: { enable_live: true, live_allowlist: ['vidAAAAAAA1'], note: 'n' } });
+  it('TC-VF-070 서버가 enable_live=true 를 주어도 켜짐은 글자(▲ 기호 포함)로만 보이고 조작 버튼이 없다', async () => {
+    await goSettings({
+      ...base,
+      read_only: { enable_live: true, live_allowlist: ['vidAAAAAAA1'], note: 'n' },
+    });
     const dd = document.querySelector('.readonly-kv dd') as HTMLElement;
     expect(within(dd).queryAllByRole('button')).toHaveLength(0);
     expect(within(dd).queryAllByRole('textbox')).toHaveLength(0);
@@ -51,7 +64,7 @@ describe('설정: 라이브 허용은 편집 불가 (W-014, 요청서 설정 화
     expect(screen.getAllByText(/이 화면에서는 켤 수 없습니다/).length).toBeGreaterThan(0);
   });
 
-  it('TC-VF-@@@ 저장 요청 본문에는 허용된 키(daily_apply_cap·suggestions_per_video·tone)만 들어가고 라이브 관련 키가 없다', async () => {
+  it('TC-VF-071 저장 요청 본문에는 허용된 키(daily_apply_cap·suggestions_per_video·tone)만 들어가고 라이브 관련 키가 없다', async () => {
     const user = userEvent.setup();
     const { calls } = await goSettings();
     fireEvent.change(field(/하루/), { target: { value: '12' } });
@@ -62,12 +75,18 @@ describe('설정: 라이브 허용은 편집 불가 (W-014, 요청서 설정 화
     expect(JSON.stringify(body)).not.toMatch(/live|allow/i);
   });
 
-  it('TC-VF-@@@ 서버가 setting_not_allowed(403/422)로 거절하면 사유를 보여 주고 화면 값이 서버 값을 가장하지 않는다', async () => {
+  it('TC-VF-072 서버가 setting_not_allowed(403/422)로 거절하면 사유를 보여 주고 화면 값이 서버 값을 가장하지 않는다', async () => {
     const user = userEvent.setup();
-    await goSettings(base, [route('PATCH', '/api/v1/settings', () => problem(403, 'setting_not_allowed', '이 설정은 화면에서 바꿀 수 없습니다'))]);
+    await goSettings(base, [
+      route('PATCH', '/api/v1/settings', () =>
+        problem(403, 'setting_not_allowed', '이 설정은 화면에서 바꿀 수 없습니다'),
+      ),
+    ]);
     fireEvent.change(field(/하루/), { target: { value: '12' } });
     await user.click(saveBtn());
-    expect((await screen.findAllByText('이 설정은 화면에서 바꿀 수 없습니다')).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText('이 설정은 화면에서 바꿀 수 없습니다')).length,
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -84,7 +103,7 @@ describe('설정: 값 범위 경계 (하루 상한 1~20, 영상당 제안 1~5, �
     ['', false],
     ['2e0', true], // Number("2e0") === 2 라 정수로 인정됨(허용 범위 안)
     ['1e3', false],
-  ])('TC-VF-@@@ 하루 반영 상한 입력 "%s" → 저장 가능 여부 %s', async (v, enabled) => {
+  ])('TC-VF-073 하루 반영 상한 입력 "%s" → 저장 가능 여부 %s', async (v, enabled) => {
     await goSettings();
     fireEvent.change(field(/하루/), { target: { value: v } });
     if (enabled) expect(saveBtn()).toBeEnabled();
@@ -98,14 +117,14 @@ describe('설정: 값 범위 경계 (하루 상한 1~20, 영상당 제안 1~5, �
     ['6', false],
     ['2.5', false],
     ['', false],
-  ])('TC-VF-@@@ 영상당 제안 수 입력 "%s" → 저장 가능 여부 %s', async (v, enabled) => {
+  ])('TC-VF-074 영상당 제안 수 입력 "%s" → 저장 가능 여부 %s', async (v, enabled) => {
     await goSettings();
     fireEvent.change(field(/영상 하나당|영상당|제안/), { target: { value: v } });
     if (enabled) expect(saveBtn()).toBeEnabled();
     else expect(saveBtn()).toBeDisabled();
   });
 
-  it('TC-VF-@@@ 값이 바뀌지 않았으면 저장 버튼이 꺼져 있고, 바꿨다 되돌려도 꺼진다', async () => {
+  it('TC-VF-075 값이 바뀌지 않았으면 저장 버튼이 꺼져 있고, 바꿨다 되돌려도 꺼진다', async () => {
     await goSettings();
     expect(saveBtn()).toBeDisabled();
     fireEvent.change(field(/하루/), { target: { value: '11' } });
@@ -122,7 +141,7 @@ describe('설정: 값 범위 경계 (하루 상한 1~20, 영상당 제안 1~5, �
     ['이모지 20개(코드포인트 20)', '😀'.repeat(20), true],
     ['이모지 21개', '😀'.repeat(21), false],
     ['쉼표만(빈 항목은 무시)', ',,,', true],
-  ])('TC-VF-@@@ 말투 목록 경계: %s', async (_n, v, enabled) => {
+  ])('TC-VF-076 말투 목록 경계: %s', async (_n, v, enabled) => {
     await goSettings();
     fireEvent.change(field(/말투/), { target: { value: v } });
     if (enabled) expect(saveBtn()).toBeEnabled();
@@ -130,15 +149,22 @@ describe('설정: 값 범위 경계 (하루 상한 1~20, 영상당 제안 1~5, �
   });
 
   // 결함 DEF-6-003(Low): 말투 입력칸이 maxLength=40(전체 글자수)이라 서버가 허용하는 5개×20자를 입력할 수 없다.
-  it.fails('TC-VF-@@@ 사용자가 말투 3개(각 15자, 쉼표 포함 약 49자)를 직접 입력하면 잘리지 않고 그대로 저장된다 [DEF-6-003]', async () => {
-    const user = userEvent.setup();
-    await goSettings();
-    const tone = field(/말투/);
-    await user.clear(tone);
-    const text = ['가나다라마바사아자차카타파하가', '나다라마바사아자차카타파하가나', '다라마바사아자차카타파하가나다'].join(', ');
-    await user.type(tone, text);
-    expect(tone.value).toBe(text);
-  });
+  it.fails(
+    'TC-VF-077 사용자가 말투 3개(각 15자, 쉼표 포함 약 49자)를 직접 입력하면 잘리지 않고 그대로 저장된다 [DEF-6-003]',
+    async () => {
+      const user = userEvent.setup();
+      await goSettings();
+      const tone = field(/말투/);
+      await user.clear(tone);
+      const text = [
+        '가나다라마바사아자차카타파하가',
+        '나다라마바사아자차카타파하가나',
+        '다라마바사아자차카타파하가나다',
+      ].join(', ');
+      await user.type(tone, text);
+      expect(tone.value).toBe(text);
+    },
+  );
 });
 
 describe('설정: PIN 규칙 (S-W02 보조)', () => {
@@ -155,7 +181,7 @@ describe('설정: PIN 규칙 (S-W02 보조)', () => {
     ['공백 포함', '12 34', false],
     ['앞뒤 공백', ' 1234 ', false],
     ['기호', '12-34', false],
-  ])('TC-VF-@@@ 새 PIN 형식(%s) → 설정 가능 여부 %s', async (_n, v, enabled) => {
+  ])('TC-VF-078 새 PIN 형식(%s) → 설정 가능 여부 %s', async (_n, v, enabled) => {
     await goSettings(base, [], pinTab);
     const inputs = screen.getAllByLabelText(/PIN/, { selector: 'input' }) as HTMLInputElement[];
     const newBox = inputs.find((i) => i.autocomplete === 'new-password')!;
@@ -168,33 +194,44 @@ describe('설정: PIN 규칙 (S-W02 보조)', () => {
     void labelNew;
   });
 
-  it('TC-VF-@@@ 재입력이 다르면 설정할 수 없고 불일치 안내가 나온다', async () => {
+  it('TC-VF-079 재입력이 다르면 설정할 수 없고 불일치 안내가 나온다', async () => {
     await goSettings(base, [], pinTab);
-    const [a, b] = screen.getAllByLabelText(/PIN/, { selector: 'input' }).filter((i) => (i as HTMLInputElement).autocomplete === 'new-password') as HTMLInputElement[];
+    const [a, b] = screen
+      .getAllByLabelText(/PIN/, { selector: 'input' })
+      .filter((i) => (i as HTMLInputElement).autocomplete === 'new-password') as HTMLInputElement[];
     fireEvent.change(a!, { target: { value: '1234' } });
     fireEvent.change(b!, { target: { value: '1235' } });
     expect(screen.getByRole('button', { name: /PIN 설정/ })).toBeDisabled();
     expect(screen.getByText('PIN 이 서로 다릅니다.')).toBeInTheDocument();
   });
 
-  it('TC-VF-@@@ PIN 입력칸은 모두 password 형식이며, 저장 뒤 입력칸이 비워지고 PIN 이 화면 텍스트에 남지 않는다', async () => {
+  it('TC-VF-080 PIN 입력칸은 모두 password 형식이며, 저장 뒤 입력칸이 비워지고 PIN 이 화면 텍스트에 남지 않는다', async () => {
     const user = userEvent.setup();
-    const { calls } = await goSettings(base, [route('PATCH', '/api/v1/settings', () => json(200, { ...base, pin_enabled: true }))], pinTab);
+    const { calls } = await goSettings(
+      base,
+      [route('PATCH', '/api/v1/settings', () => json(200, { ...base, pin_enabled: true }))],
+      pinTab,
+    );
     const pwds = document.querySelectorAll('input');
     for (const i of Array.from(pwds)) expect(i.type).toBe('password');
-    const news = screen.getAllByLabelText(/PIN/, { selector: 'input' }).filter((i) => (i as HTMLInputElement).autocomplete === 'new-password') as HTMLInputElement[];
+    const news = screen
+      .getAllByLabelText(/PIN/, { selector: 'input' })
+      .filter((i) => (i as HTMLInputElement).autocomplete === 'new-password') as HTMLInputElement[];
     fireEvent.change(news[0]!, { target: { value: '482915' } });
     fireEvent.change(news[1]!, { target: { value: '482915' } });
     await user.click(screen.getByRole('button', { name: /PIN 설정/ }));
     await waitFor(() => expect(calls.some((c) => c.method === 'PATCH')).toBe(true));
-    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ pin: { action: 'set', new_pin: '482915' } });
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+      pin: { action: 'set', new_pin: '482915' },
+    });
     await waitFor(() => {
-      for (const i of Array.from(document.querySelectorAll('input'))) expect((i as HTMLInputElement).value).toBe('');
+      for (const i of Array.from(document.querySelectorAll('input')))
+        expect((i as HTMLInputElement).value).toBe('');
     });
     expect(document.body.textContent).not.toContain('482915');
   });
 
-  it('TC-VF-@@@ PIN 이 이미 있으면 현재 PIN 없이는 변경할 수 없고, 변경 본문에 current_pin 이 포함된다', async () => {
+  it('TC-VF-081 PIN 이 이미 있으면 현재 PIN 없이는 변경할 수 없고, 변경 본문에 current_pin 이 포함된다', async () => {
     const { calls } = await goSettings({ ...base, pin_enabled: true }, [], pinTab);
     const all = screen.getAllByLabelText(/PIN/, { selector: 'input' }) as HTMLInputElement[];
     const cur = all.find((i) => i.autocomplete === 'current-password')!;
@@ -207,21 +244,25 @@ describe('설정: PIN 규칙 (S-W02 보조)', () => {
     expect(btn).toBeEnabled();
     fireEvent.click(btn);
     await waitFor(() => expect(calls.some((c) => c.method === 'PATCH')).toBe(true));
-    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ pin: { action: 'set', new_pin: '654321', current_pin: '111111' } });
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+      pin: { action: 'set', new_pin: '654321', current_pin: '111111' },
+    });
   });
 
-  it('TC-VF-@@@ PIN 해제는 확인 대화상자의 현재 PIN 입력 전까지 실행할 수 없고, 취소하면 요청이 없다', async () => {
+  it('TC-VF-082 PIN 해제는 확인 대화상자의 현재 PIN 입력 전까지 실행할 수 없고, 취소하면 요청이 없다', async () => {
     const user = userEvent.setup();
     const { calls } = await goSettings({ ...base, pin_enabled: true }, [], pinTab);
     await user.click(await screen.findByRole('button', { name: 'PIN 해제' }));
     const d = await screen.findByRole('dialog');
-    const submit = within(d).getAllByRole('button').find((b) => b.getAttribute('type') === 'submit')!;
+    const submit = within(d)
+      .getAllByRole('button')
+      .find((b) => b.getAttribute('type') === 'submit')!;
     expect(submit).toBeDisabled();
     await user.click(within(d).getByRole('button', { name: '취소' }));
     expect(calls.some((c) => c.method === 'PATCH')).toBe(false);
   });
 
-  it('TC-VF-@@@ 틀린 현재 PIN(401 pin_invalid)은 대화상자 안에 안내하고 세션 재발급·만료 창을 띄우지 않는다', async () => {
+  it('TC-VF-083 틀린 현재 PIN(401 pin_invalid)은 대화상자 안에 안내하고 세션 재발급·만료 창을 띄우지 않는다', async () => {
     const user = userEvent.setup();
     const c = await connectedClient([
       route('GET', '/api/v1/settings', () => json(200, { ...base, pin_enabled: true })),
@@ -233,7 +274,11 @@ describe('설정: PIN 규칙 (S-W02 보조)', () => {
     const meBefore = c.calls.filter((x) => x.path === '/api/v1/auth/me').length;
     const d = await screen.findByRole('dialog');
     fireEvent.change(within(d).getByLabelText(/현재 PIN/), { target: { value: '0000' } });
-    await user.click(within(d).getAllByRole('button').find((b) => b.getAttribute('type') === 'submit')!);
+    await user.click(
+      within(d)
+        .getAllByRole('button')
+        .find((b) => b.getAttribute('type') === 'submit')!,
+    );
     expect((await within(d).findAllByText('PIN 이 맞지 않습니다')).length).toBeGreaterThan(0);
     expect(screen.queryByText('세션이 만료되었습니다')).toBeNull();
     expect(c.calls.filter((x) => x.path === '/api/v1/auth/session')).toHaveLength(0);
