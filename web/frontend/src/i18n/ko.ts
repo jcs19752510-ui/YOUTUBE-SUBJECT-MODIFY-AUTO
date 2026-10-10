@@ -193,6 +193,7 @@ export const ko = {
     googleConnected: '구글 연결됨',
     googleDisconnected: '구글 연결 안 됨',
     liveOff: '실제 반영(라이브): 꺼짐',
+    liveOn: '실제 반영(라이브): 켜짐',
     countsTitle: '영상 현황',
     counts: {
       videos: '전체 영상',
@@ -242,6 +243,8 @@ export const ko = {
     excludedWhy: '제외 사유',
     shortBadge: '쇼츠',
     selectedCount: (n: number) => `${n}개 선택됨`,
+    generateOver: (max: number) =>
+      `한 번에 최대 ${max}개까지 만들 수 있습니다. 선택을 줄여 주세요.`,
     clearSelection: '선택 모두 해제',
     generate: '선택 영상 AI 제안 생성',
     generating: '제안 생성 중…',
@@ -459,6 +462,7 @@ export const ko = {
     emptyBody: '배치를 실행하면 여기에 기록됩니다.',
     rollback: '롤백',
     notRollbackable: '되돌릴 수 없음',
+    modeDemo: '데모',
     notRollbackableWhy: '이후에 다른 변경이 있거나 이미 되돌려진 기록입니다.',
     rbTitle: '이 변경을 되돌릴까요?',
     rbBody:

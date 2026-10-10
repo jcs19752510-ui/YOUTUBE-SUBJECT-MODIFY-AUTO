@@ -71,7 +71,7 @@ def _eligibility(session: Session, sug: Suggestion | None, video: Video | None, 
         return "video_excluded", "제외 대상 영상입니다: " + ", ".join(reasons)
     if is_blocking(sug):
         return "suggestion_blocked", "검증에서 차단된 제안입니다."
-    report = check_video_limits(session, video.video_id, now, env.policy, cap)
+    report = check_video_limits(session, video.video_id, now, env.limits_policy, cap)
     failures = [c for c in report.failures if c.code != "DAILY"]
     if failures:
         return "limit_" + failures[0].code.lower(), " / ".join(c.message for c in failures)
@@ -292,7 +292,7 @@ def cancel_batch(session: Session, batch_id: int, *, now: datetime, env: Env, ac
 @dataclass(frozen=True)
 class ItemOutcome:
     item_id: int
-    status: str            # success | failed | skipped | not_pending
+    status: str            # success | failed | skipped | not_pending | deferred(오늘 몫 소진, 다음 날로 이월)
     code: str | None
     change_id: int | None
 
@@ -384,8 +384,15 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         raise StepFailure("pending_change_exists", f"이 영상에 결과가 확정되지 않은 변경 기록(#{stale[0]})이 있어 중단했습니다.")
     # 3) 한도
     cap = effective_daily_cap(session, policy)
-    report = check_video_limits(session, video.video_id, now, policy, cap)
+    report = check_video_limits(session, video.video_id, now, env.limits_policy, cap)
     if not report.passed:
+        if all(c.code == "DAILY" for c in report.failures):
+            # 오늘 몫만 찬 것이라 건너뛰지 않고 다음 날로 이월한다(W-008: 초과분은 다음 날 자동 예약). 실패 기록·쿼터 소비 없음.
+            item.status, item.scheduled_date, item.updated_at = "pending", kst_today(now) + timedelta(days=1), now
+            refresh_after_item(session, batch, now)
+            audit.record(session, actor=actor, action="batch.item.deferred", target_type="batch_item", target_id=str(item.id), detail={"batch_id": batch.id, "code": "limit_daily"}, now=now)
+            session.commit()
+            return ItemOutcome(item.id, "deferred", "limit_daily", None)
         raise StepFailure("limit_" + report.failures[0].code.lower(), " / ".join(c.message for c in report.failures))
     # 4) 쿼터 선예약(재조회·갱신·검증 재조회를 한꺼번에: 쓰기 뒤 검증할 쿼터가 없는 상황을 막는다)
     state.reserved = reserve_calls(session, now, policy, [("videos.list", policy.read_cost), ("videos.update", policy.update_cost), ("videos.list", policy.read_cost)], job_id)
@@ -553,7 +560,7 @@ class TickResult:
     stopped_by: str | None = None  # None(할 일 없음) | cap_reached | quota_exhausted
 
     def add(self, outcome: ItemOutcome) -> None:
-        if outcome.status == "not_pending":
+        if outcome.status in ("not_pending", "deferred"):
             return
         self.processed += 1
         setattr(self, outcome.status, getattr(self, outcome.status) + 1)
@@ -596,6 +603,6 @@ def run_due_items(factory: sessionmaker, now: datetime, env: Env | None = None, 
                 break
             outcome = apply_one(s, item.id, now=now, env=env, gateway=gateway_factory(s, now), job_id=job_id)
         result.add(outcome)
-        if on_progress is not None and outcome.status != "not_pending":
+        if on_progress is not None and outcome.status not in ("not_pending", "deferred"):
             on_progress(result.processed)
     return result

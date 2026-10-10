@@ -363,6 +363,7 @@ def test_problem_json_shape_and_request_id_unique(app):
             j = body_json(out)
             assert set(j) == {"type", "title", "status", "detail", "code", "hint"}
             assert j["status"] == out["status"]
+            assert j["type"] == f"urn:ytweb:problem:{j['code']}"  # RFC 9457 type URI 형식(코드와 일치)
             ids.add(header(out, "x-request-id"))
     assert len(ids) == 6 and all(len(i) == 32 for i in ids)
 

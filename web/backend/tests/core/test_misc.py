@@ -6,9 +6,9 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 from fastapi import APIRouter, Depends
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 
-from tests.conftest import CORE_ROUTERS, ORIGIN, hdr
+from tests.conftest import CORE_ROUTERS, ORIGIN
 from ytweb.app import create_app, discover_routers
 from ytweb.core.clock import kst_today, pt_date, utcnow
 from ytweb.core.deps import get_clock, get_policy, get_session, get_web_settings

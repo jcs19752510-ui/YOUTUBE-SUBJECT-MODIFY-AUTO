@@ -289,13 +289,11 @@ describe('AI 제안 생성 작업 창', () => {
         problem(404, 'job_not_found', '작업을 찾을 수 없습니다'),
       ),
     );
-    await screen.findAllByText('작업을 찾을 수 없습니다');
+    await screen.findAllByText('작업을 찾을 수 없습니다', undefined, { timeout: 6000 });
+    // 닫기 버튼이 켜져 있고(DEF-6-004), Esc 로 실제로 닫혀야 한다
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '닫기' })).toBeEnabled();
     await user.keyboard('{Escape}');
-    const dlg = screen.queryByRole('dialog');
-    if (dlg) {
-      const close = within(dlg).getByRole('button', { name: '닫기' });
-      expect(close).toBeEnabled();
-    }
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });
 

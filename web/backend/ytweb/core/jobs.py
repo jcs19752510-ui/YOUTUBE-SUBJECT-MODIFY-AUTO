@@ -129,7 +129,7 @@ def process_next(factory: sessionmaker, *, worker_id: str, clock: Callable[[], d
         if handler is None:
             raise ProblemError(500, "no_handler", f"처리기가 없는 작업 유형: {job.type}")
         result = handler(factory, job)
-    except Exception as exc:  # noqa: BLE001 - 어떤 핸들러 오류든 작업 실패로 기록해야 한다
+    except Exception as exc:
         log.error("job failed id=%s type=%s", job.id, job.type, exc_info=True)
         with factory() as s:
             fail(s, job.id, error=_safe_error(exc), now=clock())

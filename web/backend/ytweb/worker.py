@@ -6,8 +6,8 @@ import logging
 import os
 import pkgutil
 import signal
-import sys
 import socket
+import sys
 import threading
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -40,7 +40,7 @@ def load_domain_handlers() -> Callable[[sessionmaker, datetime], object] | None:
     for mod in pkgutil.iter_modules(pkg.__path__):
         try:
             importlib.import_module(f"ytweb.domain.{mod.name}")
-        except Exception:  # noqa: BLE001 - 한 모듈의 오류가 워커 전체를 막지 않게 하되 반드시 로그에 남긴다
+        except Exception:
             log.error("도메인 모듈 로드 실패: %s", mod.name, exc_info=True)
     batches = sys.modules.get("ytweb.domain.batches")
     return getattr(batches, "run_due_items", None) if batches else None
@@ -93,7 +93,7 @@ class Worker:
         if self.run_due_items and not self.stop_event.is_set():
             try:
                 self.run_due_items(self.factory, self.clock())
-            except Exception:  # noqa: BLE001 - 스케줄러 오류는 다음 틱에 재시도하되 로그에 남긴다
+            except Exception:
                 log.error("배치 스케줄러 틱 실패", exc_info=True)
         return done
 
@@ -104,7 +104,7 @@ class Worker:
             try:
                 fixed = self.startup_recover(self.factory, self.clock(), stale_after=timedelta(0))
                 log.info("기동 시 running 항목 정리", extra={"fixed": fixed})
-            except Exception:  # noqa: BLE001 - 정리 실패가 워커 기동을 막지 않게 하되 로그에 남긴다
+            except Exception:
                 log.error("기동 시 running 항목 정리 실패", exc_info=True)
         while not self.stop_event.is_set():
             self.tick()

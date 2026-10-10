@@ -12,8 +12,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ytweb.core.errors import ProblemError
+from ytweb.core.settings_store import (
+    delete_web_setting,
+    get_web_setting,
+    set_web_setting,
+)
 from ytweb.db.models import SettingKV
-from ytweb.core.settings_store import delete_web_setting, get_web_setting, set_web_setting
 
 PIN_KEY = "pin_hash"
 FAIL_KEY = "pin_fail"
@@ -33,7 +37,7 @@ def validate_pin_format(pin: str) -> None:
 def hash_pin(pin: str) -> str:
     salt = secrets.token_bytes(16)
     digest = hashlib.scrypt(pin.encode(), salt=salt, n=_N, r=_R, p=_P, dklen=32)
-    return "scrypt${}${}${}${}${}".format(_N, _R, _P, base64.b64encode(salt).decode(), base64.b64encode(digest).decode())
+    return f"scrypt${_N}${_R}${_P}${base64.b64encode(salt).decode()}${base64.b64encode(digest).decode()}"
 
 
 def verify_pin_hash(pin: str, stored: str) -> bool:

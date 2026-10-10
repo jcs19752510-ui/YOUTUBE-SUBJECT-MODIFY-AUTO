@@ -1,7 +1,7 @@
 """시간 기준: DB는 UTC, 일일 반영 건수는 KST 날짜, API 쿼터 기준일은 태평양 시간."""
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 _KST = ZoneInfo("Asia/Seoul")
@@ -15,7 +15,7 @@ def _aware(now: datetime) -> datetime:
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def kst_today(now: datetime) -> date:

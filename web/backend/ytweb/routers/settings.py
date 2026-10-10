@@ -11,9 +11,22 @@ from ytitle.config import Settings
 
 from ytweb.config import WebSettings
 from ytweb.core import audit
-from ytweb.core.deps import get_clock, get_policy, get_session, get_web_settings, require_csrf, require_session
+from ytweb.core.deps import (
+    get_clock,
+    get_policy,
+    get_session,
+    get_web_settings,
+    require_csrf,
+    require_session,
+)
 from ytweb.core.errors import ProblemError
-from ytweb.core.pin import check_pin, clear_pin, pin_required, set_pin, validate_pin_format
+from ytweb.core.pin import (
+    check_pin,
+    clear_pin,
+    pin_required,
+    set_pin,
+    validate_pin_format,
+)
 from ytweb.core.sessions import SessionInfo, delete_other_sessions
 from ytweb.core.settings_store import (
     DEFAULT_SUGGESTIONS_PER_VIDEO,

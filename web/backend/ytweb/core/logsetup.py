@@ -5,7 +5,7 @@ import json
 import logging
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 _SENSITIVE_KEY = r"(?:ytw_session|csrf[-_ ]?token|x-csrf-token|authorization|set-cookie|cookie|passw(?:or)?d|secret|token|pin|api[-_]?key)"
 _KV_RE = re.compile(rf"(?i)({_SENSITIVE_KEY}[\"']?\s*[:=]\s*)([\"']?)[^\s\"',;&}}]+")
@@ -46,7 +46,7 @@ _STD_ATTRS = set(logging.LogRecord("", 0, "", 0, "", (), None).__dict__) | {"mes
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         data = {
-            "ts": datetime.fromtimestamp(record.created, timezone.utc).isoformat(timespec="milliseconds"),
+            "ts": datetime.fromtimestamp(record.created, UTC).isoformat(timespec="milliseconds"),
             "level": record.levelname,
             "logger": record.name,
             "msg": mask_secrets(record.getMessage()),

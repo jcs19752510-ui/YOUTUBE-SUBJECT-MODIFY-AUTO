@@ -5,9 +5,10 @@ import os
 import sys
 from pathlib import Path
 
-from alembic import command
 from alembic.config import Config
 from sqlalchemy.engine import URL
+
+from alembic import command
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 

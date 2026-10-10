@@ -1,7 +1,6 @@
 """독립 점검 9: 빌드된 프런트(dist) 서빙의 경로 순회·SPA 폴백 (S-W04, S-W10 계열 경로 순회 방지)."""
 from __future__ import annotations
 
-import os
 
 import pytest
 from fastapi.testclient import TestClient

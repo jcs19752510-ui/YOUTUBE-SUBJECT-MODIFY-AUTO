@@ -277,22 +277,45 @@ def test_tc_vb_092_min_impressions_boundary_999_1000_none(seeded, db, env, clock
     assert _codes(check_video_limits(db, vid2, now, env.policy, 10))["IMPRESSIONS"] is False
 
 
-def test_tc_vb_093_dec042_demo_min_impressions_zero_NOT_REFLECTED_in_code(seeded, db, env, clock):
-    """D4(노트 편차 D4 = DEC-042 '재변경 최소 노출수 데모 0'): 코드에 반영되지 않았음을 사실대로 기록한다.
-    현재 동작: 데모에서도 최소 노출수 1000 이 적용되어, 72h 지나도 지표가 없으면 같은 영상 재변경이 limit_impressions 로 거부된다.
-    DEC-042 의 의도(데모에서 재변경 시연 가능)와 다름 → OPEN 이슈(결과서 6절). 이 테스트는 '현재 동작'을 고정한다."""
+def test_tc_vb_093_dec042_demo_relaxes_min_impressions_only_for_limit_judgement(seeded, db, env, clock):
+    """DEC-042: 데모(Env.build)는 교체 한도 판정에서만 최소 노출수를 0 으로 낮춘다. 정책 값(리포트 '데이터 부족' 기준)은 1000 그대로."""
     vid = life_ids(db, 1)[0]
     add_change(db, vid, clock() - timedelta(hours=73))
-    rep = check_video_limits(db, vid, clock(), env.policy, 10)
-    assert env.policy.min_impressions_before_rechange == 1000
-    assert _codes(rep)["INTERVAL"] is True and _codes(rep)["IMPRESSIONS"] is False
+    assert env.policy.min_impressions_before_rechange == 1000 and env.rechange_min_impressions == 0
+    assert env.limits_policy.min_impressions_before_rechange == 0
+    rep = check_video_limits(db, vid, clock(), env.limits_policy, 10)
+    assert rep.passed and _codes(rep)["INTERVAL"] is True and _codes(rep)["IMPRESSIONS"] is True
+    # 완화는 노출수에만: 72시간 이내는 여전히 거부, 3회째 이후도 거부
+    vid2 = life_ids(db, 1, skip=1)[0]
+    add_change(db, vid2, clock() - timedelta(hours=71))
+    assert _codes(check_video_limits(db, vid2, clock(), env.limits_policy, 10))["INTERVAL"] is False
+    vid3 = life_ids(db, 1, skip=2)[0]
+    for d in (30, 20, 10):
+        add_change(db, vid3, clock() - timedelta(days=d))
+    assert _codes(check_video_limits(db, vid3, clock(), env.limits_policy, 10))["COUNT"] is False
+    # 완화 설정이 없는 Env(실제 모드 가정)는 정책 값 그대로 적용
+    from dataclasses import replace
+    strict = replace(env, rechange_min_impressions=None)
+    assert strict.limits_policy.min_impressions_before_rechange == 1000
+    assert _codes(check_video_limits(db, vid, clock(), strict.limits_policy, 10))["IMPRESSIONS"] is False
 
 
-@pytest.mark.xfail(strict=True, reason="OPEN: DEC-042 는 데모 모드 재변경 최소 노출수를 0 으로 낮추기로 했으나 코드(Env.build/정책)에 미반영")
-def test_tc_vb_094_dec042_intended_behavior_demo_rechange_allowed_after_72h(seeded, db, env, clock):
+def test_tc_vb_094_dec042_demo_rechange_allowed_after_72h_through_apply_one(seeded, db, env, clock, gw):
+    """사전 점검·반영(apply_one) 두 경로 모두 완화가 적용되어 72시간 뒤 같은 영상의 재변경이 성공한다."""
+    from ytweb.db.models import Change as _C
     vid = life_ids(db, 1)[0]
     add_change(db, vid, clock() - timedelta(hours=73))
-    assert check_video_limits(db, vid, clock(), env.policy, 10).passed
+    db.commit()
+    sug = ok_sug(db, env, clock(), vid)
+    b, pre = create_draft(db, [sug.id], None, now=clock(), env=env)
+    assert not pre.get("blocked")
+    execute_batch(db, b.id, pre["confirm_text"], now=clock(), env=env)
+    db.commit()
+    item = db.execute(select(BatchItem).where(BatchItem.video_id == vid)).scalars().one()
+    assert item.status == "pending"
+    out = apply_one(db, item.id, now=clock(), env=env, gateway=gw)
+    assert out.status == "success"
+    assert db.execute(select(func.count()).select_from(_C).where(_C.video_id == vid, _C.result == "success")).scalar_one() == 2
 
 
 def test_tc_vb_095_daily_cap_check_inside_limits_uses_web_cap_not_policy_3(seeded, db, env, clock):
@@ -328,8 +351,12 @@ def test_tc_vb_097_daily_cap_enforced_inside_apply_one_even_if_scheduled_today(s
     set_all_due(db, b.id, clock().date())
     g = Faulty(db, clock)
     outs = [apply_one(db, it.id, now=clock(), env=env, gateway=g) for it in b.items]
-    assert [o.status for o in outs] == ["success", "success", "skipped"] and outs[2].code == "limit_daily"
-    assert applied_today(db, clock()) == 2 and g.updates == 2
+    # DEF-VB-01 수정 후: 오늘 몫이 찬 뒤 도달한 항목은 건너뛰지 않고 다음 날(KST)로 이월한다
+    assert [o.status for o in outs] == ["success", "success", "deferred"] and outs[2].code == "limit_daily"
+    third = db.get(BatchItem, b.items[2].id)
+    assert third.status == "pending" and third.scheduled_date == clock().astimezone(timezone(timedelta(hours=9))).date() + timedelta(days=1)
+    assert third.change_id is None and third.skip_reason is None
+    assert applied_today(db, clock()) == 2 and g.updates == 2 and quota_units(db) == 2 * 52
 
 
 # ───────────────────────── 쿼터 3행 선예약 ─────────────────────────
@@ -559,8 +586,7 @@ def test_tc_vb_124_cancelled_batch_item_not_applied_if_claimed_late(seeded, db, 
     assert out.status == "not_pending" and g.updates == 0 and changes(db) == []
 
 
-@pytest.mark.xfail(strict=True, reason="OPEN DEF-VB-01: 오늘 상한이 찬 뒤 도달한 항목(동시 틱 경쟁 포함)이 pending 으로 이월되지 않고 limit_daily 로 skipped(영구) 처리됨 — W-008 '초과분은 다음 날 자동 예약'과 불일치")
-def test_tc_vb_098_over_cap_item_should_carry_over_not_be_skipped(seeded, db, env, clock):
+def test_tc_vb_098_over_cap_item_carries_over_and_runs_next_day(seeded, db, factory, env, clock):
     set_cap(db, clock, 1)
     b, sugs = queued(db, env, clock(), 2)
     from tests.verify_wb.vbh import set_all_due
@@ -568,4 +594,14 @@ def test_tc_vb_098_over_cap_item_should_carry_over_not_be_skipped(seeded, db, en
     g = Faulty(db, clock)
     assert apply_one(db, b.items[0].id, now=clock(), env=env, gateway=g).status == "success"
     out = apply_one(db, b.items[1].id, now=clock(), env=env, gateway=g)
-    assert out.status in ("not_pending", "deferred") or db.get(BatchItem, b.items[1].id).status == "pending"
+    assert out.status == "deferred"
+    db.expire_all()
+    assert db.get(BatchItem, b.items[1].id).status == "pending" and db.get(Batch, b.id).status == "queued"
+    r = run_due_items(factory, clock(), env)               # 같은 날 다시 틱: 아무 것도 안 하고 상한 도달만 보고
+    assert (r.processed, r.stopped_by) == (0, None) or r.stopped_by == "cap_reached"
+    assert applied_today(db, clock()) == 1
+    clock.advance(days=1)
+    r2 = run_due_items(factory, clock(), env)
+    assert r2.success == 1
+    db.expire_all()
+    assert db.get(Batch, b.id).status == "done" and db.get(BatchItem, b.items[1].id).status == "success"

@@ -10,12 +10,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from ytweb.core import jobs
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import IdempotencyKey, Job, SessionRow
-from ytweb.worker import IDEMPOTENCY_RETENTION, MAINTENANCE_EVERY, Worker
+from ytweb.worker import MAINTENANCE_EVERY, Worker
 
 T0 = datetime(2026, 10, 10, 3, 0, tzinfo=timezone.utc)
 US = timedelta(microseconds=1)
@@ -203,8 +203,8 @@ def test_worker_maintenance_purges_expired_sessions_and_old_idempotency_keys_wit
         s.add_all([
             SessionRow(id="a" * 64, csrf_token="c", created_at=T0, expires_at=now, last_seen=T0),                    # 정각 만료 -> 삭제
             SessionRow(id="b" * 64, csrf_token="c", created_at=T0, expires_at=now + US, last_seen=T0),               # 유효
-            IdempotencyKey(key="idem-old-00001", route="r", request_hash="h", created_at=now - IDEMPOTENCY_RETENTION - US),  # 삭제
-            IdempotencyKey(key="idem-edge-0001", route="r", request_hash="h", created_at=now - IDEMPOTENCY_RETENTION),       # 보존
+            IdempotencyKey(key="idem-old-00001", route="r", request_hash="h", created_at=now - timedelta(hours=48) - US),  # 삭제
+            IdempotencyKey(key="idem-edge-0001", route="r", request_hash="h", created_at=now - timedelta(hours=48)),       # 보존
         ])
         s.commit()
     w = Worker(factory, clock=lambda: now)

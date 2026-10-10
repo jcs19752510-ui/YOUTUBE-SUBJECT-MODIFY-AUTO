@@ -27,7 +27,8 @@ export function PinForm({ onDone }: { onDone?: () => void }) {
     }
   };
 
-  const wrongPin = err instanceof ApiError && (err.status === 401 || err.status === 403);
+  // 틀린 PIN 은 401(pin_invalid). 403(출처·CSRF 등)은 PIN 문제가 아니므로 서버 안내를 그대로 보여 준다
+  const wrongPin = err instanceof ApiError && err.status === 401;
   return (
     <form onSubmit={(e) => void submit(e)} className="stack">
       <Field label={ko.conn.pinLabel} error={wrongPin ? ko.conn.pinWrong : undefined}>

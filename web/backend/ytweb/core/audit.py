@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ _ADVISORY_LOCK_KEY = 7_340_001  # 동시 기록 시 체인이 갈라지지 않�
 
 
 def _ts_text(ts: datetime) -> str:
-    return ts.astimezone(timezone.utc).isoformat(timespec="microseconds")
+    return ts.astimezone(UTC).isoformat(timespec="microseconds")
 
 
 def compute_hash(prev_hash: str, *, ts: datetime, actor: str, action: str, target_type: str | None, target_id: str | None, detail: dict) -> str:

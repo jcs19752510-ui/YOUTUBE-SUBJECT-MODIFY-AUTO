@@ -183,7 +183,7 @@ export function HomePage() {
                     <li>
                       {d.google.connected ? ko.home.googleConnected : ko.home.googleDisconnected}
                     </li>
-                    <li>{d.live_enabled ? '실제 반영(라이브): 켜짐' : ko.home.liveOff}</li>
+                    <li>{d.live_enabled ? ko.home.liveOn : ko.home.liveOff}</li>
                   </ul>
                 </Card>
                 <Card title={ko.home.countsTitle}>

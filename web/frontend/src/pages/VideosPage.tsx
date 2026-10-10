@@ -23,6 +23,9 @@ import { fmtDateTime, fmtDuration, fmtNum } from '../lib/format';
 import { privacyLabel, workflowLabel, workflowTone } from '../lib/labels';
 import { JobPanel } from './JobPanel';
 
+/** 서버가 한 번에 받는 영상 수(API.md: 1~200개) */
+export const MAX_GENERATE = 200;
+
 const STATUSES: WorkflowStatus[] = [
   'none',
   'suggested',
@@ -264,9 +267,19 @@ export function VideosPage() {
           aria-label={ko.videos.selectedCount(sel.ids.length)}
         >
           <strong aria-live="polite">{ko.videos.selectedCount(sel.ids.length)}</strong>
+          {sel.ids.length > MAX_GENERATE && (
+            <span className="field__error" role="alert">
+              {ko.videos.generateOver(MAX_GENERATE)}
+            </span>
+          )}
           <div className="row">
             <Button onClick={sel.clear}>{ko.videos.clearSelection}</Button>
-            <Button variant="primary" busy={gen.isPending} onClick={() => gen.mutate(sel.ids)}>
+            <Button
+              variant="primary"
+              busy={gen.isPending}
+              disabled={sel.ids.length > MAX_GENERATE}
+              onClick={() => gen.mutate(sel.ids)}
+            >
               {gen.isPending ? ko.videos.generating : ko.videos.generate}
             </Button>
           </div>

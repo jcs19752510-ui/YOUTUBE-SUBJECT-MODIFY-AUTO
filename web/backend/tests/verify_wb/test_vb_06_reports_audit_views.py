@@ -282,7 +282,7 @@ def test_tc_vb_220_video_detail_preserved_limits_and_changes(seeded, db, env, cl
                               "default_audio_language": snip["defaultAudioLanguage"], "description_chars": len(snip["description"])}
     assert d["workflow_status"] == "applied" and d["suggestion_count"] == 1 and d["limits"]["allowed"] is False
     assert any("72시간" in r for r in d["limits"]["reasons"])
-    assert d["limits"]["next_allowed_at"] is None      # 노출수 조건은 풀리는 시각을 알 수 없어 시각을 약속하지 않음
+    assert d["limits"]["next_allowed_at"] is not None   # 데모는 노출수 조건을 완화(DEC-042)하므로 72시간 간격이 풀리는 시각을 안내
     ch = d["changes"][0]
     assert ch["previous_title"] == c.previous_title and ch["new_title"] == s.title and ch["rollbackable"] is True
     assert d["title"] == s.title and d["suggestions"][0]["status"] == "applied"

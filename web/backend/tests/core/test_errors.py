@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
 
-from tests.conftest import ORIGIN, hdr, login
+from tests.conftest import ORIGIN, hdr
 from ytweb.core.errors import ProblemError, problem_body
 
 

@@ -98,7 +98,7 @@ def video_detail(session: Session, video_id: str, *, now: datetime, env: Env) ->
         "description_excerpt": video.description_excerpt,
         "suggestions": [suggestion_dict(s) for s in sugs],
         "changes": [change_dict(c, video.title, rb[c.id]) for c in changes],
-        "limits": summarize_limits(check_video_limits(session, video_id, now, env.policy, cap)),
+        "limits": summarize_limits(check_video_limits(session, video_id, now, env.limits_policy, cap)),
         "preserved": {
             "category_id": snippet.get("categoryId"), "tags": snippet.get("tags") or [], "default_language": snippet.get("defaultLanguage"),
             "default_audio_language": snippet.get("defaultAudioLanguage"), "description_chars": len(snippet.get("description") or ""),

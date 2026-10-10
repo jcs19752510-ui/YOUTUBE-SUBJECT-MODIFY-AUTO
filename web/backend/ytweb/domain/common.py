@@ -1,6 +1,7 @@
 """도메인 공용 도구: 정책 묶음(Env), 단계 실패 예외, 시간 경계, 입력 정리."""
 from __future__ import annotations
 
+import dataclasses
 import functools
 import unicodedata
 from dataclasses import dataclass
@@ -29,10 +30,20 @@ class Env:
     policy: Settings
     dictionary: Dictionary
     secrets_dir: Path
+    rechange_min_impressions: int | None = None  # 지정하면 교체 한도 판정의 최소 노출수를 이 값으로 대체(데모 전용)
+
+    @property
+    def limits_policy(self) -> Settings:
+        if self.rechange_min_impressions is None:
+            return self.policy
+        return dataclasses.replace(self.policy, min_impressions_before_rechange=self.rechange_min_impressions)
 
     @classmethod
     def build(cls, policy: Settings, web: WebSettings) -> "Env":
-        return cls(policy, load_dictionary_cached(policy.config_dir / "banned_terms.yaml"), web.secrets_dir)
+        # DEC-042: 데모에는 변경 후 지표가 없어 '교체 한도 판정'에서만 재변경 최소 노출수를 0 으로 낮춘다(72시간 간격·횟수 제한 유지).
+        # 리포트의 '데이터 부족' 기준(policy 값)은 그대로 둔다.
+        relax = 0 if web.mode == "demo" else None
+        return cls(policy, load_dictionary_cached(policy.config_dir / "banned_terms.yaml"), web.secrets_dir, relax)
 
 
 @functools.lru_cache(maxsize=8)

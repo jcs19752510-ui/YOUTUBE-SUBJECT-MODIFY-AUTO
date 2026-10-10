@@ -10,10 +10,23 @@ from sqlalchemy.orm import Session
 
 from ytweb.config import WebSettings
 from ytweb.core import audit
+from ytweb.core.deps import (
+    get_clock,
+    get_session,
+    get_web_settings,
+    require_csrf,
+    verify_same_origin,
+)
 from ytweb.core.errors import ProblemError
-from ytweb.core.deps import get_clock, get_session, get_web_settings, require_csrf, verify_same_origin
 from ytweb.core.pin import check_pin, pin_required
-from ytweb.core.sessions import COOKIE_NAME, COOKIE_PATH, SessionInfo, create_session, delete_session, lookup_session
+from ytweb.core.sessions import (
+    COOKIE_NAME,
+    COOKIE_PATH,
+    SessionInfo,
+    create_session,
+    delete_session,
+    lookup_session,
+)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 

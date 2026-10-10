@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import json
-import re
 
 import pytest
 
 from tests.verify_wa import probe_routes
-from tests.verify_wa.helpers import ORIGIN, SECRET_PIN, asgi_call, body_json, header, hdr, login
+from tests.verify_wa.helpers import ORIGIN, SECRET_PIN, asgi_call, body_json, hdr, login
 from ytweb.app import create_app
-from ytweb.core.logsetup import JsonFormatter, MASK, mask_secrets
+from ytweb.core.logsetup import MASK, mask_secrets
 from tests.conftest import CORE_ROUTERS
 
 LEAK_NEEDLES = ["Traceback", "site-packages", "/home/", ".py", "RuntimeError", "sqlalchemy", "IntegrityError", "psycopg",

@@ -11,10 +11,10 @@ import pytest
 from sqlalchemy import select, text
 
 from tests.verify_wa.helpers import (
-    ORIGIN, SECRET_PIN, asgi_call, body_json, hdr, header, login, parse_set_cookie, set_cookie_values,
+    ORIGIN, SECRET_PIN, asgi_call, body_json, hdr, login, parse_set_cookie, set_cookie_values,
 )
 from ytweb.core import pin as pin_mod
-from ytweb.db.models import AuditLog, SessionRow, SettingKV
+from ytweb.db.models import SettingKV
 
 ME = "/api/v1/auth/me"
 URLSAFE = re.compile(r"^[A-Za-z0-9_-]+$")

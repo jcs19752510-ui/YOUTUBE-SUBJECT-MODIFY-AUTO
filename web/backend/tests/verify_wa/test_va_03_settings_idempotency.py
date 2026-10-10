@@ -7,9 +7,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import text
 
-from tests.verify_wa.helpers import ORIGIN, asgi_call, body_json, hdr, login
+from tests.verify_wa.helpers import ORIGIN, hdr, login
 from ytweb.core.errors import ProblemError
-from ytweb.core.idempotency import KEY_TTL, run_idempotent
+from ytweb.core.idempotency import run_idempotent
 from ytweb.db.models import IdempotencyKey
 
 SETTINGS = "/api/v1/settings"
@@ -289,8 +289,8 @@ def test_idem_ttl_boundary_exactly_24h_replays_and_one_microsecond_later_reexecu
         return 201, {"n": len(calls)}
     run = lambda now: run_idempotent(db, key="ttl-key-0001", route="r", request={"x": 1}, now=now, handler=h)  # noqa: E731
     assert run(T0) == (201, {"n": 1})
-    assert run(T0 + KEY_TTL) == (201, {"n": 1})
-    assert run(T0 + KEY_TTL + timedelta(microseconds=1)) == (201, {"n": 2})
+    assert run(T0 + timedelta(hours=24)) == (201, {"n": 1})
+    assert run(T0 + timedelta(hours=24, microseconds=1)) == (201, {"n": 2})
     assert len(calls) == 2
 
 
