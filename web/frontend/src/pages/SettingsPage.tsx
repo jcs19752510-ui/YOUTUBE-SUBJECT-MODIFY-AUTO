@@ -31,7 +31,7 @@ function SafetyForm({ data }: { data: SettingsData }) {
   const toast = useToast();
   const [cap, setCap] = useState(String(data.daily_apply_cap));
   const [per, setPer] = useState(String(data.suggestions_per_video));
-  const [tone, setTone] = useState(data.tone);
+  const [tone, setTone] = useState(data.tone.join(', '));
 
   const range = (v: string, a: number, b: number) => {
     const n = Number(v);
@@ -41,18 +41,27 @@ function SafetyForm({ data }: { data: SettingsData }) {
   };
   const capErr = range(cap, 1, 20);
   const perErr = range(per, 1, 5);
-  const toneErr = tone.trim() === '' ? T.toneEmpty : undefined;
+  const toneList = tone
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const toneErr =
+    toneList.length > 5
+      ? T.toneTooMany
+      : toneList.some((t) => Array.from(t).length > 20)
+        ? T.toneTooLong
+        : undefined;
   const changed =
     Number(cap) !== data.daily_apply_cap ||
     Number(per) !== data.suggestions_per_video ||
-    tone.trim() !== data.tone;
+    toneList.join('\u0000') !== data.tone.join('\u0000');
 
   const m = useMutation({
     mutationFn: () =>
       api.patchSettings({
         daily_apply_cap: Number(cap),
         suggestions_per_video: Number(per),
-        tone: tone.trim(),
+        tone: toneList,
       }),
     onSuccess: (d) => {
       qc.setQueryData(['settings'], d);
@@ -119,20 +128,20 @@ function SafetyForm({ data }: { data: SettingsData }) {
           <dt>{T.liveLabel}</dt>
           <dd>
             <Badge
-              tone={data.live_enabled ? 'danger' : 'success'}
-              icon={data.live_enabled ? '▲' : '✓'}
+              tone={data.read_only.enable_live ? 'danger' : 'success'}
+              icon={data.read_only.enable_live ? '▲' : '✓'}
             >
-              {data.live_enabled ? T.liveOn : T.liveOff}
+              {data.read_only.enable_live ? T.liveOn : T.liveOff}
             </Badge>{' '}
             <span className="muted">{T.readonlyNote}</span>
           </dd>
           <dt>{T.allowedLabel}</dt>
           <dd>
-            {data.allowed_video_ids.length === 0 ? (
+            {data.read_only.live_allowlist.length === 0 ? (
               T.allowedNone
             ) : (
               <ul className="reasons">
-                {data.allowed_video_ids.map((id) => (
+                {data.read_only.live_allowlist.map((id) => (
                   <li key={id} className="mono">
                     {id}
                   </li>
@@ -147,33 +156,47 @@ function SafetyForm({ data }: { data: SettingsData }) {
   );
 }
 
+const PIN_FORMAT = /^\d{4,12}$/;
+
 function PinCard({ data }: { data: SettingsData }) {
   const api = useApi();
   const qc = useQueryClient();
   const toast = useToast();
+  const [current, setCurrent] = useState('');
   const [pin, setPin] = useState('');
   const [again, setAgain] = useState('');
   const [clearOpen, setClearOpen] = useState(false);
-  const pinErr = pin !== '' && pin.length < 4 ? T.pinShort : undefined;
+  const [clearCurrent, setClearCurrent] = useState('');
+  const pinErr = pin !== '' && !PIN_FORMAT.test(pin) ? T.pinShort : undefined;
   const againErr = again !== '' && again !== pin ? T.pinMismatch : undefined;
-  const ok = pin.length >= 4 && pin === again;
+  const ok = PIN_FORMAT.test(pin) && pin === again && (!data.pin_enabled || current !== '');
   const save = useMutation({
-    mutationFn: () => api.patchSettings({ pin }),
+    mutationFn: () =>
+      api.patchSettings({
+        pin: { action: 'set', new_pin: pin, ...(data.pin_enabled ? { current_pin: current } : {}) },
+      }),
     onSuccess: (d) => {
       qc.setQueryData(['settings'], d);
+      setCurrent('');
       setPin('');
       setAgain('');
       toast.push('success', T.pinSaved);
     },
   });
   const clear = useMutation({
-    mutationFn: () => api.patchSettings({ pin: null }),
+    mutationFn: () => api.patchSettings({ pin: { action: 'clear', current_pin: clearCurrent } }),
     onSuccess: (d) => {
       qc.setQueryData(['settings'], d);
       setClearOpen(false);
+      setClearCurrent('');
       toast.push('success', T.pinCleared);
     },
   });
+  const closeClear = () => {
+    setClearOpen(false);
+    setClearCurrent('');
+    clear.reset();
+  };
   return (
     <Card title={T.pinTitle}>
       <form
@@ -184,14 +207,30 @@ function PinCard({ data }: { data: SettingsData }) {
         }}
       >
         <p>
-          <Badge tone={data.pin_set ? 'success' : 'neutral'} icon={data.pin_set ? '✓' : '–'}>
-            {T.pinState(data.pin_set)}
+          <Badge
+            tone={data.pin_enabled ? 'success' : 'neutral'}
+            icon={data.pin_enabled ? '✓' : '–'}
+          >
+            {T.pinState(data.pin_enabled)}
           </Badge>
         </p>
+        {data.pin_enabled && (
+          <Field label={T.pinCurrent}>
+            <input
+              className="input"
+              type="password"
+              inputMode="numeric"
+              autoComplete="current-password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
+          </Field>
+        )}
         <Field label={T.pinNew} hint={T.pinNewHint} error={pinErr}>
           <input
             className="input"
             type="password"
+            inputMode="numeric"
             autoComplete="new-password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
@@ -201,6 +240,7 @@ function PinCard({ data }: { data: SettingsData }) {
           <input
             className="input"
             type="password"
+            inputMode="numeric"
             autoComplete="new-password"
             value={again}
             onChange={(e) => setAgain(e.target.value)}
@@ -209,9 +249,9 @@ function PinCard({ data }: { data: SettingsData }) {
         {save.isError && <ErrorPanel error={save.error} />}
         <div className="row">
           <Button type="submit" variant="primary" busy={save.isPending} disabled={!ok}>
-            {data.pin_set ? T.pinChange : T.pinSet}
+            {data.pin_enabled ? T.pinChange : T.pinSet}
           </Button>
-          {data.pin_set && (
+          {data.pin_enabled && (
             <Button variant="danger" onClick={() => setClearOpen(true)}>
               {T.pinClear}
             </Button>
@@ -221,18 +261,44 @@ function PinCard({ data }: { data: SettingsData }) {
       {clearOpen && (
         <Modal
           title={T.pinClearTitle}
-          onClose={() => setClearOpen(false)}
+          onClose={closeClear}
           footer={
             <>
-              <Button onClick={() => setClearOpen(false)}>{ko.app.cancel}</Button>
-              <Button variant="danger" busy={clear.isPending} onClick={() => clear.mutate()}>
+              <Button onClick={closeClear}>{ko.app.cancel}</Button>
+              <Button
+                variant="danger"
+                type="submit"
+                form="pin-clear-form"
+                busy={clear.isPending}
+                disabled={clearCurrent === ''}
+              >
                 {T.pinClear}
               </Button>
             </>
           }
         >
-          <p>{T.pinClearBody}</p>
-          {clear.isError && <ErrorPanel error={clear.error} />}
+          <form
+            id="pin-clear-form"
+            className="stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (clearCurrent !== '' && !clear.isPending) clear.mutate();
+            }}
+          >
+            <p>{T.pinClearBody}</p>
+            <Field label={T.pinCurrent}>
+              <input
+                className="input"
+                type="password"
+                inputMode="numeric"
+                autoComplete="current-password"
+                data-autofocus=""
+                value={clearCurrent}
+                onChange={(e) => setClearCurrent(e.target.value)}
+              />
+            </Field>
+            {clear.isError && <ErrorPanel error={clear.error} />}
+          </form>
         </Modal>
       )}
     </Card>
@@ -369,7 +435,7 @@ export function SettingsPage() {
                 <PinCard data={d} />
               ) : (
                 <SafetyForm
-                  key={`${d.daily_apply_cap}|${d.suggestions_per_video}|${d.tone}`}
+                  key={`${d.daily_apply_cap}|${d.suggestions_per_video}|${d.tone.join(',')}`}
                   data={d}
                 />
               )

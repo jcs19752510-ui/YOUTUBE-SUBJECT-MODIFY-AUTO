@@ -257,10 +257,11 @@ describe('설정', () => {
   const data: SettingsData = {
     daily_apply_cap: 10,
     suggestions_per_video: 3,
-    tone: '친근하게',
-    pin_set: false,
-    live_enabled: false,
-    allowed_video_ids: ['abcdefghijk'],
+    tone: ['친근하게'],
+    pin_enabled: false,
+    mode: 'demo',
+    read_only: { enable_live: false, live_allowlist: ['abcdefghijk'], note: '화면에서 바꿀 수 없습니다.' },
+  };
   };
 
   it('TC-WF-067 라이브 허용과 허용 영상 목록은 읽기 전용으로만 보이고 "이 화면에서는 켤 수 없습니다"를 안내한다', async () => {
@@ -311,36 +312,78 @@ describe('설정', () => {
     expect(await screen.findByText('설정을 저장했습니다.')).toBeInTheDocument();
   });
 
-  it('TC-WF-070 PIN 은 4자 이상·두 번 일치할 때만 설정되고, 해제는 확인 단계를 거친다', async () => {
+  it('TC-WF-070 PIN 은 숫자 4~12자리·재입력 일치·현재 PIN 입력 시에만 변경되고, 해제는 현재 PIN 확인 대화상자를 거친다', async () => {
     const user = userEvent.setup();
     const { client, calls } = await connectedClient([
-      route('GET', '/api/v1/settings', () => json(200, { ...data, pin_set: true })),
-      route('PATCH', '/api/v1/settings', (r) =>
-        json(200, { ...data, pin_set: (r.body as { pin: string | null }).pin !== null }),
-      ),
+      route('GET', '/api/v1/settings', () => json(200, { ...data, pin_enabled: true })),
+      route('PATCH', '/api/v1/settings', () => json(200, data)),
     ]);
     renderWithApp(<SettingsPage />, client, '/settings?tab=pin');
     await screen.findByText('현재 PIN 이 설정되어 있습니다.');
     const submit = screen.getByRole('button', { name: 'PIN 변경' });
-    await user.type(screen.getByLabelText('새 PIN'), '12');
-    expect(screen.getByText('PIN 은 4자 이상이어야 합니다.')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('새 PIN'), '34');
+    await user.type(screen.getByLabelText('새 PIN'), '12ab');
+    expect(screen.getByText('PIN 은 숫자 4~12자리여야 합니다.')).toBeInTheDocument();
+    await user.clear(screen.getByLabelText('새 PIN'));
+    await user.type(screen.getByLabelText('새 PIN'), '1234');
     await user.type(screen.getByLabelText('PIN 한 번 더 입력'), '12');
     expect(screen.getByText('PIN 이 서로 다릅니다.')).toBeInTheDocument();
-    expect(submit).toBeDisabled();
     await user.type(screen.getByLabelText('PIN 한 번 더 입력'), '34');
+    expect(submit).toBeDisabled(); // 현재 PIN 이 비어 있음
+    await user.type(screen.getByLabelText('현재 PIN'), '9999');
     expect(submit).toBeEnabled();
     await user.click(submit);
     await waitFor(() =>
-      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ pin: '1234' }),
+      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+        pin: { action: 'set', new_pin: '1234', current_pin: '9999' },
+      }),
     );
     await user.click(await screen.findByRole('button', { name: 'PIN 해제' }));
     const dlg = await screen.findByRole('dialog', { name: 'PIN 을 해제할까요?' });
     expect(calls.filter((c) => c.method === 'PATCH')).toHaveLength(1);
-    await user.click(within(dlg).getByRole('button', { name: 'PIN 해제' }));
+    const del = within(dlg).getByRole('button', { name: 'PIN 해제' });
+    expect(del).toBeDisabled();
+    await user.type(within(dlg).getByLabelText('현재 PIN'), '1234');
+    await user.click(del);
     await waitFor(() =>
-      expect(calls.filter((c) => c.method === 'PATCH').at(-1)?.body).toEqual({ pin: null }),
+      expect(calls.filter((c) => c.method === 'PATCH').at(-1)?.body).toEqual({
+        pin: { action: 'clear', current_pin: '1234' },
+      }),
     );
+  });
+
+  it('TC-WF-094 PIN 이 없을 때 새 PIN 설정은 현재 PIN 없이 보낸다', async () => {
+    const user = userEvent.setup();
+    const { client, calls } = await connectedClient([
+      route('GET', '/api/v1/settings', () => json(200, data)),
+      route('PATCH', '/api/v1/settings', () => json(200, { ...data, pin_enabled: true })),
+    ]);
+    renderWithApp(<SettingsPage />, client, '/settings?tab=pin');
+    await screen.findByText('현재 PIN 이 설정되어 있지 않습니다.');
+    expect(screen.queryByLabelText('현재 PIN')).toBeNull();
+    await user.type(screen.getByLabelText('새 PIN'), '246810');
+    await user.type(screen.getByLabelText('PIN 한 번 더 입력'), '246810');
+    await user.click(screen.getByRole('button', { name: 'PIN 설정' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ pin: { action: 'set', new_pin: '246810' } }),
+    );
+  });
+
+  it('TC-WF-095 말투는 쉼표로 구분한 목록(최대 5개, 각 20자)으로 보내고 규칙을 어기면 저장을 막는다', async () => {
+    const user = userEvent.setup();
+    const { client, calls } = await connectedClient([
+      route('GET', '/api/v1/settings', () => json(200, data)),
+      route('PATCH', '/api/v1/settings', (r) => json(200, { ...data, ...(r.body as object) })),
+    ]);
+    renderWithApp(<SettingsPage />, client);
+    const tone = await screen.findByLabelText('제목 말투');
+    await user.clear(tone);
+    await user.type(tone, '가,나,다,라,마,바');
+    expect(screen.getByText('말투는 최대 5개까지입니다.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '저장' })).toBeDisabled();
+    await user.clear(tone);
+    await user.type(tone, '차분하게, 정보 전달');
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toMatchObject({ tone: ['차분하게', '정보 전달'] }));
   });
 
   it('TC-WF-071 감사 로그 탭은 읽기 전용이며 무결성 결과를 글자로 알린다', async () => {

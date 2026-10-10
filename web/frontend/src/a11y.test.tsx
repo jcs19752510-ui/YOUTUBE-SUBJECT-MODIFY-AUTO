@@ -147,10 +147,10 @@ describe('접근성(axe) — 주요 화면', () => {
     const s = {
       daily_apply_cap: 10,
       suggestions_per_video: 3,
-      tone: '친근하게',
-      pin_set: false,
-      live_enabled: false,
-      allowed_video_ids: [],
+      tone: ['친근하게'],
+      pin_enabled: false,
+      mode: 'demo',
+      read_only: { enable_live: false, live_allowlist: [], note: '' },
     };
     const user = userEvent.setup();
     const { client } = makeClient([authed, route('GET', '/api/v1/settings', () => json(200, s))]);

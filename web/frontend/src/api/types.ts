@@ -1,5 +1,5 @@
 // WEB_DESIGN §3 계약을 그대로 옮긴 타입. 필드명은 서버와 일치해야 한다.
-// 서버 문서에 스키마가 없는 부분(VideoReport, Settings, AuditEntry 등)은 "추정" 표시를 달았다.
+// 서버 문서에 스키마가 없는 부분(VideoReport, AuditEntry 등)은 "추정" 표시를 달았다. Settings 는 W-BE-A 구현(routers/settings.py)에 맞췄다.
 
 export interface Page<T> {
   items: T[];
@@ -226,17 +226,24 @@ export interface ReportsResponse {
 export interface SettingsData {
   daily_apply_cap: number;
   suggestions_per_video: number;
-  tone: string;
-  pin_set: boolean;
-  live_enabled: boolean;
-  allowed_video_ids: string[];
+  /** 말투 목록(최대 5개, 각 1~20자) */
+  tone: string[];
+  pin_enabled: boolean;
+  mode: string;
+  /** 화면에서 바꿀 수 없는 값(읽기 전용 표시) */
+  read_only: { enable_live: boolean; live_allowlist: string[]; note: string };
+}
+export interface PinChange {
+  action: 'set' | 'clear';
+  new_pin?: string;
+  /** 이미 PIN 이 있으면 설정·변경·해제 모두 필요 */
+  current_pin?: string;
 }
 export interface SettingsPatch {
   daily_apply_cap?: number;
   suggestions_per_video?: number;
-  tone?: string;
-  /** 문자열=PIN 설정, null=PIN 해제 */
-  pin?: string | null;
+  tone?: string[];
+  pin?: PinChange;
 }
 
 export interface AuditEntry {

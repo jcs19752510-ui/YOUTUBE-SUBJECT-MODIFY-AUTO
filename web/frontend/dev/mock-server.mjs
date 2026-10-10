@@ -36,7 +36,7 @@ export function createState(opts = {}) {
     audit: [],
     jobs: new Map(),
     idem: new Map(),
-    settings: { daily_apply_cap: 10, suggestions_per_video: 3, tone: '친근하게' },
+    settings: { daily_apply_cap: 10, suggestions_per_video: 3, tone: ['친근하게'] },
     seq: { suggestion: 1, batch: 1, item: 1, change: 1, audit: 1 },
     quotaUsed: 1250,
     now: () => Date.now(),
@@ -901,17 +901,18 @@ async function handle(st, req, url, body, session) {
     return [200, { ...page([...st.audit].reverse(), q, (a) => a), chain_ok: true }];
   if (p === '/api/v1/settings' && m === 'GET') return [200, settingsDto(st)];
   if (p === '/api/v1/settings' && m === 'PATCH') {
-    for (const k of Object.keys(body ?? {})) {
-      if (!['daily_apply_cap', 'suggestions_per_video', 'tone', 'pin'].includes(k))
-        throw new Problem(
-          422,
-          'setting_not_allowed',
-          '이 화면에서는 바꿀 수 없는 설정입니다',
-          k,
-          '서버 설정 파일에서만 변경할 수 있습니다.',
-        );
-    }
     const b = body ?? {};
+    const bad = Object.keys(b).filter(
+      (k) => !['daily_apply_cap', 'suggestions_per_video', 'tone', 'pin'].includes(k),
+    );
+    if (bad.length)
+      throw new Problem(
+        400,
+        'setting_not_allowed',
+        '이 화면에서는 바꿀 수 없는 설정입니다',
+        `허용되지 않은 키: ${bad.join(', ')}`,
+        '변경 가능한 항목: daily_apply_cap, suggestions_per_video, tone, pin',
+      );
     if (
       'daily_apply_cap' in b &&
       !(Number.isInteger(b.daily_apply_cap) && b.daily_apply_cap >= 1 && b.daily_apply_cap <= 20)
@@ -936,16 +937,44 @@ async function handle(st, req, url, body, session) {
         '입력값이 올바르지 않습니다',
         '영상당 제안 개수는 1~5 입니다.',
       );
-    if ('pin' in b && b.pin !== null && !(typeof b.pin === 'string' && b.pin.length >= 4))
+    if (
+      'tone' in b &&
+      !(
+        Array.isArray(b.tone) &&
+        b.tone.length <= 5 &&
+        b.tone.every((t) => typeof t === 'string' && t.length >= 1 && t.length <= 20)
+      )
+    )
       throw new Problem(
         422,
         'validation_error',
         '입력값이 올바르지 않습니다',
-        'PIN 은 4자 이상이어야 합니다.',
+        '말투는 최대 5개, 각 1~20자입니다.',
       );
+    if ('pin' in b) {
+      const pn = b.pin;
+      if (!pn || !['set', 'clear'].includes(pn.action))
+        throw new Problem(
+          422,
+          'validation_error',
+          'pin 은 {action: set|clear, new_pin?, current_pin?} 형식이어야 합니다.',
+        );
+      if (pn.action === 'set' && !/^\d{4,12}$/.test(String(pn.new_pin ?? '')))
+        throw new Problem(422, 'validation_error', 'PIN 은 숫자 4~12자리여야 합니다.');
+      if (st.pin !== null && pn.current_pin !== st.pin)
+        throw new Problem(
+          401,
+          'pin_invalid',
+          '현재 PIN 이 맞지 않습니다',
+          '',
+          'PIN 을 다시 확인해 주세요.',
+        );
+      if (pn.action === 'clear' && st.pin === null)
+        throw new Problem(409, 'pin_not_set', '설정된 PIN 이 없습니다.');
+      st.pin = pn.action === 'set' ? pn.new_pin : null;
+    }
     for (const k of ['daily_apply_cap', 'suggestions_per_video', 'tone'])
       if (k in b) st.settings[k] = b[k];
-    if ('pin' in b) st.pin = b.pin;
     audit(st, 'settings.update', 'settings', null, {
       keys: Object.keys(b).filter((k) => k !== 'pin'),
     });
