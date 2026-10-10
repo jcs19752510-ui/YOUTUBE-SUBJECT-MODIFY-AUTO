@@ -20,3 +20,13 @@ __pycache__/
 
 # CI 헤드리스 실행 로그 (automation/run-harness-agent.sh 산출물)
 docs/harness/_ci-logs/
+
+# 비밀·개인 데이터 (YT-03, 03_manual_setup.md)
+.env
+secrets/
+token*.json
+*.token
+data/
+config/settings.local.yaml
+approvals/
+.coverage

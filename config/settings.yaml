@@ -1,0 +1,32 @@
+# 정책 기본값(저장소에 포함). 개인별 변경은 config/settings.local.yaml 에서 한다.
+# enable_live 와 live_allowlist 는 settings.local.yaml 에서만 인식된다(여기 값은 무시됨).
+quota:
+  daily_limit_units: 6000
+  warn_ratio: 0.8
+  update_cost: 50
+  read_cost: 1
+  analytics_cost: 1
+cadence:
+  min_interval_hours: 72
+  max_changes_per_video: 3
+  min_impressions_before_rechange: 1000
+  max_live_changes_per_day: 3
+validation:
+  key_phrase_chars: 20
+  recommended_max_chars: 40
+  hard_max_chars: 100
+  warn_match_ratio: 0.5
+  block_match_ratio: 0.25
+sequential_mode:
+  enabled: false
+  evaluation_window_days: 14
+retention:
+  logs_days: 365
+  history_days: 365
+live:
+  enable_live: false
+  live_allowlist: []
+approval:
+  ttl_hours: 24
+exclusions:
+  shorts_max_seconds: 180
