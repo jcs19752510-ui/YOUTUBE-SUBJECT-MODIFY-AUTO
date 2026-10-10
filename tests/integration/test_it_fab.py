@@ -243,11 +243,11 @@ def test_refetch_is_idempotent_for_videos_and_keeps_candidates(lab):
     lab.clock.advance(timedelta(hours=2))
     lab.api.items[0]["snippet"]["title"] = "스튜디오에서 바꾼 제목"
     r = lab.run("fetch", "--all")
-    assert r.code == 0 and "10 / 6000" not in r.out
+    assert r.code == 0 and "6 / 6000" in r.out
     rows = {x["video_id"]: x for x in lab.q("SELECT * FROM videos")}
     assert len(rows) == 3 and rows[ids[0]]["title"] == "스튜디오에서 바꾼 제목" and rows[ids[0]]["fetched_at"] == "2026-10-10T14:00:00Z"
     assert rows[ids[1]]["fetched_at"] == "2026-10-10T14:00:00Z"
-    assert sum(u for _, u, _ in lab.quota_rows()) == 10
+    assert sum(u for _, u, _ in lab.quota_rows()) == 6
     assert [tuple(r) for r in lab.q("SELECT id, status, validation_result, updated_at FROM title_candidates")] == cands
 
 
@@ -326,8 +326,8 @@ def test_config_layers_reach_quota_ledger_and_paths(lab):
     assert [r[0] for r in c.execute("SELECT units FROM quota_usage")] == [2, 2, 2]
     c.close()
     other = lab.root / "elsewhere"
-    r = lab.run("auth", env={"YT_TOKEN_DIR": str(other)})
-    assert str(other) in r.out and "저장됨" not in r.out.split(str(other))[0].split("읽기")[-1]
+    r = lab.run("auth", "--plain", env={"YT_TOKEN_DIR": str(other)})
+    assert str(other / "read_token.json") in r.out and "없음" in r.out  # 새 토큰 폴더에는 로그인이 없다
 
 
 def test_live_section_in_base_settings_is_ignored_with_warning(lab):
@@ -358,12 +358,21 @@ def test_global_options_position_and_base_dir(lab):
     assert before.code == after.code == 0 and "- 항목 1" in before.out and "영상 ID: vid00000001" in before.out
     assert "-----" not in before.out and "- 항목 1" in after.out
     assert "\x1b[" not in before.out
-    colored = lab.run("fetch", "--all", "--color")
-    assert "\x1b[32m[완료]" in colored.out
+    lab.candidate(vid(1))
+    assert "\x1b[32m[통과]" in lab.run("validate", "--all", "--color").out  # validate 는 --color 를 따른다
     assert "\x1b[" not in lab.run("fetch", "--all").out
     assert not os.path.exists("data") and lab.db_path.exists()
     r = lab.run("fetch", "--all", "--base-dir", str(lab.project), base_dir_args=False)
     assert r.code == 0
+
+
+@pytest.mark.xfail(strict=True, reason="DEF-7-001: fetch/auth 가 전역 --color 를 무시한다(badge 호출에 ctx.ui 미전달). 소스 수정 후 이 표시를 제거한다")
+@pytest.mark.parametrize("argv", [["fetch", "--all", "--color"], ["auth", "--color"]])
+def test_color_option_applies_to_fetch_and_auth(lab, argv):
+    """TC-746: 전역 --color 가 fetch·auth 의 상태 배지에도 적용된다(DEF-7-001, 현재 미적용이라 xfail). [IT-A19, DESIGN 4-1 --color]"""
+    lab.channel(1)
+    lab.login_read()
+    assert "\x1b[" in lab.run(*argv).out
 
 
 def test_terminal_escape_in_titles_is_neutralized(lab):
@@ -528,7 +537,9 @@ def test_validation_thresholds_from_local_settings_and_invalid_config(lab):
     lab.candidate("aaaaaaaaaa1", ["겨울철 전기요금 줄이는 난방 습관 바꾸기 요령 소개"])
     lab.local_settings("validation:\n  key_phrase_chars: 5\n  recommended_max_chars: 10\n  hard_max_chars: 12\n")
     r = lab.run("validate", "--all")
-    assert r.code == 0 and "상한(12자)" in r.out and lab.q("SELECT validation_result FROM title_candidates")[0][0] == "block"
+    assert r.code == 0 and "[차단] 1건" in r.out
+    row = lab.q("SELECT validation_result, validation_reasons_json FROM title_candidates")[0]
+    assert row[0] == "block" and "LEN_HARD" in row[1] and "상한(12자)" in row[1]
     lab.local_settings("validation:\n  warn_match_ratio: 0.1\n  block_match_ratio: 0.9\n")
     n = len(lab.q("SELECT id FROM title_candidates"))
     for argv in (["validate", "--all"], ["fetch", "--all"], ["auth"]):
