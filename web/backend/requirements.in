@@ -1,0 +1,7 @@
+# 런타임 직접 의존성. 잠금 파일(requirements.txt)은 pip-compile --generate-hashes 로 만든다.
+fastapi==0.143.0
+uvicorn==0.54.0
+pydantic==2.14.0
+sqlalchemy==2.1.4
+alembic==1.20.0
+psycopg[binary]==3.3.6
