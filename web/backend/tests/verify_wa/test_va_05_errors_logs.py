@@ -22,7 +22,7 @@ def _assert_clean(text_: str):
 
 
 def test_unhandled_exception_returns_generic_500_without_leaks(pclient, log_capture):
-    """TC-VA-@@@ [S-W09] 처리되지 않은 예외(경로·비밀이 든 메시지)는 일반 문구 500 problem+json 이고 응답 어디에도 예외 클래스/경로/메시지가 없으며 보안 헤더가 유지된다."""
+    """TC-VA-088 [S-W09] 처리되지 않은 예외(경로·비밀이 든 메시지)는 일반 문구 500 problem+json 이고 응답 어디에도 예외 클래스/경로/메시지가 없으며 보안 헤더가 유지된다."""
     r = pclient.get("/api/v1/_t/boom")
     assert r.status_code == 500 and r.headers["content-type"].startswith("application/problem+json")
     _assert_clean(r.text)
@@ -36,7 +36,7 @@ def test_unhandled_exception_returns_generic_500_without_leaks(pclient, log_capt
 
 
 def test_db_error_returns_generic_500_without_sql(pclient):
-    """TC-VA-@@@ [S-W09] DB 제약 위반(IntegrityError)도 SQL/테이블/드라이버 정보 없이 일반 500."""
+    """TC-VA-089 [S-W09] DB 제약 위반(IntegrityError)도 SQL/테이블/드라이버 정보 없이 일반 500."""
     login(pclient)
     r = pclient.get("/api/v1/_t/dberr")
     assert r.status_code == 500
@@ -45,20 +45,20 @@ def test_db_error_returns_generic_500_without_sql(pclient):
 
 @pytest.mark.xfail(strict=True, reason="DEF-6-006: SQLAlchemy 예외 문자열의 [parameters: ...] 가 로그에 그대로 실려 PIN 해시 등 값이 로그에 남을 수 있음(make_engine 에 hide_parameters 없음)")
 def test_db_error_log_does_not_contain_bound_parameter_values(pclient, log_capture):
-    """TC-VA-@@@ [S-W09] DB 오류 로그에 바인딩 파라미터 값(비밀일 수 있음)이 남지 않아야 한다."""
+    """TC-VA-090 [S-W09] DB 오류 로그에 바인딩 파라미터 값(비밀일 수 있음)이 남지 않아야 한다."""
     pclient.get("/api/v1/_t/dberr-param")
     assert "PinHash-Looking-Value-ABC" not in log_capture.getvalue()
 
 
 def test_http_exception_detail_not_echoed(pclient):
-    """TC-VA-@@@ [S-W09] 코드가 던진 HTTPException(detail=경로/비밀)의 detail 은 응답에 나가지 않는다."""
+    """TC-VA-091 [S-W09] 코드가 던진 HTTPException(detail=경로/비밀)의 detail 은 응답에 나가지 않는다."""
     r = pclient.get("/api/v1/_t/http")
     assert r.status_code == 418
     _assert_clean(r.text)
 
 
 def test_validation_error_does_not_echo_submitted_values(pclient):
-    """TC-VA-@@@ [S-W09] 검증 오류(422)는 위치와 사유만 알리고 제출한 값(비밀일 수 있음)을 되돌리지 않는다. 깨진 JSON 도 마찬가지."""
+    """TC-VA-092 [S-W09] 검증 오류(422)는 위치와 사유만 알리고 제출한 값(비밀일 수 있음)을 되돌리지 않는다. 깨진 JSON 도 마찬가지."""
     csrf = login(pclient)
     secret = "TopSecretValue-ABC123"
     cases = [
@@ -79,7 +79,7 @@ def test_validation_error_does_not_echo_submitted_values(pclient):
 
 
 def test_404_405_are_problem_json_without_echoing_path(pclient):
-    """TC-VA-@@@ [S-W09] 404/405 도 problem+json 이고 요청 경로를 되돌리지 않는다."""
+    """TC-VA-093 [S-W09] 404/405 도 problem+json 이고 요청 경로를 되돌리지 않는다."""
     r = pclient.get("/api/v1/secret-path-xyz")
     assert r.status_code == 404 and "secret-path-xyz" not in r.text and r.headers["content-type"].startswith("application/problem+json")
     r = pclient.delete("/api/v1/auth/me")
@@ -87,7 +87,7 @@ def test_404_405_are_problem_json_without_echoing_path(pclient):
 
 
 def test_db_unreachable_gives_503_ready_and_500_api_without_connection_details(tmp_path, web_settings, clock, fake_time, log_capture, monkeypatch):
-    """TC-VA-@@@ [S-W08, S-W09] DB 가 죽어 있으면 /readyz 는 503(degraded) 이고 API 는 500 이며, 응답·로그에 DB 비밀번호/호스트/경로가 없다."""
+    """TC-VA-094 [S-W08, S-W09] DB 가 죽어 있으면 /readyz 는 503(degraded) 이고 API 는 500 이며, 응답·로그에 DB 비밀번호/호스트/경로가 없다."""
     from dataclasses import replace
     pw = "SuperSecretPw123"
     s = replace(web_settings, database_url=f"postgresql+psycopg://ytweb_app:{pw}@127.0.0.1:9/ytweb")
@@ -128,7 +128,7 @@ MASKED = [
 
 @pytest.mark.parametrize("text_,secret", MASKED)
 def test_mask_secrets_known_forms(text_, secret):
-    """TC-VA-@@@ [S-W09] 비밀 형태 16종(키=값, JSON, 쿠키, URL 자격증명, 43자 토큰)이 마스킹된다."""
+    """TC-VA-095 [S-W09] 비밀 형태 16종(키=값, JSON, 쿠키, URL 자격증명, 43자 토큰)이 마스킹된다."""
     out = mask_secrets(text_)
     assert secret not in out, out
     assert MASK in out
@@ -141,18 +141,18 @@ def test_mask_secrets_known_forms(text_, secret):
     ("Authorization: Basic dXNlcjpwYXNzd29yZA==", "dXNlcjpwYXNzd29yZA=="),
 ])
 def test_mask_secrets_authorization_header_values(text_, secret):
-    """TC-VA-@@@ [S-W09] Authorization 헤더 값(스킴 뒤 자격증명)까지 모두 마스킹돼야 한다."""
+    """TC-VA-096 [S-W09] Authorization 헤더 값(스킴 뒤 자격증명)까지 모두 마스킹돼야 한다."""
     assert secret not in mask_secrets(text_)
 
 
 def test_mask_does_not_destroy_ordinary_text():
-    """TC-VA-@@@ [S-W09] 일반 문구·짧은 값·경로는 과하게 가리지 않는다(디버깅 가능성 유지)."""
+    """TC-VA-097 [S-W09] 일반 문구·짧은 값·경로는 과하게 가리지 않는다(디버깅 가능성 유지)."""
     s = "request path=/api/v1/videos status=200 ms=12 count=5 page=2"
     assert mask_secrets(s) == s
 
 
 def test_json_formatter_masks_extra_fields_nested_and_exc(log_capture):
-    """TC-VA-@@@ [S-W09] JSON 로그의 extra 필드(민감 키 이름·중첩 dict/list 값)와 예외 본문이 마스킹된다."""
+    """TC-VA-098 [S-W09] JSON 로그의 extra 필드(민감 키 이름·중첩 dict/list 값)와 예외 본문이 마스킹된다."""
     import logging
     lg = logging.getLogger("ytweb.test_va")
     lg.info("hello", extra={"cookie": "ytw_session=XYZ-secret-cookie", "headers": {"X-CSRF-Token": "csrf-secret-aaa", "ok": "fine"},
@@ -170,7 +170,7 @@ def test_json_formatter_masks_extra_fields_nested_and_exc(log_capture):
 
 
 def test_secrets_never_reach_logs_through_real_request_flows(client, log_capture):
-    """TC-VA-@@@ [S-W08, S-W09] 실제 요청 흐름(PIN 설정·로그인·CSRF·쿠키·쿼리스트링·Authorization·검증오류)을 모두 거친 뒤 로그에 비밀이 하나도 없다."""
+    """TC-VA-099 [S-W08, S-W09] 실제 요청 흐름(PIN 설정·로그인·CSRF·쿠키·쿼리스트링·Authorization·검증오류)을 모두 거친 뒤 로그에 비밀이 하나도 없다."""
     csrf = login(client)
     token = client.cookies.get("ytw_session")
     client.patch("/api/v1/settings", json={"pin": {"action": "set", "new_pin": SECRET_PIN}}, headers=hdr(csrf))

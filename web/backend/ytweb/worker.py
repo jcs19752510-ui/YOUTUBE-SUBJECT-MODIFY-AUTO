@@ -55,12 +55,14 @@ class Worker:
         worker_id: str | None = None,
         run_due_items: Callable[[sessionmaker, datetime], object] | None = None,
         poll_seconds: float = POLL_SECONDS,
+        startup_recover: Callable[..., object] | None = None,
     ) -> None:
         self.factory = factory
         self.clock = clock
         self.worker_id = worker_id or f"{socket.gethostname()}:{os.getpid()}"
         self.run_due_items = run_due_items
         self.poll_seconds = poll_seconds
+        self.startup_recover = startup_recover
         self.stop_event = threading.Event()
         self._last_maintenance: datetime | None = None
 
@@ -97,6 +99,13 @@ class Worker:
 
     def run(self) -> None:
         log.info("worker start", extra={"worker_id": self.worker_id})
+        if self.startup_recover:
+            # 워커는 compose 에서 1개만 뜬다(전제). 비정상 종료로 running 에 남은 배치 항목을 기동 직후 즉시 재조회로 확정한다.
+            try:
+                fixed = self.startup_recover(self.factory, self.clock(), stale_after=timedelta(0))
+                log.info("기동 시 running 항목 정리", extra={"fixed": fixed})
+            except Exception:  # noqa: BLE001 - 정리 실패가 워커 기동을 막지 않게 하되 로그에 남긴다
+                log.error("기동 시 running 항목 정리 실패", exc_info=True)
         while not self.stop_event.is_set():
             self.tick()
             self.stop_event.wait(self.poll_seconds)
@@ -107,7 +116,13 @@ def main() -> None:
     settings = load_web_settings()
     setup_logging(json_format=settings.log_json)
     engine = make_engine(settings.database_url)
-    worker = Worker(make_session_factory(engine), run_due_items=load_domain_handlers())
+    run_due = load_domain_handlers()
+    batches = sys.modules.get("ytweb.domain.batches")
+    worker = Worker(
+        make_session_factory(engine),
+        run_due_items=run_due,
+        startup_recover=getattr(batches, "recover_running_items", None) if batches else None,
+    )
     signal.signal(signal.SIGTERM, worker.request_stop)
     signal.signal(signal.SIGINT, worker.request_stop)
     try:

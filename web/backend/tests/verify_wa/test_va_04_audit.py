@@ -36,7 +36,7 @@ def seed(db, n=6):
 
 
 def test_chain_matches_independent_reference_implementation(db):
-    """TC-VA-@@@ [S-W16] 저장된 해시가 명세로 독립 재구현한 sha256(prev+정규 JSON) 값과 모두 일치하고 첫 prev 는 0*64 이다(유니코드·중첩·None 포함)."""
+    """TC-VA-080 [S-W16] 저장된 해시가 명세로 독립 재구현한 sha256(prev+정규 JSON) 값과 모두 일치하고 첫 prev 는 0*64 이다(유니코드·중첩·None 포함)."""
     seed(db, 6)
     prev = GENESIS
     rows = db.execute(select(AuditLog).order_by(AuditLog.id)).scalars().all()
@@ -49,12 +49,12 @@ def test_chain_matches_independent_reference_implementation(db):
 
 
 def test_empty_log_verifies_true(db):
-    """TC-VA-@@@ [S-W16] 빈 로그는 체인 유효(True)로 본다(초기 상태)."""
+    """TC-VA-081 [S-W16] 빈 로그는 체인 유효(True)로 본다(초기 상태)."""
     assert audit.verify_chain(db) is True
 
 
 def test_non_utc_timezone_hashes_same_as_utc_and_naive_rejected(db):
-    """TC-VA-@@@ [S-W16] 시각은 UTC 로 정규화되어 해시되고(KST 입력도 같은 해시), naive datetime 은 ValueError."""
+    """TC-VA-082 [S-W16] 시각은 UTC 로 정규화되어 해시되고(KST 입력도 같은 해시), naive datetime 은 ValueError."""
     kst = timezone(timedelta(hours=9))
     a = audit.record(db, actor="o", action="x", detail={}, now=T0)
     b_prev = a.hash
@@ -127,7 +127,7 @@ MUTATIONS = [m_actor, m_action, m_detail, m_detail_nested, m_ts_1us, m_ttype, m_
 
 @pytest.mark.parametrize("mut", MUTATIONS, ids=lambda f: f.__name__)
 def test_tamper_detected_by_verify_and_api(db, client, mut):
-    """TC-VA-@@@ [S-W16] 변조 17종(내용 수정·1µs 시각 변경·해시/prev 변경·중간/첫 행 삭제·순서 바꾸기·위조 행 추가·해시 재계산 위장)은 verify_chain=False, API chain_ok=false."""
+    """TC-VA-083 [S-W16] 변조 17종(내용 수정·1µs 시각 변경·해시/prev 변경·중간/첫 행 삭제·순서 바꾸기·위조 행 추가·해시 재계산 위장)은 verify_chain=False, API chain_ok=false."""
     seed(db, 6)
     login(client)
     assert client.get("/api/v1/audit").json()["chain_ok"] is True  # 로그인 행이 이어 붙은 뒤에도 유효
@@ -139,7 +139,7 @@ def test_tamper_detected_by_verify_and_api(db, client, mut):
 
 
 def test_known_limits_tail_truncation_and_full_rewrite_are_not_detected(db):
-    """TC-VA-@@@ [S-W16] (알려진 제한 특성화) 꼬리 절단·전체 삭제·키 없는 해시로 처음부터 다시 쓴 체인은 verify_chain 으로 탐지되지 않는다 -> DB 권한(UPDATE/DELETE/TRUNCATE 회수)이 유일한 방어선."""
+    """TC-VA-084 [S-W16] (알려진 제한 특성화) 꼬리 절단·전체 삭제·키 없는 해시로 처음부터 다시 쓴 체인은 verify_chain 으로 탐지되지 않는다 -> DB 권한(UPDATE/DELETE/TRUNCATE 회수)이 유일한 방어선."""
     ids = seed(db, 6)
     db.delete(_row(db, 5))  # 마지막 행 삭제
     db.commit()
@@ -165,7 +165,7 @@ def test_known_limits_tail_truncation_and_full_rewrite_are_not_detected(db):
 
 
 def test_audit_api_requires_session_and_paginates_newest_first(client, db):
-    """TC-VA-@@@ [S-W16] 감사 조회는 세션 필수(401). 페이지 경계: page_size 1·200 허용, 0·201 은 422, 범위 밖 page 는 빈 목록, 최신순."""
+    """TC-VA-085 [S-W16] 감사 조회는 세션 필수(401). 페이지 경계: page_size 1·200 허용, 0·201 은 422, 범위 밖 page 는 빈 목록, 최신순."""
     assert client.get("/api/v1/audit").status_code == 401
     login(client)
     seed(db, 7)
@@ -186,14 +186,14 @@ def test_audit_api_requires_session_and_paginates_newest_first(client, db):
 @pytest.mark.xfail(strict=True, reason="DEF-6-005: page 상한이 없어 offset 이 64비트를 넘으면 DB 오류로 500 (SQLite OverflowError / PostgreSQL bigint 범위 오류)")
 @pytest.mark.parametrize("page", [10**18, 2**63])
 def test_audit_huge_page_does_not_500(client, page):
-    """TC-VA-@@@ [S-W13] 매우 큰 page 값은 빈 목록(200) 또는 422 여야 하며 500 이면 안 된다."""
+    """TC-VA-086 [S-W13] 매우 큰 page 값은 빈 목록(200) 또는 422 여야 하며 500 이면 안 된다."""
     login(client)
     r = client.get("/api/v1/audit", params={"page": page, "page_size": 200})
     assert r.status_code in (200, 422)
 
 
 def test_security_events_land_in_audit_with_expected_actions(client, db):
-    """TC-VA-@@@ [S-W16] 로그인·로그아웃·설정변경·로그인 거부가 순서대로 감사에 남고 체인이 유효하다."""
+    """TC-VA-087 [S-W16] 로그인·로그아웃·설정변경·로그인 거부가 순서대로 감사에 남고 체인이 유효하다."""
     csrf = login(client)
     client.patch("/api/v1/settings", json={"pin": {"action": "set", "new_pin": "2468"}}, headers=hdr(csrf))
     client.delete("/api/v1/auth/session", headers=hdr(csrf))

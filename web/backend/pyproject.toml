@@ -28,7 +28,6 @@ markers = ["postgres: PostgreSQL 서버가 필요한 테스트(YTWEB_TEST_PG_URL
 [tool.coverage.run]
 source = ["ytweb"]
 branch = true
-omit = ["ytweb/domain/*", "ytweb/ai/*", "ytweb/youtube/*", "ytweb/routers/dashboard.py", "ytweb/routers/videos.py", "ytweb/routers/suggestions.py", "ytweb/routers/batches.py", "ytweb/routers/changes.py", "ytweb/routers/reports.py", "ytweb/routers/jobs.py", "ytweb/routers/google.py"]
 
 [tool.coverage.report]
 show_missing = true
