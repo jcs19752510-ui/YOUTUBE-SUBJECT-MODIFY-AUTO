@@ -83,3 +83,27 @@ def test_tc_vb_304_daily_plus_interval_failure_still_skips_not_defers(seeded, db
     out = apply_one(db, b.items[1].id, now=clock(), env=env, gateway=g)
     assert out.status == "skipped" and out.code.startswith("limit_")
     assert db.get(BatchItem, b.items[1].id).status == "skipped"
+
+
+def test_tc_vb_305_def_vf_b02_every_domain_problem_error_carries_korean_hint():
+    """DEF-VF-B02 회귀: 도메인·라우터·AI 소스의 모든 ProblemError 호출이 비어 있지 않은 hint 를 가진다(정적 점검 + title_invalid 실호출)."""
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[2] / "ytweb"
+    missing = []
+    for f in [*root.joinpath("domain").glob("*.py"), *root.joinpath("routers").glob("*.py"), *root.joinpath("ai").glob("*.py")]:
+        for node in ast.walk(ast.parse(f.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "ProblemError":
+                kw = {k.arg: k.value for k in node.keywords}
+                if "hint" not in kw or (isinstance(kw["hint"], ast.Constant) and not str(kw["hint"].value).strip()):
+                    missing.append((f.name, node.lineno))
+    assert missing == []
+
+
+def test_tc_vb_306_title_invalid_non_string_has_hint(seeded, db, env, clock):
+    from ytweb.core.errors import ProblemError
+    from ytweb.domain.suggestions import edit_title
+    s = __import__("tests.verify_wb.vbh", fromlist=["x"]).make_sug(db, env, clock(), life_ids(db, 1)[0])
+    with pytest.raises(ProblemError) as e:
+        edit_title(db, s.id, 123, now=clock(), env=env)  # type: ignore[arg-type]
+    assert e.value.code == "title_invalid" and e.value.hint

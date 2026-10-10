@@ -215,7 +215,7 @@ def edit_title(session: Session, suggestion_id: int, new_title: str, *, now: dat
     if sug.status not in EDITABLE:
         raise ProblemError(409, "suggestion_state", f"현재 상태({sug.status})에서는 제목을 수정할 수 없습니다.", hint="배치에 담겼거나 이미 반영된 제안은 수정할 수 없습니다.")
     if not isinstance(new_title, str):
-        raise ProblemError(422, "title_invalid", "제목이 올바르지 않습니다.")
+        raise ProblemError(422, "title_invalid", "제목이 올바르지 않습니다.", hint="제목을 문자열로 입력하세요.")
     title = clean_text(new_title)
     if not title:
         raise ProblemError(422, "title_empty", "제목이 비어 있습니다.", hint="제목을 입력하세요.")

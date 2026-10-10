@@ -88,3 +88,18 @@ def validate(body: Strict, _=Depends(require_csrf)):
 @router.get("/needs-session")
 def needs_session(_=Depends(require_session)):
     return {"ok": True}
+
+
+@router.post("/write-then-fail")
+def write_then_fail(_=Depends(require_csrf), db: Session = Depends(get_session), clock=Depends(get_clock)):
+    """설정 행을 쓴 뒤 409 로 실패한다 -> 오류 응답이므로 변경은 확정되면 안 된다(commit-before-response 가 성공 응답에만 적용됨을 확인)."""
+    from ytweb.core.settings_store import set_web_setting
+    set_web_setting(db, "probe_written", {"v": 1}, now=clock())
+    raise ProblemError(409, "probe_conflict", "프로브 충돌", hint="다시 시도하세요.")
+
+
+@router.post("/write-ok")
+def write_ok(_=Depends(require_csrf), db: Session = Depends(get_session), clock=Depends(get_clock)):
+    from ytweb.core.settings_store import set_web_setting
+    set_web_setting(db, "probe_written", {"v": 2}, now=clock())
+    return {"ok": True}

@@ -176,3 +176,17 @@ def test_job_without_handler_fails_with_hint_text(factory):
     with factory() as s:
         row = s.get(Job, jid)
         assert row.status == "failed" and row.error.startswith("no_handler")
+
+
+def test_error_response_after_write_is_rolled_back_but_success_is_committed(pclient, engine):
+    """TC-VA-191 [S-W12] 쓰기 뒤 409 로 실패한 요청의 변경은 확정되지 않고(롤백), 성공(200) 요청의 변경은 확정된다(성공 응답에만 조기 commit)."""
+    from tests.verify_wa.helpers import hdr, login
+    csrf = login(pclient)
+    r = pclient.post("/api/v1/_t/write-then-fail", headers=hdr(csrf), json={})
+    assert r.status_code == 409
+    q = "select count(*) from settings_kv where key='probe_written'"
+    with engine.connect() as c:
+        assert c.execute(text(q)).scalar_one() == 0
+    assert pclient.post("/api/v1/_t/write-ok", headers=hdr(csrf), json={}).status_code == 200
+    with engine.connect() as c:
+        assert c.execute(text(q)).scalar_one() == 1
