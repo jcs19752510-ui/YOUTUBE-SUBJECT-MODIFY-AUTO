@@ -108,7 +108,7 @@ def test_ttl_option(w, streams, extra, code):
 def test_approver_validation(w, streams, name, code):
     """TC-677: 승인자 이름은 필수이며 비거나 제어 문자·41자 이상이면 거부한다(옵션 누락은 2). [NFR-008, SEC-019]"""
     assert appr(w, streams, name=name) == code
-    assert apath(w).exists() == (code == 0)
+    assert apath(w).exists() == (code == 0) and (w.prompts == []) == (code != 0)   # 이름이 틀리면 입력을 받기 전에 거부
     if code == 0:
         return
     assert cli_run(w, streams, ["approve", "--candidate", str(w.cid)]) == 2

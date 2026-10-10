@@ -493,8 +493,7 @@ def _send_with_retry(env: LiveEnv, run: _Run, service: Any, state: _CallState) -
             response = _send_update(service, run.body)
         except BaseException as exc:
             quota.mark(rid, "failed")
-            if not isinstance(exc, Exception):
-                state.indeterminate = True
+            if not isinstance(exc, Exception):   # Ctrl+C 등: 분류하지 않고 그대로 올린다(_handle_call_failure가 미확정으로 처리)
                 raise
             err = classify_write_error(exc)
             if isinstance(err, WriteApiError) and not err.definite:

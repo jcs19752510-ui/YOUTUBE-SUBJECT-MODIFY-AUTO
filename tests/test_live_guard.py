@@ -55,6 +55,8 @@ def test_all_gates_pass_calls_update_exactly_once(w):
     assert w.quota() == [("videos.list", 1, "ok"), ("videos.update", 50, "ok"), ("videos.list", 1, "ok")]
     assert w.server.items[VID]["snippet"]["title"] == NEW_TITLE
     assert "[완료] 제목 변경을 마쳤습니다" in w.output() and f"rollback --change {rows[0]['id']}" in w.output()
+    for n in (10, 11, 12):
+        assert f"{n}/14" in w.output()
 
 
 def test_write_happens_only_after_human_confirmation_in_documented_order(w):
@@ -209,7 +211,7 @@ def test_each_gate_failure_stops_before_any_write(w, monkeypatch, step, breaker,
     path = approvals.approval_path(w.settings, VID, w.cid)
     if path.exists() and "인증값" not in text and "이미 사용" not in text:
         assert w.approval_file()["used"] is False   # 막힌 시도는 승인을 소진하지 않는다
-    assert f"{step}단계에서 막혀" in w.output()
+    assert f"{step}단계에서 막혀" in w.output() and ("조건 확인 결과" in w.output()) == (step <= 10)
 
 
 def test_step1_requires_live_flag(w):
@@ -1027,3 +1029,9 @@ def test_verification_when_video_disappears_after_write(w):
     result = go(w)
     v = json.loads(w.changes()[0]["verify_result_json"])
     assert result.ok is False and v["checked"] is False and w.changes()[0]["result"] == "success"
+
+
+def test_rollback_restores_original_title_even_if_length_limit_was_lowered(w, applied):
+    """TC-686: 설정의 제목 길이 상한을 나중에 낮춰도 롤백(원래 제목 복원)은 길이 검사에 막히지 않는다(적용은 검사). [WU-4 결정, FR-011]"""
+    w.set(hard_max_chars=5, recommended_max_chars=5, key_phrase_chars=5)
+    assert rb(w, applied).ok
