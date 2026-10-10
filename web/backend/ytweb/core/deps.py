@@ -14,9 +14,15 @@ from ytweb.core.errors import ProblemError
 from ytweb.core.sessions import COOKIE_NAME, SessionInfo, lookup_session
 from ytweb.db.session import session_scope
 
+OPEN_SESSIONS_KEY = "ytweb_open_sessions"
+
 
 def get_session(request: Request) -> Iterator[Session]:
-    yield from session_scope(request.app.state.session_factory)
+    """요청 범위 DB 세션. FastAPI 는 yield 뒤의 종료 코드를 응답 전송 '뒤에' 실행하므로, 성공 응답이 나가기 전에
+    GuardMiddleware 가 이 목록의 세션을 먼저 commit 한다(DEF-VA-010). 여기서의 종료 commit 은 오류 경로(rollback)와 이중 안전장치다."""
+    for session in session_scope(request.app.state.session_factory):
+        request.scope.setdefault(OPEN_SESSIONS_KEY, []).append(session)
+        yield session
 
 
 def get_web_settings(request: Request) -> WebSettings:

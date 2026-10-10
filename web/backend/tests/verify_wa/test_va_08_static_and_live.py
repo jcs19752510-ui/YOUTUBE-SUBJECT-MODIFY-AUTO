@@ -14,10 +14,10 @@ import time
 from pathlib import Path
 
 import pytest
-
 import ytweb
-from tests.conftest import REPO_ROOT
 from ytweb.core import deps, pin, sessions
+
+from tests.conftest import REPO_ROOT
 
 PKG = Path(ytweb.__file__).parent
 CORE_FILES = sorted((PKG / "core").glob("*.py")) + sorted((PKG / "routers").glob("*.py")) + [PKG / "app.py", PKG / "worker.py", PKG / "migrate.py"]
@@ -124,7 +124,7 @@ def live(tmp_path):
     err.close()
 
 
-def _raw(port: int, payload: bytes, read_timeout=5.0) -> bytes:
+def _raw(port: int, payload: bytes, read_timeout=15.0) -> bytes:
     with socket.create_connection(("127.0.0.1", port), timeout=read_timeout) as s:
         s.sendall(payload)
         s.settimeout(read_timeout)
@@ -225,3 +225,38 @@ def test_live_sigterm_graceful_shutdown(live):
     assert p.wait(timeout=10) in (0, -signal.SIGTERM)
     out = live["err"].read_text(errors="replace")
     assert "Finished server process" in out and "Traceback" not in out
+
+
+def _live_req(port, method, path, token=None, csrf=None, body=None):
+    c = http.client.HTTPConnection("127.0.0.1", port, timeout=10)  # 요청마다 새 연결(브라우저가 연결을 새로 쓰는 경우와 같게)
+    h = {"Origin": f"http://127.0.0.1:{port}", "Content-Type": "application/json", "Sec-Fetch-Site": "same-origin"}
+    if token:
+        h["Cookie"] = f"ytw_session={token}"
+    if csrf:
+        h["X-CSRF-Token"] = csrf
+    c.request(method, path, body=json.dumps(body).encode() if body is not None else b"{}" if method != "GET" else None, headers=h)
+    r = c.getresponse()
+    raw = r.read()
+    sc = r.getheader("Set-Cookie")
+    c.close()
+    return r.status, (json.loads(raw) if raw else None), sc
+
+
+def test_live_read_after_write_sees_committed_state_pin_cannot_be_bypassed(live):
+    """TC-VA-190 [S-W08, DEF-VA-010 회귀] 실서버: 세션 발급 직후 첫 요청이 401 이 되지 않고, PIN 설정 직후 current_pin 없는 PIN 변경이 단 한 번도 통과하지 않는다(요청마다 새 연결; 세션 발급 8회 + PIN 변경 시도 4회, 발급 한도 때문에 반복 수는 제한). 한계: 수정 전 코드에서도 이 환경에서는 6회 모두 통과해 경쟁을 재현하지 못했다 -> 결정적 증명은 TC-VA-182/183, 이 시험은 실서버 스모크."""
+    port = live["port"]
+    for _ in range(8):  # 세션 발급 한도(분당 10)를 넘지 않게
+        st, body, sc = _live_req(port, "POST", "/api/v1/auth/session")
+        assert st == 200
+        token = sc.split(";")[0].split("=", 1)[1]
+        st2, me, _ = _live_req(port, "GET", "/api/v1/settings", token=token)
+        assert st2 == 200, "세션 발급 직후 첫 요청이 옛 상태를 읽음(401)"
+    st, body, sc = _live_req(port, "POST", "/api/v1/auth/session")
+    token, csrf = sc.split(";")[0].split("=", 1)[1], body["csrf_token"]
+    st, _, _ = _live_req(port, "PATCH", "/api/v1/settings", token, csrf, {"pin": {"action": "set", "new_pin": "246810"}})
+    assert st == 200
+    statuses = []
+    for _ in range(4):  # 잠금(5회) 이전까지만: 모두 current_pin 없음 -> 401 이어야 한다
+        st, _, _ = _live_req(port, "PATCH", "/api/v1/settings", token, csrf, {"pin": {"action": "set", "new_pin": "111111"}})
+        statuses.append(st)
+    assert statuses == [401] * 4, statuses

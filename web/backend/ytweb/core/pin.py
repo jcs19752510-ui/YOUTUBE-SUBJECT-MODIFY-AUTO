@@ -31,7 +31,7 @@ _ADVISORY_LOCK_KEY = 7_340_002  # PIN 실패 횟수 갱신(읽기-수정-쓰기)
 
 def validate_pin_format(pin: str) -> None:
     if not isinstance(pin, str) or not _PIN_RE.fullmatch(pin):
-        raise ProblemError(422, "pin_invalid", "PIN 은 숫자 4~12자리여야 합니다.")
+        raise ProblemError(422, "pin_invalid", "PIN 은 숫자 4~12자리여야 합니다.", hint="숫자만 4~12자리로 입력하세요.")
 
 
 def hash_pin(pin: str) -> str:
@@ -107,4 +107,4 @@ def check_pin(db: Session, pin: str | None, *, now: datetime) -> None:
     db.commit()
     if st["locked_until"] and datetime.fromisoformat(st["locked_until"]) > now:
         raise _locked_error(datetime.fromisoformat(st["locked_until"]), now)
-    raise ProblemError(401, "pin_invalid", "PIN 이 올바르지 않습니다.")
+    raise ProblemError(401, "pin_invalid", "PIN 이 올바르지 않습니다.", hint="PIN 을 다시 확인해 입력하세요. 연속으로 틀리면 잠깁니다.")

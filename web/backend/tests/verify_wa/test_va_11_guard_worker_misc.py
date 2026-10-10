@@ -9,14 +9,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import event, update
-
-from tests.verify_wa.helpers import asgi_call, body_json, header
 from ytweb.app import app_from_env, create_app, discover_routers
 from ytweb.core import jobs
 from ytweb.core.guard import GuardMiddleware
 from ytweb.core.ratelimit import RateLimiter, RateLimits
 from ytweb.db.models import Job
 from ytweb.worker import Worker
+
+from tests.verify_wa.helpers import asgi_call, body_json, header
 
 T0 = datetime(2026, 10, 10, 3, 0, tzinfo=timezone.utc)
 
@@ -188,9 +188,9 @@ def test_missing_origin_counts_as_foreign_only_for_state_changing_methods(web_se
 def test_session_issue_purges_expired_rows(web_settings, engine, factory, clock, app, client):
     """TC-VA-170 [S-W08] 세션 발급 시 만료된 세션 행이 정리된다(만료 행이 20개 한도를 차지하거나 쌓이지 않는다)."""
     from sqlalchemy import func, select
+    from ytweb.db.models import SessionRow
 
     from tests.conftest import login
-    from ytweb.db.models import SessionRow
     for _ in range(3):
         login(client)
     clock.advance(hours=12, seconds=1)
@@ -202,9 +202,9 @@ def test_session_issue_purges_expired_rows(web_settings, engine, factory, clock,
 def test_session_lookup_updates_last_seen_but_not_expiry(client, clock, factory):
     """TC-VA-171 [S-W08] 세션 사용 시 last_seen 은 현재 시각으로 갱신되고 만료 시각(절대 TTL)은 늘어나지 않는다."""
     from sqlalchemy import select
+    from ytweb.db.models import SessionRow
 
     from tests.conftest import login
-    from ytweb.db.models import SessionRow
     login(client)
     with factory() as s:
         before = s.execute(select(SessionRow)).scalar_one()
@@ -278,7 +278,6 @@ def test_canonical_json_refuses_non_finite_numbers(db, bad):
     with pytest.raises(ValueError):
         audit.record(db, actor="o", action="a", detail={"v": bad}, now=T0)
     from sqlalchemy import func, select
-
     from ytweb.db.models import AuditLog
     assert db.execute(select(func.count()).select_from(AuditLog)).scalar_one() == 0
 
@@ -333,7 +332,6 @@ def test_pin_hash_with_other_scheme_label_never_verifies():
 def test_audit_session_target_is_truncated_id_not_full_hash(client, csrf, factory):
     """TC-VA-180 [S-W08, S-W16] 감사 로그의 세션 대상 식별자는 12자 접두사뿐이다(세션 해시 전체가 감사에 남지 않는다)."""
     from sqlalchemy import select
-
     from ytweb.db.models import AuditLog, SessionRow
     with factory() as s:
         sid = s.execute(select(SessionRow.id)).scalar_one()

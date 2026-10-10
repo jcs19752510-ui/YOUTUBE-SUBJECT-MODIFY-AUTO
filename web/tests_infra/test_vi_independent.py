@@ -1753,3 +1753,35 @@ def test_tc_vi_135_zz_start_refuses_when_port_is_taken_by_another_program():
         assert docker("ps", "-aq", "--filter", f"label=com.docker.compose.project={PROJECT}").stdout.strip() == "", "컨테이너를 만들어 버림"
     finally:
         srv.close()
+
+
+@needs_ps
+def test_tc_vi_137_zz_first_run_generates_distinct_random_secrets_and_brings_stack_up():
+    proj = PROJECT + "-s"
+    base = RUN.parent / "run5" / "web"
+    shutil.rmtree(base.parent, ignore_errors=True)
+    base.mkdir(parents=True)
+    shutil.copy2(RUN / "web" / "compose.yaml", base / "compose.yaml")
+    shutil.copytree(RUN / "web" / "scripts_p", base / "scripts")
+    env = {"YTWEB_PROJECT": proj, "YTWEB_IMAGE_PREFIX": PROJECT, "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "1", "HOME": str(RUN.parent / "home")}
+    assert docker("ps", "-aq", "--filter", f"label=com.docker.compose.project={PROJECT}").stdout.strip() == ""
+    try:
+        r = sh([PWSH, "-NoProfile", "-NonInteractive", "-File", str(base / "scripts" / "start.ps1"), "-NoBuild"], env=env, timeout=400)
+        assert r.returncode == 0 and "준비 완료" in r.stdout, r.stdout[-1500:]
+        vals = []
+        for n in ("db_superuser_password", "db_owner_password", "db_app_password"):
+            v = (base / "secrets" / n).read_text()
+            assert re.fullmatch(r"[0-9a-f]{64}", v), n  # 256비트 무작위, 개행 없음
+            vals.append(v)
+            assert v not in r.stdout + r.stderr, "비밀 값이 화면에 출력됨"
+        assert len(set(vals)) == 3
+        assert not set(vals) & {(RUN / "web" / "secrets" / n).read_text() for n in ("db_superuser_password", "db_owner_password", "db_app_password")}
+        assert "내용은 표시하지 않습니다" in r.stdout
+        # 두 번째 실행은 기존 비밀을 덮어쓰지 않는다
+        r2 = sh([PWSH, "-NoProfile", "-NonInteractive", "-File", str(base / "scripts" / "start.ps1"), "-NoBuild"], env=env, timeout=400)
+        assert r2.returncode == 0 and "이미 있습니다" in r2.stdout
+        assert [(base / "secrets" / n).read_text() for n in ("db_superuser_password", "db_owner_password", "db_app_password")] == vals
+        ps_ = sh(["docker", "compose", "-p", proj, "-f", str(base / "compose.yaml"), "ps", "--format", "{{.Service}} {{.Health}} {{.State}}"], env={"YTWEB_IMAGE_PREFIX": PROJECT})
+        assert "db healthy running" in ps_.stdout and "web healthy running" in ps_.stdout, ps_.stdout
+    finally:
+        sh(["docker", "compose", "-p", proj, "-f", str(base / "compose.yaml"), "down", "-v"], env={"YTWEB_IMAGE_PREFIX": PROJECT}, timeout=200)

@@ -12,7 +12,6 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
-
 from ytweb import migrate
 from ytweb.core import audit, jobs
 from ytweb.core.errors import ProblemError
@@ -215,14 +214,15 @@ def test_app_role_audit_log_is_append_only_and_other_tables_dml_allowed(app_role
 
 def test_whole_application_runs_end_to_end_as_least_privilege_role(app_role, pg_url, clock, fake_time):
     """TC-VA-119 [S-W16, S-W13a] 앱 전체 흐름(로그인·PIN·설정·감사 체인·잡 큐·멱등성)이 실제로 ytweb_app 권한(options=-c role)으로 동작하고 chain_ok 가 true 다."""
+    from pathlib import Path
+
     from fastapi.testclient import TestClient
-    from tests.conftest import CORE_ROUTERS, ORIGIN
-    from tests.verify_wa.helpers import hdr
     from ytweb.app import create_app
     from ytweb.config import WebSettings
     from ytweb.core.ratelimit import RateLimits
-    from pathlib import Path
-    from tests.conftest import REPO_ROOT
+
+    from tests.conftest import CORE_ROUTERS, ORIGIN, REPO_ROOT
+    from tests.verify_wa.helpers import hdr
     url = make_url(pg_url).update_query_string("options=-c role=" + APP_ROLE).render_as_string(hide_password=False)
     ws = WebSettings(mode="demo", database_url=url, base_dir=REPO_ROOT, secrets_dir=Path("/tmp/none"),
                      allowed_hosts=("127.0.0.1:8080", "localhost:8080"))
@@ -402,13 +402,15 @@ def test_pin_lockout_holds_under_concurrent_guesses(pg):
 
 def test_pin_lockout_holds_under_concurrent_http_logins(pg, pg_url, clock, fake_time):
     """TC-VA-126 [S-W08] HTTP 수준: 틀린 PIN 으로 10개 동시 로그인 요청을 보내도 401 은 4건을 넘지 않아야 한다(나머지는 429)."""
-    from fastapi.testclient import TestClient
     from pathlib import Path
-    from tests.conftest import CORE_ROUTERS, ORIGIN, REPO_ROOT
-    from tests.verify_wa.helpers import hdr, login
+
+    from fastapi.testclient import TestClient
     from ytweb.app import create_app
     from ytweb.config import WebSettings
     from ytweb.core.ratelimit import RateLimits
+
+    from tests.conftest import CORE_ROUTERS, ORIGIN, REPO_ROOT
+    from tests.verify_wa.helpers import hdr, login
     ws = WebSettings(mode="demo", database_url=pg_url, base_dir=REPO_ROOT, secrets_dir=Path("/tmp/none"),
                      allowed_hosts=("127.0.0.1:8080", "localhost:8080"))
     app = create_app(ws, clock=clock, router_modules=CORE_ROUTERS, time_fn=fake_time,

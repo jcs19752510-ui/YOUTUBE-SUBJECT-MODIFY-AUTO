@@ -4,15 +4,20 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
-
-from tests.conftest import CORE_ROUTERS, ORIGIN
-from tests.verify_wa.helpers import asgi_call, body_json
 from ytweb.app import create_app
 from ytweb.core import clock as ck
 from ytweb.core.ratelimit import RateLimiter, RateLimits
-from ytweb.core.settings_store import (DEFAULT_DAILY_APPLY_CAP, delete_web_setting, effective_daily_cap,
-                                       get_web_setting, set_web_setting)
+from ytweb.core.settings_store import (
+    DEFAULT_DAILY_APPLY_CAP,
+    delete_web_setting,
+    effective_daily_cap,
+    get_web_setting,
+    set_web_setting,
+)
 from ytweb.db.models import SettingKV
+
+from tests.conftest import CORE_ROUTERS, ORIGIN
+from tests.verify_wa.helpers import asgi_call, body_json
 
 U = timezone.utc
 H = [("host", "127.0.0.1:8080")]

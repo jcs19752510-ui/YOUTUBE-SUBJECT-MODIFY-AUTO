@@ -6,14 +6,20 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import select, text
-
-from tests.verify_wa.helpers import (
-    ALLOWED_ORIGINS, ORIGIN, asgi_call, body_json, header, hdr, login,
-)
 from ytweb.app import create_app
 from ytweb.core.ratelimit import RateLimits
 from ytweb.db.models import AuditLog, SessionRow, SettingKV
+
 from tests.conftest import CORE_ROUTERS
+from tests.verify_wa.helpers import (
+    ALLOWED_ORIGINS,
+    ORIGIN,
+    asgi_call,
+    body_json,
+    hdr,
+    header,
+    login,
+)
 
 ME = "/api/v1/auth/me"
 

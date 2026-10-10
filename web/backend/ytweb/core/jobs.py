@@ -127,7 +127,7 @@ def process_next(factory: sessionmaker, *, worker_id: str, clock: Callable[[], d
     handler = get_handler(job.type)
     try:
         if handler is None:
-            raise ProblemError(500, "no_handler", f"처리기가 없는 작업 유형: {job.type}")
+            raise ProblemError(500, "no_handler", f"처리기가 없는 작업 유형: {job.type}", hint="앱을 최신 버전으로 업데이트한 뒤 다시 시도하세요.")
         result = handler(factory, job)
     except Exception as exc:
         log.error("job failed id=%s type=%s", job.id, job.type, exc_info=True)

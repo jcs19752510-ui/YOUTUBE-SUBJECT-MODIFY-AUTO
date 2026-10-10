@@ -56,6 +56,7 @@ def _register_error_handlers(app: FastAPI) -> None:
     async def _http(_: Request, exc: StarletteHTTPException):
         code = {404: "not_found", 405: "method_not_allowed"}.get(exc.status_code, "http_error")
         return problem_response(exc.status_code, code, _HTTP_TITLES.get(exc.status_code, "요청을 처리할 수 없습니다."),
+                                hint="주소와 요청 방식을 확인하고 화면에서 다시 시도하세요.",
                                 headers=dict(exc.headers) if exc.headers else None)
 
     @app.exception_handler(RequestValidationError)

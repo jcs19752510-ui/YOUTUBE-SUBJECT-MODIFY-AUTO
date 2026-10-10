@@ -9,12 +9,19 @@ from datetime import timedelta
 
 import pytest
 from sqlalchemy import select, text
-
-from tests.verify_wa.helpers import (
-    ORIGIN, SECRET_PIN, asgi_call, body_json, hdr, login, parse_set_cookie, set_cookie_values,
-)
 from ytweb.core import pin as pin_mod
 from ytweb.db.models import SettingKV
+
+from tests.verify_wa.helpers import (
+    ORIGIN,
+    SECRET_PIN,
+    asgi_call,
+    body_json,
+    hdr,
+    login,
+    parse_set_cookie,
+    set_cookie_values,
+)
 
 ME = "/api/v1/auth/me"
 URLSAFE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -290,9 +297,10 @@ def test_pin_lock_duration_doubles_up_to_one_hour_cap(client, clock):
 def test_pin_lock_survives_app_restart(web_settings, engine, clock, fake_time, client, monkeypatch):
     """TC-VA-046 [S-W08] 잠금 상태는 DB 에 있어 프로세스를 새로 띄워도 유지된다(재시작으로 우회 불가)."""
     from fastapi.testclient import TestClient
-    from tests.conftest import CORE_ROUTERS
     from ytweb.app import create_app
     from ytweb.core.ratelimit import RateLimits
+
+    from tests.conftest import CORE_ROUTERS
     csrf = login(client)
     _set_pin(client, csrf)
     client.delete("/api/v1/auth/session", headers=hdr(csrf))

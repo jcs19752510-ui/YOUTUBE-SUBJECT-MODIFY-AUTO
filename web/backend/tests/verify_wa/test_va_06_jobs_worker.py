@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import select
-
 from ytweb.core import jobs
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import IdempotencyKey, Job, SessionRow

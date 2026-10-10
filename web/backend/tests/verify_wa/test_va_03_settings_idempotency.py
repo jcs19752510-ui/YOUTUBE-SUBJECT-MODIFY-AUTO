@@ -6,11 +6,11 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import text
-
-from tests.verify_wa.helpers import ORIGIN, hdr, login
 from ytweb.core.errors import ProblemError
 from ytweb.core.idempotency import run_idempotent
 from ytweb.db.models import IdempotencyKey
+
+from tests.verify_wa.helpers import ORIGIN, hdr, login
 
 SETTINGS = "/api/v1/settings"
 

@@ -1,14 +1,13 @@
 """독립 점검 9: 빌드된 프런트(dist) 서빙의 경로 순회·SPA 폴백 (S-W04, S-W10 계열 경로 순회 방지)."""
 from __future__ import annotations
 
-
 import pytest
 from fastapi.testclient import TestClient
+from ytweb.app import create_app
+from ytweb.core.ratelimit import RateLimits
 
 from tests.conftest import CORE_ROUTERS, ORIGIN
 from tests.verify_wa.helpers import asgi_call, header
-from ytweb.app import create_app
-from ytweb.core.ratelimit import RateLimits
 
 
 @pytest.fixture

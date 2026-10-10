@@ -10,8 +10,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
-from ytweb.core.deps import get_clock, get_idempotency_key, get_session, require_csrf, require_session
+from ytweb.core.deps import (
+    get_clock,
+    get_idempotency_key,
+    get_session,
+    require_csrf,
+    require_session,
+)
 from ytweb.core.errors import ProblemError
 from ytweb.core.idempotency import run_idempotent
 

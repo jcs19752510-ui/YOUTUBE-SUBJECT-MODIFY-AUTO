@@ -10,6 +10,8 @@ import time
 import uuid
 from collections.abc import Callable
 
+import anyio
+
 from ytweb.core.errors import PROBLEM_MEDIA_TYPE, problem_body
 from ytweb.core.ratelimit import RateLimiter
 
@@ -94,6 +96,11 @@ class GuardMiddleware:
 
         async def send_wrapped(message):
             if message["type"] == "http.response.start":
+                if message["status"] < 400:
+                    # 성공 응답이 나가기 전에 DB 변경을 확정한다(FastAPI 는 yield 의존성 종료를 응답 뒤에 실행 -> 다음 요청이 옛 상태를 읽는 경합).
+                    # 확정이 실패하면 예외가 올라가 아래 바깥 처리에서 500 이 된다(성공 응답 후 조용한 유실 방지). 4xx/5xx 는 기존대로 늦은 종료에서 rollback.
+                    for db_session in list(scope.get("ytweb_open_sessions", ())):
+                        await anyio.to_thread.run_sync(db_session.commit)
                 status_holder["status"] = message["status"]
                 headers = [(k, v) for k, v in message["headers"] if k.decode("latin-1").lower() not in extra]
                 headers += [(k.encode("latin-1"), v.encode("latin-1")) for k, v in extra.items()]
@@ -118,7 +125,7 @@ class GuardMiddleware:
             if cl is not None:
                 # RFC 9110: 1*DIGIT 만 허용(int() 는 '-1', '+5', '1_0' 도 받으므로 직접 검사). 값이 여러 개면 거부.
                 if len(cl_values) != 1 or not (cl.isascii() and cl.isdigit()):
-                    await reject(400, "bad_content_length", "Content-Length 값이 올바르지 않습니다.")
+                    await reject(400, "bad_content_length", "Content-Length 값이 올바르지 않습니다.", hint="요청을 만드는 프로그램의 헤더 설정을 확인하세요.")
                     return
                 too_big = int(cl) > self.max_body
                 if too_big:

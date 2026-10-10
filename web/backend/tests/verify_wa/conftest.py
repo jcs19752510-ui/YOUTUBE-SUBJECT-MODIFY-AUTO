@@ -5,7 +5,6 @@ import io
 import logging
 
 import pytest
-
 from ytweb.core.logsetup import JsonFormatter
 
 
@@ -27,10 +26,11 @@ def log_capture():
 @pytest.fixture
 def probe_app(web_settings, engine, clock, fake_time, monkeypatch):
     """core 라우터 + 프로브 라우터를 올린 앱(속도 제한은 사실상 해제)."""
-    from tests.conftest import CORE_ROUTERS
-    from tests.verify_wa import probe_routes
     from ytweb.app import create_app
     from ytweb.core.ratelimit import RateLimits
+
+    from tests.conftest import CORE_ROUTERS
+    from tests.verify_wa import probe_routes
     probe_routes.CALLS.clear()
     probe_routes.FAIL_NEXT["flag"] = False
     monkeypatch.setenv("YTWEB_AUTO_CREATE", "1")
@@ -42,6 +42,7 @@ def probe_app(web_settings, engine, clock, fake_time, monkeypatch):
 @pytest.fixture
 def pclient(probe_app):
     from fastapi.testclient import TestClient
+
     from tests.conftest import ORIGIN
     with TestClient(probe_app, base_url=ORIGIN) as c:
         yield c

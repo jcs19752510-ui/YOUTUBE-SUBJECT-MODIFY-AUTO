@@ -44,20 +44,20 @@ TONE_MAX_CHARS = 20
 
 def _int_in(value: Any, key: str, lo: int, hi: int) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or not lo <= value <= hi:
-        raise ProblemError(422, "validation_error", f"{key} 는 {lo}~{hi} 사이의 정수여야 합니다.")
+        raise ProblemError(422, "validation_error", f"{key} 는 {lo}~{hi} 사이의 정수여야 합니다.", hint=f"{lo}~{hi} 사이의 정수로 입력하세요.")
     return value
 
 
 def _tone(value: Any) -> list[str]:
     if not isinstance(value, list) or len(value) > TONE_MAX_ITEMS:
-        raise ProblemError(422, "validation_error", f"tone 은 최대 {TONE_MAX_ITEMS}개의 짧은 문자열 목록이어야 합니다.")
+        raise ProblemError(422, "validation_error", f"tone 은 최대 {TONE_MAX_ITEMS}개의 짧은 문자열 목록이어야 합니다.", hint="말투 항목을 줄이고 각 항목을 짧게 입력하세요.")
     out: list[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise ProblemError(422, "validation_error", "tone 항목은 문자열이어야 합니다.")
+            raise ProblemError(422, "validation_error", "tone 항목은 문자열이어야 합니다.", hint="말투 항목은 글자로만 입력하세요.")
         item = item.strip()
         if not 1 <= len(item) <= TONE_MAX_CHARS or any(ord(c) < 32 for c in item):
-            raise ProblemError(422, "validation_error", f"tone 항목은 제어문자 없는 1~{TONE_MAX_CHARS}자여야 합니다.")
+            raise ProblemError(422, "validation_error", f"tone 항목은 제어문자 없는 1~{TONE_MAX_CHARS}자여야 합니다.", hint="줄바꿈 등 특수 문자를 빼고 20자 이내로 입력하세요.")
         out.append(item)
     return out
 
@@ -97,7 +97,7 @@ def update_settings(
                            detail=f"허용되지 않은 키: {', '.join(k[:40] for k in forbidden[:5])}",
                            hint="변경 가능한 항목: daily_apply_cap, suggestions_per_video, tone, pin")
     if not body:
-        raise ProblemError(422, "validation_error", "변경할 설정이 없습니다.")
+        raise ProblemError(422, "validation_error", "변경할 설정이 없습니다.", hint="바꿀 항목을 하나 이상 선택하세요.")
     now = clock()
 
     changes: dict[str, Any] = {}
@@ -112,7 +112,7 @@ def update_settings(
     if "pin" in body:
         p = body["pin"]
         if not isinstance(p, dict) or set(p) - {"action", "new_pin", "current_pin"} or p.get("action") not in ("set", "clear"):
-            raise ProblemError(422, "validation_error", "pin 은 {action: 'set'|'clear', new_pin?, current_pin?} 형식이어야 합니다.")
+            raise ProblemError(422, "validation_error", "pin 은 {action: 'set'|'clear', new_pin?, current_pin?} 형식이어야 합니다.", hint="화면의 PIN 설정 양식을 통해 변경하세요.")
         if p["action"] == "set":
             validate_pin_format(p.get("new_pin"))
         had_pin = pin_required(db)
@@ -120,7 +120,7 @@ def update_settings(
             cur = p.get("current_pin")
             check_pin(db, cur if isinstance(cur, str) else None, now=now)
         if p["action"] == "clear" and not had_pin:
-            raise ProblemError(409, "pin_not_set", "설정된 PIN 이 없습니다.")
+            raise ProblemError(409, "pin_not_set", "설정된 PIN 이 없습니다.", hint="PIN 이 꺼져 있어 해제할 것이 없습니다. 화면을 새로고침하세요.")
         pin_action = "cleared" if p["action"] == "clear" else ("changed" if had_pin else "set")
         if p["action"] == "set":
             set_pin(db, p["new_pin"], now=now)
