@@ -70,13 +70,15 @@ def test_rollback_plan_screen(project, db, streams, no_network):
     assert counts(project) == before and no_network == []
 
 
-def test_rollback_live_is_stub_and_writes_nothing(project, db, streams, no_network):
-    """TC-521: --live를 줘도 '아직 활성화되지 않았습니다'로 거부(종료 코드 3)하고, 쓰기 호출 0건·이력 변화 0건이다. [DESIGN 1-3 WU-4, SEC-001]"""
+def test_rollback_live_without_enable_live_is_gated_and_writes_nothing(project, db, streams, no_network):
+    """TC-521: (WU-5에서 변경) --live를 줘도 enable_live가 꺼져 있으면 2단계에서 종료 코드 3으로 막히고 쓰기 호출 0건·적용 이력 불변이며 rollback aborted 행만 남는다. [DESIGN 1-3 WU-5, SEC-001]"""
     chg, plan = applied(db, project)
     before = counts(project)
-    assert go(project, streams, ["rollback", "--change", str(chg), "--live"]) == 3
-    assert "아직 활성화되지 않았습니다" in streams.err.getvalue() and "[rollback]" in streams.out.getvalue()
-    assert counts(project) == before and no_network == []
+    assert go(project, streams, ["rollback", "--change", str(chg), "--live", "--approver", "홍길동"]) == 3
+    err = streams.err.getvalue()
+    assert "enable_live" in err and "아직 활성화되지 않았습니다" not in err and "2단계에서 막혀" in streams.out.getvalue()
+    after = counts(project)
+    assert after["results"] == before["results"] + ["aborted"] and after["quota_usage"] == before["quota_usage"] and after["statuses"] == before["statuses"] and no_network == []
 
 
 def test_rollback_refusals(project, db, streams):
@@ -116,7 +118,40 @@ def test_rollback_sanitizes_external_strings(project, db, streams):
     assert "\x1b" not in out and "‮" not in out and "가짜" in out
 
 
-def test_rollback_help_mentions_inactive_live(project, streams):
-    """TC-526: rollback 도움말이 실제 복원(--live)이 아직 비활성임을 밝힌다. [NFR-007, SCR-001]"""
+def test_rollback_help_explains_live_and_approver(project, streams):
+    """TC-526: (WU-5에서 변경) rollback 도움말이 --live(안전 조건 통과 시에만 복원)와 --approver를 설명한다. [NFR-007, SCR-001]"""
     assert go(project, streams, ["rollback", "--help"]) == 0
-    assert "활성화" in streams.out.getvalue()
+    out = streams.out.getvalue()
+    assert "--live" in out and "--approver" in out and "안전 조건" in out and "활성화되지 않" not in out
+
+
+def test_rollback_dry_run_points_to_live_command(project, db, streams, no_network):
+    """TC-683: 모의 실행 끝에 실제 복원 명령(--approver 이름 --live)을 안내한다. [EVT-007]"""
+    chg, plan = applied(db, project)
+    assert go(project, streams, ["rollback", "--change", str(chg)]) == 0
+    assert f"rollback --change {chg} --approver 이름 --live" in streams.out.getvalue()
+
+
+def test_rollback_live_end_to_end_via_cli(project, tmp_path, streams, monkeypatch):
+    """TC-684: rollback --change N --approver 이름 --live: 게이트 통과·영상 ID 입력 후 이전 제목으로 복원(종료 코드 0), LIVE 표시, 후보 rolled_back. 승인자 누락은 7단계에서 3. [FR-011, EVT-007, SCR-005, SCR-006]"""
+    import sqlite3
+    from wu5_support import World, block_network, cli_run, patch_services
+    block_network(monkeypatch)
+    world = World(project, tmp_path)
+    patch_services(monkeypatch, world)
+    assert cli_run(world, streams, ["apply", "--candidate", str(world.cid), "--live"]) == 0
+    chg = world.changes()[0]["id"]
+    assert cli_run(world, streams, ["rollback", "--change", str(chg), "--live"]) == 3
+    assert "7단계에서 막혀" in streams.out.getvalue() and len(world.server.update_calls) == 1
+    assert cli_run(world, streams, ["rollback", "--change", str(chg), "--approver", "홍길동", "--live"]) == 0
+    out = streams.out.getvalue()
+    assert "[rollback] 모드: ★실제 적용(LIVE)★" in out and "[완료] 롤백을 마쳤습니다" in out
+    assert world.server.items[SNIPPET_VID]["snippet"]["title"] == "겨울 전기요금" and len(world.server.update_calls) == 2
+    c = sqlite3.connect(world.settings.db_path)
+    assert c.execute("SELECT status FROM title_candidates").fetchone()[0] == "rolled_back"
+    assert [r for r in c.execute("SELECT change_type, result FROM title_changes WHERE result != 'aborted' ORDER BY id")] == [("apply", "success"), ("rollback", "success")]
+    c.close()
+    world.close()
+
+
+SNIPPET_VID = "abc123DEF45"

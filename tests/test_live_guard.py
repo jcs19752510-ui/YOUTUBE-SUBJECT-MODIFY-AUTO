@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 from wu4_support import add_candidate, add_change, add_video
-from wu5_support import (BASELINE_PHRASE, FAKE_ACCESS, FAKE_REFRESH, NEW_TITLE, NOW, SNIPPET, VID, AppliedThenRaise, World, block_network, fill_quota, http_error, timedelta, ts)
+from wu5_support import (FAKE_ACCESS, FAKE_REFRESH, NEW_TITLE, NOW, SNIPPET, VID, AppliedThenRaise, World, block_network, fill_quota, http_error, timedelta, ts)
 
 from ytitle import approvals, live_guard
 from ytitle import auth as authmod
-from ytitle.errors import ApiError, AuthError, DatabaseError, InputError, QuotaError, SafetyGateError
+from ytitle.errors import AuthError, DatabaseError, InputError, QuotaError, SafetyGateError
 from ytitle.live_guard import LiveGateError, WriteApiError, apply_live, classify_write_error, compare_after, preview_apply, rollback_live
 from ytitle.logging_setup import setup_logging
 from ytitle.quota import QuotaManager
@@ -630,7 +630,7 @@ def test_audit_failure_does_not_mask_the_original_block(w, monkeypatch):
         go(w)
     assert exc.value.step == 2
     monkeypatch.undo()
-    _candidate_blocked = w.conn.execute("UPDATE title_candidates SET status='blocked', validation_result='block' WHERE id=?", (w.cid,))
+    w.conn.execute("UPDATE title_candidates SET status='blocked', validation_result='block' WHERE id=?", (w.cid,))
     w.conn.commit()
     monkeypatch.setattr(live_guard, "record_aborted", boom)
     with pytest.raises(SafetyGateError):

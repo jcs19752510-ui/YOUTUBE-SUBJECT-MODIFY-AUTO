@@ -91,7 +91,7 @@ def test_unused_flag_reset_after_use_is_rejected(s):
     put(a.path, used)
     with pytest.raises(ApprovalError, match="인증값"):
         load_approval(s, VID, 7)
-    # 원본(미사용) 사본을 되돌려 놓으면 인증은 통과한다 — 이 재생 공격은 DB 이력(후보 상태·planned/success 행)이 막는다(TC-566 계열)
+    # 원본(미사용) 사본을 되돌려 놓으면 인증은 통과한다 — 이 재생 공격은 DB 이력(후보 상태·planned/success 행)이 막는다(TC-609·TC-610)
     a.path.write_text(before, encoding="utf-8")
     assert load_approval(s, VID, 7).used is False
 
