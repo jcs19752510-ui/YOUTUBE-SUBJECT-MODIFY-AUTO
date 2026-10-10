@@ -30,3 +30,9 @@ data/
 config/settings.local.yaml
 approvals/
 .coverage
+node_modules/
+web/frontend/dist/
+web/secrets/
+web/backups/
+.pytest_cache/
+htmlcov/
