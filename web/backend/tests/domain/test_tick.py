@@ -36,7 +36,7 @@ def test_tc_wb_081_tick_never_exceeds_todays_cap(seeded, factory, env, clock):
     again = run_due_items(factory, clock(), env)
     assert again.processed == 0  # 오늘 몫은 끝, 내일 예약분은 건드리지 않는다
     seeded.expire_all()
-    assert seeded.get(Batch, batch.id).status == "running"
+    assert seeded.get(Batch, batch.id).status == "queued"  # 오늘 몫을 끝냈고 미래 예약만 남음 → running 이 아니라 queued 유지
 
 
 def test_tc_wb_082_missed_days_are_not_burst_executed(seeded, factory, env, clock):

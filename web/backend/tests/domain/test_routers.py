@@ -194,11 +194,13 @@ def test_tc_wb_130_execute_confirm_idempotency_and_cancel(api, csrf, data, env, 
 
 def test_tc_wb_131_batch_list_and_detail(api, csrf, data, env, clock):
     ids = _approved_ids(data, env, clock, 2)
-    bid = _ok(api.post("/api/v1/batches", json={"suggestion_ids": ids}, headers=hdr(csrf, str(uuid.uuid4()))), 201)["batch"]["id"]
+    created = _ok(api.post("/api/v1/batches", json={"suggestion_ids": ids}, headers=hdr(csrf, str(uuid.uuid4()))), 201)
+    bid = created["batch"]["id"]
     page = _ok(api.get("/api/v1/batches"))
     assert page["total"] == 1 and page["items"][0]["id"] == bid and page["items"][0]["items"] == [] and page["items"][0]["counts"]["pending"] == 2
     detail = _ok(api.get(f"/api/v1/batches/{bid}"))
     assert len(detail["items"]) == 2 and detail["items"][0]["video_title"]
+    assert detail["precheck"] == created["precheck"] and page["items"][0]["precheck"] is None   # 새로고침 후 사전 점검 표 복구용
     _problem(api.get("/api/v1/batches/99999"), 404, "batch_not_found")
     _problem(api.get("/api/v1/batches/abc"), 422, "validation_error")
 

@@ -38,13 +38,13 @@
 
 | # | 편차 | 사유 |
 |---|---|---|
-| 1 | `web`만 `edge`(비 internal) 네트워크에 추가로 붙음 | internal 전용 컨테이너는 호스트 포트 게시가 불가하다(조사 1-14는 추정이었음). 게시 전용이며 다른 서비스는 붙지 않음. 실측: edge 구성원 = web뿐. 다만 web(nginx)은 이 네트워크로 외부에 나갈 수 있는 경로가 이론상 존재(nginx는 외부 요청을 하지 않음) |
+| 1 | `web`만 `edge`(비 internal) 네트워크에 추가로 붙음 | internal 전용 컨테이너는 호스트 포트 게시가 되지 않는 것으로 알려져 있어(조사 1-14는 추정, **이번에 internal 단독 게시는 시험하지 않음**) 안전하게 분리. 게시 전용이며 다른 서비스는 붙지 않음. 실측: edge 구성원 = web뿐. 다만 web(nginx)은 이 네트워크로 외부에 나갈 수 있는 경로가 이론상 존재(nginx는 외부 요청을 하지 않음) |
 | 2 | egress를 `profiles: ["online"]`이 아니라 `compose.online.yaml` 덧씌우기 파일로 준비 | compose의 profiles는 서비스에만 적용되고 네트워크에는 적용되지 않음. 기본 실행에서는 egress 네트워크가 아예 만들어지지 않음 |
 | 3 | `pip install` ytitle/backend 대신 `PYTHONPATH=/app/backend:/app/src` | 코어 사본 없이 같은 소스를 쓰고, 빌드 격리(미잠금 setuptools 내려받기)를 피함. `web/backend/requirements.txt`에 ytitle 의존성(PyYAML 등)이 없어 `requirements-ytitle.txt` 해시 잠금을 별도로 둠 |
 | 4 | 컨테이너 안 임시 백업용 `backups` 명명 볼륨 추가 | PowerShell 리디렉션 바이너리 손상 회피(`docker compose cp` 사용). tmpfs는 cp 불가 |
 | 5 | 헬스체크가 `pg_isready` + 초기화 성공 표식 파일(`.ytweb-init-ok`) | 실측: init 스크립트가 실패해도 재시작 시 엔트리포인트가 "이미 초기화됨"으로 보고 정상 기동함(반쯤 초기화된 볼륨). 표식이 없으면 unhealthy 로 남겨 migrate가 돌지 않게 함 |
 | 6 | api 명령에 `--no-server-header --no-access-log` 추가, nginx에서 백엔드 보안 헤더 중복 제거(`proxy_hide_header`) | `--no-access-log`는 조정자 요청(쿼리 문자열 로깅 방지). 헤더는 백엔드도 붙이므로 브라우저에 한 벌만 보이게 함 |
-| 7 | DB PostgreSQL **17**(18이 아님) | 지원 ~2029-11, 볼륨 경로 `/var/lib/postgresql/data` 안정(18은 변경). `--data-checksums` 직접 지정. **오케스트레이터 ADR 확인 필요**(질문 Q-1) |
+| 7 | DB PostgreSQL **17**(18이 아님) | 지원 ~2029-11, 볼륨 경로 `/var/lib/postgresql/data` 안정(18은 변경). `--data-checksums` 직접 지정. **오케스트레이터 ADR 확인 필요**(최종 보고 질문 1) |
 | 8 | `Referrer-Policy: same-origin` (no-referrer 아님) | no-referrer 는 일부 요청에서 `Origin: null`을 만들 수 있어 백엔드 Origin 검증과 충돌 위험. 외부로는 리퍼러가 나가지 않음 |
 | 9 | CSP에 `style-src-attr 'unsafe-inline'`, `img-src data:` 허용 | React 인라인 style 속성, Vite의 소형 에셋 data URI. 스크립트·`<style>` 블록은 계속 차단. 실제 브라우저 CSP 오류 여부는 **미확인**(브라우저 없음) |
 
@@ -71,7 +71,7 @@
 
 ## 5. 결과 숫자
 
-- 정적 점검 `.venv python -m pytest web/tests_infra`: **35 통과 / 1 건너뜀 / 0 실패** (36개 함수). 건너뜀 = TC-WI-033(pwsh 없음, 정리 후). 정리 전에는 pwsh 7.5.4를 `.harness-tmp`에 받아 **36 통과**(9개 ps1 문법 오류 0).
+- 정적 점검 `.venv python -m pytest web/tests_infra`: **35 통과 / 1 건너뜀 / 0 실패** (TC-WI-001~034, 파라미터화 포함 36개 시험 항목). 건너뜀 = TC-WI-033(pwsh 없음, 정리 후). 정리 전에는 pwsh 7.5.4를 `.harness-tmp`에 받아 **36 통과**(9개 ps1 문법 오류 0).
 - 변이 점검(수동): 포트 0.0.0.0 게시, 루트 사용자, read_only 해제, 환경변수 평문 비밀, db를 edge에 연결, server_tokens on, pg_hba trust, Dockerfile USER root, docker.sock 마운트 = **9/9 탐지**.
 - Docker 실측(클라우드 Linux 엔진 29.8.2, compose 5.6.0): 이미지 3종 빌드 성공(api 해시 잠금 설치는 **Python 3.12 이미지에서 3.13 잠금 그대로 성공**), compose 전체 기동, 모든 서비스 healthy, migrate 종료 0, DB 재생성에도 데이터 유지, 백업->삭제->복원->행 수 일치.
 
@@ -84,7 +84,7 @@
 | `nginxinc/nginx-unprivileged:stable-alpine` | `sha256:15c994d1...516e3` |
 | `postgres:17-bookworm` | `sha256:3645570c...b03826` (조사 3-3과 일치) |
 
-충족. 클라우드에서 `curl`(토큰+매니페스트 HEAD)로 조회. `pin-digests.ps1` 재조회 시험: 2개 일치 확인, 2개는 Docker Hub 429(속도 제한)로 조회 실패 -> 스크립트가 실패로 보고함(재시도 6회 후). Node 22는 유지보수 ~2027-04(조사 4-3) -> 프런트 호환 확인 후 24/26 전환 여부는 질문 Q-3.
+충족. 클라우드에서 `curl`(토큰+매니페스트 HEAD)로 조회. `pin-digests.ps1` 재조회 시험: 2개 일치 확인, 2개는 Docker Hub 429(속도 제한)로 조회 실패 -> 스크립트가 실패로 보고함(재시도 6회 후). Node 22는 유지보수 ~2027-04(조사 4-3) -> 프런트 호환 확인 후 24/26 전환 여부는 최종 보고 질문 3.
 
 ## 7. 실측하지 못했거나 사용자 PC 확인이 필요한 것
 

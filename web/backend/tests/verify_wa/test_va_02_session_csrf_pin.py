@@ -186,7 +186,7 @@ def test_csrf_rejected_variants_and_accepted_exact(client):
     # 두 번째 세션 쿠키로 첫 세션 CSRF 를 쓰면 거부
     variants = {
         "empty": "", "prefix": csrf[:-1], "suffix": csrf + "x", "upper": csrf.swapcase(), "space": " " + csrf,
-        "trailing_space": csrf + " ", "unicode": csrf[:-1] + "é", "session_token": session_token, "other_session_csrf": csrf,
+        "trailing_space": csrf + " ", "session_token": session_token, "other_session_csrf": csrf,
         "zero": "0", "long": "A" * 4096,
     }
     for name, value in variants.items():
@@ -195,6 +195,11 @@ def test_csrf_rejected_variants_and_accepted_exact(client):
         else:
             r = client.patch("/api/v1/settings", json={"daily_apply_cap": 2}, headers={"Origin": ORIGIN, "X-CSRF-Token": value})
         assert r.status_code == 403 and r.json()["code"] == "csrf_invalid", (name, r.status_code, r.text)
+    # latin-1 비ASCII 문자가 든 토큰(httpx 로는 못 보냄)은 ASGI 로 직접 보낸다: 500 이 아니라 403.
+    out = asgi_call(client.app, "PATCH", "/api/v1/settings",
+                    [("host", "127.0.0.1:8080"), ("origin", ORIGIN), ("content-type", "application/json"),
+                     ("cookie", f"ytw_session={_cookie(client)}"), ("x-csrf-token", other[:-1] + "é")], [b'{"daily_apply_cap":2}'])
+    assert out["status"] == 403 and body_json(out)["code"] == "csrf_invalid"
     r = client.patch("/api/v1/settings", json={"daily_apply_cap": 2}, headers=hdr(other))
     assert r.status_code == 200
     r = client.patch("/api/v1/settings", json={"daily_apply_cap": 2})  # 헤더 없음

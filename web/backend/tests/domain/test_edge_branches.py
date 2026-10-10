@@ -202,3 +202,16 @@ def test_tc_wb_158_batch_item_lookup_edge_in_serializer(seeded, env, clock):
     out = batch_dict(seeded, batch)
     assert out["items"][0]["previous_title"] and out["items"][0]["new_title"] == sugs[0].title
     assert batch_dict(seeded, batch, with_items=False)["items"] == []
+
+
+def test_tc_wb_159_batch_status_running_only_while_an_item_is_running(seeded, env, clock, gw):
+    from ytweb.domain.batches import refresh_batch_status
+    batch, sugs, _ = queued_batch(seeded, env, clock(), 2)
+    apply_one(seeded, batch.items[0].id, now=clock(), env=env, gateway=gw)
+    assert seeded.get(Batch, batch.id).status == "queued"          # 하나 끝났고 하나 대기: queued
+    batch.items[1].status = "running"
+    refresh_batch_status(batch, clock())
+    assert batch.status == "running"
+    batch.items[1].status = "success"
+    refresh_batch_status(batch, clock())
+    assert batch.status == "done"
