@@ -804,4 +804,221 @@ describe('성과 리포트 CSV 내보내기', () => {
   });
 });
 
+// ---------- 영상 상세: 제안 만들기 / 리포트 비교 표 / 시작 오류 (보강) ----------
+describe('영상 상세·리포트·시작 화면 보강', () => {
+  const detailRoute = (d = detail([suggestion(1)])) =>
+    route('GET', '/api/v1/videos/vid00000001', () => json(200, d));
+
+  it('TC-VF-184 "AI 제안 만들기" 는 POST videos/{id}/suggestions 를 CSRF 와 함께 한 번 보내고(연타 포함), 성공하면 안내가 나온다', async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    const c = mountApp(
+      [
+        detailRoute(),
+        route('POST', '/api/v1/videos/vid00000001/suggestions', async () => {
+          await gate;
+          return json(201, [suggestion(5), suggestion(6)]);
+        }),
+      ],
+      '/videos/vid00000001',
+    );
+    const btn = await screen.findByRole('button', { name: ko.detail.suggest });
+    await user.dblClick(btn);
+    release();
+    expect(await screen.findByText(ko.detail.suggestedToast(2))).toBeInTheDocument();
+    const posts = c.calls.filter((x) => x.method === 'POST');
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.headers['x-csrf-token']).toBe('csrf-1');
+  });
+
+  it('TC-VF-185 제외된 영상은 "AI 제안 만들기"·승인·수정·반려가 모두 꺼지고 제외 사유가 보인다', async () => {
+    mountApp(
+      [
+        detailRoute(
+          detail([suggestion(1)], { excluded: true, exclusion_reasons: ['쇼츠 영상입니다'] }),
+        ),
+      ],
+      '/videos/vid00000001',
+    );
+    expect(await screen.findByText(ko.detail.excludedTitle)).toBeInTheDocument();
+    expect(screen.getByText('쇼츠 영상입니다')).toBeInTheDocument();
+    for (const name of [
+      ko.detail.suggest,
+      ko.suggestion.approve,
+      ko.suggestion.edit,
+      ko.suggestion.reject,
+    ]) {
+      expect(screen.getByRole('button', { name })).toBeDisabled();
+    }
+  });
+
+  it('TC-VF-186 변경 한도에 걸린 영상은 사유와 다시 바꿀 수 있는 시각(한국 시간)을 보여 준다', async () => {
+    mountApp(
+      [
+        detailRoute(
+          detail([], {
+            limits: {
+              allowed: false,
+              reasons: ['72시간 안에 이미 변경됨', { code: 'max3', message: '영상당 최대 3회' }],
+              next_allowed_at: '2026-10-12T15:00:00Z',
+            },
+          }),
+        ),
+      ],
+      '/videos/vid00000001',
+    );
+    expect(await screen.findByText(ko.detail.limitNo)).toBeInTheDocument();
+    expect(screen.getByText('72시간 안에 이미 변경됨')).toBeInTheDocument();
+    expect(screen.getByText('영상당 최대 3회')).toBeInTheDocument();
+    expect(screen.getByText(ko.detail.limitNext('2026-10-13 00:00'))).toBeInTheDocument();
+  });
+
+  it('TC-VF-187 리포트 비교 표: 지표 값·차이 부호·CTR 퍼센트·빈 값("-")·집계 기간이 정확히 표시된다', async () => {
+    const snap = (start: string, end: string) => ({
+      id: 1,
+      taken_at: '2026-10-10T00:00:00Z',
+      phase: 'x',
+      source: 'demo',
+      period_start: start,
+      period_end: end,
+      impressions: 1,
+      ctr: 0.05,
+      views: 1,
+      watch_minutes: 1,
+    });
+    mountApp(
+      [
+        route('GET', '/api/v1/reports/changes', () =>
+          json(200, {
+            items: [
+              {
+                video_id: 'vid00000001',
+                title: '비교 영상',
+                status: 'ok',
+                before: snap('2026-09-01', '2026-09-07'),
+                after: snap('2026-10-01', '2026-10-07'),
+                baseline_missing: false,
+                reasons: [],
+                notes: ['표본이 작습니다'],
+                metrics: [
+                  { key: 'views', label: '조회수', before: 1000, after: 1250, delta: 250, pct: 25 },
+                  {
+                    key: 'ctr',
+                    label: '클릭률',
+                    before: 0.05,
+                    after: 0.04,
+                    delta: -0.01,
+                    pct: -20,
+                  },
+                  {
+                    key: 'watch',
+                    label: '시청 시간',
+                    before: null,
+                    after: 12.345,
+                    delta: null,
+                    pct: null,
+                  },
+                ],
+                expected_after_date: null,
+              },
+            ],
+            notes: ['변화의 원인을 단정할 수 없습니다.'],
+          }),
+        ),
+      ],
+      '/reports',
+    );
+    const row = async (label: string) =>
+      (await screen.findByRole('rowheader', { name: label })).closest('tr')!;
+    const views = within(await row('조회수'))
+      .getAllByRole('cell')
+      .map((c) => c.textContent);
+    expect(views).toEqual(['1,000', '1,250', '+250', '+25.0%']);
+    const ctr = within(await row('클릭률'))
+      .getAllByRole('cell')
+      .map((c) => c.textContent);
+    expect(ctr).toEqual(['5.00%', '4.00%', '-1.00%', '-20.0%']);
+    const watch = within(await row('시청 시간'))
+      .getAllByRole('cell')
+      .map((c) => c.textContent);
+    expect(watch).toEqual(['-', '12.35', '-', '-']);
+    expect(
+      screen.getByText('집계 기간 2026-09-01 ~ 2026-09-07', { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('표본이 작습니다')).toBeInTheDocument();
+    expect(screen.getByText('변화의 원인을 단정할 수 없습니다.')).toBeInTheDocument();
+  });
+
+  it('TC-VF-188 리포트 "변경 기록 없음"·"데이터 부족(기준 자료 없음+수집 예정일)" 상태가 각각 구분되어 보인다', async () => {
+    const base = { before: null, after: null, notes: [], metrics: [], expected_after_date: null };
+    mountApp(
+      [
+        route('GET', '/api/v1/reports/changes', () =>
+          json(200, {
+            items: [
+              {
+                ...base,
+                video_id: 'a',
+                title: '가',
+                status: 'no_change',
+                baseline_missing: false,
+                reasons: [],
+              },
+              {
+                ...base,
+                video_id: 'b',
+                title: '나',
+                status: 'insufficient',
+                baseline_missing: true,
+                reasons: ['변경 후 7일 미만'],
+                expected_after_date: '2026-10-20',
+              },
+            ],
+            notes: [],
+          }),
+        ),
+      ],
+      '/reports',
+    );
+    expect(await screen.findByText(ko.reports.noChange)).toBeInTheDocument();
+    expect(screen.getByText(ko.reports.insufficient)).toBeInTheDocument();
+    expect(screen.getByText('변경 후 7일 미만')).toBeInTheDocument();
+    expect(screen.getByText(ko.reports.baselineMissing)).toBeInTheDocument();
+    expect(screen.getByText(ko.reports.expectedAfter('2026-10-20'))).toBeInTheDocument();
+    expect(screen.getByText(ko.reports.fallbackNote)).toBeInTheDocument();
+  });
+
+  it('TC-VF-189 세션 시작이 서버 오류(500)로 실패하면 "시작하지 못했습니다" 화면과 다시 연결 버튼이 나오고, 복구되면 홈으로 들어간다', async () => {
+    const user = userEvent.setup();
+    let fail = true;
+    const c = makeClient([
+      route('GET', '/api/v1/auth/me', () =>
+        fail
+          ? problem(500, 'boom', '내부 오류')
+          : json(200, { authenticated: true, pin_required: false, csrf_token: 'c' }),
+      ),
+      route('GET', '/api/v1/dashboard', () => json(200, dashboard())),
+    ]);
+    document.getElementById('root')?.remove();
+    const root = document.createElement('div');
+    root.id = 'root';
+    document.body.appendChild(root);
+    render(
+      <Providers client={c.client}>
+        <MemoryRouter>
+          <App />
+        </MemoryRouter>
+      </Providers>,
+      { container: root },
+    );
+    expect(await screen.findByText(ko.conn.startErrorTitle)).toBeInTheDocument();
+    expect(screen.getByText('내부 오류')).toBeInTheDocument();
+    expect(screen.queryByText(ko.app.demoBadge)).toBeNull();
+    fail = false;
+    await user.click(screen.getByRole('button', { name: ko.conn.reconnect }));
+    expect(await screen.findByText(ko.home.todoTitle)).toBeInTheDocument();
+  });
+});
+
 void problem;
