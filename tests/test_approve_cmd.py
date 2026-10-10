@@ -76,9 +76,11 @@ def test_existing_active_approval_needs_overwrite_confirmation(w, streams):
     """TC-974: 이미 유효한 승인이 있으면 '덮어쓰기'를 직접 입력해야 새로 승인한다. 거절하면 기존 승인이 그대로 남는다. [SCR-004]"""
     assert appr(w, streams) == 0
     first = apath(w).read_text(encoding="utf-8")
-    answers = iter(["아니오", ""])
-    assert appr(w, streams, name="김철수", input_fn=lambda p: next(answers)) == 3
+    answers, asked = iter(["아니오", ""]), []
+    assert appr(w, streams, name="김철수", input_fn=lambda p: (asked.append(p), next(answers))[1]) == 3
     assert apath(w).read_text(encoding="utf-8") == first and "이미 유효한 승인 파일" in streams.out.getvalue()
+    assert asked and all("덮어쓰기" in a and VID not in a for a in asked)   # 덮어쓰기 확인이 영상 ID 확인보다 먼저, 따로 물어야 한다
+    assert "새로 승인하려면 다시 실행해" in streams.err.getvalue()
     w.clock.advance(timedelta(minutes=1))
     seq = iter(["덮어쓰기", VID])
     assert appr(w, streams, name="김철수", input_fn=lambda p: next(seq)) == 0

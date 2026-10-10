@@ -72,6 +72,8 @@ def test_candidate_option_rules(w, streams, argv, code):
     """TC-953: --candidate는 필수 정수 1개다(없으면 2, 숫자 아님 2, 0·음수·범위 밖·없는 번호 1). 일괄 적용 옵션(--all, 여러 번호)은 없다. [SEC-020, T-16, EVT-006]"""
     assert cli_run(w, streams, ["apply"] + argv) == code
     assert w.server.update_calls == [] and counts(w)["title_changes"] == 0
+    if code == 1:   # 범위 밖 번호는 DB를 조회하기 전에 '후보번호가 올바르지 않습니다'로 거부하고, 범위 안의 없는 번호와 문구가 달라야 한다
+        assert ("후보번호가 올바르지 않습니다" in streams.err.getvalue()) == (argv[-1] in ("0", "-3", str(2**63)))
 
 
 def test_live_apply_end_to_end_via_cli(w, streams):
