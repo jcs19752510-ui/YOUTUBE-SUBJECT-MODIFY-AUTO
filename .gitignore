@@ -1,0 +1,22 @@
+# === 하네스 표준 .gitignore (규칙 K) ===
+# 이 파일은 하네스와 함께 대상 프로젝트 루트로 복사된다 (ORCHESTRATOR.md 4장 1번).
+# 이미 .gitignore가 있는 프로젝트라면 덮어쓰지 말고 아래 내용을 병합할 것 — 특히 .harness-tmp/ 항목은 필수.
+
+# 검증/테스트 단계(06/07/08/09/10/13)가 만드는 일회성 아티팩트 전용 디렉터리.
+# venv, 임시 DB, 임시 설정 파일 등은 전부 이 하위에만 생성한다 (규칙 K).
+.harness-tmp/
+
+# 과거에 .harness-tmp/ 도입 이전 관례로 프로젝트 루트에 직접 생성되던 패턴
+# (레거시 프로젝트에 이 .gitignore를 병합할 때 남아있을 수 있어 함께 무시 처리한다).
+.venv*/
+venv/
+*.sqlite3
+db.sqlite3
+
+# 파이썬 표준 캐시/빌드 산출물
+__pycache__/
+*.pyc
+*.egg-info/
+
+# CI 헤드리스 실행 로그 (automation/run-harness-agent.sh 산출물)
+docs/harness/_ci-logs/
