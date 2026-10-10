@@ -79,6 +79,13 @@ export const ko = {
     http_503: '서버가 아직 준비 중입니다.',
   } as Record<string, string>,
 
+  errorHints: {
+    pin_invalid: 'PIN 을 다시 확인해 주세요. 여러 번 틀리면 잠시 잠깁니다.',
+    pin_locked: '잠금이 풀릴 때까지 기다린 뒤 다시 입력해 주세요.',
+    session_required: '화면을 새로고침해 다시 시작해 주세요.',
+    csrf_invalid: '화면을 새로고침해 주세요.',
+  } as Record<string, string>,
+
   // ---- 상태 라벨 ----
   workflow: {
     none: '제안 없음',
@@ -109,6 +116,7 @@ export const ko = {
     draft: '초안',
     running: '실행 중',
     completed: '완료',
+    done: '완료',
     cancelled: '중지됨',
     failed: '실패',
   } as Record<string, string>,
@@ -275,6 +283,15 @@ export const ko = {
     ai: 'AI 제안',
     manual: '직접 수정',
     topic: '주제',
+    topics: {
+      life: '생활',
+      health: '건강',
+      finance: '금융',
+      cooking: '요리',
+      travel: '여행',
+      hobby: '취미',
+      news: '뉴스',
+    } as Record<string, string>,
     strict: '엄격 모드',
     strictHint: '건강·금융 등 민감 주제는 경고도 차단으로 처리합니다.',
     length: (n: number) => `${n}자`,

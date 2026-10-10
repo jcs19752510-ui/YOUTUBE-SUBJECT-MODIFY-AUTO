@@ -208,7 +208,7 @@ export function BatchesPage() {
                                 tone={
                                   isBatchActive(b.status)
                                     ? 'info'
-                                    : b.status === 'completed'
+                                    : b.status === 'completed' || b.status === 'done'
                                       ? 'success'
                                       : 'neutral'
                                 }

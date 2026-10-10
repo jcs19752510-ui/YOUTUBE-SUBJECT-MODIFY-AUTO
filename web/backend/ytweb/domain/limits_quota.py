@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session
@@ -124,11 +124,3 @@ def release_unused(session: Session, reservation_ids: list[int]) -> None:
     if reservation_ids:
         session.execute(update(QuotaUsage).where(QuotaUsage.id.in_(reservation_ids), QuotaUsage.status == "reserved").values(units=0, status="failed"))
         session.flush()
-
-
-def next_kst_midnight(now: datetime) -> datetime:
-    return kst_day_bounds(kst_today(now))[1]
-
-
-def days_ahead(today: date, n: int) -> date:
-    return today + timedelta(days=n)

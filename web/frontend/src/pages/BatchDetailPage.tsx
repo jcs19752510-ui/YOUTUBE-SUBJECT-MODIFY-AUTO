@@ -204,7 +204,15 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
       <Card>
         <div className="row row--between">
           <div className="row">
-            <Badge tone={active ? 'info' : batch.status === 'completed' ? 'success' : 'neutral'}>
+            <Badge
+              tone={
+                active
+                  ? 'info'
+                  : batch.status === 'completed' || batch.status === 'done'
+                    ? 'success'
+                    : 'neutral'
+              }
+            >
               {batchStatusLabel(batch.status)}
             </Badge>
             <span className="muted">{fmtDateTime(batch.created_at)}</span>

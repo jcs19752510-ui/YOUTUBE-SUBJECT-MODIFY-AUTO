@@ -108,7 +108,9 @@ export function SuggestionCard({
           {suggestionStatusLabel(s.status)}
         </Badge>
         <Badge>{s.source === 'manual' ? ko.suggestion.manual : ko.suggestion.ai}</Badge>
-        {s.topic && <Badge>{`${ko.suggestion.topic}: ${s.topic}`}</Badge>}
+        {s.topic && (
+          <Badge>{`${ko.suggestion.topic}: ${ko.suggestion.topics[s.topic] ?? s.topic}`}</Badge>
+        )}
         {s.strict && (
           <Badge tone="warning" icon="▲">
             {ko.suggestion.strict}

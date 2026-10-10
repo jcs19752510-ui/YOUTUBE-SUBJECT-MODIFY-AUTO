@@ -33,7 +33,10 @@ export function describeError(e: unknown): ErrorView {
               ? ko.state.limitTitle
               : e.title,
       detail: e.detail || fallback || (kind === 'error' ? '' : e.title),
-      hint: e.hint || (kind === 'network' ? ko.conn.offlineHint : ko.state.defaultHint),
+      hint:
+        e.hint ||
+        ko.errorHints[e.code] ||
+        (kind === 'network' ? ko.conn.offlineHint : ko.state.defaultHint),
       code: e.code,
     };
   }

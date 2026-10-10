@@ -363,7 +363,7 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         check_approval(sug, video, env, ref_time)
     except ApprovalInvalid as exc:
         raise StepFailure(exc.code, exc.message) from None
-    if False:  # 같은 하루 상한·같은 영상을 두 워커가 동시에 통과하지 못하게 한다(커밋 때 풀림)
+    if session.get_bind().dialect.name == "postgresql":  # 같은 하루 상한·같은 영상을 두 워커가 동시에 통과하지 못하게 한다(커밋 때 풀림)
         session.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _APPLY_LOCK_KEY})
     # 2) 제안 상태·제목 규격·제외 사유·진행 중 변경
     if sug.status != "queued":
