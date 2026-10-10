@@ -1,13 +1,13 @@
 # unit-5 구현 노트 — WU-5 승인·안전 게이트·실제 쓰기·롤백 활성화 (5단계)
 
 - 작업 단위: **WU-5** (feature F-C) / **속도 트랙: L5(프로젝트에서 가장 위험한 부분: 실제 쓰기 경로)** / Tier: Standard / 선행: WU-4(완료)
-- 파일 범위: `src/ytitle/{approvals,live_guard}.py`, `src/ytitle/commands/{apply,approve}.py`, `src/ytitle/commands/rollback.py`(`--live` 스텁 교체), `tests/test_{approvals,live_guard,apply_cmd,approve_cmd}.py`, `tests/wu5_support.py`(공용 도우미), `tests/test_rollback_cmd.py`(TC-521·TC-526 변경, TC-683~685 추가), 이 노트. 신규 의존성 없음. cli.py·config.py·db.py·updater.py 등은 수정하지 않았다.
+- 파일 범위: `src/ytitle/{approvals,live_guard}.py`, `src/ytitle/commands/{apply,approve}.py`, `src/ytitle/commands/rollback.py`(`--live` 스텁 교체), `tests/test_{approvals,live_guard,apply_cmd,approve_cmd}.py`, `tests/wu5_support.py`(공용 도우미), `tests/test_rollback_cmd.py`(TC-521·TC-526 변경, TC-983~985 추가), 이 노트. 신규 의존성 없음. cli.py·config.py·db.py·updater.py 등은 수정하지 않았다.
 - **실제 구글 호출 없음**: 모든 테스트는 가짜 서비스 객체만 쓰고, 소켓 `connect`와 `googleapiclient.discovery.build`를 막은 채 실행한다.
 
 ## 1. 구현 범위
 - `approvals.py`: 승인 파일 생성/읽기/검증/소진. `plan_hash`(WU-4 `compute_plan_hash`) 바인딩, 만료(설정 `approval.ttl_hours` 이하), 1회용(`used`), 위조 방지(HMAC-SHA256 `mac`, 키는 토큰 폴더), 파일 위치 제한(영상 ID 정규식·정수 후보 번호·심볼릭 링크 거부·8KB 상한·정확한 키 집합).
 - `live_guard.py`: DESIGN 5-2의 **14단계 fail-closed 게이트**를 문서 순서대로 구현(`_g1`~`_g10` → `_step11` → `_send_with_retry`/`_send_update` → `_verify_and_record`). 적용(`apply_live`)·롤백(`rollback_live`)이 같은 엔진을 쓴다. 모의 실행용 `preview_apply`.
-  - **`videos.update` 호출은 `_send_update` 단 한 곳**(소스 검사 TC-622·623). 쓰기 토큰은 `make_write_service`에서만 읽고(TC-624), 사람이 영상 ID를 입력한 **뒤** 11단계 맨 처음에만 호출된다(TC-571).
+  - **`videos.update` 호출은 `_send_update` 단 한 곳**(소스 검사 TC-922·923). 쓰기 토큰은 `make_write_service`에서만 읽고(TC-924), 사람이 영상 ID를 입력한 **뒤** 11단계 맨 처음에만 호출된다(TC-571).
   - 요청 본문은 `build_write_body` 한 함수에서 정한다(`NOT_SENT_SNIPPET_FIELDS`, 지금은 비어 있어 snippet 전체 + 제목만 교체). 보내기 전 `check_body`가 제목 외 전부 일치하는지 검사한다.
   - 중단: 1~11단계 실패는 `aborted`(`GATE-nn`) 행 1개(감사). 11단계에서 `planned`가 생긴 뒤 쿼터 예약이 실패하면 그 행을 `aborted`로 끝낸다. 12단계에서 구글이 분명히 거절하면(400/401/403/429) `failed`, 반영 여부를 알 수 없으면(5xx·타임아웃·예상 못 한 예외·Ctrl+C) 재조회로 새 제목이 확인될 때만 성공으로 잇고 아니면 `planned`로 남긴다(자동 정리 없음). 재시도(최대 2회)마다 쿼터를 새로 선예약하고 실패해도 차감을 유지한다.
   - 사후 검증 실패: `success` + `verify_result_json.ok=false`, 큰 경보 + `rollback` 명령 안내, **자동 롤백 없음**.
@@ -51,7 +51,7 @@
 | AC-16 | 계획 단계(차단 후보 등) 거부와 aborted 기록 실패가 원래 오류를 가리지 않는다 | NFR-008, POL-001 |
 
 ## 4. 수동 확인이 필요한 부분 ([확인 필요])
-- **읽기 전용 필드 포함 snippet 전체 전송**(thumbnails·publishedAt·channelId 등): API가 수락하는지·무시하는지 미확인. 12단계 비공개 테스트 영상에서 확인하고, 거부되면 `live_guard.NOT_SENT_SNIPPET_FIELDS`에 이름만 추가하면 본문 구성과 본문 검사가 함께 바뀐다(TC-630이 이 고리를 고정, TC-572는 지금의 '전체 전송'을 고정하므로 함께 고칠 것).
+- **읽기 전용 필드 포함 snippet 전체 전송**(thumbnails·publishedAt·channelId 등): API가 수락하는지·무시하는지 미확인. 12단계 비공개 테스트 영상에서 확인하고, 거부되면 `live_guard.NOT_SENT_SNIPPET_FIELDS`에 이름만 추가하면 본문 구성과 본문 검사가 함께 바뀐다(TC-930이 이 고리를 고정, TC-572는 지금의 '전체 전송'을 고정하므로 함께 고칠 것).
 - 사후 검증 비교 항목(편차 7)과 `videos.list` 직후 재조회가 항상 최신 값을 주는지(최종 일관성).
 - 쓰기 범위(scope) 최소화는 WU-1 노트의 미확인 사항과 동일.
 - Windows: 승인 파일·키 파일 권한 제한(`icacls`)은 이 환경(Linux)에서 검증하지 못함. 콘솔 폭에서 14단계 줄 길이.
@@ -61,13 +61,13 @@
 - `pyflakes src tests`: 이 단위 파일 경고 0건(다른 에이전트의 `tests/integration/*`에 미사용 import 경고가 있으나 이 단위 소관 아님).
 - 커버리지(줄+분기, 전체 pytest 기준): `approvals.py` 100%, `live_guard.py` 100%, `commands/apply.py` 100%, `commands/approve.py` 100%, `commands/rollback.py` 100%.
 - 전체 회귀(`tests/integration` 제외): 전부 통과. `tests/integration/test_it_fab.py`의 4건 실패는 다른 에이전트의 진행 중 파일(auth/fetch/validate 화면 관련)로 WU-5와 무관함을 확인(WU-5 변경으로 생긴 실패 아님).
-- 이 단위 테스트: TC-530~561(approvals), TC-570~639·637·638·686·687(live_guard), TC-650~666(apply), TC-670~682(approve), TC-521·526 변경 + TC-683~685(rollback). 약 134개 함수(매개변수화로 더 많은 케이스).
+- 이 단위 테스트: TC-530~561(approvals), TC-570~599·900~939·986·987(live_guard), TC-950~966(apply), TC-970~982(approve), TC-521·526 변경 + TC-983~985(rollback). 약 134개 함수(매개변수화로 더 많은 케이스).
 
 ## 6. 게이트 2 — 자체 코드 리뷰
 - [x] 설계서 일치(편차는 2절) / [x] fail-closed(모르는 값·읽기 실패·훼손 파일은 거부) / [x] 예외 삼킴 없음(기록 실패는 로그로 남기고 원래 오류 유지)
 - [x] 모든 SQL 파라미터 바인딩 / [x] 하드코딩 비밀 없음 / [x] 신규 의존성 없음 / [x] 범위 밖 수정 없음(rollback.py만 허용된 수정)
-- [x] 외부 문자열 출력은 `sanitize_for_display`, 토큰·키·응답 본문은 메시지에 넣지 않음(TC-596·635)
-- **자체 변이 점검 2회**: 122개 변이(게이트 단계 제거 10여 곳, 단계 순서 교환 5곳, 승인 검증 약화(MAC·used·만료 경계·해시·제목·영상/후보·미래 시각·링크·크기·규격) 15곳, 본문 보존 제거/변조 3곳, 사후 검증 약화 4곳, 쿼터 선예약·mark·재시도 4곳, 분류(401/403/429/5xx) 5곳, 백업·승인 소진·쓰기 토큰 순서 3곳, 확인 입력·기준선 3곳, 명령 계층(종료 코드·live 전달·승인 해시·상태 전이·덮어쓰기) 12곳 등). 1회차 생존: ①11단계 이후 출력 줄, ②불명 오류의 Ctrl+C 표식, ③롤백 길이 상한 면제, ④중단 시 조건표, ⑤승인자 이름 사전 검증, ⑥롤백 종료 코드, ⑦등가 변이 2건 → 테스트 보강(TC-585 외 단언 추가, TC-685~687, TC-677 강화)·불필요 코드 제거로 해소. 2회차: 117 killed, 생존 2건은 **등가 변이**로 판단(`dataclasses.replace(snippet=stored)`: 7단계가 저장본=재조회본임을 이미 보장 / `int(row[0]) + 0`), 나머지 3건은 존재하지 않는 패턴(변이 목록 자체의 오류).
+- [x] 외부 문자열 출력은 `sanitize_for_display`, 토큰·키·응답 본문은 메시지에 넣지 않음(TC-596·935)
+- **자체 변이 점검 2회**: 122개 변이(게이트 단계 제거 10여 곳, 단계 순서 교환 5곳, 승인 검증 약화(MAC·used·만료 경계·해시·제목·영상/후보·미래 시각·링크·크기·규격) 15곳, 본문 보존 제거/변조 3곳, 사후 검증 약화 4곳, 쿼터 선예약·mark·재시도 4곳, 분류(401/403/429/5xx) 5곳, 백업·승인 소진·쓰기 토큰 순서 3곳, 확인 입력·기준선 3곳, 명령 계층(종료 코드·live 전달·승인 해시·상태 전이·덮어쓰기) 12곳 등). 1회차 생존: ①11단계 이후 출력 줄, ②불명 오류의 Ctrl+C 표식, ③롤백 길이 상한 면제, ④중단 시 조건표, ⑤승인자 이름 사전 검증, ⑥롤백 종료 코드, ⑦등가 변이 2건 → 테스트 보강(TC-585 외 단언 추가, TC-985~987, TC-977 강화)·불필요 코드 제거로 해소. 2회차: 117 killed, 생존 2건은 **등가 변이**로 판단(`dataclasses.replace(snippet=stored)`: 7단계가 저장본=재조회본임을 이미 보장 / `int(row[0]) + 0`), 나머지 3건은 존재하지 않는 패턴(변이 목록 자체의 오류).
 
 ## 7. 오케스트레이터에게 (요청·질문)
 **공유 문서 갱신 요청**

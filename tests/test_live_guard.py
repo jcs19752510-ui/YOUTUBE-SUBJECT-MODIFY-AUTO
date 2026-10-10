@@ -526,7 +526,7 @@ def test_write_token_failure_aborts_without_consuming_approval(w):
 
 
 def test_backup_failure_aborts_before_consuming_approval(w):
-    """TC-600: DB 사본(백업)을 만들 수 없으면 쓰기 전에 중단하고 승인은 소진하지 않는다. [NFR-010, SEC-006]"""
+    """TC-900: DB 사본(백업)을 만들 수 없으면 쓰기 전에 중단하고 승인은 소진하지 않는다. [NFR-010, SEC-006]"""
     (w.settings.data_dir / "backups").write_text("파일이라 폴더를 못 만듦", encoding="utf-8")
     with pytest.raises(LiveGateError) as exc:
         go(w)
@@ -536,7 +536,7 @@ def test_backup_failure_aborts_before_consuming_approval(w):
 
 
 def test_backup_copy_is_made_before_the_write(w):
-    """TC-601: 쓰기 전 DB 사본이 data/backups에 만들어지고, 그 사본에는 아직 이번 변경의 planned 행이 없다. [NFR-010]"""
+    """TC-901: 쓰기 전 DB 사본이 data/backups에 만들어지고, 그 사본에는 아직 이번 변경의 planned 행이 없다. [NFR-010]"""
     go(w)
     copies = list((w.settings.data_dir / "backups").glob("ytitle_*.sqlite3"))
     assert len(copies) == 1
@@ -547,7 +547,7 @@ def test_backup_copy_is_made_before_the_write(w):
 
 
 def test_history_insert_failure_after_approval_consumed_leaves_no_write(w, monkeypatch):
-    """TC-602: planned 행을 만들지 못하면 호출하지 않는다. 승인은 이미 소진되어 새 승인이 필요하다(최대 1회 우선). aborted GATE-11 기록. [SEC-014, NFR-008]"""
+    """TC-902: planned 행을 만들지 못하면 호출하지 않는다. 승인은 이미 소진되어 새 승인이 필요하다(최대 1회 우선). aborted GATE-11 기록. [SEC-014, NFR-008]"""
     def boom(*a, **k):
         raise DatabaseError("변경 이력을 처리하지 못했습니다.", "DB 확인")
 
@@ -564,7 +564,7 @@ def test_history_insert_failure_after_approval_consumed_leaves_no_write(w, monke
 
 
 def test_approval_consume_failure_aborts_before_history(w, monkeypatch):
-    """TC-603: 승인 소진(used=true 기록)에 실패하면 이력 행도 호출도 없이 중단한다. [SEC-014]"""
+    """TC-903: 승인 소진(used=true 기록)에 실패하면 이력 행도 호출도 없이 중단한다. [SEC-014]"""
     def boom(*a, **k):
         raise approvals.ApprovalError("승인 파일이 확인한 뒤에 바뀌었습니다.", "새로 승인")
 
@@ -576,7 +576,7 @@ def test_approval_consume_failure_aborts_before_history(w, monkeypatch):
 
 
 def test_quota_reservation_failure_after_planned_marks_aborted(w, monkeypatch):
-    """TC-604: planned 행을 만든 뒤 쓰기 쿼터 예약이 거절되면 호출하지 않고 그 행을 aborted(GATE-11)로 끝낸다(중복 aborted 행 없음). [SEC-002, ADR-008]"""
+    """TC-904: planned 행을 만든 뒤 쓰기 쿼터 예약이 거절되면 호출하지 않고 그 행을 aborted(GATE-11)로 끝낸다(중복 aborted 행 없음). [SEC-002, ADR-008]"""
     real = QuotaManager.reserve
 
     def reserve(self, method, units, run_id):
@@ -593,7 +593,7 @@ def test_quota_reservation_failure_after_planned_marks_aborted(w, monkeypatch):
 
 
 def test_record_finish_failure_after_success_is_loud(w, monkeypatch):
-    """TC-605: 구글에는 반영됐는데 이력을 success로 바꾸지 못하면 경보를 출력하고 오류를 올린다(조용히 넘어가지 않음). [NFR-008]"""
+    """TC-905: 구글에는 반영됐는데 이력을 success로 바꾸지 못하면 경보를 출력하고 오류를 올린다(조용히 넘어가지 않음). [NFR-008]"""
     def boom(*a, **k):
         raise DatabaseError("변경 이력을 처리하지 못했습니다.", "DB 확인")
 
@@ -606,7 +606,7 @@ def test_record_finish_failure_after_success_is_loud(w, monkeypatch):
 # ───────────── 계획 단계 실패와 재사용 ─────────────
 
 def test_blocked_candidate_is_refused_and_audited(w):
-    """TC-606: 검증에서 차단된 후보는 게이트 이전(계획 단계)에서 거부하고 aborted(PLAN) 행으로 남긴다. 쓰기 0회. [SEC-001, NFR-008]"""
+    """TC-906: 검증에서 차단된 후보는 게이트 이전(계획 단계)에서 거부하고 aborted(PLAN) 행으로 남긴다. 쓰기 0회. [SEC-001, NFR-008]"""
     w.conn.execute("UPDATE title_candidates SET status='blocked', validation_result='block' WHERE id=?", (w.cid,))
     w.conn.commit()
     with pytest.raises(SafetyGateError):
@@ -615,14 +615,14 @@ def test_blocked_candidate_is_refused_and_audited(w):
 
 
 def test_unknown_candidate_is_refused_without_audit(w):
-    """TC-607: 없는 후보 번호는 오류로 거부하고(기록할 대상이 없어) 이력을 만들지 않는다. [FR-005]"""
+    """TC-907: 없는 후보 번호는 오류로 거부하고(기록할 대상이 없어) 이력을 만들지 않는다. [FR-005]"""
     with pytest.raises(InputError):
         apply_live(w.env(), 999)
     assert w.changes() == [] and w.server.update_calls == []
 
 
 def test_audit_failure_does_not_mask_the_original_block(w, monkeypatch):
-    """TC-608: aborted 기록 자체가 실패해도 원래 중단 사유(게이트 오류)가 가려지지 않는다. [NFR-008]"""
+    """TC-908: aborted 기록 자체가 실패해도 원래 중단 사유(게이트 오류)가 가려지지 않는다. [NFR-008]"""
     def boom(*a, **k):
         raise DatabaseError("기록 실패", "확인")
 
@@ -640,7 +640,7 @@ def test_audit_failure_does_not_mask_the_original_block(w, monkeypatch):
 
 
 def test_second_apply_of_the_same_candidate_is_refused(w):
-    """TC-609: 적용이 끝난 후보를 같은 승인 파일로 다시 적용할 수 없다(후보가 applied, 승인 used). 두 번째 호출은 쓰기 0회. [SEC-014, T-03]"""
+    """TC-909: 적용이 끝난 후보를 같은 승인 파일로 다시 적용할 수 없다(후보가 applied, 승인 used). 두 번째 호출은 쓰기 0회. [SEC-014, T-03]"""
     assert go(w).ok
     with pytest.raises(SafetyGateError):
         go(w)
@@ -648,7 +648,7 @@ def test_second_apply_of_the_same_candidate_is_refused(w):
 
 
 def test_replayed_unused_approval_copy_cannot_reapply(w):
-    """TC-610: 사용 전 승인 파일 사본을 되돌려 놓고 재생해도(인증값은 통과) 후보 상태·이력 때문에 다시 적용되지 않는다. [SEC-014, T-03]"""
+    """TC-910: 사용 전 승인 파일 사본을 되돌려 놓고 재생해도(인증값은 통과) 후보 상태·이력 때문에 다시 적용되지 않는다. [SEC-014, T-03]"""
     path = approvals.approval_path(w.settings, VID, w.cid)
     copy_before = path.read_text(encoding="utf-8")
     assert go(w).ok
@@ -662,7 +662,7 @@ def test_replayed_unused_approval_copy_cannot_reapply(w):
 # ───────────── 모의 실행 미리보기 ─────────────
 
 def test_preview_reports_gates_without_any_side_effect(w):
-    """TC-611: 모의 실행(preview)은 구글에 연결하지 않고 DB·쿼터·승인 파일에 아무것도 쓰지 않으며, 막는 조건을 알려 준다. [FR-008, SEC-001]"""
+    """TC-911: 모의 실행(preview)은 구글에 연결하지 않고 DB·쿼터·승인 파일에 아무것도 쓰지 않으며, 막는 조건을 알려 준다. [FR-008, SEC-001]"""
     before = (w.changes(), w.quota(), w.approval_file())
     out = preview_apply(w.env(), w.plan())
     assert [o.step for o in out] == list(range(1, 15)) and out[0].status == "block"
@@ -671,7 +671,7 @@ def test_preview_reports_gates_without_any_side_effect(w):
 
 
 def test_preview_shows_each_blocking_gate(w):
-    """TC-612: 미리보기는 enable_live 꺼짐·허용 목록·쿼터·제한·승인 문제를 단계별 [차단]으로 보여 주고, 기준선 없음은 경고로 보여 준다. [SEC-001, SEC-012]"""
+    """TC-912: 미리보기는 enable_live 꺼짐·허용 목록·쿼터·제한·승인 문제를 단계별 [차단]으로 보여 주고, 기준선 없음은 경고로 보여 준다. [SEC-001, SEC-012]"""
     w.set(enable_live=False, live_allowlist=())
     fill_quota(w.conn, w.clock, 6000 - 51)
     w.apply_change_row(change_type="apply", result="success", at=NOW - timedelta(hours=1))
@@ -700,7 +700,7 @@ def rb(w, chg, approver="홍길동", **kw):
 
 
 def test_rollback_restores_title_with_same_gates(w, applied):
-    """TC-613: 롤백은 같은 엔진으로 이전 제목을 복원한다: 재조회→영상 ID 확인→쓰기 토큰→update 1회→검증, 이력 rollback success, 후보 rolled_back, 승인 파일 없이 확인자만. [FR-011, EVT-007, SEC-006, SEC-015]"""
+    """TC-913: 롤백은 같은 엔진으로 이전 제목을 복원한다: 재조회→영상 ID 확인→쓰기 토큰→update 1회→검증, 이력 rollback success, 후보 rolled_back, 승인 파일 없이 확인자만. [FR-011, EVT-007, SEC-006, SEC-015]"""
     result = rb(w, applied)
     assert result.ok and result.kind == "rollback"
     assert [e[0] for e in w.events] == ["read_service", "list", "confirm", "write_token", "update", "read_service", "list"]
@@ -713,7 +713,7 @@ def test_rollback_restores_title_with_same_gates(w, applied):
 
 
 def test_rollback_is_exempt_from_cadence_limits(w, applied):
-    """TC-614: 롤백은 72시간 간격·횟수·노출수·하루 상한을 적용하지 않는다(방금 적용했고 하루 상한에 도달해도 복구 가능). [WU-4 결정, FR-011]"""
+    """TC-914: 롤백은 72시간 간격·횟수·노출수·하루 상한을 적용하지 않는다(방금 적용했고 하루 상한에 도달해도 복구 가능). [WU-4 결정, FR-011]"""
     for i in range(3):
         add_change(w.conn, vid=f"other{i}000000", at=NOW - timedelta(minutes=5))
     assert rb(w, applied).ok
@@ -729,7 +729,7 @@ def test_rollback_is_exempt_from_cadence_limits(w, applied):
     (lambda w: setattr(w, "write_auth_error", AuthError("로그인 없음", "로그인")), 11, "로그인"),
 ])
 def test_rollback_gate_failures_write_nothing(w, applied, breaker, step, text):
-    """TC-615: 롤백도 enable_live·허용 목록·쿼터·미확정 기록·재조회 제목/계획 해시·영상 ID 확인·쓰기 토큰 실패 시 update 0회, aborted(rollback, GATE-nn)만 남고 후보는 applied 그대로다. [SEC-001, SEC-009, SEC-012, FR-011]"""
+    """TC-915: 롤백도 enable_live·허용 목록·쿼터·미확정 기록·재조회 제목/계획 해시·영상 ID 확인·쓰기 토큰 실패 시 update 0회, aborted(rollback, GATE-nn)만 남고 후보는 applied 그대로다. [SEC-001, SEC-009, SEC-012, FR-011]"""
     before_calls = len(w.server.update_calls)
     breaker(w)
     with pytest.raises(LiveGateError) as exc:
@@ -742,7 +742,7 @@ def test_rollback_gate_failures_write_nothing(w, applied, breaker, step, text):
 
 
 def test_rollback_blocked_by_unresolved_planned_row(w, applied):
-    """TC-637: 해결되지 않은 planned 행이 있으면 롤백도 5단계에서 중단한다(자동으로 지우지 않음). [orchestrator 결정 3, SEC-006]"""
+    """TC-937: 해결되지 않은 planned 행이 있으면 롤백도 5단계에서 중단한다(자동으로 지우지 않음). [orchestrator 결정 3, SEC-006]"""
     w.conn.execute("INSERT INTO title_changes (id, video_id, change_type, previous_title, new_title, result, created_at) VALUES (-5, ?, 'apply', 'a', 'b', 'planned', ?)", (VID, ts(NOW - timedelta(days=9))))
     w.conn.commit()
     with pytest.raises(LiveGateError) as exc:
@@ -752,7 +752,7 @@ def test_rollback_blocked_by_unresolved_planned_row(w, applied):
 
 
 def test_rollback_requires_an_approver_name(w, applied):
-    """TC-616: 확인자 이름 없이는 롤백하지 않는다(7단계). 이름에 제어 문자가 있어도 거부한다. [NFR-008, SEC-019]"""
+    """TC-916: 확인자 이름 없이는 롤백하지 않는다(7단계). 이름에 제어 문자가 있어도 거부한다. [NFR-008, SEC-019]"""
     for bad in (None, "", "  ", "홍\x1b[31m길동"):
         with pytest.raises(LiveGateError) as exc:
             rb(w, applied, approver=bad)
@@ -761,14 +761,14 @@ def test_rollback_requires_an_approver_name(w, applied):
 
 
 def test_rollback_requires_live_flag(w, applied):
-    """TC-617: 엔진에 live_flag가 없으면 롤백도 1단계에서 중단한다. [SEC-001]"""
+    """TC-917: 엔진에 live_flag가 없으면 롤백도 1단계에서 중단한다. [SEC-001]"""
     with pytest.raises(LiveGateError) as exc:
         rb(w, applied, live_flag=False)
     assert exc.value.step == 1 and len(w.server.update_calls) == 1
 
 
 def test_rollback_plan_refusals_are_audited(w, applied):
-    """TC-618: 롤백 계획을 만들 수 없는 경우(이미 롤백됨·이후 변경 존재)는 거부하고 aborted(PLAN) 행을 남긴다. 없는 변경 번호는 기록 없이 오류. [FR-011, SEC-006]"""
+    """TC-918: 롤백 계획을 만들 수 없는 경우(이미 롤백됨·이후 변경 존재)는 거부하고 aborted(PLAN) 행을 남긴다. 없는 변경 번호는 기록 없이 오류. [FR-011, SEC-006]"""
     assert rb(w, applied).ok
     calls = len(w.server.update_calls)
     with pytest.raises(SafetyGateError):
@@ -781,7 +781,7 @@ def test_rollback_plan_refusals_are_audited(w, applied):
 
 
 def test_rollback_audit_failure_does_not_mask_error(w, applied, monkeypatch):
-    """TC-619: 롤백 계획 거부 기록이 실패해도 원래 오류가 그대로 올라온다. [NFR-008]"""
+    """TC-919: 롤백 계획 거부 기록이 실패해도 원래 오류가 그대로 올라온다. [NFR-008]"""
     assert rb(w, applied).ok
     monkeypatch.setattr(live_guard, "record_aborted", lambda *a, **k: (_ for _ in ()).throw(DatabaseError("실패", "확인")))
     with pytest.raises(SafetyGateError):
@@ -789,7 +789,7 @@ def test_rollback_audit_failure_does_not_mask_error(w, applied, monkeypatch):
 
 
 def test_rollback_verification_failure_is_recorded_without_auto_retry(w, applied):
-    """TC-620: 롤백 후 검증이 실패(제목 미반영)해도 success + ok=false로 기록하고 추가 호출은 하지 않는다. [SEC-010, FR-011]"""
+    """TC-920: 롤백 후 검증이 실패(제목 미반영)해도 success + ok=false로 기록하고 추가 호출은 하지 않는다. [SEC-010, FR-011]"""
     w.server.ignore_update = True
     result = rb(w, applied)
     assert result.ok is False and len(w.server.update_calls) == 2
@@ -799,7 +799,7 @@ def test_rollback_verification_failure_is_recorded_without_auto_retry(w, applied
 
 
 def test_rollback_call_failure_marks_failed_and_keeps_candidate(w, applied):
-    """TC-621: 롤백 호출이 400으로 거절되면 rollback 행을 failed로 끝내고 후보는 applied로 둔다(원래 적용 행도 그대로). [FR-011, SEC-006]"""
+    """TC-921: 롤백 호출이 400으로 거절되면 rollback 행을 failed로 끝내고 후보는 applied로 둔다(원래 적용 행도 그대로). [FR-011, SEC-006]"""
     w.server.update_behaviors = [http_error(400, "invalidValue")]
     with pytest.raises(WriteApiError):
         rb(w, applied)
@@ -818,7 +818,7 @@ def _is_videos_update(node: ast.AST) -> bool:
 
 
 def test_videos_update_exists_in_exactly_one_place():
-    """TC-622: 소스 전체에서 `.videos().update(` 호출은 live_guard.py의 `_send_update` 단 한 곳이다(다른 모듈·다른 표기 없음). [SEC-001, SEC-007]"""
+    """TC-922: 소스 전체에서 `.videos().update(` 호출은 live_guard.py의 `_send_update` 단 한 곳이다(다른 모듈·다른 표기 없음). [SEC-001, SEC-007]"""
     hits = []
     for p in _py_files():
         tree = ast.parse(p.read_text(encoding="utf-8"))
@@ -830,7 +830,7 @@ def test_videos_update_exists_in_exactly_one_place():
 
 
 def test_no_other_spelling_of_the_write_call_exists():
-    """TC-623: 다른 표기로 쓰기 호출을 숨기지 못한다: `.update(part=`, `videos().update`(줄바꿈 포함), getattr로 'update'를 꺼내는 코드는 live_guard 밖에 없다. [SEC-001, SEC-007]"""
+    """TC-923: 다른 표기로 쓰기 호출을 숨기지 못한다: `.update(part=`, `videos().update`(줄바꿈 포함), getattr로 'update'를 꺼내는 코드는 live_guard 밖에 없다. [SEC-001, SEC-007]"""
     for p in _py_files():
         text = p.read_text(encoding="utf-8")
         tree = ast.parse(text)
@@ -847,7 +847,7 @@ def test_no_other_spelling_of_the_write_call_exists():
 
 
 def test_write_credentials_are_loaded_in_one_place_only():
-    """TC-624: 쓰기 토큰(`load_credentials("write"`)은 live_guard.make_write_service 한 곳에서만 읽고, 다른 곳의 load_credentials는 모두 읽기 토큰이다. [SEC-015]"""
+    """TC-924: 쓰기 토큰(`load_credentials("write"`)은 live_guard.make_write_service 한 곳에서만 읽고, 다른 곳의 load_credentials는 모두 읽기 토큰이다. [SEC-015]"""
     write_sites = []
     for p in _py_files():
         for fn in [n for n in ast.walk(ast.parse(p.read_text(encoding="utf-8"))) if isinstance(n, ast.FunctionDef)]:
@@ -861,7 +861,7 @@ def test_write_credentials_are_loaded_in_one_place_only():
 
 
 def test_no_web_scraping_or_browser_automation_imports():
-    """TC-625: 소스에 Studio·웹 접근용 HTTP 라이브러리(requests/urllib/httpx)나 브라우저 자동화(selenium/playwright/pyppeteer)를 import하지 않는다. [SEC-007]"""
+    """TC-925: 소스에 Studio·웹 접근용 HTTP 라이브러리(requests/urllib/httpx)나 브라우저 자동화(selenium/playwright/pyppeteer)를 import하지 않는다. [SEC-007]"""
     banned = {"requests", "urllib", "urllib3", "httpx", "aiohttp", "selenium", "playwright", "pyppeteer", "mechanize", "socket"}
     for p in _py_files():
         for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
@@ -870,7 +870,7 @@ def test_no_web_scraping_or_browser_automation_imports():
 
 
 def test_make_write_service_loads_only_the_write_token(project, tmp_path, monkeypatch):
-    """TC-626: make_write_service는 쓰기 토큰 종류("write")만 읽어 그 자격증명으로 서비스를 만든다. make_reader는 읽기 토큰만 쓴다. [SEC-015]"""
+    """TC-926: make_write_service는 쓰기 토큰 종류("write")만 읽어 그 자격증명으로 서비스를 만든다. make_reader는 읽기 토큰만 쓴다. [SEC-015]"""
     kinds, built = [], []
     sentinel = object()
     monkeypatch.setattr(authmod, "load_credentials", lambda kind, settings, **k: kinds.append(kind) or sentinel)
@@ -885,7 +885,7 @@ def test_make_write_service_loads_only_the_write_token(project, tmp_path, monkey
 
 
 def test_env_from_ctx_wires_lazy_factories(project, tmp_path, monkeypatch):
-    """TC-627: env_from_ctx는 서비스를 미리 만들지 않는다(토큰도 읽지 않음). 팩토리를 부를 때에만 읽고, 쓰기 팩토리는 write 토큰을 요청한다. [SEC-015]"""
+    """TC-927: env_from_ctx는 서비스를 미리 만들지 않는다(토큰도 읽지 않음). 팩토리를 부를 때에만 읽고, 쓰기 팩토리는 write 토큰을 요청한다. [SEC-015]"""
     kinds = []
     monkeypatch.setattr(authmod, "load_credentials", lambda kind, settings, **k: kinds.append(kind) or (_ for _ in ()).throw(AuthError("없음", "로그인")))
     w = World(project, tmp_path)
@@ -901,7 +901,7 @@ def test_env_from_ctx_wires_lazy_factories(project, tmp_path, monkeypatch):
 
 
 def test_no_network_during_gate_tests(w):
-    """TC-628: 이 테스트 파일은 소켓·google build()를 막은 채 실행된다: 전체 적용·롤백 시나리오가 가짜 서비스만으로 끝나고 연결 시도가 0건이다. [K-2, SEC-001]"""
+    """TC-928: 이 테스트 파일은 소켓·google build()를 막은 채 실행된다: 전체 적용·롤백 시나리오가 가짜 서비스만으로 끝나고 연결 시도가 0건이다. [K-2, SEC-001]"""
     import socket
     assert go(w).ok
     with pytest.raises(AssertionError, match="네트워크"):
@@ -911,14 +911,14 @@ def test_no_network_during_gate_tests(w):
 # ───────────── 단위: 본문 구성·오류 분류 ─────────────
 
 def test_build_write_body_deep_copies_and_replaces_only_title():
-    """TC-629: build_write_body는 snippet을 깊은 복사하고 제목만 바꾼다(원본 불변). [SEC-005, FR-009]"""
+    """TC-929: build_write_body는 snippet을 깊은 복사하고 제목만 바꾼다(원본 불변). [SEC-005, FR-009]"""
     snippet = copy.deepcopy(SNIPPET)
     body = live_guard.build_write_body(VID, snippet, "새")
     assert snippet == SNIPPET and body["snippet"]["title"] == "새" and body["snippet"]["tags"] == SNIPPET["tags"] and body["snippet"]["tags"] is not snippet["tags"]
 
 
 def test_not_sent_fields_hook_changes_body_and_check_together(w, monkeypatch):
-    """TC-630: 12단계 실측 후 읽기 전용 항목을 빼야 하면 NOT_SENT_SNIPPET_FIELDS에 이름만 추가하면 본문과 본문 검사가 함께 바뀐다. [SEC-005, 확인 필요]"""
+    """TC-930: 12단계 실측 후 읽기 전용 항목을 빼야 하면 NOT_SENT_SNIPPET_FIELDS에 이름만 추가하면 본문과 본문 검사가 함께 바뀐다. [SEC-005, 확인 필요]"""
     assert live_guard.NOT_SENT_SNIPPET_FIELDS == ()
     monkeypatch.setattr(live_guard, "NOT_SENT_SNIPPET_FIELDS", ("publishedAt", "channelId"))
     assert go(w).ok
@@ -937,7 +937,7 @@ def test_not_sent_fields_hook_changes_body_and_check_together(w, monkeypatch):
     (lambda b: b["snippet"].update(unknown="추가"), "전부 보존하지 않아"),
 ])
 def test_check_body_rejects_unsafe_bodies(mutate, text):
-    """TC-631: check_body는 구조 이상·제목 불일치·항목 누락·값 변경·추가 항목이 있는 본문을 거부한다. [SEC-005, T-15]"""
+    """TC-931: check_body는 구조 이상·제목 불일치·항목 누락·값 변경·추가 항목이 있는 본문을 거부한다. [SEC-005, T-15]"""
     body = live_guard.build_write_body(VID, SNIPPET, "새")
     mutate(body)
     with pytest.raises(LiveGateError) as exc:
@@ -947,7 +947,7 @@ def test_check_body_rejects_unsafe_bodies(mutate, text):
 
 
 def test_check_body_requires_category(monkeypatch):
-    """TC-632: categoryId가 없는 본문은 보내지 않는다(전체 보존 대상에서 빠지도록 설정돼도). [SEC-005, T-15]"""
+    """TC-932: categoryId가 없는 본문은 보내지 않는다(전체 보존 대상에서 빠지도록 설정돼도). [SEC-005, T-15]"""
     monkeypatch.setattr(live_guard, "NOT_SENT_SNIPPET_FIELDS", ("categoryId",))
     body = live_guard.build_write_body(VID, SNIPPET, "새")
     with pytest.raises(LiveGateError, match="categoryId"):
@@ -955,7 +955,7 @@ def test_check_body_requires_category(monkeypatch):
 
 
 def test_invalid_new_title_is_rejected_at_step_9(w, monkeypatch):
-    """TC-633: 쓰기 직전 새 제목 규격 재검사(길이·< >·제어 문자)에 걸리면 9단계에서 중단한다. [SEC-005, FR-002]"""
+    """TC-933: 쓰기 직전 새 제목 규격 재검사(길이·< >·제어 문자)에 걸리면 9단계에서 중단한다. [SEC-005, FR-002]"""
     def boom(*a, **k):
         raise InputError("제목에는 < 또는 > 를 쓸 수 없습니다.", "고치세요")
 
@@ -985,7 +985,7 @@ def _http(status, reason=""):
     (RuntimeError("x"), WriteApiError, False, False),
 ])
 def test_classify_write_error(exc, kind, retryable, definite):
-    """TC-634: 쓰기 오류 분류: 쿼터/인증은 분명한 거절, 429는 재시도하는 분명한 거절, 5xx·네트워크는 재시도하는 불명, 그 밖의 4xx는 분명한 거절, 모르는 예외는 불명이다. [SEC-003, NFR-004]"""
+    """TC-934: 쓰기 오류 분류: 쿼터/인증은 분명한 거절, 429는 재시도하는 분명한 거절, 5xx·네트워크는 재시도하는 불명, 그 밖의 4xx는 분명한 거절, 모르는 예외는 불명이다. [SEC-003, NFR-004]"""
     err = classify_write_error(exc)
     assert type(err) is kind
     if kind is WriteApiError:
@@ -994,7 +994,7 @@ def test_classify_write_error(exc, kind, retryable, definite):
 
 
 def test_classify_does_not_leak_response_body():
-    """TC-635: HTTP 오류 본문에 토큰·긴 문자열이 있어도 메시지·원인에 넣지 않고 상태 코드와 안전한 reason만 남긴다. [SEC-008]"""
+    """TC-935: HTTP 오류 본문에 토큰·긴 문자열이 있어도 메시지·원인에 넣지 않고 상태 코드와 안전한 reason만 남긴다. [SEC-008]"""
     import httplib2
     from googleapiclient.errors import HttpError
     body = json.dumps({"error": {"errors": [{"reason": "bad reason with spaces " + FAKE_ACCESS}], "message": FAKE_ACCESS}}).encode()
@@ -1007,7 +1007,7 @@ def test_classify_does_not_leak_response_body():
 
 
 def test_gate_line_formats_all_statuses():
-    """TC-636: 게이트 표시는 상태를 기호+글자로 보여 주고(색 비의존) 외부 문자열의 제어 문자를 제거한다. [SEC-019, UX 3장]"""
+    """TC-936: 게이트 표시는 상태를 기호+글자로 보여 주고(색 비의존) 외부 문자열의 제어 문자를 제거한다. [SEC-019, UX 3장]"""
     from ytitle.live_guard import GateOutcome, gate_line
     from ytitle.ui import UiOptions
     for status, mark in (("pass", "[통과]"), ("block", "[차단]"), ("warn", "[주의]"), ("pending", "[ 대기 ]"), ("skip", "[해당 없음]")):
@@ -1016,7 +1016,7 @@ def test_gate_line_formats_all_statuses():
 
 
 def test_step7_without_fresh_hash_fails_closed(w):
-    """TC-638: 6단계 결과(재조회 snippet·계획 해시)가 없는 채로 7단계가 불리면(게이트 순서가 깨진 경우) 승인을 믿지 않고 중단한다. [SEC-014, 방어적 설계]"""
+    """TC-938: 6단계 결과(재조회 snippet·계획 해시)가 없는 채로 7단계가 불리면(게이트 순서가 깨진 경우) 승인을 믿지 않고 중단한다. [SEC-014, 방어적 설계]"""
     run = live_guard._run_from_plan(w.plan(), True)
     with pytest.raises(LiveGateError) as exc:
         live_guard._g7(w.env(), run)
@@ -1024,7 +1024,7 @@ def test_step7_without_fresh_hash_fails_closed(w):
 
 
 def test_verification_when_video_disappears_after_write(w):
-    """TC-639: 쓰기 직후 재조회에서 영상이 보이지 않으면(삭제·비공개) 검증을 하지 못했다고 기록하고 success(ok=false)로 끝낸다. [SEC-010]"""
+    """TC-939: 쓰기 직후 재조회에서 영상이 보이지 않으면(삭제·비공개) 검증을 하지 못했다고 기록하고 success(ok=false)로 끝낸다. [SEC-010]"""
     w.server.update_behaviors = [lambda server, body: server.items.clear()]
     result = go(w)
     v = json.loads(w.changes()[0]["verify_result_json"])
@@ -1032,13 +1032,13 @@ def test_verification_when_video_disappears_after_write(w):
 
 
 def test_rollback_restores_original_title_even_if_length_limit_was_lowered(w, applied):
-    """TC-686: 설정의 제목 길이 상한을 나중에 낮춰도 롤백(원래 제목 복원)은 길이 검사에 막히지 않는다(적용은 검사). [WU-4 결정, FR-011]"""
+    """TC-986: 설정의 제목 길이 상한을 나중에 낮춰도 롤백(원래 제목 복원)은 길이 검사에 막히지 않는다(적용은 검사). [WU-4 결정, FR-011]"""
     w.set(hard_max_chars=5, recommended_max_chars=5, key_phrase_chars=5)
     assert rb(w, applied).ok
 
 
 def test_step9_rechecks_title_length_for_apply_but_not_rollback(w):
-    """TC-687: 9단계는 적용의 새 제목 길이 상한을 쓰기 직전에 다시 검사한다(계획 이후 설정이 낮아진 경우). 롤백은 면제(TC-686). [SEC-005, FR-002]"""
+    """TC-987: 9단계는 적용의 새 제목 길이 상한을 쓰기 직전에 다시 검사한다(계획 이후 설정이 낮아진 경우). 롤백은 면제(TC-986). [SEC-005, FR-002]"""
     run = live_guard._run_from_plan(w.plan(), True)
     run.fresh_snippet = run.stored_snippet
     run.new_title = "가" * 101

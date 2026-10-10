@@ -32,7 +32,7 @@ def run_logs(w):
 
 
 def test_dry_run_is_default_and_writes_nothing(w, streams):
-    """TC-650: --live 없는 apply는 모의 실행이다: 계획 정보와 14단계 조건 표를 보여 주고, 구글 연결·쓰기 토큰 로드·이력/쿼터 기록·승인 소진이 전혀 없으며 종료 코드 0이다. [EVT-006, SEC-001, FR-008]"""
+    """TC-950: --live 없는 apply는 모의 실행이다: 계획 정보와 14단계 조건 표를 보여 주고, 구글 연결·쓰기 토큰 로드·이력/쿼터 기록·승인 소진이 전혀 없으며 종료 코드 0이다. [EVT-006, SEC-001, FR-008]"""
     before = counts(w)
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid)]) == 0
     out = streams.out.getvalue()
@@ -48,7 +48,7 @@ def test_dry_run_is_default_and_writes_nothing(w, streams):
 
 
 def test_dry_run_shows_which_gate_blocks(w, streams):
-    """TC-651: 모의 실행은 막는 조건을 단계 번호와 해결 방법으로 보여 주고 종료 코드 3을 낸다(--live 없음 자체는 막힘으로 세지 않음). [EVT-006, SCR-005, SEC-001]"""
+    """TC-951: 모의 실행은 막는 조건을 단계 번호와 해결 방법으로 보여 주고 종료 코드 3을 낸다(--live 없음 자체는 막힘으로 세지 않음). [EVT-006, SCR-005, SEC-001]"""
     w.set(enable_live=False)
     (w.project / "config" / "settings.local.yaml").write_text("live:\n  enable_live: false\n  live_allowlist: []\n", encoding="utf-8")
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid)]) == 3
@@ -58,7 +58,7 @@ def test_dry_run_shows_which_gate_blocks(w, streams):
 
 
 def test_dry_run_missing_approval_and_baseline(w, streams):
-    """TC-652: 승인 파일이 없으면 7단계 [차단], 변경 전 지표가 없으면 8단계 [주의]로 안내한다. [FR-012, FR-013]"""
+    """TC-952: 승인 파일이 없으면 7단계 [차단], 변경 전 지표가 없으면 8단계 [주의]로 안내한다. [FR-012, FR-013]"""
     approvals.approval_path(w.settings, VID, w.cid).unlink()
     w.conn.execute("DELETE FROM metrics_snapshots")
     w.conn.commit()
@@ -69,13 +69,13 @@ def test_dry_run_missing_approval_and_baseline(w, streams):
 
 @pytest.mark.parametrize("argv,code", [([], 2), (["--candidate", "abc"], 2), (["--candidate", "0"], 1), (["--candidate", "-3"], 1), (["--candidate", str(2**63)], 1), (["--candidate", "1", "2"], 2), (["--all"], 2), (["--candidate", "99"], 1)])
 def test_candidate_option_rules(w, streams, argv, code):
-    """TC-653: --candidate는 필수 정수 1개다(없으면 2, 숫자 아님 2, 0·음수·범위 밖·없는 번호 1). 일괄 적용 옵션(--all, 여러 번호)은 없다. [SEC-020, T-16, EVT-006]"""
+    """TC-953: --candidate는 필수 정수 1개다(없으면 2, 숫자 아님 2, 0·음수·범위 밖·없는 번호 1). 일괄 적용 옵션(--all, 여러 번호)은 없다. [SEC-020, T-16, EVT-006]"""
     assert cli_run(w, streams, ["apply"] + argv) == code
     assert w.server.update_calls == [] and counts(w)["title_changes"] == 0
 
 
 def test_live_apply_end_to_end_via_cli(w, streams):
-    """TC-654: apply --candidate N --live: 14단계 통과 후 영상 ID를 직접 입력하면 제목이 바뀌고 SCR-005/006 화면(조건 표·LIVE 경고·결과·롤백 명령)이 나오며 run_logs는 live/0이다. [EVT-006, SCR-005, SCR-006, FR-012]"""
+    """TC-954: apply --candidate N --live: 14단계 통과 후 영상 ID를 직접 입력하면 제목이 바뀌고 SCR-005/006 화면(조건 표·LIVE 경고·결과·롤백 명령)이 나오며 run_logs는 live/0이다. [EVT-006, SCR-005, SCR-006, FR-012]"""
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 0
     out = streams.out.getvalue()
     assert "[apply] 모드: ★실제 적용(LIVE)★" in out and "★ 실제 적용(LIVE) 직전 요약 ★" in out and "조건 확인 결과" in out
@@ -86,7 +86,7 @@ def test_live_apply_end_to_end_via_cli(w, streams):
 
 
 def test_live_gate_failure_exit_code_and_message(w, streams):
-    """TC-655: 게이트에서 막히면 종료 코드 3, 한국어 오류 블록(다음에 할 일 포함), 호출 0회, aborted 행 1개. [NFR-007, SCR-009, SEC-001]"""
+    """TC-955: 게이트에서 막히면 종료 코드 3, 한국어 오류 블록(다음에 할 일 포함), 호출 0회, aborted 행 1개. [NFR-007, SCR-009, SEC-001]"""
     w.server.items[VID]["snippet"]["title"] = "Studio에서 바꾼 제목"
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 3
     err = streams.err.getvalue()
@@ -96,7 +96,7 @@ def test_live_gate_failure_exit_code_and_message(w, streams):
 
 
 def test_live_typed_id_mismatch_exits_3(w, streams):
-    """TC-656: 영상 ID를 3번 틀리게 입력하면 종료 코드 3, 호출 0회. (확인 문구는 y/n이 아니라 영상 ID) [UX 3장, SEC-001]"""
+    """TC-956: 영상 ID를 3번 틀리게 입력하면 종료 코드 3, 호출 0회. (확인 문구는 y/n이 아니라 영상 ID) [UX 3장, SEC-001]"""
     w.video_answer = "wrong"
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 3
     out = streams.out.getvalue()
@@ -104,7 +104,7 @@ def test_live_typed_id_mismatch_exits_3(w, streams):
 
 
 def test_live_verification_failure_exit_code_1(w, streams):
-    """TC-657: 사후 검증이 실패하면 종료 코드 1과 큰 경보, 롤백 안내를 출력한다(자동 롤백 없음). [SEC-010, SCR-006]"""
+    """TC-957: 사후 검증이 실패하면 종료 코드 1과 큰 경보, 롤백 안내를 출력한다(자동 롤백 없음). [SEC-010, SCR-006]"""
     w.server.drop_on_update = ("tags",)
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 1
     out = streams.out.getvalue()
@@ -112,7 +112,7 @@ def test_live_verification_failure_exit_code_1(w, streams):
 
 
 def test_live_api_rejection_exit_code_1(w, streams):
-    """TC-658: 구글이 요청을 거절하면 종료 코드 1, 한국어 안내, 이력 failed. [NFR-007, SEC-006]"""
+    """TC-958: 구글이 요청을 거절하면 종료 코드 1, 한국어 안내, 이력 failed. [NFR-007, SEC-006]"""
     w.server.update_behaviors = [http_error(400, "invalidValue")]
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 1
     assert "[오류 YT-700]" in streams.err.getvalue() and "제목은 바뀌지 않았습니다" in streams.err.getvalue()
@@ -122,7 +122,7 @@ def test_live_api_rejection_exit_code_1(w, streams):
 
 
 def test_live_unresolved_result_exit_code_1_and_planned(w, streams):
-    """TC-659: 호출 결과를 알 수 없으면 종료 코드 1, 이력 planned, 안내(Studio 확인)를 출력한다. [NFR-008]"""
+    """TC-959: 호출 결과를 알 수 없으면 종료 코드 1, 이력 planned, 안내(Studio 확인)를 출력한다. [NFR-008]"""
     w.server.update_behaviors = [TimeoutError("t")] * 3
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 1
     assert "결과를 확인하지 못했습니다" in streams.err.getvalue() and counts(w)["title_changes"] == 1
@@ -132,7 +132,7 @@ def test_live_unresolved_result_exit_code_1_and_planned(w, streams):
 
 
 def test_settings_yaml_enable_live_is_ignored_via_cli(project, tmp_path, monkeypatch, streams):
-    """TC-660: 명령 수준에서도 settings.yaml의 enable_live는 무시된다: [주의] 안내와 함께 2단계에서 종료 코드 3, 호출 0회. [SEC-001, ADR-010]"""
+    """TC-960: 명령 수준에서도 settings.yaml의 enable_live는 무시된다: [주의] 안내와 함께 2단계에서 종료 코드 3, 호출 0회. [SEC-001, ADR-010]"""
     block_network(monkeypatch)
     w = World(project, tmp_path)
     patch_services(monkeypatch, w)
@@ -144,7 +144,7 @@ def test_settings_yaml_enable_live_is_ignored_via_cli(project, tmp_path, monkeyp
 
 
 def test_blocked_candidate_exit_3_dry_and_live(w, streams):
-    """TC-661: 차단된 후보는 모의 실행·실제 적용 모두 종료 코드 3으로 거부한다(live는 aborted PLAN 기록). [POL-001, SEC-001]"""
+    """TC-961: 차단된 후보는 모의 실행·실제 적용 모두 종료 코드 3으로 거부한다(live는 aborted PLAN 기록). [POL-001, SEC-001]"""
     w.conn.execute("UPDATE title_candidates SET status='blocked', validation_result='block'")
     w.conn.commit()
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid)]) == 3
@@ -154,14 +154,14 @@ def test_blocked_candidate_exit_3_dry_and_live(w, streams):
 
 
 def test_apply_help_explains_dry_run_default(w, streams):
-    """TC-662: apply --help가 기본이 모의 실행이고 --live가 실제 적용임을 밝힌다. [SCR-001, NFR-007]"""
+    """TC-962: apply --help가 기본이 모의 실행이고 --live가 실제 적용임을 밝힌다. [SCR-001, NFR-007]"""
     assert cli_run(w, streams, ["apply", "--help"]) == 0
     out = streams.out.getvalue()
     assert "모의 실행" in out and "--live" in out and "14단계" in out
 
 
 def test_external_strings_are_sanitized_on_screen(w, streams):
-    """TC-663: 영상 제목·검증 사유에 ANSI/방향 제어 문자가 있어도 apply 화면에 그대로 나오지 않는다. [SEC-019, T-13]"""
+    """TC-963: 영상 제목·검증 사유에 ANSI/방향 제어 문자가 있어도 apply 화면에 그대로 나오지 않는다. [SEC-019, T-13]"""
     from wu4_support import add_video
     add_video(w.conn, snippet={**SNIPPET, "title": "\x1b[2J\x1b[31m가짜‮제목"}, fetched_at=ts(NOW - timedelta(hours=1)))
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid)]) in (0, 3)
@@ -170,7 +170,7 @@ def test_external_strings_are_sanitized_on_screen(w, streams):
 
 
 def test_dry_run_stale_info_is_cautioned(w, streams):
-    """TC-664: 영상 정보를 가져온 지 24시간이 넘으면 모의 실행이 [주의]로 fetch를 안내한다. [EVT-004]"""
+    """TC-964: 영상 정보를 가져온 지 24시간이 넘으면 모의 실행이 [주의]로 fetch를 안내한다. [EVT-004]"""
     from wu4_support import add_video
     add_video(w.conn, fetched_at=ts(NOW - timedelta(hours=30)))
     cli_run(w, streams, ["apply", "--candidate", str(w.cid)])
@@ -178,7 +178,7 @@ def test_dry_run_stale_info_is_cautioned(w, streams):
 
 
 def test_daily_cap_via_cli(w, streams):
-    """TC-665: 하루 적용 상한에 닿으면 모의 실행은 5단계 [차단], 실제 적용은 종료 코드 3이다. [SEC-020]"""
+    """TC-965: 하루 적용 상한에 닿으면 모의 실행은 5단계 [차단], 실제 적용은 종료 코드 3이다. [SEC-020]"""
     for i in range(3):
         add_change(w.conn, vid=f"other{i}000000", at=NOW - timedelta(hours=1))
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid)]) == 3
@@ -188,7 +188,7 @@ def test_daily_cap_via_cli(w, streams):
 
 
 def test_quota_exhausted_via_cli(w, streams):
-    """TC-666: 오늘 쿼터가 부족하면 실제 적용은 4단계에서 종료 코드 3으로 막히고 구글 호출이 없다. [SEC-002]"""
+    """TC-966: 오늘 쿼터가 부족하면 실제 적용은 4단계에서 종료 코드 3으로 막히고 구글 호출이 없다. [SEC-002]"""
     fill_quota(w.conn, w.clock, 6000 - 10)
     assert cli_run(w, streams, ["apply", "--candidate", str(w.cid), "--live"]) == 3
     assert "4단계에서 막혀" in streams.out.getvalue() and w.events == []

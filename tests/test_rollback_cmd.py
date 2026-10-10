@@ -126,14 +126,14 @@ def test_rollback_help_explains_live_and_approver(project, streams):
 
 
 def test_rollback_dry_run_points_to_live_command(project, db, streams, no_network):
-    """TC-683: 모의 실행 끝에 실제 복원 명령(--approver 이름 --live)을 안내한다. [EVT-007]"""
+    """TC-983: 모의 실행 끝에 실제 복원 명령(--approver 이름 --live)을 안내한다. [EVT-007]"""
     chg, plan = applied(db, project)
     assert go(project, streams, ["rollback", "--change", str(chg)]) == 0
     assert f"rollback --change {chg} --approver 이름 --live" in streams.out.getvalue()
 
 
 def test_rollback_live_end_to_end_via_cli(project, tmp_path, streams, monkeypatch):
-    """TC-684: rollback --change N --approver 이름 --live: 게이트 통과·영상 ID 입력 후 이전 제목으로 복원(종료 코드 0), LIVE 표시, 후보 rolled_back. 승인자 누락은 7단계에서 3. [FR-011, EVT-007, SCR-005, SCR-006]"""
+    """TC-984: rollback --change N --approver 이름 --live: 게이트 통과·영상 ID 입력 후 이전 제목으로 복원(종료 코드 0), LIVE 표시, 후보 rolled_back. 승인자 누락은 7단계에서 3. [FR-011, EVT-007, SCR-005, SCR-006]"""
     import sqlite3
     from wu5_support import World, block_network, cli_run, patch_services
     block_network(monkeypatch)
@@ -155,7 +155,7 @@ def test_rollback_live_end_to_end_via_cli(project, tmp_path, streams, monkeypatc
 
 
 def test_rollback_live_verification_failure_exit_1(project, tmp_path, streams, monkeypatch):
-    """TC-685: 롤백 후 검증이 실패하면 종료 코드 1이고 경보를 출력한다(자동 재시도 없음). [SEC-010, FR-011]"""
+    """TC-985: 롤백 후 검증이 실패하면 종료 코드 1이고 경보를 출력한다(자동 재시도 없음). [SEC-010, FR-011]"""
     from wu5_support import World, block_network, cli_run, patch_services
     block_network(monkeypatch)
     world = World(project, tmp_path)

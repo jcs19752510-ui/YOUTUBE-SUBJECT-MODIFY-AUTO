@@ -182,8 +182,9 @@ def test_create_plan_refuses_finished_candidates(conn, s, status):
     """TC-436: 이미 적용·평가·롤백된 후보는 다시 계획하지 않는다. [설계 3-2]"""
     add_video(conn)
     cid = add_candidate(conn, status=status)
-    with pytest.raises(SafetyGateError):
+    with pytest.raises(SafetyGateError) as exc:
         create_plan(conn, s, clock(), cid)
+    assert "이미 처리된" in exc.value.message and status in exc.value.message and "validate" in exc.value.next_step
 
 
 @pytest.mark.parametrize("status,result", [("approved", "pass"), ("filtered", "warn")])
