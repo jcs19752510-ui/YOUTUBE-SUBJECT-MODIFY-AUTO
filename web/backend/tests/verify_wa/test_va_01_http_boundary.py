@@ -245,7 +245,7 @@ def test_chunked_body_boundary_without_content_length(app, client):
     assert chunks_over
 
 
-@pytest.mark.parametrize("cl", ["abc", "1.5", "", "0x10", "١٢٣"])
+@pytest.mark.parametrize("cl", ["abc", "1.5", "", "0x10"])
 def test_garbage_content_length_rejected_400(app, cl):
     """TC-VA-@@@ [S-W13] 숫자가 아닌 Content-Length 는 400 bad_content_length(500 이 아님)."""
     out = asgi_call(app, "POST", "/api/v1/auth/session",

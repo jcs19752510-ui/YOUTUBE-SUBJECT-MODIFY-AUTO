@@ -5,7 +5,7 @@
 | 작업 단위 | W-FE (WEB_DESIGN §7). 소유 범위 `web/frontend/` 만 수정. 백엔드·인프라와 병렬 웨이브(W-BE-A, W-BE-B, W-INF 동시 진행) |
 | 속도 트랙 | 전달받지 못함 → 기본 L3 로 표기 |
 | 상태 | 구현 완료, 게이트 1(린트·타입·포맷)·게이트 2(자체 리뷰) 통과. 결과서·검증 로그는 06단계 담당 |
-| 한 줄 요약 | 8개 화면 + 모든 상태 화면 + 모의 서버(`npm run dev:mock`) + 테스트 93건 |
+| 한 줄 요약 | 8개 화면 + 모든 상태 화면 + 모의 서버(`npm run dev:mock`) + 테스트 95건 |
 
 ## 1. 실행 방법
 ```
@@ -25,7 +25,7 @@ npm run lint | typecheck | format:check | test | build
 | `tsc -b` (strict, noUncheckedIndexedAccess) | 오류 0 |
 | ESLint (react-hooks, jsx-a11y, no-explicit-any, dangerouslySetInnerHTML·innerHTML·style 속성·localStorage 금지 규칙) | 오류 0, 경고 0 |
 | Prettier `--check` | 통과 |
-| Vitest | 9 파일, **93 테스트 통과** (TC-WF-001 ~ 093, 중복·결번 없음 확인) |
+| Vitest | 9 파일, **95 테스트 통과** (TC-WF-001 ~ 095, 중복·결번 없음 확인) |
 | `npm run build` | 성공(JS 389 kB / gzip 118 kB, CSS 16 kB). `dist/index.html` 에 인라인 스크립트·스타일 없음 |
 | `npm audit` (개발 의존성 포함) | 취약점 0 |
 | `npm ci` 재현 | 빈 디렉터리에서 package.json+lock 만으로 성공 |
@@ -51,7 +51,7 @@ npm run lint | typecheck | format:check | test | build
 | 배치 상세 `/batches/:id` | 사전 점검 표(항목 수·예상 사용량·하루 상한·남은 한도·날짜별 일정·경고·제외 항목), 포함 항목 표, 확인 문구 `실행 {n}건` 직접 입력(불일치 시 실행 버튼 비활성), 실행(멱등키, 실패 후 재시도는 같은 키), 진행률(`<progress>`, 서버 상태 2초 폴링, 새로고침 복구), 중지(확인 대화상자), 완료 안내 | GET batches/{id}, POST batches/{id}/execute, POST batches/{id}/cancel |
 | 이력·롤백 `/history` | 변경 이력 표(영상·구분·전후 제목·결과·승인자), 영상 ID/결과 필터, 롤백 대화상자(영상 ID 직접 입력 일치+승인자 입력 전엔 실행 비활성, 멱등키), 되돌릴 수 없는 항목은 이유 표시 | GET changes, POST changes/{id}/rollback |
 | 성과 리포트 `/reports` | 영상별 카드(데이터 부족 뱃지+사유+수집 예정일 / 비교 표 / 변경 기록 없음), 서버 notes 를 맨 위 경고 박스에 그대로 노출(없으면 원인 단정 금지 기본 문구), CSV 내보내기(blob 다운로드, 오류 표시) | GET reports/changes, GET reports/export.csv |
-| 설정 `/settings` | 탭: 안전 설정(하루 상한 1~20, 영상당 제안 1~5, 말투 — 범위 검증), **읽기 전용** 라이브/허용 영상 목록 + "이 화면에서는 켤 수 없습니다", PIN 설정·변경·해제(4자 이상·재입력 일치·해제 확인), 세션·연결(서버·구글·모드·로그아웃), 감사 로그(읽기 전용, 무결성 결과를 글자로) | GET/PATCH settings, GET google/status, GET audit, DELETE auth/session |
+| 설정 `/settings` | 탭: 안전 설정(하루 상한 1~20, 영상당 제안 1~5, 말투 목록 최대 5개·각 20자 — 범위 검증), **읽기 전용** 라이브/허용 영상 목록(`read_only`) + "이 화면에서는 켤 수 없습니다", PIN 설정·변경·해제(숫자 4~12자리·재입력 일치, PIN 이 있으면 현재 PIN 필수, 해제는 현재 PIN 확인 대화상자; 본문 `{pin:{action,new_pin,current_pin}}`), 세션·연결(서버·구글·모드·로그아웃), 감사 로그(읽기 전용, 무결성 결과를 글자로) | GET/PATCH settings, GET google/status, GET audit, DELETE auth/session |
 | 공통 | 상단 항상 "데모 모드 — 유튜브에 아무것도 전송되지 않습니다" 배지, 연결 상태, 로그아웃, 본문 건너뛰기 링크, 화면 이동 시 제목으로 포커스, 404 화면 | GET auth/me, POST auth/session |
 
 ### 상태 화면 매핑 (F-07)
@@ -89,11 +89,11 @@ npm run lint | typecheck | format:check | test | build
 | S-W02/S-W03 CSRF, 상태 변경 비-GET | client.ts | TC-005 |
 | S-W04 CSP 호환 | 인라인 스크립트·스타일·style 속성 없음, `dist/index.html` 확인 | TC-081 |
 | S-W05 XSS | 위 F-05 | TC-018, 081 |
-| 설정 읽기 전용(라이브·허용 영상) | SettingsPage | TC-067, 069 |
+| 설정 읽기 전용(라이브·허용 영상) | SettingsPage | TC-067, 069, 070, 094, 095 |
 | 원인 단정 금지 문구 노출 | ReportsPage | TC-064, 065 |
 | 승인 규칙(차단 불가, 경고 사유 확인) | SuggestionCard | TC-036, 037, 038 |
 
-## 8. 스크린샷으로 확인한 사항 (Chromium 1194, 임시 스크립트는 `.harness-tmp/`, 끝나고 삭제)
+## 8. 스크린샷으로 확인한 사항 (Chromium 1194, 임시 스크립트는 `.harness-tmp/`, 끝나고 삭제; 모의 서버와 실제 백엔드 양쪽에서 확인)
 홈, 영상 목록(200개, 제외 배지), 영상 상세(통과 카드), 승인 대화상자, 배치 선택·사전 점검·확인 문구·진행·완료, 이력, 롤백 대화상자, 리포트(비교 가능/데이터 부족), 설정(읽기 전용 구역), PIN 화면, 세션 만료 오버레이, 빈 홈(데모 영상 불러오기), 1024px 폭, 다크 모드를 눈으로 확인하고 고친 점:
 - 토스트가 겹쳐 쌓임 → 세로 간격 적용
 - 이력 표의 "롤백" 버튼이 두 줄로 깨짐 → 버튼 `nowrap`
@@ -107,24 +107,22 @@ npm run lint | typecheck | format:check | test | build
 - **axe 색 대비 규칙은 jsdom 에서 계산할 수 없어 자동 시험에서 제외**했다. 대비는 토큰 설계값으로 보증했고 실제 브라우저 자동 측정은 하지 않았다(브라우저 자동화 도구는 저장소에 넣지 않는다는 DEC-034 때문). 06단계에서 수동 점검 권장.
 - 스크린리더(NVDA 등)·실제 Edge 수동 시험 미수행(환경 없음).
 - 가상 스크롤, OpenAPI 타입 생성 미적용(위 표).
-- 실제 백엔드와의 통합 확인 미수행: 병렬 개발 중이라 모의 서버로만 검증. 아래 "서버 계약 확인 요청"의 추정 스키마가 실제와 다르면 `src/api/types.ts` 와 해당 화면을 고쳐야 한다.
+- 실제 백엔드 연동은 SQLite+워커 구성에서 수동 확인함(10장). PostgreSQL·nginx·compose 경유 구성과 자동화된 통합 테스트는 미수행.
 - 폴링 중 탭이 백그라운드이면 TanStack Query 기본 설정대로 멈춘다(의도).
 - ESLint 는 **9.39.5**(EOL 표시 경고가 npm 에 뜸): eslint 10 은 `eslint-plugin-jsx-a11y` 6.10.2 의 peer 범위(≤9) 밖이라 접근성 린트를 유지하려고 9 로 고정. jsx-a11y 가 10 을 지원하면 올릴 것.
 - TypeScript **5.9.3**(조사축 D 권고, typescript-eslint 가 <6.1 요구). vitest-axe 0.1.0 은 2025-01 이후 갱신이 없고 Vitest 5 호환 미검증이라 쓰지 않고 `axe-core` 를 직접 호출한다(`src/test/utils.tsx`). axe-core 는 MPL-2.0, 개발 전용.
 - 승인자 이름은 탭 메모리에만 기억(저장소 사용 금지 규칙). 새로고침하면 다시 입력.
 - 썸네일 이미지는 표시하지 않음(coordinator 지시: CDN 금지, 데모 영상에 썸네일 없음).
 
-## 10. 서버 계약 확인 요청 (WEB_DESIGN §3 에 스키마가 없어 프런트가 추정한 부분 — 규칙 A 질문)
-1. `GET /reports/changes` 의 `VideoReport` 필드: 모의 서버와 화면은 `ytitle.report.VideoReport` 를 따라 `{video_id,title,status("no_change|insufficient|ok"),before,after,baseline_missing,reasons[],notes[],metrics[{key,label,before,after,delta,pct}],expected_after_date}` 로 가정. 다르면 알려 주세요.
-2. `GET/PATCH /settings` 스키마: 읽기 `{daily_apply_cap,suggestions_per_video,tone,pin_set,live_enabled,allowed_video_ids[]}`, 쓰기 `{daily_apply_cap?,suggestions_per_video?,tone?,pin?: string|null}`(null=PIN 해제)로 가정. `tone` 허용 값 목록(열거형인지 자유 문자열인지)과 PIN 형식(길이·숫자만)은 서버 규칙을 모른다(화면은 4자 이상만 검사).
-3. `GET /audit` 항목 필드: `{id,ts,actor,action,target_type,target_id,detail}` + `chain_ok` 로 가정.
-4. `GET /videos` 의 `sort` 허용 값: `title|views|duration_sec|last_change_at`, `order=asc|desc`, `excluded=true|false`, `status`=workflow_status 값으로 가정.
-5. `Dashboard.active_job` 형태(작업 객체 또는 null 로 가정, `{id,type,status,progress,total}`), `limits.reasons[]` 원소(문자열 또는 `{message}` 둘 다 받음).
-6. **요청**: `GET /batches/{id}` 응답에 `precheck` 를 포함해 주세요(DB 에 이미 저장됨). 있으면 새로고침 후에도 사전 점검 표가 복구된다. 없으면 화면은 "다시 불러오지 못했습니다" 안내와 항목 수 기준 확인 문구(`실행 {n}건`)로 대체한다.
-7. 배치 `status` 값 집합(`draft|running|completed|cancelled|failed` 로 가정)과 job `status`(`queued|running|succeeded|failed|cancelled`)가 다르면 `lib/labels.ts` 의 `isBatchActive`·`jobPhase` 를 맞춰야 한다. 일부 날짜가 미래인 항목이 남은 배치가 어떤 status 인지(계속 `running` 이면 화면이 2초 폴링을 계속함)도 확인 필요.
-8. 승인 만료(`expired`)를 제안 `status` 로 내려 주는지(모의는 내려 줌) 확인 필요. 화면은 `candidate|expired` 일 때 승인 버튼을 보인다.
-9. 오류 코드: 세션 만료 401 코드, CSRF 실패 403 코드에 `csrf` 가 포함된다고 가정(재발급 트리거). PIN 오류 401 코드는 `pin_` 로 시작한다고 가정(이 경우 재발급 루프를 막음).
-10. 인프라 담당에게: nginx 가 `try_files` 로 SPA 대체를 하지 않아도 되도록 HashRouter 를 썼다. CSP 는 `default-src 'self'` 로 충분하다(인라인 스크립트·스타일 없음, 폰트·이미지 외부 없음, `blob:` 다운로드는 앵커 `download` 사용).
+## 10. 서버 계약 확인 (W-BE-A 구현 기준으로 맞춤 + 실제 백엔드로 확인)
+**실제 백엔드 연동 확인(이 세션)**: W-BE-A/B 코드를 SQLite(`YTWEB_AUTO_CREATE=1`) + 워커로 띄우고 Vite 프록시(`VITE_API_PROXY`)로 연결해 Chromium 으로 확인했다. 데모 영상 불러오기(작업) → 목록 → 선택·AI 제안 생성(작업 진행) → 상세(경고/통과 카드) → 승인 → 배치 초안·사전 점검 → 확인 문구·실행 → 완료 → 이력 → 롤백 → 리포트(데이터 부족) → 설정 → 감사 로그, PIN 설정 → 로그아웃 → PIN 화면(틀린 PIN 안내) → 로그인 → 현재 PIN 틀림(안내)/맞음으로 해제까지 **콘솔 오류·예상 밖 4xx 없이** 동작했다(의도한 401 은 틀린 PIN 시험뿐). 시험 후 서버·임시 DB 정리함. 맞춘 내용: 설정 응답은 `{daily_apply_cap,suggestions_per_video,tone[],pin_enabled,mode,read_only{enable_live,live_allowlist[],note}}`, PIN 변경 본문 `{pin:{action:"set"|"clear",new_pin?,current_pin?}}`, 배치 상태 `done` 을 완료로 표시, 주제 코드(`life` 등)는 한국어로 매핑(모르는 코드는 원문).
+아직 서버 문서에 없어 프런트가 가정한 것(서버 담당 확인 요청, 규칙 A):
+1. `GET /batches/{id}` 응답에 `precheck` 포함 요청(화면은 있으면 사용, 없으면 history.state·항목 수 기준으로 대체). 실제 서버로 새로고침 복구를 끝까지 확인하지는 않았다.
+2. 일부 날짜가 미래인 항목이 남은 배치의 `status`(계속 `running` 이면 화면이 2초 폴링을 계속함).
+3. `GET /videos` 의 `sort` 허용 값 `title|views|duration_sec|last_change_at`, `status`·`excluded` 필터 값(실제 서버에서 목록·필터 기본 동작만 확인, 모든 정렬 키는 미확인).
+4. 승인 만료 시 제안 `status` 가 `expired` 로 내려오는지(화면은 `candidate|expired` 에서 승인 버튼 표시).
+5. 배치 상태 값 전체 집합(`draft|running|done|cancelled|failed` 로 가정), 작업 상태(`queued|running|succeeded|failed` 확인됨 일부).
+6. 인프라 담당: HashRouter 를 써서 nginx `try_files` 가 없어도 된다. CSP `default-src 'self'` 로 충분(인라인 스크립트·스타일 없음, 외부 폰트·이미지 없음, CSV 는 `blob:` 앵커 다운로드).
 
 ## 11. 게이트 2 — 자체 코드 리뷰 체크리스트
 - [x] 설계서/요청서 명세와 구현 일치(§7 표, 미적용 2건은 사유 명시)
@@ -143,9 +141,9 @@ npm run lint | typecheck | format:check | test | build
 | decisions.md | 기록 요청 | HashRouter 채택(새로고침 안전), ESLint 9 고정(jsx-a11y peer), vitest-axe 대신 axe-core 직접 사용, 색 대비 자동 측정 미수행 |
 
 ## 13. 6단계 테스터를 위한 인수 조건
-1. `npm ci && npm run check` 가 모두 통과한다(93 테스트).
+1. `npm ci && npm run check` 가 모두 통과한다(95 테스트).
 2. `npm run dev:mock` 후 http://127.0.0.1:5173 에서: 영상 선택(여러 쪽) → 제안 생성 → 상세에서 통과/경고/차단 확인 → 승인 → 배치 초안 → 사전 점검 → 확인 문구 틀리게 입력 시 실행 비활성 → `실행 1건` 정확히 입력 후 실행 → 진행·완료 → 이력에서 롤백(영상 ID 직접 입력).
-3. `MOCK_PIN=1234 npm run mock` 으로 PIN 화면, 틀린 PIN 메시지, `POST /__mock/expire` 후 화면 조작 시 PIN 재입력 모달.
+3. `MOCK_PIN=1234 npm run mock`(+ `npm run dev` 를 `VITE_API_PROXY=http://127.0.0.1:8081` 로) 으로 PIN 화면, 틀린 PIN 메시지, `POST /__mock/expire` 후 화면 조작 시 PIN 재입력 모달.
 4. 모의 서버를 끄면 "서버 연결 끊김" 표시, 켜면 "다시 연결"로 복구.
 5. 설정에서 라이브/허용 영상은 읽기 전용이고 "이 화면에서는 켤 수 없습니다"가 보인다.
 6. 키보드만으로 위 흐름이 가능하고 포커스 링이 보인다(수동). 색 대비는 브라우저 도구로 별도 측정.
