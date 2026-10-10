@@ -140,16 +140,6 @@ class BatchCounts(BaseModel):
     cancelled: int
 
 
-class BatchOut(BaseModel):
-    id: int
-    status: str
-    note: str | None
-    created_at: datetime
-    executed_at: datetime | None
-    counts: BatchCounts
-    items: list[BatchItemOut]
-
-
 class ScheduleEntry(BaseModel):
     date: date
     count: int
@@ -170,6 +160,17 @@ class PrecheckOut(BaseModel):
     warnings: list[str]
     blocked: list[BlockedItem]
     confirm_text: str
+
+
+class BatchOut(BaseModel):
+    id: int
+    status: str
+    note: str | None
+    created_at: datetime
+    executed_at: datetime | None
+    counts: BatchCounts
+    items: list[BatchItemOut]
+    precheck: PrecheckOut | None = None
 
 
 class BatchCreatedOut(BaseModel):

@@ -224,8 +224,8 @@ def refresh_batch_status(batch: Batch, now: datetime) -> None:
     c = item_counts(batch)
     if c["pending"] == 0 and c["running"] == 0:
         new = "done"
-    elif c["running"] > 0 or any(c[k] for k in ("success", "failed", "skipped")):
-        new = "running"
+    elif c["running"] > 0:
+        new = "running"   # 실제로 처리 중인 항목이 있을 때만(미래 예약만 남았으면 queued 유지 — 프런트 폴링 기준)
     else:
         new = "queued"
     if new != batch.status:

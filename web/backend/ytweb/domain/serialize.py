@@ -89,4 +89,5 @@ def batch_dict(session: Session, b: Batch, *, with_items: bool = True) -> dict:
         "executed_at": b.executed_at,
         "counts": counts,
         "items": _item_dicts(session, list(b.items)) if with_items else [],
+        "precheck": b.precheck if with_items else None,  # 생성 시 저장한 사전 점검(새로고침 후 복구용)
     }
