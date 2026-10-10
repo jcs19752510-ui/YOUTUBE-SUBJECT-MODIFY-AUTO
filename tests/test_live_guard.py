@@ -1035,3 +1035,15 @@ def test_rollback_restores_original_title_even_if_length_limit_was_lowered(w, ap
     """TC-686: 설정의 제목 길이 상한을 나중에 낮춰도 롤백(원래 제목 복원)은 길이 검사에 막히지 않는다(적용은 검사). [WU-4 결정, FR-011]"""
     w.set(hard_max_chars=5, recommended_max_chars=5, key_phrase_chars=5)
     assert rb(w, applied).ok
+
+
+def test_step9_rechecks_title_length_for_apply_but_not_rollback(w):
+    """TC-687: 9단계는 적용의 새 제목 길이 상한을 쓰기 직전에 다시 검사한다(계획 이후 설정이 낮아진 경우). 롤백은 면제(TC-686). [SEC-005, FR-002]"""
+    run = live_guard._run_from_plan(w.plan(), True)
+    run.fresh_snippet = run.stored_snippet
+    run.new_title = "가" * 101
+    with pytest.raises(LiveGateError) as exc:
+        live_guard._g9(w.env(), run)
+    assert exc.value.step == 9
+    run.kind, run.change_id = "rollback", 1
+    assert "snippet 전체" in live_guard._g9(w.env(), run)   # 롤백은 길이 상한에 걸리지 않는다
