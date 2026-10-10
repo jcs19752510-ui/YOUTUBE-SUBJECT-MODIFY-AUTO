@@ -45,7 +45,7 @@ export function BatchesPage() {
 
   const create = useMutation({
     mutationFn: () => {
-      const ids = Array.from(picked).sort((a, b) => a - b);
+      const ids = chosen.map((x) => x.id).sort((a, b) => a - b);
       return api.createBatch(
         ids,
         note.trim() || undefined,
@@ -59,7 +59,9 @@ export function BatchesPage() {
   });
 
   const items = approved.data?.items ?? [];
-  const over = picked.size > MAX_BATCH;
+  // 목록에서 사라진 항목(승인 만료·다른 배치에 담김)을 이전에 골랐더라도 보내지 않는다
+  const chosen = items.filter((x) => picked.has(x.id));
+  const over = chosen.length > MAX_BATCH;
   const toggle = (id: number) =>
     setPicked((s) => {
       const n = new Set(s);
@@ -149,7 +151,7 @@ export function BatchesPage() {
                 </table>
               </TableWrap>
               <p className="muted" aria-live="polite">
-                {ko.videos.selectedCount(picked.size)} · {ko.batches.maxNote(MAX_BATCH)}
+                {ko.videos.selectedCount(chosen.length)} · {ko.batches.maxNote(MAX_BATCH)}
               </p>
               {over && <p className="field__error">{ko.batches.overMax(MAX_BATCH)}</p>}
               <Field label={ko.batches.noteLabel}>
@@ -165,7 +167,7 @@ export function BatchesPage() {
                 <Button
                   variant="primary"
                   busy={create.isPending}
-                  disabled={picked.size === 0 || over}
+                  disabled={chosen.length === 0 || over}
                   onClick={() => create.mutate()}
                 >
                   {create.isPending ? ko.batches.creating : ko.batches.createDraft}
@@ -183,7 +185,7 @@ export function BatchesPage() {
                 <p className="muted">{ko.batches.listEmpty}</p>
               ) : (
                 <>
-                  <TableWrap label={ko.batches.listTitle}>
+                  <TableWrap label={ko.batches.listTableLabel}>
                     <table className="table">
                       <thead>
                         <tr>

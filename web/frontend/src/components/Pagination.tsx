@@ -18,6 +18,8 @@ export function Pagination({
   sizes?: number[];
 }) {
   const last = Math.max(1, Math.ceil(total / pageSize));
+  // 주소로 들어온 쪽 크기가 목록에 없어도 실제 값 그대로 보여 준다
+  const options = sizes.includes(pageSize) ? sizes : [...sizes, pageSize].sort((a, b) => a - b);
   return (
     <nav className="pagination" aria-label={ko.pagination.nav}>
       <div className="row">
@@ -39,7 +41,7 @@ export function Pagination({
             value={pageSize}
             onChange={(e) => onPageSize(Number(e.target.value))}
           >
-            {sizes.map((s) => (
+            {options.map((s) => (
               <option key={s} value={s}>
                 {ko.pagination.sizeUnit(s)}
               </option>

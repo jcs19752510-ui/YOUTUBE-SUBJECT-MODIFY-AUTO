@@ -15,6 +15,7 @@ import {
   useToast,
 } from '../components';
 import { ko } from '../i18n/ko';
+import { jobTypeLabel } from '../lib/labels';
 import { fmtDate, fmtNum } from '../lib/format';
 import { JobPanel } from './JobPanel';
 
@@ -32,10 +33,12 @@ function Todo({ d }: { d: Dashboard }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [jobId, setJobId] = useState<string | null>(null);
+  const [jobFinished, setJobFinished] = useState(false);
   const sync = useMutation({
     mutationFn: () => api.syncVideos(),
     onSuccess: (job) => {
       setJobId(job.id);
+      setJobFinished(false);
       toast.push('info', ko.home.syncStarted);
     },
   });
@@ -68,7 +71,11 @@ function Todo({ d }: { d: Dashboard }) {
         <div className="stack">
           <p>{ko.home.todoNoVideos}</p>
           <div>
-            <Button variant="primary" busy={sync.isPending} onClick={() => sync.mutate()}>
+            <Button
+              variant="primary"
+              busy={sync.isPending || (jobId !== null && !jobFinished)}
+              onClick={() => sync.mutate()}
+            >
               {sync.isPending ? ko.home.syncing : ko.home.syncDemo}
             </Button>
           </div>
@@ -77,7 +84,9 @@ function Todo({ d }: { d: Dashboard }) {
             <JobPanel
               jobId={jobId}
               label={ko.home.syncDemo}
+              onError={() => setJobFinished(true)}
               onDone={() => {
+                setJobFinished(true);
                 void qc.invalidateQueries({ queryKey: ['dashboard'] });
                 void qc.invalidateQueries({ queryKey: ['videos'] });
               }}
@@ -123,7 +132,7 @@ export function HomePage() {
                 <Callout tone="info" role="status">
                   <p>
                     {ko.home.activeJob(
-                      d.active_job.type,
+                      jobTypeLabel(d.active_job.type),
                       d.active_job.progress,
                       d.active_job.total,
                     )}

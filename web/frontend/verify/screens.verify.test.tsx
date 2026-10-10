@@ -151,15 +151,12 @@ describe('영상 목록: 서버측 질의 (F-03)', () => {
   });
 
   // 결함 DEF-6-007(Low): 구현 노트·URL 파서는 쪽 크기 200 까지 허용하지만 선택 목록에는 25/50/100 뿐이라, ?page_size=200 이면 200건을 받으면서 화면에는 "25개"로 보인다. 고쳐지면 .fails 를 제거할 것.
-  it.fails(
-    'TC-VF-156 쪽 크기 200(노트가 지원한다고 적은 값)이 선택 목록에서 실제 값으로 보인다 [DEF-6-007]',
-    async () => {
-      mountApp([server()], '/videos?page_size=200');
-      await screen.findByRole('table');
-      const sel = screen.getByLabelText(ko.pagination.size) as HTMLSelectElement;
-      expect(sel.value).toBe('200');
-    },
-  );
+  it('TC-VF-156 쪽 크기 200(노트가 지원한다고 적은 값)이 선택 목록에서 실제 값으로 보인다 [DEF-6-007]', async () => {
+    mountApp([server()], '/videos?page_size=200');
+    await screen.findByRole('table');
+    const sel = screen.getByLabelText(ko.pagination.size) as HTMLSelectElement;
+    expect(sel.value).toBe('200');
+  });
 
   it('TC-VF-157 제외된 영상은 체크박스가 꺼져 있고 사유가 보이며, 전체 선택으로도 선택되지 않는다', async () => {
     const user = userEvent.setup();
@@ -287,25 +284,24 @@ describe('홈 화면', () => {
   });
 
   // 결함 DEF-6-008(Low): 불러오기 작업이 진행 중인데도 "데모 영상 불러오기" 버튼이 다시 켜져 같은 작업을 또 시작할 수 있다(서버가 막아 주지 않으면 중복 작업). 고쳐지면 .fails 를 제거할 것.
-  it.fails(
-    'TC-VF-179 불러오기 작업이 진행 중이면 같은 버튼으로 작업을 또 시작할 수 없다 [DEF-6-008]',
-    async () => {
-      const user = userEvent.setup();
-      const c = mountApp(
-        [
-          emptyHome(),
-          route('POST', '/api/v1/videos/sync', () => json(202, syncJob('queued'))),
-          route('GET', '/api/v1/jobs/j9', () => json(200, syncJob('running', 1))),
-        ],
-        '/',
-      );
-      await user.click(await screen.findByRole('button', { name: ko.home.syncDemo }));
-      await screen.findByRole('progressbar');
-      await user.click(screen.getByRole('button', { name: new RegExp(ko.home.syncDemo) }));
-      await new Promise((r) => setTimeout(r, 50));
-      expect(c.calls.filter((x) => x.path === '/api/v1/videos/sync')).toHaveLength(1);
-    },
-  );
+  it('TC-VF-179 불러오기 작업이 진행 중이면 같은 버튼으로 작업을 또 시작할 수 없다 [DEF-6-008]', async () => {
+    const user = userEvent.setup();
+    const c = mountApp(
+      [
+        emptyHome(),
+        route('POST', '/api/v1/videos/sync', () => json(202, syncJob('queued'))),
+        route('GET', '/api/v1/jobs/j9', () => json(200, syncJob('running', 1))),
+      ],
+      '/',
+    );
+    await user.click(await screen.findByRole('button', { name: ko.home.syncDemo }));
+    await screen.findByRole('progressbar', { name: ko.home.syncDemo });
+    const again = screen.getByRole('button', { name: new RegExp(ko.home.syncDemo) });
+    expect(again).toBeDisabled();
+    await user.click(again);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(c.calls.filter((x) => x.path === '/api/v1/videos/sync')).toHaveLength(1);
+  });
 
   it.each([
     ['79%(경고 없음)', 4740, 6000, false],
@@ -634,46 +630,40 @@ describe('서버 상태 값의 한국어 표기', () => {
   const asciiOnly = (t: string) => /^[a-z._]+$/.test(t.trim());
 
   for (const st of ['queued', 'paused'])
-    it.fails(
-      `TC-VF-182 배치 상태 "${st}" 가 영문 원문이 아닌 한국어로 표시된다 [DEF-6-010]`,
-      async () => {
-        // 결함 DEF-6-010(Low): ko.batchStatus 에 queued(실행 직후 실제 서버가 쓰는 값)·paused 가 없어 영문 원문이 그대로 보인다.
-        const run = draftBatch({ status: st });
-        mountApp([route('GET', '/api/v1/batches/7', () => json(200, run))], '/batches/7');
-        await screen.findByText(ko.batches.progressTitle);
-        const badge = document.querySelector('main .card .badge, main .badge');
-        expect(badge).not.toBeNull();
-        expect(asciiOnly(badge!.textContent ?? '')).toBe(false);
-      },
-    );
+    it(`TC-VF-182 배치 상태 "${st}" 가 영문 원문이 아닌 한국어로 표시된다 [DEF-6-010]`, async () => {
+      // 결함 DEF-6-010(Low): ko.batchStatus 에 queued(실행 직후 실제 서버가 쓰는 값)·paused 가 없어 영문 원문이 그대로 보인다.
+      const run = draftBatch({ status: st });
+      mountApp([route('GET', '/api/v1/batches/7', () => json(200, run))], '/batches/7');
+      await screen.findByText(ko.batches.progressTitle);
+      const badge = document.querySelector('main .card .badge, main .badge');
+      expect(badge).not.toBeNull();
+      expect(asciiOnly(badge!.textContent ?? '')).toBe(false);
+    });
 
-  it.fails(
-    'TC-VF-183 홈의 "진행 중인 작업" 이 서버 작업 종류 코드(videos.sync 등)를 한국어로 바꿔 보여 준다 [DEF-6-011]',
-    async () => {
-      // 결함 DEF-6-011(Low): ko.home.activeJob 에 type 원문을 그대로 넣는다.
-      mountApp(
-        [
-          route('GET', '/api/v1/dashboard', () =>
-            json(
-              200,
-              dashboard({
-                active_job: {
-                  id: 'j1',
-                  type: 'videos.sync',
-                  status: 'running',
-                  progress: 1,
-                  total: 4,
-                },
-              }),
-            ),
+  it('TC-VF-183 홈의 "진행 중인 작업" 이 서버 작업 종류 코드(videos.sync 등)를 한국어로 바꿔 보여 준다 [DEF-6-011]', async () => {
+    // 결함 DEF-6-011(Low): ko.home.activeJob 에 type 원문을 그대로 넣는다.
+    mountApp(
+      [
+        route('GET', '/api/v1/dashboard', () =>
+          json(
+            200,
+            dashboard({
+              active_job: {
+                id: 'j1',
+                type: 'videos.sync',
+                status: 'running',
+                progress: 1,
+                total: 4,
+              },
+            }),
           ),
-        ],
-        '/',
-      );
-      const line = await screen.findByText(/진행 중인 작업/);
-      expect(line.textContent).not.toMatch(/videos\.sync/);
-    },
-  );
+        ),
+      ],
+      '/',
+    );
+    const line = await screen.findByText(/진행 중인 작업/);
+    expect(line.textContent).not.toMatch(/videos\.sync/);
+  });
 });
 
 // ---------- 이력 필터 (W-011) ----------

@@ -67,8 +67,9 @@ export function SuggestionCard({
     setAck(false);
   };
 
-  const blocked = s.validation_result === 'block';
-  const warned = s.validation_result === 'warn';
+  // 서버 규칙과 같다: 차단이거나, 엄격 모드(건강·금융 등)에서 통과가 아니면 승인할 수 없다
+  const blocked = s.validation_result === 'block' || (s.strict && s.validation_result !== 'pass');
+  const warned = !blocked && s.validation_result === 'warn';
   const open = s.status === 'candidate' || s.status === 'expired';
   const canReject = open || s.status === 'approved';
   const canEdit = open || s.status === 'approved';
@@ -101,7 +102,7 @@ export function SuggestionCard({
         </h3>
       </div>
       <div className="suggestion__head">
-        <ValidationBadge result={s.validation_result} />
+        <ValidationBadge result={blocked ? 'block' : s.validation_result} />
         <Badge
           tone={s.status === 'approved' ? 'info' : s.status === 'rejected' ? 'danger' : 'neutral'}
         >

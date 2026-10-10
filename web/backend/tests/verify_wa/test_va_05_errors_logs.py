@@ -43,7 +43,6 @@ def test_db_error_returns_generic_500_without_sql(pclient):
     _assert_clean(r.text)
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-006: SQLAlchemy 예외 문자열의 [parameters: ...] 가 로그에 그대로 실려 PIN 해시 등 값이 로그에 남을 수 있음(make_engine 에 hide_parameters 없음)")
 def test_db_error_log_does_not_contain_bound_parameter_values(pclient, log_capture):
     """TC-VA-090 [S-W09] DB 오류 로그에 바인딩 파라미터 값(비밀일 수 있음)이 남지 않아야 한다."""
     pclient.get("/api/v1/_t/dberr-param")
@@ -134,7 +133,6 @@ def test_mask_secrets_known_forms(text_, secret):
     assert MASK in out
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-007: 'Authorization: Bearer <토큰>' / 'Authorization: Basic <자격증명>' 에서 키=값 정규식이 스킴 단어(Bearer/Basic)만 가려 실제 토큰이 남음")
 @pytest.mark.parametrize("text_,secret", [
     ("Authorization: Bearer abc.def.ghi", "abc.def.ghi"),
     ("authorization=Bearer abc123.def456", "abc123.def456"),

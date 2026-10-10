@@ -283,23 +283,20 @@ describe('AI 제안 생성 작업 창', () => {
   });
 
   // 결함 DEF-6-004(Medium): 작업 조회가 계속 실패(404/500)하면 창을 닫을 방법이 없다(Esc·닫기 모두 비활성).
-  it.fails(
-    'TC-VF-095 작업 상태를 읽지 못해(404) 오류가 보이면 사용자가 창을 닫을 수 있다 [DEF-6-004]',
-    async () => {
-      const { user } = await start(
-        route('GET', '/api/v1/jobs/job-9', () =>
-          problem(404, 'job_not_found', '작업을 찾을 수 없습니다'),
-        ),
-      );
-      await screen.findAllByText('작업을 찾을 수 없습니다');
-      await user.keyboard('{Escape}');
-      const dlg = screen.queryByRole('dialog');
-      if (dlg) {
-        const close = within(dlg).getByRole('button', { name: '닫기' });
-        expect(close).toBeEnabled();
-      }
-    },
-  );
+  it('TC-VF-095 작업 상태를 읽지 못해(404) 오류가 보이면 사용자가 창을 닫을 수 있다 [DEF-6-004]', async () => {
+    const { user } = await start(
+      route('GET', '/api/v1/jobs/job-9', () =>
+        problem(404, 'job_not_found', '작업을 찾을 수 없습니다'),
+      ),
+    );
+    await screen.findAllByText('작업을 찾을 수 없습니다');
+    await user.keyboard('{Escape}');
+    const dlg = screen.queryByRole('dialog');
+    if (dlg) {
+      const close = within(dlg).getByRole('button', { name: '닫기' });
+      expect(close).toBeEnabled();
+    }
+  });
 });
 
 // ---------- 외부 문자열은 텍스트로만 ----------
@@ -565,30 +562,27 @@ describe('외부 문자열 렌더링 (F-05, S-W05)', () => {
 // ---------- 잘못된(계약 위반) 서버 응답 ----------
 describe('잘못된 서버 응답에 대한 견고성', () => {
   // 결함 DEF-6-005(Medium): 오류 경계(ErrorBoundary)가 없어 응답 형식이 어긋나면 앱 전체가 빈 화면이 된다.
-  it.fails(
-    'TC-VF-103 영상 상세 응답에 suggestions 가 빠져도 메뉴·안내는 남는다(빈 화면 금지) [DEF-6-005]',
-    async () => {
-      const swallow = (e: ErrorEvent) => e.preventDefault();
-      window.addEventListener('error', swallow);
-      const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      const { suggestions: _omit, ...broken } = detail([]);
-      void _omit;
-      const c = await connectedClient([
-        route('GET', '/api/v1/videos/vid00000001', () => json(200, broken)),
-        route('GET', '/api/v1/dashboard', () => json(200, dashboard())),
-      ]);
-      try {
-        renderWithApp(<App />, c.client, '/videos/vid00000001');
-        await act(async () => {
-          await new Promise((r) => setTimeout(r, 100));
-        });
-        expect(screen.queryByRole('navigation', { name: '주 메뉴' })).not.toBeNull();
-      } finally {
-        window.removeEventListener('error', swallow);
-        spy.mockRestore();
-      }
-    },
-  );
+  it('TC-VF-103 영상 상세 응답에 suggestions 가 빠져도 메뉴·안내는 남는다(빈 화면 금지) [DEF-6-005]', async () => {
+    const swallow = (e: ErrorEvent) => e.preventDefault();
+    window.addEventListener('error', swallow);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { suggestions: _omit, ...broken } = detail([]);
+    void _omit;
+    const c = await connectedClient([
+      route('GET', '/api/v1/videos/vid00000001', () => json(200, broken)),
+      route('GET', '/api/v1/dashboard', () => json(200, dashboard())),
+    ]);
+    try {
+      renderWithApp(<App />, c.client, '/videos/vid00000001');
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 100));
+      });
+      expect(screen.queryByRole('navigation', { name: '주 메뉴' })).not.toBeNull();
+    } finally {
+      window.removeEventListener('error', swallow);
+      spy.mockRestore();
+    }
+  });
 
   it('TC-VF-104 목록 응답의 items 가 null 이거나 항목 일부 필드가 null 이어도 표가 그려진다', async () => {
     const c = await connectedClient([

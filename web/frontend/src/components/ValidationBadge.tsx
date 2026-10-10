@@ -10,7 +10,7 @@ const MAP: Record<ValidationResult, { tone: Tone; icon: string; label: string }>
 
 /** 색에만 의존하지 않도록 기호+글자를 함께 보여 준다. */
 export function ValidationBadge({ result }: { result: ValidationResult | null }) {
-  if (!result || !MAP[result]) return <Badge>{ko.validation.none}</Badge>;
+  if (!result || !Object.hasOwn(MAP, result)) return <Badge>{ko.validation.none}</Badge>;
   const m = MAP[result];
   return (
     <Badge tone={m.tone} icon={m.icon}>

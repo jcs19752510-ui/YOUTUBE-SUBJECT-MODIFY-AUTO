@@ -48,7 +48,7 @@ export class ApiError extends Error {
   get isLimit(): boolean {
     return (
       this.status === 429 ||
-      /limit|quota|cap_|_cap|rate/.test(this.code) ||
+      /(^|_)(limit|limited|quota|cap|rate)(_|$)/.test(this.code) ||
       this.code === 'daily_cap_exceeded'
     );
   }
@@ -78,6 +78,9 @@ export function newKey(): string {
   c.getRandomValues(b);
   return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 }
+
+/** 요청 하나가 응답을 기다리는 최대 시간(밀리초) */
+export const REQUEST_TIMEOUT_MS = 30_000;
 
 const NETWORK_ERROR = () =>
   new ApiError({
@@ -251,20 +254,42 @@ export class ApiClient {
     if (opts.csrf && this.csrf) headers['X-CSRF-Token'] = this.csrf;
     if (opts.key) headers['Idempotency-Key'] = opts.key;
 
+    // 응답이 오지 않는 서버에 영원히 매달리지 않도록 시간 제한을 둔다(제한 시간 초과는 연결 끊김으로 본다)
+    const ctl = new AbortController();
+    const forwardAbort = () => ctl.abort();
+    if (opts.signal?.aborted) ctl.abort();
+    else opts.signal?.addEventListener('abort', forwardAbort, { once: true });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        ctl.abort();
+        reject(NETWORK_ERROR());
+      }, REQUEST_TIMEOUT_MS);
+    });
     let res: Response;
     try {
-      res = await this.fetchImpl(url.pathname + url.search, {
-        method,
-        headers,
-        credentials: 'same-origin',
-        body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
-        signal: opts.signal,
-      });
+      res = await Promise.race([
+        this.fetchImpl(url.pathname + url.search, {
+          method,
+          headers,
+          credentials: 'same-origin',
+          body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+          signal: ctl.signal,
+        }),
+        timeout,
+      ]);
     } catch (e) {
+      if (e instanceof ApiError) {
+        this.set({ state: 'offline', error: e });
+        throw e;
+      }
       if (e instanceof DOMException && e.name === 'AbortError') throw e;
       const err = NETWORK_ERROR();
       this.set({ state: 'offline', error: err });
       throw err;
+    } finally {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener('abort', forwardAbort);
     }
     if (this.snapshot.state === 'offline') this.set({ state: 'online', error: null });
     if (!res.ok) throw await toApiError(res);

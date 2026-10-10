@@ -280,13 +280,14 @@ def test_jsonb_roundtrip_keeps_chain_valid_for_ordinary_values(pg, val):
         assert audit.verify_chain(s) is True
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-008: JSONB 가 숫자를 정규화(1e22 -> 10000000000000000000000, -0.0 -> 0.0)해 읽은 값의 정규 JSON 이 달라지면 체인이 거짓 변조로 판정됨(지수 표기 float 한정, 잠재)")
 @pytest.mark.parametrize("val", [1e22, 1e16, -0.0], ids=repr)
-def test_jsonb_numeric_normalization_does_not_break_chain(pg, val):
-    """TC-VA-122 [S-W16] 지수 표기/음의 0 float 가 detail 에 들어가도 정상 기록은 chain_ok 여야 한다."""
+def test_jsonb_unstable_floats_rejected_before_chain_can_break(pg, val):
+    """TC-VA-122 [S-W16] JSONB 가 정규화하는 float(지수 표기 큰 수, -0.0)는 기록 전에 거부되어 체인이 거짓 변조로 판정될 수 없다(DEF-6-008 수정 확인)."""
     f = sessionmaker(pg, expire_on_commit=False, autoflush=False)
     with f() as s:
-        audit.record(s, actor="o", action="a", detail={"v": val}, now=T0)
+        audit.record(s, actor="o", action="ok", detail={"v": 1}, now=T0)
+        with pytest.raises(ValueError):
+            audit.record(s, actor="o", action="a", detail={"nested": [{"v": val}]}, now=T0)
         s.commit()
     with f() as s:
         assert audit.verify_chain(s) is True
@@ -371,7 +372,6 @@ def test_queue_four_workers_each_job_executed_exactly_once(pg):
         assert {r.status for r in s.query(Job).all()} == {"succeeded"}
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-009: check_pin 의 실패 횟수 갱신이 읽기-수정-쓰기라 동시 요청에서 갱신이 유실되어 잠금(5회)이 무력화됨")
 def test_pin_lockout_holds_under_concurrent_guesses(pg):
     """TC-VA-125 [S-W08] 동시 PIN 추측: 8개 스레드가 동시에 틀린 PIN 을 보내도 잠금(5회)이 지켜져 401 응답은 4건을 넘지 않아야 한다(경쟁으로 잠금이 무력화되면 안 됨)."""
     f = _factory(pg)
@@ -400,7 +400,6 @@ def test_pin_lockout_holds_under_concurrent_guesses(pg):
     assert n401 <= 4, {"401": n401, "all": sorted(map(str, outcomes))}
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-009: HTTP 수준에서도 동시 로그인 시도 중 잠금이 무력화됨")
 def test_pin_lockout_holds_under_concurrent_http_logins(pg, pg_url, clock, fake_time):
     """TC-VA-126 [S-W08] HTTP 수준: 틀린 PIN 으로 10개 동시 로그인 요청을 보내도 401 은 4건을 넘지 않아야 한다(나머지는 429)."""
     from fastapi.testclient import TestClient

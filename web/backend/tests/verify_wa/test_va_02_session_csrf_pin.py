@@ -344,7 +344,6 @@ def test_pin_format_boundaries(client, pin, ok):
         assert r.status_code == 422 and client.get("/api/v1/settings").json()["pin_enabled"] is False
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-004: PIN 형식 정규식이 re.match + '$' 라 끝에 줄바꿈이 붙은 '1234\\n' 도 통과(\\Z 또는 fullmatch 필요)")
 @pytest.mark.parametrize("pin", ["1234\n", "123456789012\n"])
 def test_pin_trailing_newline_rejected(client, pin):
     """TC-VA-050 [S-W08] 끝에 줄바꿈이 붙은 PIN 은 형식 위반으로 422 여야 한다."""

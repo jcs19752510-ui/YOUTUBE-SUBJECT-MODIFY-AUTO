@@ -1,6 +1,7 @@
 """추가 전용 감사 로그 + 해시 체인: hash = sha256(prev_hash + canonical_json(ts,actor,action,target,detail))."""
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 
 from sqlalchemy import select, text
@@ -30,6 +31,18 @@ def compute_hash(prev_hash: str, *, ts: datetime, actor: str, action: str, targe
     return sha256_hex(prev_hash + body)
 
 
+def _reject_floats(value: object) -> None:
+    """JSONB 는 지수 표기 큰 수(1e22 -> 정수 표기)와 -0.0(-> 0.0)을 정규화해 읽은 값의 해시가 달라지므로, 이런 float 는 기록 전에 거부한다."""
+    if isinstance(value, float) and ("e+" in repr(value) or (value == 0 and math.copysign(1.0, value) < 0)):
+        raise ValueError("감사 detail 에는 지수 표기 큰 float·-0.0 을 넣을 수 없습니다(정수·문자열로 변환).")
+    if isinstance(value, dict):
+        for v in value.values():
+            _reject_floats(v)
+    elif isinstance(value, (list, tuple)):
+        for v in value:
+            _reject_floats(v)
+
+
 def record(
     session: Session,
     *,
@@ -45,6 +58,7 @@ def record(
     if session.get_bind().dialect.name == "postgresql":
         session.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _ADVISORY_LOCK_KEY})
     detail = detail or {}
+    _reject_floats(detail)
     last = session.execute(select(AuditLog.hash).order_by(AuditLog.id.desc()).limit(1)).scalar_one_or_none()
     prev = last or GENESIS_HASH
     digest = compute_hash(prev, ts=now, actor=actor, action=action, target_type=target_type, target_id=target_id, detail=detail)

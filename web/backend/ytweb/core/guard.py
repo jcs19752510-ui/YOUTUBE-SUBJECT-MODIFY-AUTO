@@ -47,10 +47,20 @@ class GuardMiddleware:
     ) -> None:
         self.app = app
         self.allowed = frozenset(h.lower() for h in allowed_hosts)
+        self.origins = frozenset(f"http://{h}" for h in self.allowed)
         self.limiter = limiter
         self.max_body = max_body
         self.docs_enabled = docs_enabled
         self._time = time_fn
+
+    def _is_foreign(self, method: str, req_headers: dict[str, str]) -> bool:
+        """출처가 소유자 화면이 아닌 요청. 이런 요청은 deps 가 어차피 403 으로 거부하므로, 소유자의 속도 제한 한도를 소모하지 않게 별도 한도로 센다."""
+        sec = req_headers.get("sec-fetch-site")
+        if sec is not None and sec.strip().lower() not in ("same-origin", "none"):
+            return True
+        if method in ("POST", "PUT", "PATCH", "DELETE"):
+            return req_headers.get("origin", "").strip().lower() not in self.origins
+        return False
 
     def _headers_for(self, path: str) -> dict[str, str]:
         h = dict(_COMMON_HEADERS)
@@ -73,6 +83,8 @@ class GuardMiddleware:
         path: str = scope["path"]
         method: str = scope["method"]
         req_headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope["headers"]}
+        host_values = [v.decode("latin-1").lower() for k, v in scope["headers"] if k.lower() == b"host"]
+        cl_values = [v.decode("latin-1") for k, v in scope["headers"] if k.lower() == b"content-length"]
         request_id = uuid.uuid4().hex
         scope["ytweb_request_id"] = request_id
         started = self._time()
@@ -96,24 +108,25 @@ class GuardMiddleware:
             await send_wrapped({"type": "http.response.body", "body": body})
 
         try:
-            if path not in HEALTH_PATHS and req_headers.get("host", "").lower() not in self.allowed:
+            # Host 헤더는 정확히 1개여야 하고 허용 목록에 있어야 한다(중복 헤더 밀수 방어: 하나라도 비허용이면 거부).
+            if path not in HEALTH_PATHS and (len(host_values) != 1 or host_values[0] not in self.allowed):
                 await reject(403, "host_not_allowed", "허용되지 않은 접속 주소입니다.",
                              hint="http://127.0.0.1:8080 주소로 접속하세요.")
                 return
 
             cl = req_headers.get("content-length")
             if cl is not None:
-                try:
-                    too_big = int(cl) > self.max_body
-                except ValueError:
+                # RFC 9110: 1*DIGIT 만 허용(int() 는 '-1', '+5', '1_0' 도 받으므로 직접 검사). 값이 여러 개면 거부.
+                if len(cl_values) != 1 or not (cl.isascii() and cl.isdigit()):
                     await reject(400, "bad_content_length", "Content-Length 값이 올바르지 않습니다.")
                     return
+                too_big = int(cl) > self.max_body
                 if too_big:
                     await reject(413, "payload_too_large", "요청 본문이 너무 큽니다.", hint="1MB 이하로 줄여서 보내세요.")
                     return
 
             if path.startswith("/api") and path not in HEALTH_PATHS:
-                wait = self.limiter.check(method, path)
+                wait = self.limiter.check_foreign() if self._is_foreign(method, req_headers) else self.limiter.check(method, path)
                 if wait:
                     retry = max(1, int(wait + 0.999))
                     await reject(429, "rate_limited", "요청이 너무 많습니다.", hint=f"{retry}초 후에 다시 시도하세요.",

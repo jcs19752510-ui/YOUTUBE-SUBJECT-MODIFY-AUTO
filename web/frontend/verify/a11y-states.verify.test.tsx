@@ -48,7 +48,7 @@ const chg = (over = {}) => ({
 const warnS = suggestion(2, {
   title: '이거 모르면 큰일! 테스트 영상 1',
   validation_result: 'warn',
-  strict: true,
+  strict: false,
   topic: 'life',
   reasons: [{ code: 'risky', severity: 'warn', message: '공포를 조장할 수 있는 표현' }],
 });
@@ -240,17 +240,14 @@ describe('접근성: 화면 전체(axe, 색 대비 제외)', () => {
 
 describe('접근성: 중복 랜드마크 (DEF-6-006)', () => {
   // 결함 DEF-6-006(Low): 같은 이름의 region 이 겹쳐 있다(섹션 제목과 표 래퍼 라벨이 같음) → axe landmark-unique(moderate)
-  it.fails(
-    'TC-VF-126 지난 배치 구역과 변경 이력 구역에서 같은 이름의 랜드마크가 중복되지 않는다 [DEF-6-006]',
-    async () => {
-      await mount('/batches');
-      await screen.findByRole('heading', { level: 1, name: '배치(일괄 반영)' });
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 60));
-      });
-      expect(await axeAll(document, { landmarkUnique: true })).toEqual([]);
-    },
-  );
+  it('TC-VF-126 지난 배치 구역과 변경 이력 구역에서 같은 이름의 랜드마크가 중복되지 않는다 [DEF-6-006]', async () => {
+    await mount('/batches');
+    await screen.findByRole('heading', { level: 1, name: '배치(일괄 반영)' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 60));
+    });
+    expect(await axeAll(document, { landmarkUnique: true })).toEqual([]);
+  });
 });
 
 describe('접근성: 대화상자·오버레이', () => {

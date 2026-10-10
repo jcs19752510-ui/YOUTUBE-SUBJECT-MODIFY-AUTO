@@ -4,6 +4,7 @@ import { useApiClient, useConnection } from '../api/context';
 import { Button, Callout, useToast } from '../components';
 import { describeError } from '../components/ErrorPanel';
 import { ko } from '../i18n/ko';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const NAV = [
   { to: '/', label: ko.nav.home, end: true },
@@ -94,7 +95,9 @@ export function Layout() {
             <div />
           </div>
         )}
-        <Outlet />
+        <ErrorBoundary resetKey={pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

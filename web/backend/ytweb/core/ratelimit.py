@@ -37,6 +37,7 @@ class RateLimiter:
         self._g = SlidingWindow(limits.global_per_min, time_fn=time_fn)
         self._w = SlidingWindow(limits.write_per_min, time_fn=time_fn)
         self._a = SlidingWindow(limits.auth_per_min, time_fn=time_fn)
+        self._f = SlidingWindow(limits.global_per_min, time_fn=time_fn)  # 출처 불명(외부 사이트) 요청 전용
 
     def check(self, method: str, path: str) -> float:
         """허용이면 0 을 돌려주고 사용량을 기록, 아니면 재시도까지 남은 초(기록 안 함)."""
@@ -50,4 +51,12 @@ class RateLimiter:
             return max(waits)
         for w in windows:
             w.hit()
+        return 0.0
+
+    def check_foreign(self) -> float:
+        """소유자 화면이 아닌 출처의 요청을 별도 창에서 센다(소유자 한도를 소진시키는 DoS 방지)."""
+        wait = self._f.peek()
+        if wait:
+            return wait
+        self._f.hit()
         return 0.0

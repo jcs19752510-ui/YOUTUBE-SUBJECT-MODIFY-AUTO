@@ -323,7 +323,6 @@ def test_idem_key_non_ascii_rejected_unit(db, key):
     assert e.value.status == 400 and e.value.code == "idempotency_key_invalid"
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-004: _KEY_RE 도 re.match + '$' 라 끝 줄바꿈 키 통과(HTTP 헤더로는 줄바꿈을 못 보내 도달 불가 -> 잠재)")
 def test_idem_key_trailing_newline_rejected_unit(db):
     """TC-VA-079 [S-W12] 끝에 줄바꿈이 붙은 키는 형식 위반이어야 한다."""
     with pytest.raises(ProblemError) as e:

@@ -2,8 +2,9 @@ import { ko } from '../i18n/ko';
 import type { Tone } from '../components/Badge';
 import type { Job, LimitReason } from '../api/types';
 
+// 서버가 준 값이 'constructor' 같은 객체 기본 속성 이름이어도 라벨로 오인하지 않도록 자기 속성만 본다
 const lookup = (map: Record<string, string>, key: string | null | undefined): string =>
-  (key && map[key]) || key || '-';
+  (key && Object.hasOwn(map, key) && map[key]) || key || '-';
 
 export const workflowLabel = (s: string) => lookup(ko.workflow, s);
 export const suggestionStatusLabel = (s: string) => lookup(ko.suggestionStatus, s);
@@ -11,6 +12,7 @@ export const batchStatusLabel = (s: string) => lookup(ko.batchStatus, s);
 export const itemStatusLabel = (s: string) => lookup(ko.itemStatus, s);
 export const changeTypeLabel = (s: string) => lookup(ko.changeType, s);
 export const changeResultLabel = (s: string) => lookup(ko.changeResult, s);
+export const jobTypeLabel = (s: string) => lookup(ko.jobType, s);
 export const privacyLabel = (s: string | null) => lookup(ko.privacy, s);
 
 export function workflowTone(s: string): Tone {

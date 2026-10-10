@@ -19,6 +19,12 @@ export const ko = {
     notFoundTitle: '페이지를 찾을 수 없습니다',
     notFoundBody: '주소가 바뀌었거나 없는 화면입니다. 왼쪽 메뉴에서 이동해 주세요.',
     goHome: '홈으로',
+    crashTitle: '이 화면을 표시하지 못했습니다',
+    crashBody:
+      '서버가 보낸 내용이 예상과 달라 화면을 그릴 수 없었습니다. 다른 메뉴는 그대로 쓸 수 있습니다.',
+    crashNext:
+      '왼쪽 메뉴에서 다른 화면으로 이동하거나, 화면을 새로고침한 뒤 다시 시도해 주세요. 계속되면 서버 담당자에게 알려 주세요.',
+    reload: '화면 새로고침',
   },
   nav: {
     home: '홈',
@@ -114,7 +120,9 @@ export const ko = {
   },
   batchStatus: {
     draft: '초안',
+    queued: '실행 대기',
     running: '실행 중',
+    paused: '일시 중지',
     completed: '완료',
     done: '완료',
     cancelled: '중지됨',
@@ -138,6 +146,11 @@ export const ko = {
     rolled_back: '되돌려짐',
   } as Record<string, string>,
   privacy: { public: '공개', unlisted: '일부 공개', private: '비공개' } as Record<string, string>,
+  jobType: {
+    'videos.sync': '영상 불러오기',
+    'suggestions.generate': 'AI 제안 생성',
+    'batch.execute': '배치 실행',
+  } as Record<string, string>,
   jobStatus: {
     queued: '대기 중',
     running: '진행 중',
@@ -414,6 +427,7 @@ export const ko = {
     draftLostTitle: '사전 점검 내용을 다시 불러오지 못했습니다',
     draftLostBody: '새로고침하면 점검 표가 사라질 수 있습니다. 새 점검을 만들어 주세요.',
     listTitle: '지난 배치',
+    listTableLabel: '지난 배치 목록 표',
     listEmpty: '아직 만든 배치가 없습니다.',
     colId: '번호',
     colCreated: '만든 시각',

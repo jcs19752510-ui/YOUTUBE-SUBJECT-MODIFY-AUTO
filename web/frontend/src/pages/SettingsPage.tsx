@@ -103,7 +103,7 @@ function SafetyForm({ data }: { data: SettingsData }) {
             <input
               className="input"
               value={tone}
-              maxLength={40}
+              maxLength={200}
               onChange={(e) => setTone(e.target.value)}
             />
           </Field>

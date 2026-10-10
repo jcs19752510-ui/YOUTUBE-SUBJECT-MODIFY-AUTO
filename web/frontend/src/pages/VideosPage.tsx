@@ -61,6 +61,7 @@ export function VideosPage() {
   const [qInput, setQInput] = useState(p.q);
   const [genJob, setGenJob] = useState<{ id: string; count: number } | null>(null);
   const [genDone, setGenDone] = useState<Job | null>(null);
+  const [genReadError, setGenReadError] = useState(false);
 
   const update = (patch: Record<string, string | number | null>, resetPage = true) => {
     const n = new URLSearchParams(sp);
@@ -83,6 +84,7 @@ export function VideosPage() {
     onSuccess: (job, ids) => {
       setGenJob({ id: job.id, count: ids.length });
       setGenDone(null);
+      setGenReadError(false);
     },
   });
 
@@ -283,9 +285,9 @@ export function VideosPage() {
         <Modal
           title={ko.videos.generateTitle}
           onClose={closeGen}
-          closeDisabled={!genDone}
+          closeDisabled={!genDone && !genReadError}
           footer={
-            <Button variant="primary" disabled={!genDone} onClick={closeGen}>
+            <Button variant="primary" disabled={!genDone && !genReadError} onClick={closeGen}>
               {ko.app.close}
             </Button>
           }
@@ -293,6 +295,7 @@ export function VideosPage() {
           <JobPanel
             jobId={genJob.id}
             label={ko.videos.generateTitle}
+            onError={() => setGenReadError(true)}
             onDone={(j) => {
               setGenDone(j);
               toast.push(

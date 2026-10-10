@@ -183,7 +183,6 @@ def test_audit_api_requires_session_and_paginates_newest_first(client, db):
         assert c.execute(text("select count(*) from audit_log")).scalar_one() == total  # 주입 시도가 테이블을 건드리지 않음
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-005: page 상한이 없어 offset 이 64비트를 넘으면 DB 오류로 500 (SQLite OverflowError / PostgreSQL bigint 범위 오류)")
 @pytest.mark.parametrize("page", [10**18, 2**63])
 def test_audit_huge_page_does_not_500(client, page):
     """TC-VA-086 [S-W13] 매우 큰 page 값은 빈 목록(200) 또는 422 여야 하며 500 이면 안 된다."""

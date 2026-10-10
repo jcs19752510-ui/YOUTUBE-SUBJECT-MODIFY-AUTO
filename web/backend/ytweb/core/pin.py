@@ -8,9 +8,11 @@ import re
 import secrets
 from datetime import datetime, timedelta
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ytweb.core.errors import ProblemError
+from ytweb.db.models import SettingKV
 from ytweb.core.settings_store import delete_web_setting, get_web_setting, set_web_setting
 
 PIN_KEY = "pin_hash"
@@ -18,12 +20,13 @@ FAIL_KEY = "pin_fail"
 MAX_FAILURES = 5
 BASE_LOCK = timedelta(minutes=5)
 MAX_LOCK = timedelta(hours=1)
-_PIN_RE = re.compile(r"^[0-9]{4,12}$")
+_PIN_RE = re.compile(r"[0-9]{4,12}")
 _N, _R, _P = 2**14, 8, 1
+_ADVISORY_LOCK_KEY = 7_340_002  # PIN 실패 횟수 갱신(읽기-수정-쓰기)을 직렬화
 
 
 def validate_pin_format(pin: str) -> None:
-    if not isinstance(pin, str) or not _PIN_RE.match(pin):
+    if not isinstance(pin, str) or not _PIN_RE.fullmatch(pin):
         raise ProblemError(422, "pin_invalid", "PIN 은 숫자 4~12자리여야 합니다.")
 
 
@@ -72,6 +75,13 @@ def _locked_error(until: datetime, now: datetime) -> ProblemError:
 
 def check_pin(db: Session, pin: str | None, *, now: datetime) -> None:
     """PIN 이 설정돼 있으면 검증한다. 실패 기록은 호출자가 commit 해야 남는다(예외로 롤백되기 전에)."""
+    if db.get_bind().dialect.name == "postgresql":
+        # 동시 추측 요청이 실패 횟수 갱신을 덮어써 잠금을 무력화하지 못하게 한다. 락은 트랜잭션 끝(commit/rollback)에 풀린다.
+        db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _ADVISORY_LOCK_KEY})
+        for key in (PIN_KEY, FAIL_KEY):  # 락 대기 중 다른 트랜잭션이 바꾼 값을 읽도록 갱신
+            obj = db.get(SettingKV, key)
+            if obj is not None:
+                db.refresh(obj)
     stored = get_web_setting(db, PIN_KEY)
     if stored is None:
         return

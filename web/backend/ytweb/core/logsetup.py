@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 
 _SENSITIVE_KEY = r"(?:ytw_session|csrf[-_ ]?token|x-csrf-token|authorization|set-cookie|cookie|passw(?:or)?d|secret|token|pin|api[-_]?key)"
 _KV_RE = re.compile(rf"(?i)({_SENSITIVE_KEY}[\"']?\s*[:=]\s*)([\"']?)[^\s\"',;&}}]+")
+_AUTH_SCHEME_RE = re.compile(r"(?i)(authorization[\"']?\s*[:=]\s*[\"']?)(?:bearer|basic|digest|token)\s+[^\s\"',;&}]+")
+_SQL_PARAMS_RE = re.compile(r"\[parameters: [^\n]*")
 _BEARER_RE = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
 _URL_CRED_RE = re.compile(r"(?<=://)[^/\s:@]+:[^/\s@]+@")
 _LONG_TOKEN_RE = re.compile(r"\b[A-Za-z0-9_-]{40,}\b")
@@ -18,6 +20,8 @@ MASK = "***"
 
 
 def mask_secrets(text: str) -> str:
+    text = _SQL_PARAMS_RE.sub(f"[parameters: {MASK}]", text)  # SQLAlchemy 오류 문자열의 바인딩 값
+    text = _AUTH_SCHEME_RE.sub(lambda m: f"{m.group(1)}{MASK}", text)
     text = _KV_RE.sub(lambda m: f"{m.group(1)}{m.group(2)}{MASK}", text)
     text = _BEARER_RE.sub(f"Bearer {MASK}", text)
     text = _URL_CRED_RE.sub(f"{MASK}:{MASK}@", text)

@@ -556,23 +556,20 @@ describe('오류 형태 구분', () => {
   });
 
   // 결함 DEF-6-001(Low): 응답이 오지 않는 서버에 대한 시간 제한이 없다. 고쳐지면 .fails 를 제거할 것.
-  it.fails(
-    'TC-VF-032 응답이 영영 오지 않으면 일정 시간 뒤 연결 끊김 오류로 끝난다(시간 제한) [DEF-6-001]',
-    async () => {
-      vi.useFakeTimers();
-      const client = new ApiClient({
-        fetchImpl: (() => new Promise<Response>(() => undefined)) as typeof fetch,
-      });
-      let settled = false;
-      const p = client.request('GET', '/api/v1/dashboard').then(
-        () => (settled = true),
-        () => (settled = true),
-      );
-      await vi.advanceTimersByTimeAsync(10 * 60 * 1000); // 10분
-      expect(settled).toBe(true);
-      void p;
-    },
-  );
+  it('TC-VF-032 응답이 영영 오지 않으면 일정 시간 뒤 연결 끊김 오류로 끝난다(시간 제한) [DEF-6-001]', async () => {
+    vi.useFakeTimers();
+    const client = new ApiClient({
+      fetchImpl: (() => new Promise<Response>(() => undefined)) as typeof fetch,
+    });
+    let settled = false;
+    const p = client.request('GET', '/api/v1/dashboard').then(
+      () => (settled = true),
+      () => (settled = true),
+    );
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000); // 10분
+    expect(settled).toBe(true);
+    void p;
+  });
 
   it('TC-VF-033 오류 분류(isLimit): 서버가 실제로 내는 코드 중 한도 계열만 true 다', () => {
     const mk = (status: number, code: string) => new ApiError({ status, code, title: 't' });
@@ -608,19 +605,16 @@ describe('오류 형태 구분', () => {
   });
 
   // 결함 DEF-6-002(Low, 잠복): 한도 판별 정규식 /rate/ 가 generate·operate 같은 단어에도 걸린다.
-  it.fails(
-    'TC-VF-034 "generate_failed" 같은 한도와 무관한 코드를 한도 초과로 분류하지 않는다 [DEF-6-002]',
-    () => {
-      for (const code of [
-        'generate_failed',
-        'migrate_error',
-        'operate_failed',
-        'accurate_mismatch',
-      ]) {
-        expect(new ApiError({ status: 500, code, title: 't' }).isLimit, code).toBe(false);
-      }
-    },
-  );
+  it('TC-VF-034 "generate_failed" 같은 한도와 무관한 코드를 한도 초과로 분류하지 않는다 [DEF-6-002]', () => {
+    for (const code of [
+      'generate_failed',
+      'migrate_error',
+      'operate_failed',
+      'accurate_mismatch',
+    ]) {
+      expect(new ApiError({ status: 500, code, title: 't' }).isLimit, code).toBe(false);
+    }
+  });
 });
 
 describe('세션 수명', () => {

@@ -56,7 +56,6 @@ def test_multiple_host_headers_one_evil_rejected_when_evil_last(app):
     assert out["status"] == 403
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-001: 중복 Host 헤더 중 마지막 값만 검사해 첫 값이 비허용이어도 통과(h11 은 거부하므로 방어 심층 결함)")
 def test_multiple_host_headers_one_evil_rejected_when_evil_first(app):
     """TC-VA-005 [S-W02] Host 헤더가 여러 개이고 하나라도 비허용이면 순서와 무관하게 거부돼야 한다."""
     out = asgi_call(app, "GET", ME, [("host", "evil.com"), ("host", "127.0.0.1:8080")])
@@ -254,7 +253,6 @@ def test_garbage_content_length_rejected_400(app, cl):
     assert out["status"] != 500
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-002: Python int() 가 '-1', '+5', '1_0' 을 숫자로 받아 가드가 통과시킴(실서버 h11 은 앞단에서 거부 -> Low)")
 @pytest.mark.parametrize("cl", ["-1", "+5", "1_0"])
 def test_nonstandard_numeric_content_length_rejected(app, cl):
     """TC-VA-019 [S-W13] RFC 9110 의 1*DIGIT 가 아닌 Content-Length('-1','+5','1_0')도 가드가 거부해야 한다."""
@@ -314,7 +312,6 @@ def test_rate_limit_write_and_auth_buckets_separate(web_settings, engine, clock,
     assert asgi_call(app, "GET", ME, h)["status"] == 200
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-6-003: 속도 제한이 Origin/Sec-Fetch-Site 검증보다 앞서 외부 사이트 요청이 한도를 소진해 소유자 로그인·화면을 막을 수 있음(DoS)")
 def test_cross_site_requests_do_not_exhaust_owner_rate_limit(web_settings, engine, clock, fake_time):
     """TC-VA-024 [S-W02, S-W13] 외부 사이트(cross-site)가 보낸 요청은 소유자의 세션 발급 한도를 소모하지 않아야 한다."""
     app = _limited_app(web_settings, clock, fake_time, global_per_min=600, write_per_min=120, auth_per_min=10)

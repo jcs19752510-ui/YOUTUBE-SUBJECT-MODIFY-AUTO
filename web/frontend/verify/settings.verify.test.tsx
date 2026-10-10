@@ -149,22 +149,19 @@ describe('설정: 값 범위 경계 (하루 상한 1~20, 영상당 제안 1~5, �
   });
 
   // 결함 DEF-6-003(Low): 말투 입력칸이 maxLength=40(전체 글자수)이라 서버가 허용하는 5개×20자를 입력할 수 없다.
-  it.fails(
-    'TC-VF-077 사용자가 말투 3개(각 15자, 쉼표 포함 약 49자)를 직접 입력하면 잘리지 않고 그대로 저장된다 [DEF-6-003]',
-    async () => {
-      const user = userEvent.setup();
-      await goSettings();
-      const tone = field(/말투/);
-      await user.clear(tone);
-      const text = [
-        '가나다라마바사아자차카타파하가',
-        '나다라마바사아자차카타파하가나',
-        '다라마바사아자차카타파하가나다',
-      ].join(', ');
-      await user.type(tone, text);
-      expect(tone.value).toBe(text);
-    },
-  );
+  it('TC-VF-077 사용자가 말투 3개(각 15자, 쉼표 포함 약 49자)를 직접 입력하면 잘리지 않고 그대로 저장된다 [DEF-6-003]', async () => {
+    const user = userEvent.setup();
+    await goSettings();
+    const tone = field(/말투/);
+    await user.clear(tone);
+    const text = [
+      '가나다라마바사아자차카타파하가',
+      '나다라마바사아자차카타파하가나',
+      '다라마바사아자차카타파하가나다',
+    ].join(', ');
+    await user.type(tone, text);
+    expect(tone.value).toBe(text);
+  });
 });
 
 describe('설정: PIN 규칙 (S-W02 보조)', () => {

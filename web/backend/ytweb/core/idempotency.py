@@ -16,7 +16,7 @@ from ytweb.core.errors import ProblemError
 from ytweb.db.models import IdempotencyKey
 
 KEY_TTL = timedelta(hours=24)
-_KEY_RE = re.compile(r"^[A-Za-z0-9._:\-]{8,80}$")
+_KEY_RE = re.compile(r"[A-Za-z0-9._:\-]{8,80}")
 
 
 def run_idempotent(
@@ -34,7 +34,7 @@ def run_idempotent(
             raise ProblemError(400, "idempotency_key_required", "Idempotency-Key 헤더가 필요합니다.",
                                hint="요청마다 새로 만든 고유 값(UUID 권장)을 Idempotency-Key 헤더에 넣으세요.")
         return handler()
-    if not _KEY_RE.match(key):
+    if not _KEY_RE.fullmatch(key):
         raise ProblemError(400, "idempotency_key_invalid", "Idempotency-Key 형식이 올바르지 않습니다.",
                            hint="영문·숫자·._:- 만 사용해 8~80자로 만드세요.")
 

@@ -11,10 +11,13 @@ export function JobPanel({
   jobId,
   label,
   onDone,
+  onError,
 }: {
   jobId: string;
   label: string;
   onDone?: (job: Job) => void;
+  /** 작업 상태를 읽지 못해 오류가 보일 때 한 번 알린다(호출자가 창을 닫을 수 있게 하기 위함) */
+  onError?: () => void;
 }) {
   const api = useApi();
   const q = useQuery({
@@ -33,6 +36,11 @@ export function JobPanel({
       onDone?.(job);
     }
   }, [job, onDone]);
+
+  const failedToRead = q.isError;
+  useEffect(() => {
+    if (failedToRead) onError?.();
+  }, [failedToRead, onError]);
 
   if (q.isError) return <ErrorPanel error={q.error} onRetry={() => void q.refetch()} />;
   if (!job) return <p aria-live="polite">{ko.app.loading}</p>;
