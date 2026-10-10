@@ -138,6 +138,7 @@ services:
       - --port
       - "8000"
       - --no-server-header
+      - --no-access-log
     environment:
       <<: *app-env
       YTWEB_DB_USER: ytweb_app
