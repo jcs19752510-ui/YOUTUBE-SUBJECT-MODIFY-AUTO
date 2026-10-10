@@ -4,10 +4,10 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from urllib.parse import quote
 
 from alembic import command
 from alembic.config import Config
+from sqlalchemy.engine import URL
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -24,7 +24,7 @@ def owner_database_url(env: dict[str, str] | None = None) -> str:
     user = e.get("YTWEB_DB_OWNER_USER", "ytweb_owner")
     host = e.get("YTWEB_DB_HOST", "db")
     name = e.get("YTWEB_DB_NAME", "ytweb")
-    return f"postgresql+psycopg://{quote(user)}:{quote(pw)}@{host}:5432/{quote(name)}"
+    return URL.create("postgresql+psycopg", username=user, password=pw, host=host, port=5432, database=name).render_as_string(hide_password=False)
 
 
 def alembic_config(url: str | None = None) -> Config:

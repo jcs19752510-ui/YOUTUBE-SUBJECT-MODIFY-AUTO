@@ -3,10 +3,10 @@ export interface DiffPart {
   text: string;
 }
 
-/** 코드포인트 단위 LCS 비교. 제목은 100자 안팎이라 O(n*m) 로 충분하다. */
+/** 단어(공백 포함 토큰) 단위 LCS 비교. 글자 단위는 완전히 다른 제목에서 조각이 흩어져 읽기 어렵다. 제목은 짧아 O(n*m) 로 충분하다. */
 export function diffTitles(before: string, after: string): DiffPart[] {
-  const a = Array.from(before);
-  const b = Array.from(after);
+  const a = before.match(/\s+|\S+/g) ?? [];
+  const b = after.match(/\s+|\S+/g) ?? [];
   const n = a.length;
   const m = b.length;
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));

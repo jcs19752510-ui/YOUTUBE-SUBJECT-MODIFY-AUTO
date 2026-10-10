@@ -121,31 +121,47 @@ class GuardMiddleware:
                     return
 
             received = 0
+            overflow = False
+            replaced = False
+
+            async def too_large():
+                nonlocal replaced
+                if not replaced:
+                    replaced = True
+                    await reject(413, "payload_too_large", "요청 본문이 너무 큽니다.", hint="1MB 이하로 줄여서 보내세요.")
 
             async def receive_limited():
-                nonlocal received
+                nonlocal received, overflow
                 message = await receive()
                 if message["type"] == "http.request":
                     received += len(message.get("body", b""))
                     if received > self.max_body:
+                        overflow = True
                         raise _BodyTooLarge
                 return message
 
+            async def send_guarded(message):
+                # 본문 읽기 중 한도를 넘으면 FastAPI 가 400 으로 바꿔 버리므로, 앱의 응답을 버리고 413 으로 대체한다.
+                if overflow:
+                    await too_large()
+                    return
+                await send_wrapped(message)
+
             try:
-                await self.app(scope, receive_limited, send_wrapped)
-            except _BodyTooLarge:
-                if status_holder["status"] == 0:
-                    await reject(413, "payload_too_large", "요청 본문이 너무 큽니다.", hint="1MB 이하로 줄여서 보내세요.")
-                else:
-                    raise
+                await self.app(scope, receive_limited, send_guarded)
             except Exception:
-                # 스택트레이스는 로그에만 남기고 응답에는 넣지 않는다. ServerErrorMiddleware 는 이 계층 밖이라 보안 헤더가 빠지므로 여기서 처리한다.
-                log.error("unhandled error path=%s", path, exc_info=True, extra={"request_id": request_id})
-                if status_holder["status"] == 0:
+                if overflow:
+                    await too_large()
+                else:
+                    # 스택트레이스는 로그에만 남기고 응답에는 넣지 않는다. ServerErrorMiddleware 는 이 계층 밖이라 보안 헤더가 빠지므로 여기서 처리한다.
+                    log.error("unhandled error path=%s", path, exc_info=True, extra={"request_id": request_id})
+                    if status_holder["status"] != 0:
+                        raise
                     await reject(500, "internal_error", "서버 내부 오류가 발생했습니다.",
                                  hint="잠시 후 다시 시도하고, 계속되면 로그를 확인하세요.")
-                else:
-                    raise
+            else:
+                if overflow:
+                    await too_large()
         finally:
             if path.startswith("/api") or status_holder["status"] >= 400:
                 log.info(

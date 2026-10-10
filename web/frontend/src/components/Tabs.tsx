@@ -37,7 +37,7 @@ export function Tabs({
   };
   return (
     <div>
-      <div className="tabs" role="tablist" aria-label={label} onKeyDown={onKey}>
+      <div className="tabs" role="tablist" aria-label={label}>
         {items.map((t) => (
           <button
             key={t.id}
@@ -52,6 +52,7 @@ export function Tabs({
             aria-controls={`panel-${t.id}`}
             tabIndex={t.id === value ? 0 : -1}
             onClick={() => onChange(t.id)}
+            onKeyDown={onKey}
           >
             {t.label}
           </button>

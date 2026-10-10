@@ -37,7 +37,11 @@ export function ConfirmPhrase({
         onChange={(e) => onChange(e.target.value)}
       />
       <p id={`${id}-status`} aria-live="polite">
-        {value === '' ? '' : matches ? `✓ ${ko.batches.confirmMatch}` : `✕ ${ko.batches.confirmMismatch}`}
+        {value === ''
+          ? ''
+          : matches
+            ? `✓ ${ko.batches.confirmMatch}`
+            : `✕ ${ko.batches.confirmMismatch}`}
       </p>
     </div>
   );

@@ -43,8 +43,9 @@
   --c-overlay: rgb(15 23 42 / 0.55);
 
   /* 타이포 */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo',
-    'Noto Sans KR', 'Noto Sans CJK KR', sans-serif;
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    'Noto Sans CJK KR', sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'D2Coding', monospace;
   --fs-base: 1rem; /* 16px 이상만 사용 */
   --fs-lg: 1.125rem;

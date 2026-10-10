@@ -57,12 +57,7 @@ export interface Dashboard {
 }
 
 export type WorkflowStatus =
-  | 'none'
-  | 'suggested'
-  | 'approved'
-  | 'queued'
-  | 'applied'
-  | 'rolled_back';
+  'none' | 'suggested' | 'approved' | 'queued' | 'applied' | 'rolled_back';
 
 export interface VideoSummary {
   video_id: string;
@@ -85,13 +80,7 @@ export interface ValidationReason {
   message: string;
 }
 export type SuggestionStatus =
-  | 'candidate'
-  | 'approved'
-  | 'rejected'
-  | 'queued'
-  | 'applied'
-  | 'expired'
-  | (string & {});
+  'candidate' | 'approved' | 'rejected' | 'queued' | 'applied' | 'expired' | (string & {});
 export interface Approval {
   approver: string;
   approved_at: string;
@@ -142,13 +131,7 @@ export interface VideoDetail extends VideoSummary {
 }
 
 export type BatchItemStatus =
-  | 'pending'
-  | 'running'
-  | 'success'
-  | 'failed'
-  | 'skipped'
-  | 'cancelled'
-  | (string & {});
+  'pending' | 'running' | 'success' | 'failed' | 'skipped' | 'cancelled' | (string & {});
 export interface BatchItem {
   id: number;
   suggestion_id: number;
@@ -170,7 +153,8 @@ export interface BatchCounts {
   skipped: number;
   cancelled: number;
 }
-export type BatchStatus = 'draft' | 'running' | 'completed' | 'cancelled' | 'failed' | (string & {});
+export type BatchStatus =
+  'draft' | 'running' | 'completed' | 'cancelled' | 'failed' | (string & {});
 export interface Precheck {
   item_count: number;
   estimated_units: number;

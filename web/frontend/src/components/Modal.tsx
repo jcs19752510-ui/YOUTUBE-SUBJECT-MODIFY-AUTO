@@ -32,7 +32,9 @@ export function Modal({
     openCount++;
     root?.setAttribute('inert', '');
     const box = boxRef.current;
-    const first = box?.querySelector<HTMLElement>('[data-autofocus]') ?? box?.querySelector<HTMLElement>(FOCUSABLE);
+    const first =
+      box?.querySelector<HTMLElement>('[data-autofocus]') ??
+      box?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? box)?.focus();
     return () => {
       openCount--;
@@ -65,7 +67,7 @@ export function Modal({
   };
 
   return createPortal(
-    <div className="modal-backdrop" onKeyDown={onKeyDown}>
+    <div className="modal-backdrop" role="presentation" onKeyDown={onKeyDown}>
       <div
         ref={boxRef}
         className={`modal${wide ? ' modal--wide' : ''}`}

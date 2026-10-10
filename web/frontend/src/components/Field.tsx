@@ -13,7 +13,8 @@ export function Field({ label, hint, error, className = '', children }: Props) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errId = `${id}-err`;
-  const describedBy = [hint ? hintId : '', error ? errId : ''].filter(Boolean).join(' ') || undefined;
+  const describedBy =
+    [hint ? hintId : '', error ? errId : ''].filter(Boolean).join(' ') || undefined;
   const control = isValidElement(children)
     ? cloneElement(children, {
         id,

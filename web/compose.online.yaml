@@ -1,0 +1,15 @@
+# M2·M3(구글·AI 외부 통신) 전용 덧씌우기 파일. 기본 실행(M1 데모)에서는 쓰지 않는다.
+#   docker compose -f web/compose.yaml -f web/compose.online.yaml up -d
+# Compose 의 profiles 는 서비스에만 적용되고 네트워크에는 적용되지 않으므로, 외부 통신 경로를 별도 파일로 분리했다.
+# db 와 web 은 egress 에 붙지 않는다. 이 파일을 쓰기 전에 사용자 승인(DEC-038)과 위협 모델 갱신이 필요하다.
+services:
+  api:
+    networks:
+      egress: {}
+  worker:
+    networks:
+      egress: {}
+
+networks:
+  egress:
+    driver: bridge

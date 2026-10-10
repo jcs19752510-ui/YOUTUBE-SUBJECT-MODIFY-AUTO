@@ -136,12 +136,10 @@ export class ApiClient {
   }
 
   async logout(): Promise<void> {
-    try {
-      await this.request<void>('DELETE', '/api/v1/auth/session');
-    } finally {
-      this.csrf = null;
-      this.set({ state: 'loggedout', expired: false, error: null });
-    }
+    // 서버에 닿지 못한 채 "로그아웃됨"으로 보이면 세션이 서버에 남아 있는데 사용자가 모르게 되므로 성공했을 때만 상태를 바꾼다
+    await this.request<void>('DELETE', '/api/v1/auth/session');
+    this.csrf = null;
+    this.set({ state: 'loggedout', expired: false, error: null });
   }
 
   private async ensureSession(pin?: string): Promise<void> {

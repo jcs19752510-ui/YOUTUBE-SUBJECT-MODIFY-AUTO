@@ -1,0 +1,267 @@
+# ytitle 웹(M1 데모) — Docker Compose 구성. 실행은 web/scripts/start.ps1 을 쓴다(비밀 파일 생성·점검 포함).
+# 직접 실행하려면 web/secrets/ 의 비밀 파일 3개가 먼저 있어야 한다(README 참고).
+#
+# 설계 요약
+#  - 호스트에 게시되는 포트는 web 의 127.0.0.1:8080 하나뿐이다. api/worker/db 는 호스트 포트가 없다.
+#  - app 네트워크는 internal(외부 통신 불가)이고 모든 서비스가 붙는다. 컨테이너가 internal 네트워크에만 붙으면
+#    호스트로 포트를 게시할 수 없으므로 web 만 edge 네트워크에 추가로 붙는다(게시 전용, 다른 서비스는 붙지 않는다).
+#  - 구글·AI 외부 통신(M2·M3)은 compose.online.yaml(egress 네트워크)을 얹을 때만 api/worker 에 열린다. db 는 절대 붙지 않는다.
+name: ytweb
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  init: true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-app-env: &app-env
+  TZ: Asia/Seoul
+  YTWEB_MODE: demo
+  YTWEB_PORT: "8080"
+  YTWEB_ALLOWED_HOSTS: "127.0.0.1:8080,localhost:8080"
+  YTWEB_BASE_DIR: /app
+  YTWEB_SECRETS_DIR: /var/lib/ytweb/secrets
+  YTWEB_DB_HOST: db
+  YTWEB_DB_NAME: ytweb
+  YTWEB_ENABLE_DOCS: "0"
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+services:
+  db:
+    <<: *hardening
+    build:
+      context: ..
+      dockerfile: web/docker/db.Dockerfile
+    image: ${YTWEB_IMAGE_PREFIX:-ytweb}-db:local
+    user: "999:999"
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - listen_addresses=*
+      - -c
+      - max_connections=50
+      - -c
+      - timezone=UTC
+      - -c
+      - log_timezone=UTC
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - log_statement=none
+    environment:
+      TZ: Asia/Seoul
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_superuser_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8 --data-checksums"
+    secrets:
+      - db_superuser_password
+      - db_owner_password
+      - db_app_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - backups:/backups
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=999,gid=999,mode=1777
+      - /run/postgresql:rw,noexec,nosuid,size=4m,uid=999,gid=999,mode=0775
+    shm_size: 128mb
+    networks:
+      app: {}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -h 127.0.0.1 -p 5432 -U ytweb_app -d ytweb && test -f \"$$PGDATA/.ytweb-init-ok\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+          pids: 200
+
+  migrate:
+    <<: *hardening
+    image: ${YTWEB_IMAGE_PREFIX:-ytweb}-api:local
+    pull_policy: never
+    user: "10001:10001"
+    restart: "no"
+    command: ["python", "-m", "ytweb.migrate"]
+    environment:
+      <<: *app-env
+      YTWEB_DB_OWNER_USER: ytweb_owner
+      YTWEB_DB_OWNER_PASSWORD_FILE: /run/secrets/db_owner_password
+    secrets:
+      - db_owner_password
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,uid=10001,gid=10001,mode=1777
+    networks:
+      app: {}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384M
+          pids: 128
+
+  api:
+    <<: *hardening
+    build:
+      context: ..
+      dockerfile: web/docker/api.Dockerfile
+    image: ${YTWEB_IMAGE_PREFIX:-ytweb}-api:local
+    user: "10001:10001"
+    restart: unless-stopped
+    command:
+      - uvicorn
+      - ytweb.app:create_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --no-server-header
+    environment:
+      <<: *app-env
+      YTWEB_DB_USER: ytweb_app
+      YTWEB_DB_PASSWORD_FILE: /run/secrets/db_app_password
+    secrets:
+      - db_app_password
+    volumes:
+      - app_secrets:/var/lib/ytweb/secrets
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001,mode=1777
+    networks:
+      app: {}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).read()"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M
+          pids: 256
+
+  worker:
+    <<: *hardening
+    image: ${YTWEB_IMAGE_PREFIX:-ytweb}-api:local
+    pull_policy: never
+    user: "10001:10001"
+    restart: unless-stopped
+    command: ["python", "-m", "ytweb.worker"]
+    environment:
+      <<: *app-env
+      YTWEB_DB_USER: ytweb_app
+      YTWEB_DB_PASSWORD_FILE: /run/secrets/db_app_password
+    secrets:
+      - db_app_password
+    volumes:
+      - app_secrets:/var/lib/ytweb/secrets
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001,mode=1777
+    networks:
+      app: {}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # 워커에는 HTTP 포트가 없어 프로세스 생존만 본다(자기 자신은 제외). 하트비트 기반 점검은 백엔드 담당과 협의 필요.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os,sys; me=str(os.getpid()); sys.exit(0 if any(b'ytweb.worker' in open('/proc/'+p+'/cmdline','rb').read() for p in os.listdir('/proc') if p.isdigit() and p!=me) else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 20s
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384M
+          pids: 128
+
+  web:
+    <<: *hardening
+    build:
+      context: ..
+      dockerfile: web/docker/web.Dockerfile
+    image: ${YTWEB_IMAGE_PREFIX:-ytweb}-web:local
+    user: "101:101"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      TZ: Asia/Seoul
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=101,gid=101,mode=1777
+    networks:
+      app: {}
+      edge: {}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    stop_grace_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+          pids: 128
+
+networks:
+  app:
+    internal: true
+  edge:
+    driver: bridge
+
+volumes:
+  pgdata: {}
+  backups: {}
+  app_secrets: {}
+
+# 비밀 파일은 web/secrets/ (저장소 제외)에 start.ps1 이 만든다. 값은 이 파일·이미지·환경변수에 없다.
+secrets:
+  db_superuser_password:
+    file: ./secrets/db_superuser_password
+  db_owner_password:
+    file: ./secrets/db_owner_password
+  db_app_password:
+    file: ./secrets/db_app_password

@@ -18,11 +18,22 @@ export function Button({
   children,
   ...rest
 }: Props) {
-  const cls = ['btn', variant !== 'default' && `btn--${variant}`, size === 'sm' && 'btn--sm', className]
+  const cls = [
+    'btn',
+    variant !== 'default' && `btn--${variant}`,
+    size === 'sm' && 'btn--sm',
+    className,
+  ]
     .filter(Boolean)
     .join(' ');
   return (
-    <button {...rest} type={type} className={cls} disabled={disabled || busy} aria-busy={busy || undefined}>
+    <button
+      {...rest}
+      type={type}
+      className={cls}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
+    >
       {busy && <span className="spinner" aria-hidden="true" />}
       {children}
     </button>

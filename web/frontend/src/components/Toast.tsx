@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { ko } from '../i18n/ko';
 
 type ToastTone = 'info' | 'success' | 'error';
@@ -28,33 +37,46 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={api}>
       {children}
-      <div className="toasts">
-        {/* 상태 알림은 live region 에 둬서 스크린리더가 읽는다. 오류는 assertive */}
-        <div aria-live="polite" role="status">
-          {items
-            .filter((t) => t.tone !== 'error')
-            .map((t) => (
-              <div key={t.id} className={`toast toast--${t.tone}`}>
-                <span>{t.text}</span>
-                <button type="button" className="toast__close" onClick={() => remove(t.id)} aria-label={ko.app.close}>
-                  ✕
-                </button>
-              </div>
-            ))}
-        </div>
-        <div role="alert">
-          {items
-            .filter((t) => t.tone === 'error')
-            .map((t) => (
-              <div key={t.id} className="toast toast--error">
-                <span>{t.text}</span>
-                <button type="button" className="toast__close" onClick={() => remove(t.id)} aria-label={ko.app.close}>
-                  ✕
-                </button>
-              </div>
-            ))}
-        </div>
-      </div>
+      {createPortal(
+        <div className="toasts">
+          {/* 상태 알림은 live region 에 둬서 스크린리더가 읽는다. 오류는 assertive */}
+          <div aria-live="polite" role="status">
+            {items
+              .filter((t) => t.tone !== 'error')
+              .map((t) => (
+                <div key={t.id} className={`toast toast--${t.tone}`}>
+                  <span>{t.text}</span>
+                  <button
+                    type="button"
+                    className="toast__close"
+                    onClick={() => remove(t.id)}
+                    aria-label={ko.app.close}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+          </div>
+          <div role="alert">
+            {items
+              .filter((t) => t.tone === 'error')
+              .map((t) => (
+                <div key={t.id} className="toast toast--error">
+                  <span>{t.text}</span>
+                  <button
+                    type="button"
+                    className="toast__close"
+                    onClick={() => remove(t.id)}
+                    aria-label={ko.app.close}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>,
+        document.body,
+      )}
     </Ctx.Provider>
   );
 }
