@@ -131,8 +131,75 @@
 | OOS-005 | Out-of-Scope | 작업 스케줄러 자동 실행 — v1 YT-00 질문 5 기본값(수동 CLI). 12단계 이후 선택 사항 (02 §4-2) |  | - | Out-of-Scope(사유 명시) |  |  |  |  |
 | OOS-006 | Out-of-Scope | 공식 A/B 테스트의 시작·결과 조회 — API 지원 근거 없음(1단계 b) (02 §4-2) |  | - | Out-of-Scope(사유 명시) |  |  |  |  |
 
+## 웹 전환 요구사항 (2026-10-10, DEC-032~038; 원본 `웹프로그램으로수정요청.md` 6~9장, 설계 `docs/yt/WEB_DESIGN.md`)
+
+| ID | 유형 | 요구사항/기능 (출처 문서 §) | 설계 매핑 (WEB_DESIGN §) | 작업 단위 | 구현 상태 | 단위테스트 (TC-ID) | 통합테스트 (IT-ID) | 전체테스트 (UAT-ID) | 비고 |
+|----|------|------|------|------|------|------|------|------|------|
+| W-001 | W | compose 한 번(start.ps1)으로 시작·종료·재시작·상태·로그, 127.0.0.1 접속 (요청 §6-1) | 1, 7 | W-INF | In Progress | | | | M1=데모 모드 |
+| W-002 | W | 구글 로그인(읽기→쓰기 분리)을 웹에서 시작·확인·해제 — M2 (요청 §6-1) | 3 /google | W-BE-B(M2) | In Progress | | | | M1=데모 모드 |
+| W-003 | W | 영상 목록(200개) 표, 검색·정렬·필터 (요청 §6-1) | 3 /videos | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-004 | W | 영상별 AI 제목 후보 생성(어댑터, 모의 AI는 M1) (요청 §6-1) | 3 /suggestions, 4 | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-005 | W | 후보 자동 검증(통과/경고/차단), 차단은 반영 불가 (요청 §6-1) | 3·4 | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-006 | W | 변경 전/후 제목·유지 항목 비교(diff) (요청 §6-1) | 6 | W-FE | In Progress | | | | M1=데모 모드 |
+| W-007 | W | 후보 선택·수정·승인·반려, 일괄 선택 (요청 §6-1) | 3 /suggestions | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-008 | W | 승인 항목을 배치로 묶어 하루 한도 내 반영, 초과분 다음 날 예약, 놓친 예약 몰아서 실행 금지 (요청 §6-1) | 3 /batches, 4 | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-009 | W | 배치 사전 점검 요약과 확인 문구(`실행 {n}건`) (요청 §6-1) | 3 /batches | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-010 | W | 반영 진행 상황·중지, 재시작·실패에도 이중 반영 없음 (요청 §6-1) | 4, 2 | W-BE-A, W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-011 | W | 개별/배치 롤백(영상 ID 직접 입력) (요청 §6-1) | 3 /changes | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-012 | W | 변경 이력·감사 로그 조회 (요청 §6-1) | 3 /changes /audit | W-BE-A, W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-013 | W | 전후 성과 비교 리포트(화면·CSV, 데이터 부족 명시) (요청 §6-1) | 3 /reports | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
+| W-014 | W | 설정 화면(안전 설정만, 라이브 허용은 API로 변경 불가) (요청 §6-1) | 3 /settings | W-BE-A, W-FE | In Progress | | | | M1=데모 모드 |
+| W-015 | W | 기존 CLI 유지(회귀·비상용, DEC-034 Q-4) (요청 §6-1) | 1 | (기존 src/ytitle) | In Progress | | | | M1=데모 모드 |
+| W-016 | W | 백업·복원(pg_dump), 복원 후 건수 검증 (요청 §6-1) | 7 | W-INF | In Progress | | | | M1=데모 모드 |
+| W-017 | W | /healthz·/readyz와 화면 상태 요약 (요청 §6-1) | 3 | W-BE-A, W-FE | In Progress | | | | M1=데모 모드 |
+| D-01 | D | compose 4서비스+migrate, healthy 순서, 프로필 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-02 | D | 호스트 게시 127.0.0.1 한정, 실측 테스트 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-03 | D | 비루트·read_only·cap_drop·no-new-privileges (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-04 | D | 이미지 다이제스트 고정·멀티 스테이지 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-05 | D | .dockerignore, 이미지에 비밀 없음 검사 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-06 | D | 비밀은 secrets 파일로 주입 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-07 | D | 데이터는 명명 볼륨, down -v 금지 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-07a | D | PostgreSQL 하드닝·역할 분리·pg_hba (요청 §7) | 1, 5 | W-INF, W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-07b | D | Alembic만으로 스키마 변경 (요청 §7) | 1, 5 | W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-08 | D | 헬스체크·재시작·우아한 종료·로그 제한 (요청 §7) | 1, 5 | W-INF, W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-09 | D | 시간대·로캘(UTC 저장, KST 표시) (요청 §7) | 1, 5 | W-INF, W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-10 | D | 외부 통신은 구글·AI만, internal 네트워크 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-11 | D | 이미지 취약점·SBOM, 의존성 잠금 (요청 §7) | 1, 5 | W-INF (9단계) | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-12 | D | Windows 스크립트(start/stop/backup/restore) (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-13 | D | 테스트용 임시 컨테이너 harness-tmp 접두사·정리 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| D-14 | D | 자원 상한(메모리/CPU) (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
+| F-01 | F | React+TS strict+Vite, ESLint·Prettier·타입 검사 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-02 | F | API 타입은 계약에서 생성/동기화, TanStack Query (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-03 | F | 200행 목록 서버측 필터·정렬·페이지네이션, 선택 상태 유지 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-04 | F | 외부 CDN·원격 폰트·분석 금지 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-05 | F | dangerouslySetInnerHTML 금지, 외부 문자열은 텍스트 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-06 | F | CSRF·Idempotency-Key 자동 부착, 중복 클릭 방지 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-07 | F | 로딩·빈·오류·한도 초과·세션 만료·연결 끊김·새로고침 복구 화면 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-08 | F | 한국어 UI, 문구 한곳 관리, dry-run은 '미리보기' (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-09 | F | 접근성 WCAG 2.2 AA 목표(키보드·포커스·대비) (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-10 | F | PC 우선, 최신 Chrome/Edge (요청 §8) | 6 | W-FE | In Progress | | | | |
+| F-11 | F | 디자인 시스템(토큰·컴포넌트) 먼저 (요청 §8) | 6 | W-FE | In Progress | | | | |
+| S-W01 | SEC | 127.0.0.1에만 게시 (요청 §9) | 5 | W-INF | 구현 중 | | | | |
+| S-W02 | SEC | 세션 인증·CSRF·Host/Origin(+Sec-Fetch-Site) 검증 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
+| S-W03 | SEC | 상태 변경은 GET 금지, POST/PUT/PATCH/DELETE+CSRF+확인 (요청 §9) | 5 | W-BE-A, W-BE-B | 구현 중 | | | | |
+| S-W04 | SEC | 쿠키 속성·보안 헤더 (요청 §9) | 5 | W-BE-A, W-INF | 구현 중 | | | | |
+| S-W05 | SEC | XSS 방어(외부 문자열 텍스트 처리) (요청 §9) | 5 | W-FE | 구현 중 | | | | |
+| S-W06 | SEC | 프롬프트 인젝션 방어(입력 데이터 구분·응답 검증·권한 없음) (요청 §9) | 5 | W-BE-B | 구현 중 | | | | |
+| S-W07 | SEC | 외부 AI 전송 최소화·비용 상한(실서비스 M3) (요청 §9) | 5 | W-BE-B | M1 모의만 | | | | |
+| S-W08 | SEC | OAuth state·PKCE·비밀 보관(M2) (요청 §9) | 5 | W-BE-B | M2 대기 | | | | |
+| S-W09 | SEC | 로그 JSON·비밀 마스킹, 오류에 스택트레이스 없음 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
+| S-W10 | SEC | CSV 업로드 검증(M2) (요청 §9) | 5 | W-BE-B | M2 대기 | | | | |
+| S-W11 | SEC | 신규 의존성 실존·라이선스·취약점 확인 (요청 §9) | 5 | W-BE-A, W-FE, W-INF | 구현 중(9단계 확인) | | | | |
+| S-W12 | SEC | 동시성·멱등성·이중 반영 방지(트랜잭션·행 잠금·고유 제약) (요청 §9) | 5 | W-BE-A, W-BE-B | 구현 완료(A)/중(B) | | | | |
+| S-W13 | SEC | 요청 크기·속도 제한·SQL 바인딩 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
+| S-W13a | SEC | DB 보안(역할 최소 권한, 포트 미게시, 비밀번호 secrets) (요청 §9) | 5 | W-INF, W-BE-A | 구현 중 | | | | |
+| S-W14 | SEC | 컨테이너 격리(비루트·읽기 전용 등) (요청 §9) | 5 | W-INF | 구현 중 | | | | |
+| S-W15 | SEC | 위협 모델 STRIDE 웹·컨테이너 갱신 (요청 §9) | 5 | (M4 설계 문서) | 대기 | | | | |
+| S-W16 | SEC | 감사 로그 추가 전용·해시 체인 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
+
 ## 변경 이력
 | 일시 | 버전 | 변경 내용 | 사유 |
 |---|---|---|---|
 | 2026-10-10 | v0 | 2단계 초기 생성 | 규칙 H |
 | 2026-10-10 | v1 | 3·4단계: 설계 매핑, EVT·UX·SCR·ADR·신규 NFR/SEC 등록 | 규칙 H |
+| 2026-10-10 | v2 | 웹 전환 요구사항(W/D/F/S-W) 등록 | 규칙 H, DEC-038 |
