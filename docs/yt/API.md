@@ -28,7 +28,7 @@
 ### 1-1. 요청 헤더 규약
 | 헤더 | 필요한 곳 | 설명 |
 |---|---|---|
-| `Cookie: ytw_session=...` | `auth/session`(발급) 외 모든 `/api/v1` 호출 | 세션 쿠키. `HttpOnly; SameSite=Strict; Path=/api`, 최대 12시간(`YTWEB_SESSION_TTL_HOURS`). 토큰 원문은 DB에 저장되지 않는다(sha256만) |
+| `Cookie: ytw_session=...` | `auth/me`·`auth/session`(발급)을 제외한 모든 `/api/v1` 호출 | 세션 쿠키. `HttpOnly; SameSite=Strict; Path=/api`, 최대 12시간(`YTWEB_SESSION_TTL_HOURS`). 토큰 원문은 DB에 저장되지 않는다(sha256만) |
 | `X-CSRF-Token` | 상태를 바꾸는 모든 호출(POST/PUT/PATCH/DELETE, `auth/session` 발급 제외) | `POST auth/session` 또는 `GET auth/me` 응답의 `csrf_token`. 세션마다 다르다. 틀리면 `403 csrf_invalid` |
 | `Origin` | 상태 변경 + 세션 발급 | 허용 출처(`http://127.0.0.1:8080`, `http://localhost:8080`)와 **정확히 일치**해야 한다. 없거나 `null`이면 `403 origin_not_allowed`. 브라우저가 `Sec-Fetch-Site`를 보내면 `same-origin`이어야 한다(아니면 `403 cross_site_request`) |
 | `Idempotency-Key` | `POST /batches`, `POST /batches/{id}/execute`, `POST /changes/{id}/rollback` | **필수**(없으면 `400 idempotency_key_required`). 형식 `[A-Za-z0-9._:-]{8,80}`. 다른 엔드포인트는 보내도 무시된다 |
