@@ -169,6 +169,30 @@ def test_injection_strings_are_values_only_and_neutralized():
     assert ci.safe_cell("-\x1b[31m빨강\r\n", 50) == "'-빨강  "
 
 
+@pytest.mark.parametrize("vid", ["a" * 10, "a" * 12])
+def test_video_id_must_be_exactly_eleven_characters(vid):
+    """TC-687: 영상 ID 열 값이 10자·12자이면 형식 오류로 건너뛰고(정확히 11자만 허용) 저장 대상에서 뺀다. [FR-007, SEC-016]"""
+    r = parse(f"Content,Views\n{vid},10\n{V1},20\n")
+    assert [x.video_id for x in r.rows] == [V1]
+    assert [i.reason for i in r.issues] == ["영상 ID 형식이 올바르지 않습니다"]
+
+
+def test_read_is_capped_even_if_file_grows_after_size_check(tmp_path, monkeypatch):
+    """TC-688: 크기 검사 뒤에 파일이 커져도 상한(5MB)+1바이트까지만 읽고 거부한다(메모리 보호). [SEC-016, NFR-002]"""
+    big = tmp_path / "grow.csv"
+    big.write_bytes(b"a" * (ci.MAX_BYTES + 1024 * 1024))
+    real_stat = Path.stat
+
+    class FakeStat:
+        def __init__(self, st):
+            self.st_mode, self.st_size = st.st_mode, 100
+
+    monkeypatch.setattr(Path, "stat", lambda self, *a, **k: FakeStat(real_stat(self)) if self == big else real_stat(self, *a, **k))
+    with pytest.raises(InputError) as exc:
+        ci.read_csv_file(big, tmp_path)
+    assert f"({ci.MAX_BYTES // 1024}KB > {ci.MAX_BYTES // 1024}KB)" in exc.value.message
+
+
 def test_file_size_limit_rejected(tmp_path):
     """TC-612: 5MB를 넘는 CSV는 읽기 전(파일 크기)·파싱 전(바이트 수) 모두에서 거부한다. [SEC-016, T-11]"""
     big = tmp_path / "big.csv"

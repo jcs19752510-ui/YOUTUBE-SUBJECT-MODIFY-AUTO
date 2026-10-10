@@ -139,6 +139,14 @@ def test_reversed_or_garbled_periods_are_unusable():
     assert sum("기간 정보가 없어" in x for x in r.reasons) >= 1
 
 
+def test_reversed_period_alone_is_reported_as_missing_period_info():
+    """TC-686: 시작일이 종료일보다 늦은 기간만 있어도 '기간 정보 없음'으로 처리하고 음수·0일 같은 이상한 일수를 이유에 쓰지 않는다. [FR-018, SEC-016]"""
+    r = rep([snap(start="2026-08-31", end="2026-08-04"), after()])
+    assert r.status == "insufficient"
+    assert any("변경 전 집계 기간 정보가 없어" in x for x in r.reasons)
+    assert not any("일이 최소 기준" in x for x in r.reasons)
+
+
 def test_multiple_valid_snapshots_use_latest_and_note_it():
     """TC-642: 같은 단계 자료가 여러 건이면 가장 최근(수집 시각, 번호) 것을 쓰고 알린다. [FR-018]"""
     old = snap(id=1, imp=2000, taken="2026-08-31T00:00:00Z", start="2026-08-04", end="2026-08-31")
