@@ -84,12 +84,13 @@ def video_item(vid: str, title: str, desc: str, *, privacy="public", tags=(), du
 SUM1 = "보일러 외출 모드와 예약 설정으로 겨울철 난방비를 줄이는 방법을 단계별로 소개합니다."
 SUM2 = "무릎 관절에 부담을 주지 않는 스트레칭 동작을 5분 길이로 천천히 따라 하는 영상입니다."
 SUM3 = "스마트폰 갤러리에서 중복 사진을 찾아 지우고 앨범으로 나누는 방법을 화면과 함께 설명합니다."
+SUM4 = "가전제품을 쓰는 순서와 대기전력 차단으로 전기요금을 줄이는 요령을 알려 드립니다."
 
 CATALOG = [
     video_item("demoVid0001", "겨울 난방비", SUM1 + "\n집 구조별 설정 예시도 함께 봅니다.", tags=("난방비", "보일러", "시니어")),
     video_item("demoVid0002", "무릎 스트레칭", SUM2, tags=("스트레칭", "무릎")),
     video_item("demoVid0003", "스마트폰 사진 정리", SUM3, tags=("스마트폰", "사진"), category="28"),
-    video_item("demoVid0004", "전기요금 줄이기", "가전제품을 쓰는 순서와 대기전력 차단으로 전기요금을 줄이는 요령을 알려 드립니다.", privacy="unlisted", duration="PT6M40S"),
+    video_item("demoVid0004", "전기요금 줄이기", SUM4, privacy="unlisted", duration="PT6M40S"),
     video_item("demoVid0005", "경로당 요리", "경로당에서 여럿이 함께 만들 수 있는 간단한 반찬 세 가지를 소개하는 영상입니다.", privacy="private", duration="PT12M5S"),
 ]
 
@@ -345,16 +346,18 @@ def capture(world: World, sid: str, title: str, argv: list[str], note: str, *, s
                 pc, po, pe = run_cli(snap, argv + ["--plain"], inputs or [])
             finally:
                 CURRENT["fake"] = real_fake
-            shutil.rmtree(snap, ignore_errors=True)
         CURRENT["fake"] = world.fake
         code, so, se = run_cli(world.dir, argv, inputs or [])
     if quiet:
         return {"exit_code": code, "stdout": so, "stderr": se}
+    if pc is not None:
+        shutil.rmtree(snap, ignore_errors=True)
     dirs = [world.dir, scratch]
+    pdirs = dirs + ([snap] if pc is not None else [])
     base = {"note": f"{FAKE_NOTE} {note}".strip(), "status": "captured", "group": group, "world": world.name}
     SCREENS.append({"id": sid, "title": title, **base, "command": command, "exit_code": code, "stdout": clean(so, dirs), "stderr": clean(se, dirs), "variant": "default"})
     if pc is not None:
-        SCREENS.append({"id": sid + ".plain", "title": title + " (--plain)", **base, "command": command + " --plain", "exit_code": pc, "stdout": clean(po, dirs), "stderr": clean(pe, dirs), "variant": "plain"})
+        SCREENS.append({"id": sid + ".plain", "title": title + " (--plain)", **base, "command": command + " --plain", "exit_code": pc, "stdout": clean(po, pdirs), "stderr": clean(pe, pdirs), "variant": "plain"})
     return {"exit_code": code, "stdout": so, "stderr": se}
 
 
@@ -367,7 +370,9 @@ T2_MED = "무릎 통증 완치되는 기적의 스트레칭"
 T2_WARN = "무릎 스트레칭 5분 루틴 꼭 따라하세요!!!"
 T3_LONG = "스마트폰 갤러리에서 중복 사진을 찾아 지우고 앨범으로 나누어 정리하는 방법을 처음부터 끝까지 화면과 함께 자세하게 설명해 드리는 시니어 눈높이 완전 정복 강의 영상 모음집 전편 안내서 특별판"
 T3_MISMATCH = "연금 수령액 두 배로 늘리는 방법"
-T3_WARN = "스마트폰 갤러리에서 중복 사진 지우고 앨범으로 정리하는 방법 총정리"
+T3_WARN = "스마트폰 갤러리에서 중복 사진을 찾아 지우고 앨범으로 나누어 정리하는 방법 총정리"
+T4_MISMATCH = "손주에게 용돈 주는 현명한 방법"
+T4_WARN = "전기요금 줄이는 가전 사용 순서 꼭 확인하세요!!!"
 
 
 def scenario_main(root: Path, scratch: Path) -> None:
@@ -399,18 +404,19 @@ def scenario_main(root: Path, scratch: Path) -> None:
     # ⑤ validate
     w.candidate_file("demoVid0001", "겨울 난방비", "life", SUM1, [T1_OK, T1_FEAR])
     w.candidate_file("demoVid0002", "무릎 스트레칭", "health", SUM2, [T2_OK, T2_MED, T2_WARN])
-    w.candidate_file("demoVid0003", "스마트폰 사진 정리", "life", SUM3, [T3_WARN, T3_MISMATCH, T3_LONG])
+    w.candidate_file("demoVid0003", "스마트폰 사진 정리", "life", SUM3, [T3_WARN, T3_LONG])
+    w.candidate_file("demoVid0004", "전기요금 줄이기", "life", SUM4, [T4_MISMATCH, T4_WARN])
     c("validate-all", "validate --all: 통과·경고·차단·엄격 모드", ["validate", "--all"],
-      "영상 3개의 후보 8개. 공포 조장·의료 효능 단정·영상과 불일치·100자 초과는 차단, 권장 길이 초과는 경고, 건강 주제는 엄격 모드(경고도 차단).", group="검증")
+      "영상 4개의 후보 9개. 공포 조장·의료 효능 단정·영상과 불일치·100자 초과는 차단, 권장 길이 초과·느낌표는 경고, 건강 주제(demoVid0002)는 엄격 모드라 경고도 차단.", group="검증")
     c("validate-one", "validate --file: 후보 파일 하나", ["validate", "--file", "candidates/demoVid0001.json"], "후보 번호는 위 validate --all과 같다(같은 파일 내용이면 갱신).", group="검증")
     (w.dir / "candidates" / "demoVid0005.json").write_text(json.dumps({"video_id": "demoVid0005", "current_title": "경로당 요리", "topic": "life", "summary": "경로당 반찬", "source": "human", "candidates": []}, ensure_ascii=False), encoding="utf-8")
     c("validate-emptylist", "validate --file: 후보가 0개인 파일", ["validate", "--file", "candidates/demoVid0005.json"], "candidates가 빈 목록인 잘못된 파일.", group="오류")
     (w.dir / "candidates" / "demoVid0005.json").unlink()
-    (w.dir / "candidates" / "demoVid0004.json").write_text("{ 깨진 json", encoding="utf-8")
-    c("validate-badjson", "validate --file: JSON 문법 오류", ["validate", "--file", "candidates/demoVid0004.json"], "JSON 문법이 틀린 후보 파일.", group="오류")
-    (w.dir / "candidates" / "demoVid0004.json").unlink()
+    (w.dir / "candidates" / "demoVid0006.json").write_text("{ 깨진 json", encoding="utf-8")
+    c("validate-badjson", "validate --file: JSON 문법 오류", ["validate", "--file", "candidates/demoVid0006.json"], "JSON 문법이 틀린 후보 파일.", group="오류")
+    (w.dir / "candidates" / "demoVid0006.json").unlink()
 
-    ok1, warn3, fear1, ok2 = (w.candidate_id(t) for t in (T1_OK, T3_WARN, T1_FEAR, T2_OK))
+    ok1, warn3, fear1, ok2 = (w.candidate_id(t) for t in (T1_OK, T4_WARN, T1_FEAR, T2_OK))
 
     # ⑥ plan
     c("plan-ok", "plan: 통과 후보의 변경 계획(dry-run)", ["plan", "--candidate", str(ok1)], "제한 검사 4개 통과, 계획 해시, 쿼터 예상. 아무것도 바꾸지 않음.", group="계획")
@@ -447,6 +453,7 @@ def scenario_limits(root: Path, scratch: Path) -> None:
         w.seed_video(v)
     cur = {v: f.items[v]["snippet"]["title"] for v in f.items}
     w.seed_change("limVid00001", at=NOW - timedelta(hours=24), prev="이전 제목 A", new=cur["limVid00001"])          # 72시간 미달
+    w.seed_metric("limVid00001", impressions=1500, period_start="2026-10-10", taken_at=NOW)                        # 노출수는 충분(간격만 막힘)
     for days, p, n in ((30, "이전 제목 B1", "이전 제목 B2"), (20, "이전 제목 B2", "이전 제목 B3"), (10, "이전 제목 B3", cur["limVid00002"])):
         w.seed_change("limVid00002", at=NOW - timedelta(days=days), prev=p, new=n)                                   # 3회 도달
     w.seed_change("limVid00003", at=NOW - timedelta(days=10), prev="이전 제목 C", new=cur["limVid00003"])           # 노출수 미달
@@ -457,7 +464,7 @@ def scenario_limits(root: Path, scratch: Path) -> None:
         w.candidate_file(v, cur[v], "life", SUM1, [titles[v]])
     capture(w, "limits-validate", "", ["validate", "--all"], "", scratch=scratch, quiet=True)
     for v, sid, label, why in (
-        ("limVid00001", "plan-limit-interval", "plan: 최소 간격 72시간 미달", "24시간 전에 이미 한 번 바꾼 영상(DB에 테스트용으로 직접 삽입한 이력)."),
+        ("limVid00001", "plan-limit-interval", "plan: 최소 간격 72시간 미달", "24시간 전에 이미 한 번 바꾼 영상(DB에 테스트용으로 직접 삽입한 이력, 변경 이후 노출수 1500회는 충분)."),
         ("limVid00002", "plan-limit-count", "plan: 영상별 변경 횟수 상한(3회) 도달", "30·20·10일 전 3회 변경 이력(테스트용 삽입). 시간이 지나도 풀리지 않는다."),
         ("limVid00003", "plan-limit-impressions", "plan: 재변경 최소 노출수 미달", "10일 전 1회 변경, 이후 노출수 300회(필요 1000회)로 삽입."),
     ):
@@ -506,8 +513,11 @@ def scenario_live(root: Path, scratch: Path) -> None:
     c("live-apply-wrongid", "apply --live: 영상 ID를 잘못 입력", ["apply", "--candidate", str(cid), "--live"], "마지막 확인에서 영상 ID를 3번 틀리게 입력 -> 구글에 쓰지 않고 중단.", inputs=["abc", "abc", "abc"], group="오류", plain=False)
     c("live-apply", "apply --live: 실제 적용(가짜 서버)", ["apply", "--candidate", str(cid), "--live"], "모든 게이트 통과 후 영상 ID를 직접 입력 -> 가짜 서버의 제목 변경 -> 재조회 사후 검증. 실제 구글에는 아무것도 보내지 않았다.", inputs=["demoVid0001"], group="적용", plain=False)
     c("live-apply-again", "apply --live: 같은 후보 재적용 시도", ["apply", "--candidate", str(cid), "--live"], "이미 적용된 후보를 다시 적용하려는 경우의 출력.", group="오류", plain=False)
-    c("live-rollback-plan", "rollback: 방금 적용한 변경 되돌리기 계획", ["rollback", "--change", "1"], "위 apply --live가 만든 변경 1번.", group="롤백")
-    c("live-rollback", "rollback --live: 실제 되돌리기(가짜 서버)", ["rollback", "--change", "1", "--live", "--approver", "홍길동"], "확인자 이름 + 영상 ID 직접 입력 후 이전 제목 복원.", inputs=["demoVid0001"], group="롤백", plain=False)
+    conn = w.db()
+    chg = str(conn.execute("SELECT id FROM title_changes WHERE result='success' AND change_type='apply' ORDER BY id DESC").fetchone()[0])
+    conn.close()
+    c("live-rollback-plan", "rollback: 방금 적용한 변경 되돌리기 계획", ["rollback", "--change", chg], "위 apply --live가 만든 변경(앞선 중단된 시도도 번호를 하나씩 차지한다).", group="롤백")
+    c("live-rollback", "rollback --live: 실제 되돌리기(가짜 서버)", ["rollback", "--change", chg, "--live", "--approver", "홍길동"], "확인자 이름 + 영상 ID 직접 입력 후 이전 제목 복원.", inputs=["demoVid0001"], group="롤백", plain=False)
     c("live-report", "report: 적용·롤백 직후(변경 후 지표 없음)", ["report", "--video", "demoVid0001"], "방금 적용·롤백한 영상. 변경 후 지표가 아직 없어 '데이터 부족'.", group="리포트")
 
 
@@ -541,7 +551,8 @@ def main() -> int:
     ap.add_argument("--out", default=str(REPO / "docs" / "demo" / "screens.json"), help="저장할 JSON 경로")
     args = ap.parse_args()
 
-    root = Path(tempfile.mkdtemp(prefix="ytitle_demo_"))
+    # 표가 긴 경로를 '…'로 자르므로(실제 동작), 경로가 짧은 /tmp 아래에서 돌린다. 길이가 항상 같아 결과가 결정적이다.
+    root = Path(tempfile.mkdtemp(prefix="ytd", dir="/tmp" if os.path.isdir("/tmp") else None))
     scratch = root / "_scratch"
     scratch.mkdir()
     try:
