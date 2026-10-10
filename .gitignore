@@ -36,3 +36,10 @@ web/secrets/
 web/backups/
 .pytest_cache/
 htmlcov/
+
+# 웹 전환(web/): 비밀 파일·백업·빌드 산출물
+web/secrets/
+web/backups/
+web/frontend/dist/
+node_modules/
+*.dump
