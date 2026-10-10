@@ -113,3 +113,39 @@ def quota_units(db: Session) -> int:
 def snippet_of(db: Session, vid: str) -> dict:
     db.expire_all()
     return copy.deepcopy(db.get(Video, vid).snippet)
+
+
+def set_cap(db: Session, clock, cap) -> None:
+    from ytweb.core.settings_store import set_web_setting
+    set_web_setting(db, "daily_apply_cap", cap, now=clock())
+    db.commit()
+
+
+def day_counts(db: Session, batch_id: int | None = None) -> dict[str, int]:
+    db.expire_all()
+    stmt = select(BatchItem)
+    if batch_id is not None:
+        stmt = stmt.where(BatchItem.batch_id == batch_id)
+    out: dict[str, int] = {}
+    for it in db.execute(stmt).scalars():
+        k = it.scheduled_date.isoformat() if it.scheduled_date else "none"
+        out[k] = out.get(k, 0) + 1
+    return dict(sorted(out.items()))
+
+
+def add_change(db: Session, video_id: str, when: datetime, *, result: str = "success", change_type: str = "apply", n: int = 1):
+    """이력 직접 삽입(한도 경계 시험용). planned 는 영상당 1개 고유 제약이 있으므로 n>1 이면 success 만."""
+    rows = []
+    for i in range(n):
+        c = Change(video_id=video_id, change_type=change_type, previous_title=f"p{i}", new_title=f"n{i}", result=result, mode="demo",
+                   created_at=when, applied_at=when if result == "success" else None, backup_snippet=None)
+        db.add(c)
+        rows.append(c)
+    db.flush()
+    return rows
+
+
+def fill_quota(db: Session, now: datetime, units: int) -> None:
+    from ytweb.core.clock import pt_date
+    db.add(QuotaUsage(pt_date=pt_date(now), method="videos.list", units=units, called_at=now, status="ok"))
+    db.commit()

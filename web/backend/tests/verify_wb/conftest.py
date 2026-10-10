@@ -4,3 +4,16 @@ from __future__ import annotations
 from tests.domain.conftest import (  # noqa: F401
     DOMAIN_ROUTERS, SEED_COUNT, _reset_default_env, api, csrf, dapp, env, env_free, gw, hdr, policy, seeded,
 )
+
+
+import pytest  # noqa: E402
+
+from ytweb.domain.seed import seed_demo  # noqa: E402
+
+
+@pytest.fixture
+def seeded200(db, clock, env):
+    """200개 전체 시드(50건 배치 경계 시험용)."""
+    seed_demo(db, clock(), env.policy, count=200)
+    db.commit()
+    return db

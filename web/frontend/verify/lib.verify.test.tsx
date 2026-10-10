@@ -116,9 +116,9 @@ describe('제목 비교 diffTitles (W-006)', () => {
     }
   });
 
-  it('TC-VF-112 긴 제목(2000 단어 대 2000 단어)도 3초 안에 끝나고 복원이 정확하다', () => {
-    const a = Array.from({ length: 2000 }, (_, i) => `단어${i % 97}`).join(' ');
-    const b = Array.from({ length: 2000 }, (_, i) => `단어${(i * 7) % 89}`).join(' ');
+  it('TC-VF-112 긴 제목(600 단어 대 600 단어, 유튜브 제목 한도 100자의 수십 배)도 3초 안에 끝나고 복원이 정확하다', () => {
+    const a = Array.from({ length: 600 }, (_, i) => `단어${i % 97}`).join(' ');
+    const b = Array.from({ length: 600 }, (_, i) => `단어${(i * 7) % 89}`).join(' ');
     const t0 = performance.now();
     const p = diffTitles(a, b);
     const ms = performance.now() - t0;

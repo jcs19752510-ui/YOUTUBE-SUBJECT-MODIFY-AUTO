@@ -235,7 +235,8 @@ def test_worker_tick_survives_scheduler_exception(factory):
 
 
 def _run_worker_process(tmp_path: Path, env_extra: dict[str, str]):
-    env = {**os.environ, **env_extra}
+    # 하위 프로세스는 cwd 가 tmp_path 라 패키지가 설치돼 있지 않으면 ytweb 를 못 찾는다 -> 소스 루트를 PYTHONPATH 로 준다(2026-10-10 수정: 이전 버전은 이 줄이 없어 워커가 기동 즉시 죽었다).
+    env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2]), **env_extra}
     return subprocess.Popen([sys.executable, "-m", "ytweb.worker"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=str(tmp_path))
 
 

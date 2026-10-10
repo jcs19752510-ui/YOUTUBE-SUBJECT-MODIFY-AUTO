@@ -98,7 +98,8 @@ def _free_port() -> int:
 @pytest.fixture
 def live(tmp_path):
     port = _free_port()
-    env = {**os.environ, "YTWEB_DATABASE_URL": f"sqlite:///{tmp_path / 'live.db'}", "YTWEB_AUTO_CREATE": "1",
+    # cwd 가 tmp_path 이므로 패키지 미설치 환경에서도 ytweb 를 찾도록 소스 루트를 PYTHONPATH 로 준다.
+    env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2]), "YTWEB_DATABASE_URL": f"sqlite:///{tmp_path / 'live.db'}", "YTWEB_AUTO_CREATE": "1",
            "YTWEB_ALLOWED_HOSTS": f"127.0.0.1:{port},localhost:{port}", "YTWEB_PORT": str(port),
            "YTWEB_BASE_DIR": str(REPO_ROOT), "YTWEB_SECRETS_DIR": str(tmp_path / "sec"), "YTWEB_LOG_JSON": "1"}
     err = open(tmp_path / "uvicorn.err", "wb")

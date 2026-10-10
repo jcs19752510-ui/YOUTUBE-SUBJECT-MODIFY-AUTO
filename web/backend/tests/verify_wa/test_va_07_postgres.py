@@ -431,3 +431,64 @@ def test_pin_lockout_holds_under_concurrent_http_logins(pg, pg_url, clock, fake_
     [t.start() for t in ts]
     [t.join() for t in ts]
     assert codes.count(401) <= 4, sorted(codes)
+
+
+def test_claim_skips_row_locked_by_another_transaction_instead_of_blocking(pg):
+    """TC-VA-142 [S-W12] 결정적 SKIP LOCKED 시험: 트랜잭션 A 가 첫 작업 행을 FOR UPDATE 로 잡고 있어도 워커 B 의 claim 은 막히지 않고 두 번째 작업을 가져간다(5초 안). 잠금 건너뛰기가 없으면 B 가 막히거나 아무것도 못 가져간다."""
+    f = _factory(pg)
+    with f() as s:
+        first = jobs.enqueue(s, type="t", payload={}, now=T0).id
+        second = jobs.enqueue(s, type="t", payload={}, now=T0 + timedelta(seconds=1)).id
+        s.commit()
+    holder = f()
+    try:
+        holder.execute(text("SELECT id FROM jobs WHERE id = :i FOR UPDATE"), {"i": first})  # 커밋하지 않고 행 잠금 유지
+        box: dict = {}
+
+        def work():
+            with f() as s:
+                s.execute(text("SET LOCAL lock_timeout = '4s'"))
+                try:
+                    j = jobs.claim(s, worker_id="B", now=T0 + timedelta(minutes=1))
+                    box["id"] = j.id if j else None
+                    s.commit()
+                except Exception as e:  # noqa: BLE001
+                    box["err"] = repr(e)
+
+        t = threading.Thread(target=work)
+        t0 = time.time()
+        t.start(); t.join(timeout=8)
+        assert not t.is_alive(), "claim 이 8초 넘게 막힘(SKIP LOCKED 미사용 추정)"
+        assert box.get("id") == second, box
+        assert time.time() - t0 < 3.5
+    finally:
+        holder.rollback(); holder.close()
+    with f() as s:
+        assert s.get(Job, first).status == "queued" and s.get(Job, second).status == "running"
+
+
+def test_concurrent_audit_writers_keep_one_linear_chain(pg):
+    """TC-VA-143 [S-W16, S-W12] 8개 스레드가 각각 10건씩 동시에 감사 기록을 남겨도 80행 모두 prev_hash 가 서로 달라 한 줄 체인이고 verify_chain 이 True 다(advisory lock)."""
+    f = _factory(pg)
+    start = threading.Barrier(8)
+    errors: list = []
+
+    def work(n):
+        start.wait()
+        for i in range(10):
+            try:
+                with f() as s:
+                    audit.record(s, actor="t", action=f"a{n}", detail={"i": i}, now=T0 + timedelta(microseconds=n * 100 + i))
+                    s.commit()
+            except Exception as e:  # noqa: BLE001
+                errors.append(repr(e))
+
+    ts = [threading.Thread(target=work, args=(n,)) for n in range(8)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert not errors, errors[:3]
+    with f() as s:
+        rows = s.query(AuditLog).order_by(AuditLog.id).all()
+        assert len(rows) == 80
+        assert len({r.prev_hash for r in rows}) == 80, "체인이 갈라짐(같은 prev_hash 를 가진 행이 둘 이상)"
+        assert audit.verify_chain(s) is True
