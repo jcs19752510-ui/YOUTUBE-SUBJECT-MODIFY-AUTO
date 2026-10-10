@@ -103,29 +103,32 @@
 | TC-683 | 인식하지 못한 열(영상 제목·게시 시간 등)은 무시하고 어떤 열을 무시했는지 알려 준다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_report_cmd.py::test_unrecognized_columns_are_listed_as_ignored` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | EVT-203, FR-007 |
 | TC-684 | 영상 ID 열이 없는 CSV(한 영상의 합계 줄)는 `--video ID`로 대상 영상을 지정해 가져온다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_report_cmd.py::test_video_option_supplies_id_for_csv_without_id_column` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | EVT-008, FR-007 |
 | TC-685 | 클릭률 열의 한글/영문 별칭을 모두 인식한다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_csv_import.py::test_ctr_header_aliases` | docstring의 기대 결과가 모두 충족 | Pass(6건) | Pass | EVT-203 / 변형 6건 |
+| TC-686 | 시작일이 종료일보다 늦은 기간만 있어도 '기간 정보 없음'으로 처리하고 음수·0일 같은 이상한 일수를 이유에 쓰지 않는다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_report.py::test_reversed_period_alone_is_reported_as_missing_period_info` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | FR-018, SEC-016 |
+| TC-687 | 영상 ID 열 값이 10자·12자이면 형식 오류로 건너뛰고(정확히 11자만 허용) 저장 대상에서 뺀다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_csv_import.py::test_video_id_must_be_exactly_eleven_characters` | docstring의 기대 결과가 모두 충족 | Pass(2건) | Pass | FR-007, SEC-016 / 변형 2건 |
+| TC-688 | 크기 검사 뒤에 파일이 커져도 상한(5MB)+1바이트까지만 읽고 거부한다(메모리 보호). | 자동 테스트 환경(임시 폴더) | `pytest tests/test_csv_import.py::test_read_is_capped_even_if_file_grows_after_size_check` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | NFR-002, SEC-016 |
 
 ### 4-1. 인수 조건 ↔ 테스트 케이스 추적
 | AC | 인수 조건 | 연결 TC | 판정 |
 |---|---|---|---|
-| AC-01 | CSV 크기·행 상한과 인코딩(UTF-8/CP949/UTF-16) 처리 | TC-605, TC-606, TC-607, TC-612, TC-613, TC-614, TC-620, TC-621, TC-623, TC-629, TC-679, TC-680 | 충족 |
+| AC-01 | CSV 크기·행 상한과 인코딩(UTF-8/CP949/UTF-16) 처리 | TC-605, TC-606, TC-607, TC-612, TC-613, TC-614, TC-620, TC-621, TC-623, TC-629, TC-679, TC-680, TC-688 | 충족 |
 | AC-02 | 머리글 별칭·단위 추측 금지·머리글 오류 모아서 안내 | TC-600, TC-601, TC-602, TC-603, TC-604, TC-615, TC-616, TC-617, TC-618, TC-619, TC-683, TC-685 | 충족 |
 | AC-03 | 숫자 표기와 수식·지수·NaN·범위 밖 값 거부 | TC-608, TC-609, TC-611, TC-675, TC-683 | 충족 |
-| AC-04 | 불량 행 건너뛰기와 보고 | TC-600, TC-610, TC-667, TC-668 | 충족 |
+| AC-04 | 불량 행 건너뛰기와 보고 | TC-600, TC-610, TC-667, TC-668, TC-687 | 충족 |
 | AC-05 | metrics_snapshots 저장(바인딩·전부 또는 전무·중복 방지) | TC-624, TC-625, TC-626, TC-627, TC-628, TC-660, TC-669, TC-676, TC-678 | 충족 |
 | AC-06 | 전후 비교 계산(하루 평균·변화율) | TC-630, TC-631, TC-647 | 충족 |
-| AC-07 | 데이터 부족 판정과 경계값 | TC-632, TC-633, TC-634, TC-635, TC-636, TC-637, TC-638, TC-639, TC-640, TC-641, TC-642, TC-643, TC-644, TC-645, TC-646, TC-650, TC-663, TC-664, TC-665 | 충족 |
+| AC-07 | 데이터 부족 판정과 경계값 | TC-632, TC-633, TC-634, TC-635, TC-636, TC-637, TC-638, TC-639, TC-640, TC-641, TC-642, TC-643, TC-644, TC-645, TC-646, TC-650, TC-663, TC-664, TC-665, TC-686 | 충족 |
 | AC-08 | 결론 단정 금지·면책 문구 항상 출력 | TC-649, TC-662, TC-663, TC-666, TC-672 | 충족 |
-| AC-09 | report 명령 옵션·오류 처리 | TC-660, TC-661, TC-662, TC-666, TC-670, TC-671, TC-672, TC-673, TC-674, TC-684 | 충족 |
+| AC-09 | report 명령 옵션·오류 처리 | TC-660, TC-661, TC-662, TC-666, TC-670, TC-671, TC-672, TC-673, TC-674, TC-681, TC-684 | 충족 |
 | AC-10 | 외부 문자열 정화 | TC-616, TC-675 | 충족 |
 | AC-11 | 읽기 전용·순수 함수·네트워크 호출 없음 | TC-622, TC-629, TC-648, TC-651, TC-652, TC-653, TC-677, TC-678, TC-682 | 충족 |
 
-- 인수 조건에 연결되지 않은 TC(추가 안전 케이스): TC-681
+- 인수 조건에 연결되지 않은 TC(추가 안전 케이스): 없음
 - 정상 경로, 경계값(날짜 경계·상한·빈 입력), 예외 입력(잘못된 형식·악성 문자열), 권한 경계를 포함했다.
 
 ## 5. 커버리지
 - 전체 지표: 이 단위 모듈(ytitle.report, ytitle.csv_import, ytitle.commands.report)의 줄+분기 합산 **100%** (pytest-cov, `--cov-branch`)
-- 회귀(이전 단위 산출물을 깨뜨리지 않음): 전체 테스트 스위트 `1093 passed, 1 skipped` (통과)
-- 호환 실행: 3.11 → 143 passed / 3.13 → 143 passed / 3.12(주) → 143 passed
+- 회귀(이전 단위 산출물을 깨뜨리지 않음): 전체 테스트 스위트 `1097 passed, 1 skipped` (통과)
+- 호환 실행: 3.11 → 147 passed / 3.13 → 147 passed / 3.12(주) → 147 passed
 - 커버되지 않은 부분과 사유:
   - src/ytitle/commands/report.py     121      0     52      0   100%
   - src/ytitle/csv_import.py          225      0     88      0   100%
@@ -135,6 +138,7 @@
 ## 6. 결함(Defect) 목록
 | ID | 설명 | 재현 절차 | 심각도 | 상태 | 조치 내용 |
 |----|------|-----------|--------|------|-----------|
+| DEF-6-022 | [테스트 결함] 오케스트레이터 독립 변이 점검 1회차에서 영상 ID 길이(10·12자 허용)·읽기 상한 제거(파일이 커지는 경우)·거꾸로 된 기간의 사유 3곳을 놓침 | 독립 변이 점검(71개 중 68개 적발) | Medium | Fixed | TC-686, TC-687, TC-688 추가 후 재점검 |
 | DEF-6-020 | [테스트 결함] 서브에이전트 자체 변이 점검 1회차에서 stat 경계·상한 경계·최신 지표 선택·열 개수 비교 등 7곳을 놓침 | 자체 변이 점검 | Medium | Fixed | TC-612, 609, 642, 610, 684 보강 |
 
 - 서브에이전트가 이 단위 안에서 수정·재검증. 오케스트레이터 독립 변이 점검 결과는 부록 A.
@@ -152,8 +156,8 @@
 - 열린 질문: unit-6-note 7절의 질문 1~5
 
 ## 9. 결론 및 판정
-- 판정: **FAIL**
-- 근거: 실패 TC 0건, 미수행 TC 0건(-), AC↔TC 추적 문제 0건, 정적 분석(pyflakes) 통과, 변이 점검 68/71 잡아냄, Open 결함 0건
+- 판정: **PASS**
+- 근거: 실패 TC 0건, 미수행 TC 0건(-), AC↔TC 추적 문제 0건, 정적 분석(pyflakes) 통과, 변이 점검 71/71 잡아냄, Open 결함 0건
 - 실제 CSV 샘플과 단위 확인 전까지 가져오기 별칭 표는 가정이다.
 
 ## 10. 내부 검증 (최소 2회)
@@ -184,7 +188,7 @@
 | 결측 표기 N/A 미인식 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 시간→분 환산 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 분·시간 동시에 있을 때 시간 우선 | `csv_import.py` | 잡아냄(테스트 실패) |
-| 영상 ID 정규식 길이 | `csv_import.py` | 놓침(테스트 통과) ⚠ |
+| 영상 ID 정규식 길이 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 합계 행 건너뜀 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 중복 영상 건너뜀 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 열 개수 검사 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
@@ -197,7 +201,7 @@
 | 빈 줄 건너뛰기 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 파일 확장자 검사 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 일반 파일 검사 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
-| 읽기 상한 제거 | `csv_import.py` | 놓침(테스트 통과) ⚠ |
+| 읽기 상한 제거 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 날짜 정규식 느슨화 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 기간 역전 허용 | `csv_import.py` | 잡아냄(테스트 실패) |
 | 기간 한쪽만 허용 | `csv_import.py` | 잡아냄(테스트 실패) |
@@ -214,7 +218,7 @@
 | 노출수 없음 통과 | `report.py` | 잡아냄(테스트 실패) |
 | 최소 기간 경계(<→<=) | `report.py` | 잡아냄(테스트 실패) |
 | 기간 일수 +1 제거 | `report.py` | 잡아냄(테스트 실패) |
-| 기간 역전 허용 | `report.py` | 놓침(테스트 통과) ⚠ |
+| 기간 역전 허용 | `report.py` | 잡아냄(테스트 실패) |
 | 기간 정보 없음 통과 | `report.py` | 잡아냄(테스트 실패) |
 | 롤백 이후 검사 제거 | `report.py` | 잡아냄(테스트 실패) |
 | 가장 최근 변경 대신 처음 변경 | `report.py` | 잡아냄(테스트 실패) |
