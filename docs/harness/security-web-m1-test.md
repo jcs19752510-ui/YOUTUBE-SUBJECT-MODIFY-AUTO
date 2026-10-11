@@ -637,3 +637,11 @@ Linux 6.18, 파이썬 3.13, pytest, pip-audit(임시 `--target` 설치, `.harnes
 ?? web/tests_security/test_sec_09_m23_attack.py
 ```
 `.harness-tmp/s2/` 에는 원문 로그 3개(run1_full.log·run2_full.log·run3.xml; 같은 내용을 `verify-logs/web-security-rev2-raw/` 에 복사)만 남기고 `cfg`·`pipaudit`·`mut`·복사본 폴더는 삭제했다. `docker ps -a/network/volume/images | grep s2` 결과 0건. `.harness-tmp/` 전체 삭제·janitor `--clean`·`pkill` 은 사용하지 않았다.
+
+---
+## R-조치. 개정 2판 후 오케스트레이터 조치 (2026-10-11)
+첫 실행 결과(위 R0~R-Q)는 그대로 둔다. 조치 후 재실행은 아래에 따로 적는다.
+- **조치**: DEF-9-002(High) — 실제 모드 롤백은 반영 뒤 유튜브에서 바뀐 항목이 있으면 409 `live_changed_since_apply` 로 거부(DEC-049, 사용자 확인 대기). DEF-9B-001 — 모르는·만료 state 로는 감사 기록을 쌓지 않음. DEF-9B-003 — 리다이렉트 비추종 opener 설치. DEF-9B-006 — 시험 자산 갱신(구글 통신 모듈 3개 예외, `.env.example` 템플릿 허용, 가짜 값 시험 폴더 허용, e2e.ps1 의 로컬 점검 허용).
+- **시험 변경 사유**: 위 재현용 시험 2건(`test_a9_…_repro`, `test_e2_…_repro`)은 결함을 "재현"하는 형태로 통과했었다. 조치 후 같은 시나리오의 기대값을 "결함 없음"으로 뒤집고 이름을 바꿨다(조치 확인). 원래 통과(=결함 재현) 사실은 본문 R 절에 남아 있다.
+- **재실행**: 보안 시험(`web/tests_security`, 컨테이너 필요한 `test_sec_04` 제외)과 백엔드 시험 통과, 아래 STATE 에 수치 기록.
+- **여전히 열림(사용자 결정 필요, R-Q)**: DEF-9B-002(A/B 서버 필드), DEF-9B-008(쓰기 토큰 평문·revoke), DEF-9B-009(egress 도메인 제한), DEF-9B-004/005/007 Low. 이 때문에 9단계 판정은 사용자 결정 전까지 **CONDITIONAL** 로 본다(데모 모드에서는 Critical/High 없음).

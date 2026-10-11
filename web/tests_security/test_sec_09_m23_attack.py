@@ -166,8 +166,8 @@ def test_a8_oauth_error_text_from_google_is_not_reflected_to_user_but_lands_in_a
     print("audit detail length", len(code))
 
 
-def test_a9_unauthenticated_cross_site_callback_flood_writes_audit_rows_repro(gapp, csrf, fg, factory):
-    """[재현 DEF-9B-001] 세션 없이(교차 사이트 GET) 임의 state 로 /callback 을 치면 매번 감사 기록 1행(google.connect.failed)이 생긴다."""
+def test_a9_unauthenticated_cross_site_callback_flood_writes_no_audit_rows(gapp, csrf, fg, factory):
+    """[DEF-9B-001 조치 확인] 세션 없이(교차 사이트 GET) 임의 state 로 /callback 을 쳐도 감사 기록이 쌓이지 않는다. (2026-10-11 조치 전 첫 실행에서는 25회에 25행이 쌓여 이 시험이 '재현' 형태로 통과했다 — 결과서 R 절에 기록)"""
     gapp.cookies.clear()
     with factory() as s:
         before = s.execute(select(AuditLog)).scalars().all()
@@ -177,7 +177,7 @@ def test_a9_unauthenticated_cross_site_callback_flood_writes_audit_rows_repro(ga
     with factory() as s:
         rows = s.execute(select(AuditLog)).scalars().all()
     added = [r for r in rows if r.action == "google.connect.failed"]
-    assert len(added) == n, len(added)
+    assert len(added) == 0, len(added)
 
 
 # ================= B. 허용 목록 우회 (TW-39) =================
@@ -397,7 +397,7 @@ def _rollback(w, c, key):
     return w.api.post(f"/api/v1/changes/{c.id}/rollback", json={"typed_video_id": c.video_id, "approver": "검수자"}, headers=hdr(w.csrf, key))
 
 
-def test_e2_live_rollback_overwrites_description_and_title_edited_in_studio_repro(live):
+def test_e2_live_rollback_refuses_when_studio_edited_after_apply(live):
     """[재현 DEF-9-002(High, M3 승격)] 실제 모드 반영 뒤 사람이 Studio 에서 설명을 고치고(그리고 제목도 다시 바꿈) 롤백하면, 백업 snippet 통째로
     PUT 되어 Studio 수정이 사라진다. 롤백은 '현재 제목 == 방금 반영한 제목'을 확인하지 않는다."""
     w = live
@@ -409,10 +409,10 @@ def test_e2_live_rollback_overwrites_description_and_title_edited_in_studio_repr
     w.fg.videos[vid]["description"] = "STUDIO-EDIT-AFTER-APPLY 중요한 새 설명"
     w.fg.videos[vid]["title"] = "사람이 Studio 에서 다시 고친 제목입니다"
     r = _rollback(w, c, "idem-e2-rb-0001")
-    assert r.status_code == 201, r.text  # 막지 않는다
+    # DEF-9-002 조치(2026-10-11, 보수적 기본): 반영 뒤 Studio 에서 바뀌었으면 덮어쓰지 않고 거부한다. 조치 전 첫 실행에서는 201 로 덮어썼다(결과서 R 절 기록).
+    assert r.status_code == 409 and "live_changed_since_apply" in r.text, r.text
     after = w.fg.videos[vid]
-    assert after["description"] == orig_desc and "STUDIO-EDIT" not in (after.get("description") or "")
-    assert after["title"] == c.previous_title
+    assert after["description"] == "STUDIO-EDIT-AFTER-APPLY 중요한 새 설명" and after["title"] == "사람이 Studio 에서 다시 고친 제목입니다"
 
 
 # ================= F. 규칙 I·J 문구 — API 응답과 빌드 번들 (DEF-9-007·008 닫힘 직접 확인) =================

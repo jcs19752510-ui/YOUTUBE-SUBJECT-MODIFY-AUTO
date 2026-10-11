@@ -16,6 +16,7 @@ import urllib.request
 from typing import Callable, Collection
 
 from ytweb.youtube.base import GatewayError
+from ytweb.youtube import google_oauth as _oauth  # noqa: F401  (import 시 리다이렉트 비추종 opener 가 설치된다)
 from ytweb.youtube.live_read import API, GoogleAccess, HttpGet, default_http_get
 
 HttpSend = Callable[[str, str, dict], dict]  # (url, token, json body) -> json

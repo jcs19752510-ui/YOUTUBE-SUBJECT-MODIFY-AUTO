@@ -55,6 +55,7 @@ SECRET_PATTERNS = {
 }
 # 시험 코드의 의도적 가짜 값(마스킹 시험용)과 문서 예시는 허용: 파일 단위로 허용 목록을 둔다.
 ALLOW = {
+    "web/tests_infra/test_vinf2_live.py",
     "web/tests_security/test_sec_02_injection_ai_integrity.py",  # 마스킹 시험용 가짜 값
     "web/tests_security/test_sec_03_static_repo.py",
     "web/backend/tests/core/test_logging.py",
@@ -69,7 +70,7 @@ def test_no_secrets_in_current_tree():
     hits = []
     for p, txt in text_files():
         rel = p.relative_to(ROOT).as_posix()
-        if rel in ALLOW:
+        if rel in ALLOW or rel.startswith("web/backend/tests/verify_m23/"):  # verify_m23: 가짜 구글 토큰 JSON(명백한 가짜 값)만 쓰는 독립 시험 폴더
             continue
         for name, rx in SECRET_PATTERNS.items():
             for m in rx.finditer(txt):
@@ -80,7 +81,7 @@ def test_no_secrets_in_current_tree():
 
 def test_no_secret_like_files_in_tree():
     bad_names = re.compile(r"^(\.env(\..*)?|token.*\.json|client_secret.*\.json|.*\.pem|.*\.key|id_rsa.*|.*\.p12|.*\.pfx|.*\.dump|credentials.*|.*\.sqlite3?|.*\.db)$", re.I)
-    allowed = {"settings.local.yaml.example"}
+    allowed = {"settings.local.yaml.example", ".env.example"}  # 템플릿(값 없음, 비밀 아님)
     hits = [p.relative_to(ROOT).as_posix() for p in walk() if bad_names.match(p.name) and p.name not in allowed]
     assert not hits, hits
     for d in ("data", "web/secrets", "web/backups", "secrets", "approvals"):
@@ -382,7 +383,7 @@ def test_powershell_scripts_have_no_dangerous_constructs_and_confirm_destructive
     allp = {p.name: p.read_text(encoding="utf-8") for p in d.glob("*.ps1")}
     assert len(allp) >= 9
     for name, t in allp.items():
-        if name not in ("pin-digests.ps1", "status.ps1"):  # pin-digests: Docker Hub 다이제스트 조회, status: 127.0.0.1 상태 확인 - 아래에서 따로 확인
+        if name not in ("pin-digests.ps1", "status.ps1", "e2e.ps1"):  # e2e: 127.0.0.1 주소 점검용 Invoke-WebRequest  # pin-digests: Docker Hub 다이제스트 조회, status: 127.0.0.1 상태 확인 - 아래에서 따로 확인
             assert not re.search(r"(?i)\b(iex|Invoke-Expression|Invoke-WebRequest|Invoke-RestMethod|DownloadString|Start-BitsTransfer|Add-Type|\[Reflection\.Assembly\]::Load)\b", t), name
         assert not re.search(r"(?i)\b(iex|Invoke-Expression|DownloadString|Add-Type)\b", t), name
         assert not re.search(r"(?i)Write-(Host|Output|Info|Ok|Warn)[^\n]*\$(secret|pw|password|bytes)\b", t), name

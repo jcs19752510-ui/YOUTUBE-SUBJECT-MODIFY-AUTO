@@ -20,7 +20,7 @@ from ytweb.core import audit
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import Change, Suggestion, Video
 from ytweb.domain import live_gateway
-from ytweb.domain.batches import verify_snippet
+from ytweb.domain.batches import VERIFY_PRESERVED_FIELDS, verify_snippet
 from ytweb.domain.common import Env, StepFailure, clamp_page, clean_approver, lock_rows
 from ytweb.domain.limits_quota import COUNTED_RESULTS, mark_call, release_unused, reserve_calls
 from ytweb.youtube.base import GatewayError, YouTubeGateway
@@ -114,6 +114,14 @@ def rollback_change(session: Session, change_id: int, typed_video_id: str, appro
         release_unused(session, reserved)
         session.commit()
         raise ProblemError(409, "already_restored", "현재 제목이 이미 원래 제목과 같아 되돌릴 내용이 없습니다.", hint="영상 목록을 새로고침해 최신 상태를 확인하세요.")
+    if live_gateway.is_live(gateway) and target.error_code != "verify_failed":
+        # 실제 모드(DEF-9-002 조치, 보수적 기본): 반영 뒤 Studio 에서 제목·설명·태그 등이 바뀌었으면 백업을 통째로 덮어쓰지 않고 거부한다.
+        changed = [k for k in ("title", *VERIFY_PRESERVED_FIELDS) if (target.new_title if k == "title" else backup.get(k)) != current.get(k)]
+        if changed:
+            release_unused(session, reserved)
+            session.commit()
+            raise ProblemError(409, "live_changed_since_apply", "반영한 뒤 유튜브에서 영상이 바뀌어 자동으로 되돌리지 않았습니다.",
+                               detail="바뀐 항목: " + ", ".join(changed), hint="유튜브 Studio 에서 직접 확인해 되돌리세요. 덮어쓰면 반영 뒤에 고친 내용이 사라질 수 있습니다.")
     body = {"id": video.video_id, "snippet": copy.deepcopy(backup)}
     plan_hash = compute_plan_hash(video.video_id, target.suggestion_id, current["title"], restore_title, current, kind="rollback", change_id=target.id)
     rb = Change(

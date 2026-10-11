@@ -123,7 +123,8 @@ def google_callback(code: str | None = Query(default=None, max_length=2048), sta
         client = oauth.load_client(ctx.client_file)
         tokens = oauth.exchange_code(ctx.http, client, code, verifier, ctx.redirect_uri, clock())
     except oauth.OAuthError as e:
-        audit.record(session, actor="owner", action="google.connect.failed", detail={"code": e.code}, now=clock())
+        if e.code != "state_invalid":  # 모르는·만료 state 는 세션 없는 외부 호출일 수 있어 감사 기록을 쌓지 않는다(DEF-9B-001)
+            audit.record(session, actor="owner", action="google.connect.failed", detail={"code": e.code}, now=clock())
         return _back(ctx, e.message)
     if is_write and ctx.write_store is not None:
         ctx.write_store.save(tokens)

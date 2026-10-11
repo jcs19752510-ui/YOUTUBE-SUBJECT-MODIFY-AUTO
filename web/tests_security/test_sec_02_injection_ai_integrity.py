@@ -346,6 +346,9 @@ def test_ytweb_has_no_outbound_capable_imports():
     root = Path(__file__).resolve().parents[2] / "web" / "backend" / "ytweb"
     bad = re.compile(r"^\s*(import|from)\s+(requests|httpx|urllib\.request|http\.client|aiohttp|socket|googleapiclient|google\.|openai|anthropic|subprocess|ftplib|smtplib|telnetlib)\b", re.M)
     hits = [(f.relative_to(root).as_posix(), m.group(0).strip()) for f in root.rglob("*.py") for m in bad.finditer(f.read_text(encoding="utf-8"))]
+    # M2·M3(DEC-048): 구글 통신 전용 모듈 3개만 표준 라이브러리 urllib.request 를 쓸 수 있다. 그 외 모듈·다른 네트워크 라이브러리는 계속 금지.
+    google_only = {"youtube/google_oauth.py", "youtube/live_read.py", "youtube/live_write.py"}
+    hits = [h for h in hits if not (h[0] in google_only and h[1] == "import urllib.request")]
     hits = [h for h in hits if h != ("worker.py", "import socket")]  # worker.py 는 socket.gethostname() 으로 워커 ID 만 만든다
     assert not hits, hits
     assert "socket.gethostname()" in (root / "worker.py").read_text(encoding="utf-8") and "socket.socket" not in (root / "worker.py").read_text(encoding="utf-8")

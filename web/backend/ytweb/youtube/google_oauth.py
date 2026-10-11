@@ -29,6 +29,16 @@ MAX_PENDING = 20
 HttpPost = Callable[[str, dict], dict]
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """리다이렉트를 따라가지 않는다(Authorization 헤더가 다른 주소로 넘어가는 것을 막는다, DEF-9B-003). 3xx 는 HTTPError 로 처리된다."""
+
+    def redirect_request(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        return None
+
+
+urllib.request.install_opener(urllib.request.build_opener(_NoRedirect))  # 이 프로세스의 urlopen 은 리다이렉트를 따라가지 않는다(구글 통신 전용 프로그램)
+
+
 class OAuthError(Exception):
     """사용자에게 보여 줄 수 있는 한국어 메시지를 가진 오류. 토큰·비밀은 담지 않는다."""
 
