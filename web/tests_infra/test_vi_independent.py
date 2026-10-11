@@ -128,13 +128,13 @@ def test_tc_vi_004_no_docker_socket_no_host_folder_mounts(cfg, svc):
 
 def test_tc_vi_005_network_topology(cfg, svc):
     nets = cfg["networks"]
-    assert nets["app"] == {"internal": True}
-    assert set(nets) == {"app", "edge"}
-    for n, s in svc.items():
-        assert "app" in s["networks"], n
-    assert set(svc["web"]["networks"]) == {"app", "edge"}
-    for n in ("db", "api", "worker", "migrate"):
-        assert set(svc[n]["networks"]) == {"app"}, n
+    # DEF-VI-001 조치(DEC-045): front/back 분리 — web 은 db 망(back)에 붙지 않는다.
+    assert nets["front"] == {"internal": True} and nets["back"] == {"internal": True}
+    assert set(nets) == {"front", "back", "edge"}
+    assert set(svc["web"]["networks"]) == {"front", "edge"}
+    assert set(svc["api"]["networks"]) == {"front", "back"}
+    for n in ("db", "worker", "migrate"):
+        assert set(svc[n]["networks"]) == {"back"}, n
 
 
 def test_tc_vi_006_online_overlay_is_opt_in_and_never_touches_db_or_web(cfg):

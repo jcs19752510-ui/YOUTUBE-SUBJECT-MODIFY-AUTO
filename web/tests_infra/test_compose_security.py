@@ -121,15 +121,17 @@ def test_tc_wi_009_no_plaintext_secrets_in_environment(compose, svc):
 
 
 def test_tc_wi_010_db_only_on_internal_network(compose, svc):
-    assert set(svc["db"]["networks"]) == {"app"}
-    assert compose["networks"]["app"]["internal"] is True
+    # DEF-VI-001 조치(DEC-045): front(web↔api)·back(api/worker/migrate↔db) 둘 다 internal, web 은 db 에 도달할 수 없다.
+    assert set(svc["db"]["networks"]) == {"back"}
+    assert compose["networks"]["front"]["internal"] is True and compose["networks"]["back"]["internal"] is True
     assert not compose["networks"].get("edge", {}).get("internal")
     for name in ("db", "api", "worker", "migrate"):
         assert "edge" not in svc[name]["networks"], name
-    assert set(svc["web"]["networks"]) == {"app", "edge"}
+    assert set(svc["web"]["networks"]) == {"front", "edge"}
+    assert "back" not in svc["web"]["networks"], "web 이 db 망(back)에 붙어 있다"
+    assert set(svc["api"]["networks"]) == {"front", "back"}
+    assert set(svc["worker"]["networks"]) == {"back"} and set(svc["migrate"]["networks"]) == {"back"}
     assert "egress" not in compose["networks"]
-    for name, s in svc.items():
-        assert "app" in s["networks"], name
 
 
 def test_tc_wi_011_egress_only_for_api_and_worker_in_online_overlay():
@@ -345,15 +347,15 @@ def test_tc_wi_030_compose_config_resolves_and_publishes_loopback_only():
     assert len(ports) == 1
     name, p = ports[0]
     assert name == "web" and p["host_ip"] == "127.0.0.1" and p["published"] == "8080" and p["target"] == 8080
-    assert cfg["networks"]["app"]["internal"] is True
+    assert cfg["networks"]["front"]["internal"] is True and cfg["networks"]["back"]["internal"] is True
 
 
 @needs_docker
 def test_tc_wi_031_compose_online_overlay_keeps_db_off_egress():
     cfg = _docker_config(COMPOSE, ONLINE)
     nets = {n: set(s["networks"]) for n, s in cfg["services"].items()}
-    assert nets["api"] == {"app", "egress"} and nets["worker"] == {"app", "egress"}
-    assert nets["db"] == {"app"} and nets["web"] == {"app", "edge"} and nets["migrate"] == {"app"}
+    assert nets["api"] == {"front", "back", "egress"} and nets["worker"] == {"back", "egress"}
+    assert nets["db"] == {"back"} and nets["web"] == {"front", "edge"} and nets["migrate"] == {"back"}
 
 
 @needs_docker
