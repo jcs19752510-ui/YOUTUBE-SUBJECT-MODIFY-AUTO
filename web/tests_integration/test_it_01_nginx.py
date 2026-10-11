@@ -107,6 +107,21 @@ def test_tc_it_003_no_docs_no_openapi_no_dotfiles():
         assert "[core]" not in r.text
     r = raw_parse(b"GET /../../../../etc/passwd HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n")
     assert "root:x:" not in r[2].decode("latin-1")
+    # nginx 뒤가 아니라 백엔드 자신이 문서를 끄고 있는가(두 번째 층: 설정 한 줄이 바뀌어도 nginx 경로 때문에 가려지지 않게 직접 확인)
+    script = """
+import http.client, json
+out = {}
+for p in ("/openapi.json", "/docs", "/redoc", "/api/openapi.json", "/api/docs", "/docs/oauth2-redirect"):
+    c = http.client.HTTPConnection("127.0.0.1", 8000, timeout=10)
+    c.request("GET", p, headers={"Host": "127.0.0.1:8080"})
+    r = c.getresponse(); b = r.read().decode("utf-8", "replace")
+    out[p] = [r.status, "swagger" in b.lower() or '"openapi"' in b]
+print(json.dumps(out))
+"""
+    p = inside_api_python(script)
+    assert p.returncode == 0, p.stderr[-300:]
+    d = json.loads(p.stdout.strip().splitlines()[-1])
+    assert all(v[0] == 404 and v[1] is False for v in d.values()), d
 
 
 def raw_parse(data: bytes):
@@ -331,6 +346,17 @@ out = {{}}
 out["exact"] = req("POST", "/api/v1/auth/session", b" " * (MB-2) + b"{{}}", {{"Content-Type": "application/json"}})[0]
 out["over"] = req("POST", "/api/v1/auth/session", b" " * (MB-1) + b"{{}}", {{"Content-Type": "application/json"}})[:3]
 out["chunked_over"] = req("POST", "/api/v1/auth/session", b"x" * (MB + 5), {{"Content-Type": "application/json"}}, chunked=True)[:3]
+# 헤더만 보내고 본문은 보내지 않는 큰 Content-Length: 본문을 기다리지 않고 즉시 413 (자원 점유 방지)
+import socket, time
+sk = socket.create_connection(("127.0.0.1", 8000), timeout=4)
+sk.sendall(b"POST /api/v1/auth/session HTTP/1.1\\r\\nHost: 127.0.0.1:8080\\r\\nOrigin: http://127.0.0.1:8080\\r\\nContent-Type: application/json\\r\\nContent-Length: 5000000\\r\\n\\r\\n")
+t0 = time.time()
+try:
+    first = sk.recv(200)
+except Exception:
+    first = b""
+out["cl_only"] = [first.split(b" ")[1].decode() if first.startswith(b"HTTP") else "none", round(time.time() - t0, 1)]
+sk.close()
 out["neg_cl"] = req("POST", "/api/v1/auth/session", b"{{}}", {{"Content-Length": "-1", "Content-Type": "application/json"}})[:3] if False else None
 print(json.dumps(out))
 '''
@@ -340,6 +366,7 @@ print(json.dumps(out))
     assert d["exact"] != 413
     assert d["over"][0] == 413 and d["over"][1].startswith("application/problem+json") and d["over"][2]["code"] == "payload_too_large"
     assert d["chunked_over"][0] == 413 and d["chunked_over"][2]["code"] == "payload_too_large"
+    assert d["cl_only"][0] == "413" and d["cl_only"][1] < 2.0, d["cl_only"]    # 큰 Content-Length 는 본문을 받기 전에 거절
     a.close()
 
 

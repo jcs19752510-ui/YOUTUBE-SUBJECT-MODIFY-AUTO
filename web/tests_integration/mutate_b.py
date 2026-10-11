@@ -107,7 +107,8 @@ def run(round_no: int, only: list[str]) -> None:
         tail = (p.stdout + p.stderr)[-1800:]
         status = "SURVIVED" if p.returncode == 0 else ("KILLED" if p.returncode == 1 else f"ERROR({p.returncode})")
         failed = [ln.split("::")[-1].split(" ")[0] for ln in p.stdout.splitlines() if ln.startswith("FAILED")]
-        results[mid] = {"desc": desc, "status": status, "tests": f"{test_file} -k '{kexpr}'", "killed_by": failed[:3], "secs": round(time.time() - t0), "tail": tail if status.startswith("ERROR") else ""}
+        why = [ln.strip()[:200] for ln in p.stdout.splitlines() if ln.startswith("E ")][:3]
+        results[mid] = {"desc": desc, "status": status, "tests": f"{test_file} -k '{kexpr}'", "killed_by": failed[:3], "why": why, "secs": round(time.time() - t0), "tail": tail if status.startswith("ERROR") else ""}
         out_path.write_text(json.dumps(results, ensure_ascii=False, indent=1))
         print(mid, status, failed[:2], flush=True)
         shutil.rmtree(d, ignore_errors=True)
