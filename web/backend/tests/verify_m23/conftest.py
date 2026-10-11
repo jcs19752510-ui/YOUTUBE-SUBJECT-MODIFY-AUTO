@@ -142,17 +142,7 @@ def pgf(pg_url):
 
 
 # ---- 열린 결함(DEF-VM) 표식: 첫 실행에서 실패한 시험을 '기대값 수정' 없이 strict xfail 로 고정한다. 결함이 고쳐지면 XPASS(strict)로 실패해 이 표를 지우게 만든다.
-KNOWN_DEFECTS = {
-    "test_tc_vm_030_client_file_errors_have_korean_message[[]-client_invalid]": "DEF-VM-001",
-    'test_tc_vm_030_client_file_errors_have_korean_message["str"-client_invalid]': "DEF-VM-001",
-    "test_tc_vm_104_invalid_client_file_is_409_not_500[[]]": "DEF-VM-001",
-    "test_tc_vm_067_is_fresh_naive_or_nonstring_expiry_must_not_crash": "DEF-VM-002",
-    "test_tc_vm_122_many_unfinished_write_logins": "DEF-VM-003",
-    "test_tc_vm_411_non_dict_body_must_be_gateway_error": "DEF-VM-005",
-    "test_tc_vm_702_google_read_failure_during_recovery": "DEF-VM-009",
-    "test_tc_vm_662_dashboard_live_flag": "DEF-VM-010",
-    "test_tc_vm_663_dashboard_google_connected": "DEF-VM-010",
-}
+KNOWN_DEFECTS: dict[str, str] = {}  # 2026-10-11 DEF-VM-001~003·005~010 조치로 모두 해소(표식 제거). 원래 실패는 결과서 web-WU-M23-BE-test.md 에 남아 있다.
 
 
 def pytest_collection_modifyitems(config, items):

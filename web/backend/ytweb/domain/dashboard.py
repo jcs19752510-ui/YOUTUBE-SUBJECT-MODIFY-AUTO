@@ -18,6 +18,17 @@ from ytweb.domain.videos import workflow_maps
 GOOGLE_STATUS = {"mode": "demo", "connected": False, "message": "데모 모드입니다. 구글(유튜브)에 연결되어 있지 않고, 아래 영상은 모두 시연용 가상 데이터입니다."}
 
 
+def google_state(env: Env) -> dict:
+    """실제 구글 연결·실제 수정 가능 여부(M2·M3). 파일 존재만 보고 네트워크 호출은 하지 않는다."""
+    import os
+    from pathlib import Path
+    from ytweb.domain import live_gateway as lg
+    from ytweb.youtube import google_oauth as oauth
+    client_ready = Path(os.environ.get("YTWEB_GOOGLE_CLIENT_FILE", "/run/secrets/google_client")).is_file()
+    connected = client_ready and oauth.TokenStore(env.secrets_dir / "google_token.json").load() is not None
+    return {"mode": "read" if client_ready else "demo", "connected": connected, "live_ready": lg.live_mode(env.secrets_dir)}
+
+
 def build_dashboard(session: Session, now: datetime, env: Env) -> dict:
     expire_stale_approvals(session, now)
     status_map, _, _ = workflow_maps(session)
@@ -34,10 +45,11 @@ def build_dashboard(session: Session, now: datetime, env: Env) -> dict:
         .where(BatchItem.status == "pending", Batch.status.in_(("queued", "running")))
     ).one()
     next_run = max(pending[1], today) if pending[1] is not None else None
+    google = google_state(env)
     return {
-        "mode": "demo",
-        "live_enabled": False,
-        "google": {"mode": GOOGLE_STATUS["mode"], "connected": GOOGLE_STATUS["connected"]},
+        "mode": "live" if google["live_ready"] else "demo",
+        "live_enabled": google["live_ready"],
+        "google": {"mode": google["mode"], "connected": google["connected"]},
         "counts": {"videos": len(videos), "excluded": sum(1 for r in videos if r), **tally},
         "today": {"applied": applied_today(session, now), "cap": effective_daily_cap(session, env.policy)},
         "quota": {"used": qs.used, "limit": qs.limit, "remaining": qs.remaining, "pt_date": qs.pt_date},

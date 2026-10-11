@@ -1,10 +1,36 @@
 import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useApiClient, useConnection } from '../api/context';
+import { useQuery } from '@tanstack/react-query';
+import { useApi, useApiClient, useConnection } from '../api/context';
 import { Button, Callout, useToast } from '../components';
 import { describeError } from '../components/ErrorPanel';
 import { ko } from '../i18n/ko';
 import { ErrorBoundary } from './ErrorBoundary';
+
+/** 상단 모드 띠: 서버가 알려 준 실제 상태(구글 연결·실제 수정 가능 여부)를 그대로 보여 준다. 상태를 모르면 가장 안전한 데모 문구. */
+function ModeBadge() {
+  const api = useApi();
+  const d = useQuery({ queryKey: ['dashboard'], queryFn: () => api.dashboard() }).data;
+  if (d?.mode === 'live') {
+    return (
+      <span className="demo-badge" role="status">
+        <span aria-hidden="true">●</span> {ko.app.liveBadge}
+      </span>
+    );
+  }
+  if (d?.google.connected) {
+    return (
+      <span className="demo-badge">
+        <span aria-hidden="true">●</span> {ko.app.readBadge}
+      </span>
+    );
+  }
+  return (
+    <span className="demo-badge">
+      <span aria-hidden="true">●</span> {ko.app.demoBadge}
+    </span>
+  );
+}
 
 const NAV = [
   { to: '/', label: ko.nav.home, end: true },
@@ -71,9 +97,7 @@ export function Layout() {
         </nav>
       </aside>
       <header className="topbar">
-        <span className="demo-badge">
-          <span aria-hidden="true">●</span> {ko.app.demoBadge}
-        </span>
+        <ModeBadge />
         <div className="row">
           <span className="conn" role="status">
             <span aria-hidden="true">{online ? '●' : '○'}</span>

@@ -176,3 +176,11 @@
 ## 공유 문서 갱신 요청 (traceability.md·decisions.md는 직접 수정하지 않음)
 - `docs/harness/traceability.md`: M2(구글 읽기 연동)·M3(실제 쓰기 게이트웨이/확인 문구/허용 영상/롤백 허용 목록) 관련 REQ-ID의 "단위테스트" 컬럼에 `web-WU-M23-BE-test.md` TC-VM-010~930 연결, 비고에 "CONDITIONAL PASS, 열린 결함 DEF-VM-003/006~010 수정 전 실제 반영 금지" 표기.
 - `docs/harness/decisions.md`: 필요 시 DEF-VM-004(Info) 수용 여부, 실제 모드 전환 시 배치 모드 기록 설계(DEF-VM-007/008) 결정 요청.
+
+---
+## 부록 B. 결함 조치와 재실행 결과 (2026-10-11, 오케스트레이터)
+첫 실행 결과(위 본문)는 그대로 두고, 조치 후 재실행을 별도로 적는다.
+- **조치**: DEF-VM-003(`PendingAuth` 가 state 종류 read/write 를 함께 보관·소진, `ctx.write_states` 제거), DEF-VM-006(롤백: 변경 mode 와 현재 게이트웨이 모드가 다르면 409 `live_mode_mismatch`), DEF-VM-007·008(배치 확정 때 `precheck.executed_live` 기록, 반영 시 모드가 다르면 `live_mode_changed` 로 중단), DEF-VM-009(복구 중 `GatewayError` 는 그 항목만 건너뜀), DEF-VM-010(대시보드가 실제 구글 연결·실제 수정 가능 여부를 반영), DEF-VM-001·002·005(클라이언트 파일 JSON 형식, 만료 시각 형식, 본문 형식 검사). DEF-VM-004(Info)는 수용(구글은 개행을 보내지 않음).
+- **시험 표식**: 위 결함의 strict xfail 표식을 제거했다(조치 후 XPASS(strict)가 나와 실패로 보고된 것이 조치 확인 신호). 시험 2건(TC-VM-122·129)은 제거된 내부 속성 `ctx.write_states` 를 직접 참조해 `ctx.pending.peek_kind()` 기반으로 바꿨다 — 검증하는 행동(최근 쓰기 로그인은 쓰기 저장소에 저장, state 는 한도 내 유지·소진)은 같다.
+- **재실행(백엔드 전체, verify_wfixbe 제외)**: 1840 통과 · 102 건너뜀 · 1 xfail(DEF-VM-004) · 실패 0 (3분 52초). 실제 구글 호출 없음.
+- **안 한 것**: 조치 후 변이 점검 재실행, 별도 독립 검증자의 재검증(오케스트레이터가 직접 조치함 → 9단계 재검증에서 함께 다시 확인 예정).

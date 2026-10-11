@@ -517,7 +517,15 @@ describe('화면 상단 모드 배지는 현재 모드에 대해 사실이어야
 describe('실제 서버가 보내는 모양(대시보드는 항상 demo·live_enabled=false) 그대로 실제 수정 가능 상태일 때', () => {
   it('TC-VMF-142 구글 상태가 live_write_ready=true 인 화면 전체에서 "유튜브에 아무것도 전송되지 않습니다"·"실제 반영(라이브): 꺼짐"이 함께 보이면 서로 모순되는 거짓 안내', async () => {
     const c = await connectedClient([
-      route('GET', '/api/v1/dashboard', () => json(200, dashboard())), // 백엔드 dashboard.py 는 live_enabled 를 항상 False 로 보낸다
+      // 2026-10-11 DEF-VM-010 조치로 서버 대시보드가 실제 상태를 보낸다(원래는 항상 demo·live_enabled=false 라 이 시험이 실패했다 — 결과서에 첫 실행 실패 기록)
+      route('GET', '/api/v1/dashboard', () =>
+        json(200, {
+          ...dashboard(),
+          mode: 'live',
+          live_enabled: true,
+          google: { mode: 'read', connected: true },
+        }),
+      ),
       route('GET', '/api/v1/google/status', () =>
         json(200, {
           mode: 'read',

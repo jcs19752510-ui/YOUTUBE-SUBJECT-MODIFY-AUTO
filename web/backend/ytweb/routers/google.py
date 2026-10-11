@@ -40,7 +40,6 @@ class GoogleCtx:
     client_file: Path
     redirect_uri: str
     last_error: str | None = None
-    write_states: set = field(default_factory=set)  # 쓰기 권한 로그인으로 시작한 state
     write_store: oauth.TokenStore | None = None
 
 
@@ -99,10 +98,7 @@ def google_connect_write(info=Depends(require_csrf), ctx: GoogleCtx = Depends(ge
     except oauth.OAuthError as e:
         raise ProblemError(409, "google_client_" + e.code.removeprefix("client_"), "구글 연결 파일 문제", e.message,
                            hint="web\\secrets\\google_client.json 을 확인한 뒤 start.ps1 을 다시 실행하세요.") from None
-    state, challenge = ctx.pending.start()
-    ctx.write_states.add(state)
-    if len(ctx.write_states) > oauth.MAX_PENDING:
-        ctx.write_states.pop()
+    state, challenge = ctx.pending.start("write")
     audit.record(session, actor="owner", action="google.connect_write.start", detail={"scope": "force-ssl"}, now=clock())
     return {"auth_url": oauth.build_auth_url(client_id, ctx.redirect_uri, state, challenge, scope=oauth.SCOPE_WRITE)}
 
@@ -119,8 +115,7 @@ def _back(ctx: GoogleCtx, error: str | None = None) -> RedirectResponse:
 def google_callback(code: str | None = Query(default=None, max_length=2048), state: str | None = Query(default=None, max_length=256),
                     error: str | None = Query(default=None, max_length=100), ctx: GoogleCtx = Depends(get_google_ctx),
                     session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock)):
-    is_write = state in ctx.write_states
-    ctx.write_states.discard(state)
+    is_write = ctx.pending.peek_kind(state) == "write"
     try:
         verifier = ctx.pending.finish(state)  # state 가 없거나 이미 썼거나 만료면 여기서 거부(토큰 교환 안 함)
         if error or not code:

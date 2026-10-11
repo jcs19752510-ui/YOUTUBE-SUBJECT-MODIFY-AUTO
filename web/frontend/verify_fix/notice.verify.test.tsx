@@ -40,7 +40,7 @@ describe('면책 문장 원문 대조 (DEF-9-007)', () => {
     expect(m![1]).toBe(ko.legal.disclaimer);
     expect(ko.legal.disclaimer).toBe(ko.legal.disclaimer.normalize('NFC'));
     expect(ko.legal.disclaimer).toBe(ko.legal.disclaimer.trim());
-    // eslint-disable-next-line no-misleading-character-class
+    // eslint-disable-next-line no-irregular-whitespace
     expect(ko.legal.disclaimer).not.toMatch(/[​-‏‪-‮⁠-⁩﻿ ]/);
   });
 

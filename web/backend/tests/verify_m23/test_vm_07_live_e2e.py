@@ -304,7 +304,6 @@ def test_tc_vm_644_rollback_definite_failure_403_is_502_and_change_failed(live):
 
 
 # ---------- 모드 전환 (설계 공백 점검) ----------
-@pytest.mark.xfail(reason="DEF-VM-006: 실제로 반영한 변경을 실제 모드를 끈 뒤 롤백하면 모의 게이트웨이로 처리돼 '성공'(201)인데 유튜브 제목은 그대로", strict=True)
 def test_tc_vm_650_rollback_of_live_change_after_live_mode_off_must_not_pretend_success(live):
     ch = _apply_one(live)
     new_title = live.fg.videos[live.ids[0]]["title"]
@@ -315,7 +314,6 @@ def test_tc_vm_650_rollback_of_live_change_after_live_mode_off_must_not_pretend_
     assert not pretended, "롤백 성공으로 기록됐지만 실제 유튜브 제목은 바뀌지 않음(상태 불일치)"
 
 
-@pytest.mark.xfail(reason="DEF-VM-007: 데모 확인 문구('실행 N건')로 확정된 배치가 이후 실제 모드를 켜면 확인 문구 없이 실제로 반영됨", strict=True)
 def test_tc_vm_651_batch_confirmed_with_demo_text_must_not_become_real_after_live_switch(live):
     live.mp.setenv("YTWEB_LIVE_WRITE", "0")
     bid, _ = queued(live)                                                         # 데모 문구 "실행 1건"으로 확정
@@ -325,7 +323,6 @@ def test_tc_vm_651_batch_confirmed_with_demo_text_must_not_become_real_after_liv
     assert live.fg.put_calls() == [], "실제 확인 문구 없이 실제 유튜브 제목이 바뀜"
 
 
-@pytest.mark.xfail(reason="DEF-VM-008: 실제 문구로 확정된 배치가 실제 모드 해제 뒤 워커 틱에서 모의로 처리돼 '성공'으로 남음(유튜브 미변경)", strict=True)
 def test_tc_vm_652_live_confirmed_batch_after_live_off_must_not_report_success_without_real_change(live):
     queued(live)
     live.mp.setenv("YTWEB_LIVE_WRITE", "0")

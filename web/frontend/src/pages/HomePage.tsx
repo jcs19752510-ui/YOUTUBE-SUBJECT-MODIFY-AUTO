@@ -187,7 +187,7 @@ export function HomePage() {
                   <ul className="item-list">
                     <li>
                       <Badge tone="warning" icon="●">
-                        {d.mode === 'demo' ? ko.home.googleDemo : ko.home.googleConnected}
+                        {d.google.mode === 'demo' ? ko.home.googleDemo : ko.home.googleConnected}
                       </Badge>
                     </li>
                     <li>

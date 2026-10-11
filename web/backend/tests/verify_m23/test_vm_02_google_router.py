@@ -211,7 +211,7 @@ def test_tc_vm_122_many_unfinished_write_logins_do_not_misroute_the_latest_write
     for _ in range(400):
         url = start_flow(gapp, csrf, "connect-write")
         st = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
-        if st not in ctx.write_states:                                                      # 이 로그인은 '읽기'로 처리될 운명
+        if ctx.pending.peek_kind(st) != "write":                                             # 이 로그인은 '읽기'로 처리될 운명
             lost += 1
             finish_flow(gapp, fg, url)                                                       # 실제 영향 확인: 사용자가 바로 로그인을 마친 경우
             f = sd / "google_token.json"
@@ -293,11 +293,11 @@ def test_tc_vm_129_write_state_set_is_bounded_and_cleared_after_callback(gapp, c
     for _ in range(30):
         start_flow(gapp, csrf, "connect-write")
     ctx = gapp.app.state.google_ctx
-    assert len(ctx.write_states) <= 20
+    assert len(ctx.pending._kinds) <= 20  # 구현 변경(2026-10-11, DEF-VM-003 조치): 쓰기 state 집합 대신 PendingAuth 가 종류를 함께 보관·소진한다
     url = start_flow(gapp, csrf, "connect-write")
     st = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
     finish_flow(gapp, fg, url)
-    assert st not in ctx.write_states
+    assert st not in ctx.pending._kinds and ctx.pending.peek_kind(st) == "read"
 
 
 def test_tc_vm_130_openapi_lists_google_post_routes_and_hides_callback(gapp):

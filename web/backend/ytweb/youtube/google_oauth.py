@@ -46,7 +46,7 @@ def load_client(path: Path) -> tuple[str, str]:
         raise OAuthError("client_missing", "구글 클라이언트 파일(web/secrets/google_client.json)이 없습니다.") from None
     except (OSError, ValueError):
         raise OAuthError("client_invalid", "구글 클라이언트 파일을 읽을 수 없습니다. 구글에서 다시 내려받아 주세요.") from None
-    section = raw.get("installed") or raw.get("web")
+    section = (raw.get("installed") or raw.get("web")) if isinstance(raw, dict) else None
     if not isinstance(section, dict) or not section.get("client_id") or not section.get("client_secret"):
         raise OAuthError("client_invalid", "구글 클라이언트 파일 형식이 올바르지 않습니다(client_id·client_secret 없음).")
     return str(section["client_id"]), str(section["client_secret"])
@@ -64,20 +64,29 @@ class PendingAuth:
     def __init__(self, clock: Callable[[], float] = time.time) -> None:
         self._clock = clock
         self._items: dict[str, tuple[str, float]] = {}
+        self._kinds: dict[str, str] = {}
 
-    def start(self) -> tuple[str, str]:
+    def start(self, kind: str = "read") -> tuple[str, str]:
         now = self._clock()
         self._items = {s: v for s, v in self._items.items() if now - v[1] < STATE_TTL_SECONDS}
+        self._kinds = {s: k for s, k in self._kinds.items() if s in self._items}
         while len(self._items) >= MAX_PENDING:
             self._items.pop(next(iter(self._items)))
+        self._kinds = {s: k for s, k in self._kinds.items() if s in self._items}
         state = secrets.token_urlsafe(32)
         verifier, challenge = make_pkce()
         self._items[state] = (verifier, now)
+        self._kinds[state] = kind
         return state, challenge
+
+    def peek_kind(self, state: str | None) -> str:
+        """이 state 로 시작한 로그인의 종류("read"/"write"). 모르는 state 는 "read". state 를 소진하지 않는다."""
+        return self._kinds.get(state or "", "read")
 
     def finish(self, state: str | None) -> str:
         """state 를 소진하고 PKCE verifier 를 돌려준다. 없거나 만료됐거나 이미 쓴 state 면 거부한다."""
         item = self._items.pop(state or "", None)
+        self._kinds.pop(state or "", None)
         if item is None or self._clock() - item[1] >= STATE_TTL_SECONDS:
             raise OAuthError("state_invalid", "로그인 요청이 만료됐거나 올바르지 않습니다. 처음부터 다시 시도해 주세요.")
         return item[0]
@@ -170,6 +179,9 @@ class TokenStore:
     def is_fresh(tokens: dict, now: datetime | None = None, margin_seconds: int = 60) -> bool:
         now = now or datetime.now(timezone.utc)
         try:
-            return datetime.fromisoformat(tokens["expires_at"]) - timedelta(seconds=margin_seconds) > now
-        except (KeyError, ValueError):
+            exp = datetime.fromisoformat(tokens["expires_at"])
+            if exp.tzinfo is None:  # 시간대 없는 값은 믿지 않고 새로 받는다
+                return False
+            return exp - timedelta(seconds=margin_seconds) > now
+        except (KeyError, ValueError, TypeError):
             return False

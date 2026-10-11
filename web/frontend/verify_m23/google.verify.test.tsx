@@ -286,7 +286,7 @@ describe('M3 단위3: 제목 수정 권한 구역', () => {
   it('TC-VMF-023 쓰기 연결됨·실제 수정 꺼짐: "연결돼 있습니다"+"아직 꺼져 있습니다"+허용 영상 수, 연결 버튼은 사라지고, 거짓 안내("제목을 바꾸지 않습니다")는 없다', async () => {
     await card(rc({ write_connected: true, live_allowed_count: 0 }));
     expect(screen.getByText(ko.google.writeConnected)).toBeInTheDocument();
-    expect(screen.getByText(ko.google.writeNotReady(0))).toBeInTheDocument();
+    expect(screen.getByText(ko.google.writeNotReady(false, 0))).toBeInTheDocument();
     expect(btn(ko.google.writeConnect)).toBeNull();
     expect(screen.queryByText(ko.google.liveWarnTitle)).toBeNull();
     expect(screen.queryByText(ko.google.readOnly)).toBeNull();

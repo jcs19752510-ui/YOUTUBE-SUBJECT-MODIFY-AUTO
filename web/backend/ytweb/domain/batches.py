@@ -282,6 +282,7 @@ def execute_batch(session: Session, batch_id: int, confirm_text: str, *, now: da
         it.scheduled_date, it.updated_at = day, now
         sug.status, sug.updated_at = "queued", now
     batch.status, batch.executed_at, batch.updated_at = "queued", now, now
+    batch.precheck = {**(batch.precheck or {}), "executed_live": live_gateway.live_mode(env.secrets_dir)}  # 확정 때의 모드(데모/실제)를 기록한다
     today_count = sum(1 for d in dates if d == kst_today(now))
     job = jobs.enqueue(session, type="batch.execute", payload={"batch_id": batch.id}, total=today_count, now=now)
     session.flush()
@@ -379,6 +380,8 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         raise StepFailure("batch_not_active", "실행 확정된 배치가 아니어서 반영하지 않았습니다.")
     if sug is None or video is None:
         raise StepFailure("suggestion_missing", "제안 또는 영상 정보를 찾을 수 없습니다.")
+    if bool((batch.precheck or {}).get("executed_live", False)) != live_gateway.is_live(gateway):  # 확정 때와 모드가 달라졌으면 확인 문구 없이 실제로 쓰거나 모의로 처리하는 일을 막는다
+        raise StepFailure("live_mode_changed", "실행을 확정한 때와 실제 수정 모드 설정이 달라 반영하지 않았습니다. 이 배치를 취소하고 새로 만들어 확정하세요.")
     ref_time = batch.executed_at or now
     # 1) 승인 유효·해시 일치
     try:
@@ -532,8 +535,12 @@ def recover_running_items(factory: sessionmaker, now: datetime, env: Env | None 
         ids = s.execute(select(BatchItem.id).where(BatchItem.status == "running", BatchItem.updated_at <= now - stale_after)).scalars().all()
     for item_id in ids:
         with factory() as s:
-            if _recover_one(s, item_id, now, env, gateway_factory(s, now)):
-                fixed += 1
+            try:
+                if _recover_one(s, item_id, now, env, gateway_factory(s, now)):
+                    fixed += 1
+            except GatewayError:  # 실제 모드에서 구글 읽기가 실패해도 다른 항목 처리를 막지 않는다(다음 틱에 다시 시도, 항목은 running 으로 남는다)
+                s.rollback()
+                continue
             s.commit()
     return fixed
 

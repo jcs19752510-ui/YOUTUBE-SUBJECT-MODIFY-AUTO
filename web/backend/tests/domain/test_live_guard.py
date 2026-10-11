@@ -79,14 +79,17 @@ def test_tc_m3_045_live_gateway_records_mode_live_and_demo_records_demo(seeded, 
     from ytweb.db.models import BatchItem
     from ytweb.domain.batches import apply_one
     from ytweb.youtube.mock import MockYouTubeGateway
-    batch, sugs, _ = queued_batch(seeded, live_env, clock(), 2)  # 데모(허용 목록 없음)로 대기열에 올린다
-    items = seeded.execute(select(BatchItem).where(BatchItem.batch_id == batch.id).order_by(BatchItem.seq)).scalars().all()
-    apply_one(seeded, items[0].id, now=clock(), env=live_env, gateway=MockYouTubeGateway(seeded, clock=clock))
-    monkeypatch.setenv("YTWEB_LIVE_ALLOWED_VIDEOS", items[1].video_id)
+    demo_batch, _, _ = queued_batch(seeded, live_env, clock(), 1)  # 허용 목록 없음 = 데모로 확정
+    d_item = seeded.execute(select(BatchItem).where(BatchItem.batch_id == demo_batch.id)).scalars().one()
+    apply_one(seeded, d_item.id, now=clock(), env=live_env, gateway=MockYouTubeGateway(seeded, clock=clock))
+    second = eligible_video_ids(seeded, 2)[1]
+    monkeypatch.setenv("YTWEB_LIVE_ALLOWED_VIDEOS", second)  # 이제 실제 모드로 확정
+    live_batch, _, _ = queued_batch(seeded, live_env, clock(), 1, skip=1)
+    l_item = seeded.execute(select(BatchItem).where(BatchItem.batch_id == live_batch.id)).scalars().one()
     live = lg.SyncedLiveGateway(seeded, MockYouTubeGateway(seeded, clock=clock), clock())  # 실제 구글 대신 모의를 안쪽에 둔다
-    apply_one(seeded, items[1].id, now=clock(), env=live_env, gateway=live)
+    apply_one(seeded, l_item.id, now=clock(), env=live_env, gateway=live)
     modes = {c.video_id: c.mode for c in seeded.query(Change).all()}
-    assert modes[items[0].video_id] == "demo" and modes[items[1].video_id] == "live"
+    assert modes[d_item.video_id] == "demo" and modes[l_item.video_id] == "live"
 
 
 def test_tc_m3_046_apply_blocks_not_allowed_video_before_planned_record(seeded, live_env, clock, monkeypatch):

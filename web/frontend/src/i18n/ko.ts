@@ -4,6 +4,8 @@ export const ko = {
     name: '유튜브 제목 웹',
     tagline: '유튜브 제목 개선 도우미',
     demoBadge: '데모 모드 — 유튜브에 아무것도 전송되지 않습니다',
+    readBadge: '구글 연결됨(읽기) — 제목은 바뀌지 않습니다',
+    liveBadge: '실제 수정 모드 — 허용된 영상의 제목이 실제 유튜브에서 바뀝니다',
     skip: '본문으로 건너뛰기',
     mainNav: '주 메뉴',
     loading: '불러오는 중입니다',
@@ -210,8 +212,16 @@ export const ko = {
     writeConnected: '제목 수정 권한이 연결돼 있습니다.',
     writeExplain:
       '실제로 영상 제목을 바꾸려면 구글에서 "제목 수정" 권한을 따로 허용해야 합니다. 이 권한만으로는 제목이 바뀌지 않습니다. 서버 설정에서 "실제 수정 켜기"와 "수정 허용 영상"이 함께 지정돼야 합니다.',
-    writeNotReady: (n: number) =>
-      `실제 수정은 아직 꺼져 있습니다(수정 허용 영상 ${n}개). 켜려면 서버 설정 YTWEB_LIVE_WRITE=1 과 YTWEB_LIVE_ALLOWED_VIDEOS 가 필요합니다.`,
+    writeNotReady: (enabled: boolean, n: number) =>
+      [
+        `실제 수정은 아직 꺼져 있습니다(수정 허용 영상 ${n}개).`,
+        enabled
+          ? ''
+          : ' web\\.env 파일의 YTWEB_LIVE_WRITE 를 1 로 바꾸고 start.ps1 을 다시 실행하세요.',
+        n > 0
+          ? ''
+          : ' 수정을 허용할 영상이 없습니다. web\\.env 파일의 YTWEB_LIVE_ALLOWED_VIDEOS 에 테스트 영상 ID를 넣고 start.ps1 을 다시 실행하세요.',
+      ].join(''),
     liveWarnTitle: '실제 수정 모드가 켜져 있습니다',
     liveWarn: (n: number) =>
       `승인하고 반영하면 수정 허용 영상 ${n}개의 제목이 실제 유튜브에서 바뀝니다. 허용 목록에 없는 영상은 바뀌지 않습니다. 바뀐 제목은 이력에서 되돌릴 수 있지만, 유튜브가 되돌리기를 거부하면 직접 고쳐야 할 수 있습니다.`,

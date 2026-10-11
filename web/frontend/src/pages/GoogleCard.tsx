@@ -76,7 +76,7 @@ export function GoogleCard() {
               <Button onClick={() => setAsking(true)}>{ko.google.disconnect}</Button>
             )}
           </div>
-          {g.connected && (
+          {(g.connected || g.write_connected) && (
             <div>
               <h3>{ko.google.writeTitle}</h3>
               {g.live_write_ready ? (
@@ -89,7 +89,12 @@ export function GoogleCard() {
               ) : g.write_connected ? (
                 <>
                   <p>{ko.google.writeConnected}</p>
-                  <p className="muted">{ko.google.writeNotReady(g.live_allowed_count ?? 0)}</p>
+                  <p className="muted">
+                    {ko.google.writeNotReady(
+                      g.live_write_enabled ?? false,
+                      g.live_allowed_count ?? 0,
+                    )}
+                  </p>
                 </>
               ) : (
                 <>

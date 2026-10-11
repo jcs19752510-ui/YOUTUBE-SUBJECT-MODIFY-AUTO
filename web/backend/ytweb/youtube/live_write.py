@@ -68,7 +68,7 @@ class LiveYouTubeGateway:
         if video_id not in self._allowed:
             raise GatewayError("not_allowed", "허용 목록에 없는 영상이라 실제 수정을 하지 않았습니다.")
         snippet = body.get("snippet") if isinstance(body, dict) else None
-        if body.get("id") != video_id or not isinstance(snippet, dict):
+        if not isinstance(body, dict) or body.get("id") != video_id or not isinstance(snippet, dict):
             raise GatewayError("invalid_request", "요청 본문의 영상 ID 또는 snippet 이 올바르지 않습니다.")
         if not isinstance(snippet.get("title"), str) or not snippet["title"].strip():
             raise GatewayError("invalid_request", "snippet.title 이 비어 있습니다.")

@@ -69,6 +69,10 @@ def rollback_change(session: Session, change_id: int, typed_video_id: str, appro
     target = get_change(session, change_id, lock=True)
     if target.change_type != "apply" or target.result != "success":
         raise ProblemError(409, "not_rollbackable", "성공한 제목 변경만 되돌릴 수 있습니다.", detail=f"변경 #{target.id}: {target.change_type}/{target.result}", hint="되돌릴 변경(적용 성공)을 선택하세요.")
+    if (target.mode == "live") != live_gateway.is_live(gateway):
+        raise ProblemError(409, "live_mode_mismatch", "이 변경을 반영한 때와 실제 수정 모드 설정이 달라 되돌리지 않았습니다.",
+                           detail=f"변경 #{target.id}는 {'실제' if target.mode == 'live' else '데모'} 모드로 반영됐습니다.",
+                           hint="같은 모드(web\\.env 의 YTWEB_LIVE_WRITE)로 맞추고 쓰기 권한이 연결된 상태에서 다시 시도하세요. 급하면 유튜브 Studio 에서 직접 되돌리세요.")
     if typed_video_id != target.video_id:
         raise ProblemError(422, "typed_video_id_mismatch", "입력한 영상 ID가 대상과 다릅니다.", hint="화면에 표시된 영상 ID를 그대로 입력하세요.")
     later = session.execute(select(Change.id).where(Change.video_id == target.video_id, Change.id > target.id, Change.result.in_(COUNTED_RESULTS)).order_by(Change.id).limit(1)).scalar_one_or_none()
