@@ -16,6 +16,10 @@ export function GoogleCard() {
     mutationFn: () => api.googleConnect(),
     onSuccess: (r) => navigateTo(r.auth_url),
   });
+  const connectWrite = useMutation({
+    mutationFn: () => api.googleConnectWrite(),
+    onSuccess: (r) => navigateTo(r.auth_url),
+  });
   const disconnect = useMutation({
     mutationFn: () => api.googleDisconnect(),
     onSuccess: () => {
@@ -49,7 +53,9 @@ export function GoogleCard() {
             </Callout>
           )}
           <p>{g.message}</p>
-          {g.client_ready && <p className="muted">{ko.google.readOnly}</p>}
+          {g.client_ready && !g.write_connected && !g.live_write_ready && (
+            <p className="muted">{ko.google.readOnly}</p>
+          )}
           {!g.client_ready && <p className="muted">{ko.google.needFile}</p>}
           <div className="row">
             {g.client_ready && !g.connected && (
@@ -70,6 +76,31 @@ export function GoogleCard() {
               <Button onClick={() => setAsking(true)}>{ko.google.disconnect}</Button>
             )}
           </div>
+          {g.connected && (
+            <div>
+              <h3>{ko.google.writeTitle}</h3>
+              {g.live_write_ready ? (
+                <Callout tone="warning" role="alert">
+                  <p>
+                    <strong>{ko.google.liveWarnTitle}</strong>
+                  </p>
+                  <p>{ko.google.liveWarn(g.live_allowed_count ?? 0)}</p>
+                </Callout>
+              ) : g.write_connected ? (
+                <>
+                  <p>{ko.google.writeConnected}</p>
+                  <p className="muted">{ko.google.writeNotReady(g.live_allowed_count ?? 0)}</p>
+                </>
+              ) : (
+                <>
+                  <p className="muted">{ko.google.writeExplain}</p>
+                  <Button disabled={connectWrite.isPending} onClick={() => connectWrite.mutate()}>
+                    {ko.google.writeConnect}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
           {g.connected && asking && (
             <Callout tone="warning" role="alert">
               <p>{ko.google.disconnectAsk}</p>
@@ -88,6 +119,7 @@ export function GoogleCard() {
         </>
       )}
       {connect.isError && <ErrorPanel error={connect.error} />}
+      {connectWrite.isError && <ErrorPanel error={connectWrite.error} />}
       {sync.isError && <ErrorPanel error={sync.error} />}
       {disconnect.isError && <ErrorPanel error={disconnect.error} />}
     </Card>

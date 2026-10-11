@@ -93,4 +93,65 @@ describe('구글 연결 카드', () => {
     renderWithApp(<HomePage />, client);
     expect(await screen.findByText(/로그인 요청이 만료됐거나/)).toBeInTheDocument();
   });
+  it('TC-WF-210 읽기만 연결됐으면 [제목 수정 권한 연결]이 보이고 누르면 쓰기 로그인 주소로 이동한다', async () => {
+    const user = userEvent.setup();
+    const { client, calls } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () =>
+        json(200, { ...base, connected: true, write_connected: false }),
+      ),
+      route('POST', '/api/v1/google/connect-write', () =>
+        json(200, { auth_url: 'https://accounts.google.com/o/oauth2/v2/auth?w=1' }),
+      ),
+    ]);
+    renderWithApp(<HomePage />, client);
+    expect(await screen.findByText(/이 권한만으로는 제목이 바뀌지 않습니다/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '제목 수정 권한 연결' }));
+    await waitFor(() =>
+      expect(navigateTo).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?w=1'),
+    );
+    expect(calls.some((c) => c.path === '/api/v1/google/connect-write')).toBe(true);
+  });
+
+  it('TC-WF-211 쓰기 권한은 연결됐지만 실제 수정이 꺼져 있으면 "아직 꺼져 있음"을 알리고 경고는 없다', async () => {
+    const { client } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () =>
+        json(200, {
+          ...base,
+          connected: true,
+          write_connected: true,
+          live_write_ready: false,
+          live_allowed_count: 0,
+        }),
+      ),
+    ]);
+    renderWithApp(<HomePage />, client);
+    expect(
+      await screen.findByText(/실제 수정은 아직 꺼져 있습니다\(수정 허용 영상 0개\)/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('실제 수정 모드가 켜져 있습니다')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '제목 수정 권한 연결' })).not.toBeInTheDocument();
+  });
+
+  it('TC-WF-212 실제 수정이 가능한 상태면 허용 영상 수와 되돌리기 한계를 담은 경고를 보여 준다', async () => {
+    const { client } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () =>
+        json(200, {
+          ...base,
+          connected: true,
+          write_connected: true,
+          live_write_ready: true,
+          live_allowed_count: 1,
+        }),
+      ),
+    ]);
+    renderWithApp(<HomePage />, client);
+    expect(await screen.findByText('실제 수정 모드가 켜져 있습니다')).toBeInTheDocument();
+    expect(
+      screen.getByText(/수정 허용 영상 1개의 제목이 실제 유튜브에서 바뀝니다/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/읽기 전용입니다/)).not.toBeInTheDocument();
+  });
 });

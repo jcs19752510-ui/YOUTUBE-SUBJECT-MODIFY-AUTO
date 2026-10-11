@@ -205,6 +205,16 @@ export const ko = {
       '읽기 전용입니다. 이 프로그램은 구글에서 영상 정보를 읽기만 하고, 영상 제목을 바꾸지 않습니다.',
     needFile:
       '실제 유튜브에 연결하려면 web\\secrets\\google_client.json 을 저장한 뒤 .\\web\\scripts\\start.ps1 을 다시 실행하세요.',
+    writeTitle: '제목 수정 권한',
+    writeConnect: '제목 수정 권한 연결',
+    writeConnected: '제목 수정 권한이 연결돼 있습니다.',
+    writeExplain:
+      '실제로 영상 제목을 바꾸려면 구글에서 "제목 수정" 권한을 따로 허용해야 합니다. 이 권한만으로는 제목이 바뀌지 않습니다. 서버 설정에서 "실제 수정 켜기"와 "수정 허용 영상"이 함께 지정돼야 합니다.',
+    writeNotReady: (n: number) =>
+      `실제 수정은 아직 꺼져 있습니다(수정 허용 영상 ${n}개). 켜려면 서버 설정 YTWEB_LIVE_WRITE=1 과 YTWEB_LIVE_ALLOWED_VIDEOS 가 필요합니다.`,
+    liveWarnTitle: '실제 수정 모드가 켜져 있습니다',
+    liveWarn: (n: number) =>
+      `승인하고 반영하면 수정 허용 영상 ${n}개의 제목이 실제 유튜브에서 바뀝니다. 허용 목록에 없는 영상은 바뀌지 않습니다. 바뀐 제목은 이력에서 되돌릴 수 있지만, 유튜브가 되돌리기를 거부하면 직접 고쳐야 할 수 있습니다.`,
     checking: '구글 연결 상태를 확인하는 중…',
     checkFail: '구글 연결 상태를 확인하지 못했습니다.',
     errorTitle: '구글 연결에 문제가 있습니다',

@@ -268,6 +268,10 @@ export interface GoogleStatus {
   message: string;
   client_ready?: boolean;
   last_error?: string | null;
+  write_connected?: boolean;
+  live_write_enabled?: boolean;
+  live_allowed_count?: number;
+  live_write_ready?: boolean;
 }
 
 export interface VideoListQuery {

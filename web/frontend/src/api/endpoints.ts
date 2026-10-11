@@ -90,6 +90,8 @@ export function createEndpoints(c: ApiClient) {
     google: () => c.request<GoogleStatus>('GET', `${V1}/google/status`),
     googleConnect: () =>
       c.request<{ auth_url: string }>('POST', `${V1}/google/connect`, { body: {} }),
+    googleConnectWrite: () =>
+      c.request<{ auth_url: string }>('POST', `${V1}/google/connect-write`, { body: {} }),
     googleDisconnect: () =>
       c.request<{ connected: boolean }>('POST', `${V1}/google/disconnect`, { body: {} }),
   };
