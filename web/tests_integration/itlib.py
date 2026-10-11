@@ -43,7 +43,7 @@ def dc(*args: str, timeout: int = 240, input_: str | None = None) -> subprocess.
 
 
 def cid(service: str) -> str:
-    out = dc("ps", "-q", service).stdout.strip().splitlines()
+    out = dc("ps", "-a", "-q", service).stdout.strip().splitlines()      # -a: 멈춘 컨테이너도(db 를 멈췄다가 다시 시작하는 시험이 이름을 찾아야 한다)
     return out[0] if out else ""
 
 

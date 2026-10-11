@@ -294,7 +294,19 @@ def restart_cycles() -> list:
     return out
 
 
+def harvest_actions() -> None:
+    """초기화 직전에 DB 의 감사 action 종류를 세션 기록(ACTIONS_SEEN)에 합친다. 감사 목록 API 를 읽지 않고 끝난 시험(중지·로그아웃·반려 등)의 action 도 문서와 대조하기 위해서다."""
+    try:
+        for ln in psql_owner("select action || '|' || count(*) from audit_log group by action").splitlines():
+            act, _, n = ln.partition("|")
+            if act:
+                ACTIONS_SEEN[act] = ACTIONS_SEEN.get(act, 0) + int(n or 1)
+    except Exception:  # noqa: BLE001 - DB 가 아직 없거나 죽어 있으면 건너뛴다(관찰 보강일 뿐)
+        pass
+
+
 def reset_demo_db() -> None:
+    harvest_actions()
     if NATIVE:
         nat.reset_demo(RELAXED)
         return

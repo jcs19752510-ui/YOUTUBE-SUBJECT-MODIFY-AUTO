@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -13,7 +14,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-for p in (REPO_ROOT / "web" / "backend", REPO_ROOT / "src"):
+# mutation_check.py 가 변이를 적용한 사본을 가리키게 할 때만 쓰는 우회 경로(기본은 저장소의 실제 소스)
+_BACKEND = Path(os.environ.get("YTWEB_SEC_BACKEND_DIR", REPO_ROOT / "web" / "backend"))
+_SRC = Path(os.environ.get("YTWEB_SEC_SRC_DIR", REPO_ROOT / "src"))
+for p in (_SRC, _BACKEND):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 

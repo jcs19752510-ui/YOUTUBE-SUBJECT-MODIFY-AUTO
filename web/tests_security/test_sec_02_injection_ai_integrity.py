@@ -173,6 +173,14 @@ def test_approver_zero_width_chars_are_accepted_info(client, csrf):
     assert r.status_code == 200 and r.json()["approval"]["approver"] == "김선생\u200b"
 
 
+def test_edit_title_strips_control_bidi_and_invisible_chars(client, csrf):
+    s = pick_ok(suggest_api(client, csrf))
+    r = client.patch(f"/api/v1/suggestions/{s['id']}", headers=hdr(csrf), json={"title": "냉장고\x00 정리\u202e 순서\u200b\n끝"})
+    assert r.status_code == 200
+    t = r.json()["title"]
+    assert not any(ch in t for ch in ("\x00", "\u202e", "\u200b", "\n")) and "냉장고" in t
+
+
 def test_batch_note_html_is_stored_as_text_and_single_line(client, csrf):
     s = pick_ok(suggest_api(client, csrf))
     approve_api(client, csrf, s["id"])
@@ -206,6 +214,26 @@ def test_csv_export_neutralizes_formulas_in_every_cell(client, csrf, factory, en
     for row in rows:
         for cell in row:
             assert not cell.startswith(("=", "+", "-", "@", "\t", "\r")), cell
+
+
+def test_csv_notes_and_titles_from_any_source_are_neutralized(client, csrf, monkeypatch):
+    """리포트 주석(notes)·영상 제목·사유가 수식 문자로 시작해도(미래에 외부 문자열이 섞여도) 모든 셀이 무독화된다."""
+    import ytweb.domain.reports as rep
+    real = rep.build_reports
+
+    def fake(session, env, video_id=None):
+        data = real(session, env, video_id)
+        data["notes"] = ["=HYPERLINK(\"http://evil\")", "+1+1", "@SUM(1)", "-2+3", "정상 주석"]
+        data["items"] = [{"video_id": "demoVid0001", "title": "=1+1", "status": "ok", "label": None, "baseline_missing": False, "reasons": ["=cmd", "+x"], "notes": ["@a"],
+                          "changes": [], "target": {"at": "t", "previous_title": "-x", "new_title": "@y", "id": 1, "change_type": "apply", "result": "success", "approver": "a"},
+                          "before": None, "after": None, "metrics": [], "expected_after_date": None}]
+        return data
+    monkeypatch.setattr(rep, "build_reports", fake)
+    r = client.get("/api/v1/reports/export.csv")
+    rows = list(csv.reader(io.StringIO(r.content.decode("utf-8-sig"))))
+    cells = [c for row in rows for c in row]
+    assert "'=HYPERLINK(\"http://evil\")" in cells and "'+1+1" in cells and "'=1+1" in cells and "'-x" in cells and "'@y" in cells
+    assert not [c for c in cells if c.startswith(("=", "+", "-", "@", "\t", "\r"))]
 
 
 # ───────────── [규칙 J / LLM01·02·05·06] AI 입력 정제와 출력 검증 ─────────────
@@ -345,6 +373,33 @@ def test_db_level_approval_tamper_is_detected(client, csrf, factory, column, val
     assert r.status_code == 422 and "변조" in r.json()["detail"], r.text[:300]
 
 
+def test_check_approval_gate_unit_boundaries(client, csrf, factory, env):
+    """check_approval 은 승인 사용 직전의 마지막 관문이다: 만료 시각 '이상'이면 거부, 직전이면 통과(경계값)."""
+    from datetime import timedelta
+    from ytweb.domain.suggestions import ApprovalInvalid, check_approval
+    s = _approved(client, csrf)
+    with factory() as db:
+        sug = db.get(Suggestion, s["id"])
+        video = db.get(Video, sug.video_id)
+        exp = sug.approval.expires_at
+        check_approval(sug, video, env, exp - timedelta(seconds=1))
+        for ref in (exp, exp + timedelta(seconds=1)):
+            with pytest.raises(ApprovalInvalid) as ei:
+                check_approval(sug, video, env, ref)
+            assert ei.value.code == "approval_expired"
+
+
+def test_title_cannot_be_edited_once_queued_or_applied(client, csrf, factory, env, clock):
+    s = _approved(client, csrf)
+    b = make_batch(client, csrf, [s["id"]], key="idem-edit-q-0001")
+    client.post(f"/api/v1/batches/{b['batch']['id']}/execute", headers=hdr(csrf, key="idem-edit-q-exec"), json={"confirm_text": b["precheck"]["confirm_text"]})
+    r = client.patch(f"/api/v1/suggestions/{s['id']}", headers=hdr(csrf), json={"title": "대기열 중 바꿔치기 제목"})
+    assert r.status_code == 409 and r.json()["code"] == "suggestion_state", r.text[:200]
+    run_due_items(factory, clock(), env, batch_id=b["batch"]["id"])
+    r = client.patch(f"/api/v1/suggestions/{s['id']}", headers=hdr(csrf), json={"title": "반영 뒤 바꿔치기 제목"})
+    assert r.status_code == 409 and r.json()["code"] == "suggestion_state", r.text[:200]
+
+
 def test_expiry_extension_in_db_is_detected(client, csrf, factory):
     s = _approved(client, csrf)
     with factory() as db:
@@ -390,6 +445,27 @@ def test_approval_is_single_use_and_not_reusable_for_other_batch(client, csrf, f
         assert a.used_at is not None
 
 
+def test_unapproved_suggestions_cannot_enter_a_batch(client, csrf):
+    s = pick_ok(suggest_api(client, csrf))  # 후보 상태(승인 안 함)
+    r = client.post("/api/v1/batches", headers=hdr(csrf, key="idem-unapp-0001"), json={"suggestion_ids": [s["id"]]})
+    assert r.status_code == 422 and "승인된 제안이 아닙니다" in r.json()["detail"], r.text[:300]
+    for n in (51, 500):
+        r = client.post("/api/v1/batches", headers=hdr(csrf, key=f"idem-big-{n:05d}"), json={"suggestion_ids": list(range(1, n + 1))})
+        assert r.status_code == 422 and r.json()["code"] == "batch_too_large", (n, r.text[:200])
+
+
+def test_used_approval_is_refused_even_if_suggestion_is_still_approved(client, csrf, factory):
+    """승인 1회용: used_at 이 찍힌 승인은 제안 상태가 approved 로 남아 있어도(예: 상태만 되돌려진 경우) 쓸 수 없다."""
+    from datetime import datetime, timezone
+    s = _approved(client, csrf)
+    with factory() as db:
+        a = db.execute(select(Approval).where(Approval.suggestion_id == s["id"])).scalar_one()
+        a.used_at = datetime(2026, 10, 10, 3, 0, tzinfo=timezone.utc)
+        db.commit()
+    r = client.post("/api/v1/batches", headers=hdr(csrf, key="idem-used-0001"), json={"suggestion_ids": [s["id"]]})
+    assert r.status_code == 422 and "1회용" in r.json()["detail"], r.text[:300]
+
+
 def test_title_edit_or_video_change_invalidates_approval(client, csrf, factory):
     s = _approved(client, csrf)
     r = client.patch(f"/api/v1/suggestions/{s['id']}", headers=hdr(csrf), json={"title": s["title"] + " 알려드립니다"})
@@ -409,8 +485,13 @@ def test_get_requests_expire_stale_approvals_info_s_w03(client, csrf, factory, c
     """[정보/Low] 조회(GET)가 '승인 유효시간 경과 → expired' 상태 정리를 수행한다(시간에 따라 결정되는 파생 상태 동기화, 공격자가 값을 고를 수 없음).
     S-W03(상태 변경은 GET 으로 하지 않는다)의 엄격한 해석과는 어긋나므로 설계 결정으로 기록한다."""
     s = _approved(client, csrf)
-    assert client.get(f"/api/v1/suggestions?video_id={s['video_id']}").json()["items"][0]["status"] == "approved"
-    clock.advance(hours=200)
+    first = client.get(f"/api/v1/suggestions?video_id={s['video_id']}").json()["items"]
+    assert {i["id"]: i["status"] for i in first}[s["id"]] == "approved"
+    with factory() as db:  # 승인 유효시간이 지난 상태를 만든다(세션 12시간 만료와 무관하게)
+        from datetime import timedelta
+        a = db.execute(select(Approval).where(Approval.suggestion_id == s["id"])).scalar_one()
+        a.expires_at = clock() - timedelta(hours=1)
+        db.commit()
     r = client.get(f"/api/v1/suggestions?video_id={s['video_id']}")
     assert r.status_code == 200 and {i["id"]: i["status"] for i in r.json()["items"]}[s["id"]] == "expired"
     with factory() as db:
@@ -480,6 +561,14 @@ def test_audit_chain_detects_row_deletion_in_middle(client, csrf, engine):
     assert client.get("/api/v1/audit").json()["chain_ok"] is False
 
 
+def test_audit_chain_detects_prev_hash_column_edit_alone(client, csrf, engine):
+    _approved(client, csrf)
+    assert client.get("/api/v1/audit").json()["chain_ok"] is True
+    with engine.begin() as c:
+        c.exec_driver_sql("UPDATE audit_log SET prev_hash='%s' WHERE id=2" % ("f" * 64))
+    assert client.get("/api/v1/audit").json()["chain_ok"] is False
+
+
 def test_audit_limitation_repro_owner_can_rewrite_and_tail_truncate_without_detection(client, csrf, engine, factory):
     """[재현 DV-W08/TW-08] 체인에 키가 없어 DB 소유자(또는 슈퍼유저)가 기록을 고쳐 해시를 다시 계산하면 chain_ok 가 계속 True 다.
     꼬리(마지막 N건) 삭제도 탐지되지 않는다. 앱 계정은 PostgreSQL 에서 UPDATE/DELETE 권한이 없으므로(실스택 시험 test_sec_04) 이 공격은 DB 소유자 이상을 전제한다."""
@@ -517,6 +606,18 @@ def test_audit_records_security_events_without_secrets(client, csrf, engine):
 
 # ───────────── [TW-14] 롤백 안전(알려진 갭 재현) ─────────────
 
+def test_batch_execute_requires_exact_confirm_text(client, csrf):
+    s = _approved(client, csrf)
+    b = make_batch(client, csrf, [s["id"]], key="idem-confirm-001")
+    bid = b["batch"]["id"]
+    for i, wrong in enumerate(("", "실행 2건", "실행 1건 ", "실행1건", "execute 1", "실행 1건\n")):
+        r = client.post(f"/api/v1/batches/{bid}/execute", headers=hdr(csrf, key=f"idem-confirm-w{i:03d}x"), json={"confirm_text": wrong})
+        assert r.status_code == 422 and r.json()["code"] == "confirm_text_mismatch", (wrong, r.status_code, r.text[:160])
+    assert client.get(f"/api/v1/batches/{bid}").json()["status"] == "draft"
+    r = client.post(f"/api/v1/batches/{bid}/execute", headers=hdr(csrf, key="idem-confirm-ok01"), json={"confirm_text": b["precheck"]["confirm_text"]})
+    assert r.status_code == 202
+
+
 def test_rollback_requires_typed_id_and_latest_change(client, csrf, factory, env, clock):
     s, cid = applied_flow(client, csrf, factory, env, clock)
     r = client.post(f"/api/v1/changes/{cid}/rollback", headers=hdr(csrf, key="idem-rb-0000001"), json={"typed_video_id": "demoVid0002", "approver": "김선생"})
@@ -525,6 +626,16 @@ def test_rollback_requires_typed_id_and_latest_change(client, csrf, factory, env
     assert r.status_code == 201 and r.json()["change_type"] == "rollback"
     r = client.post(f"/api/v1/changes/{cid}/rollback", headers=hdr(csrf, key="idem-rb-0000003"), json={"typed_video_id": "demoVid0001", "approver": "김선생"})
     assert r.status_code == 409  # 이중 롤백 불가
+
+
+def test_rollback_refused_when_a_later_change_exists(client, csrf, factory, env, clock):
+    from datetime import timedelta
+    s, cid = applied_flow(client, csrf, factory, env, clock)
+    with factory() as db:  # 같은 영상의 더 나중 변경(성공)
+        db.add(Change(video_id="demoVid0001", suggestion_id=None, batch_id=None, change_type="apply", previous_title="x", new_title="y", result="success", mode="demo", created_at=clock() + timedelta(days=4), applied_at=clock() + timedelta(days=4)))
+        db.commit()
+    r = client.post(f"/api/v1/changes/{cid}/rollback", headers=hdr(csrf, key="idem-rb-later-001"), json={"typed_video_id": "demoVid0001", "approver": "김선생"})
+    assert r.status_code == 409 and r.json()["code"] == "later_change_exists", r.text[:200]
 
 
 def _studio_edit(factory, video_id, **fields):

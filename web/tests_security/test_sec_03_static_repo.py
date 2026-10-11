@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ.get("YTWEB_SEC_ROOT", Path(__file__).resolve().parents[2]))  # 변이 점검이 사본을 가리킬 때만 YTWEB_SEC_ROOT 를 쓴다
 SKIP_DIRS = {".git", "node_modules", ".harness-tmp", "__pycache__", ".pytest_cache", "dist", ".venv", "venv", ".mypy_cache", ".ruff_cache"}
 TEXT_EXT = {".py", ".ts", ".tsx", ".js", ".mjs", ".json", ".yaml", ".yml", ".md", ".MD", ".txt", ".ps1", ".sh", ".sql", ".conf", ".toml", ".ini", ".html", ".css", ".in", "", ".example", ".sample", ".cfg", ".env"}
 
@@ -224,16 +224,29 @@ def test_nginx_conf_rules():
     n = (ROOT / "web" / "docker" / "nginx" / "nginx.conf").read_text(encoding="utf-8")
     assert "server_tokens off" in n and "client_max_body_size 1m" in n and "return 444" in n and "autoindex" not in n
     assert len(re.findall(r"limit_req\s+zone=", n)) >= 3 and "limit_except" in n
-    assert n.count("security-headers.conf") >= n.count("location ") - 0, "location 마다 보안 헤더 include 필요(add_header 상속 규칙)"
+    # add_header 상속 규칙: location 안에 add_header 가 하나라도 있으면 server 수준 헤더가 사라지므로 그런 location 은 보안 헤더 파일을 직접 include 해야 한다.
+    srv = n[n.index("server {"):]
+    assert "include /etc/nginx/snippets/security-headers.conf;" in srv.split("location ")[0], "server 수준 include 필요"
+    blocks = re.split(r"\n\s+location ", srv)[1:]
+    assert len(blocks) >= 6
+    for b in blocks:
+        if "add_header" in b:
+            assert "security-headers.conf" in b, "add_header 가 있는 location 이 보안 헤더를 include 하지 않는다: " + b.splitlines()[0]
     proxies = re.findall(r"proxy_pass\s+([^;]+);", n)
     assert proxies and all(p.startswith("$api_upstream") for p in proxies), proxies
     assert re.findall(r"set \$api_upstream (\S+);", n) == ["http://api:8000"] * 4
     assert "$arg_" not in n and "$http_x_" not in n and "$http_referer" not in n and "$cookie" not in n
     h = (ROOT / "web" / "docker" / "nginx" / "security-headers.conf").read_text(encoding="utf-8")
-    for need in ("Content-Security-Policy", "X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy", "Permissions-Policy", "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy"):
-        assert need in h
+    exact = {"X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "same-origin", "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Resource-Policy": "same-origin"}
+    for k, v in exact.items():
+        assert re.search(rf'add_header {k} "{v}" always;', h), k
+    assert re.search(r'add_header Permissions-Policy "[^"]*camera=\(\)[^"]*microphone=\(\)[^"]*geolocation=\(\)[^"]*" always;', h)
+    assert re.search(r'add_header Content-Security-Policy "[^"]+" always;', h)
     csp = re.search(r"Content-Security-Policy \"([^\"]+)\"", h).group(1)
-    assert "script-src 'self'" in csp and "unsafe-eval" not in csp and "script-src 'unsafe-inline'" not in csp and "frame-ancestors 'none'" in csp and "object-src 'none'" in csp
+    directives = {d.split()[0]: d.split()[1:] for d in (x.strip() for x in csp.split(";")) if d}
+    assert directives["default-src"] == ["'self'"] and directives["script-src"] == ["'self'"] and directives["frame-ancestors"] == ["'none'"] and directives["object-src"] == ["'none'"]
+    assert directives["base-uri"] == ["'none'"] and directives["form-action"] == ["'self'"] and directives["connect-src"] == ["'self'"] and directives["style-src"] == ["'self'"]
+    assert "unsafe-eval" not in csp and "'unsafe-inline'" not in " ".join(directives["script-src"] + directives["default-src"] + directives["style-src"])
     assert "https:" not in csp and "*" not in csp.replace("'self'", "")
 
 
@@ -245,7 +258,9 @@ def test_db_configs_have_no_trust_and_no_literal_passwords():
     sql = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "web" / "docker" / "db").glob("*.sql"))
     sh = (ROOT / "web" / "docker" / "db" / "init" / "01-roles.sh").read_text(encoding="utf-8")
     assert not re.search(r"(?i)PASSWORD\s+'[^']+'", sql + sh), "SQL/스크립트에 리터럴 비밀번호"
-    assert "NOSUPERUSER" in sh and "NOCREATEROLE" in sh and "NOREPLICATION" in sh and "REVOKE ALL ON DATABASE ytweb FROM PUBLIC" in sh
+    for role, pw in (("ytweb_owner", "owner_pw"), ("ytweb_app", "app_pw")):
+        assert re.search(rf"CREATE ROLE {role} LOGIN PASSWORD :'{pw}'\s+NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS", sh), role
+    assert "REVOKE ALL ON DATABASE ytweb FROM PUBLIC" in sh and "GRANT CONNECT ON DATABASE ytweb TO ytweb_app" in sh
     grants = (ROOT / "web" / "docker" / "db" / "schema-grants.sql").read_text(encoding="utf-8")
     assert "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ytweb_app" in grants and "ALL PRIVILEGES" not in grants.upper() and "SUPERUSER" not in grants.upper()
 
@@ -254,11 +269,12 @@ def test_db_configs_have_no_trust_and_no_literal_passwords():
 
 def test_python_lock_files_are_pinned_hashed_registry_only():
     for rel in ("web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/docker/requirements-ytitle.txt"):
-        txt = (ROOT / rel).read_text(encoding="utf-8").replace("\\\n", " ")
+        raw = (ROOT / rel).read_text(encoding="utf-8")
+        txt = "\n".join(re.sub(r"\s+#.*$", "", l) for l in raw.splitlines()).replace("\\\n", " ")  # 주석 처리된 해시는 해시가 아니다
         reqs = [l for l in txt.splitlines() if re.match(r"^[A-Za-z0-9_.\-]+(\[.*\])?==", l)]
         assert len(reqs) >= 3, rel
         for l in reqs:
-            assert "--hash=sha256:" in l, (rel, l[:40])
+            assert re.search(r"--hash=sha256:[0-9a-f]{64}", l), (rel, l[:40])
         assert not re.search(r"^\s*(-e\b|git\+|https?://|--index-url|--extra-index-url|--find-links|-f\s)", txt, re.M), rel
         assert "@" not in re.sub(r"--hash=sha256:[0-9a-f]+", "", " ".join(reqs)), rel  # 직접 URL 의존성(name @ url) 금지
 

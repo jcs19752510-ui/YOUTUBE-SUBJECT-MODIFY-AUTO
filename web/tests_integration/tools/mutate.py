@@ -100,7 +100,7 @@ def copy_repo(dst: Path):
 def one(mid: str, slot: int, rnd: int) -> dict:
     _, desc, rel, old, new, build, tests = MAP[mid]
     project = f"harness-tmp-intm{slot}"
-    port = 18090 + slot
+    port = 18080       # 허용된 호스트 게시 포트는 18080 하나뿐이다: 변이 스택은 주 스택을 내린 뒤 하나씩(직렬) 이 포트로 띄운다
     work = MUT / f"{mid}_r{rnd}"
     repo = work / "repo"
     t0 = time.time()
@@ -172,7 +172,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--round", type=int, required=True)
     ap.add_argument("--only", default="")
-    ap.add_argument("--slots", type=int, default=2)
+    ap.add_argument("--slots", type=int, default=1)
     a = ap.parse_args()
     ids = [i for i in (a.only.split(",") if a.only else [m[0] for m in M]) if i]
     MUT.mkdir(parents=True, exist_ok=True)
@@ -180,6 +180,7 @@ def main():
     results: list[dict] = json.loads(out.read_text()) if (out.exists() and a.only) else []
     done = {r["id"] for r in results}
     ids = [i for i in ids if i not in done]
+    assert a.slots == 1, "호스트 포트가 18080 하나뿐이므로 변이 스택은 직렬로만 돈다"
     free = list(range(1, a.slots + 1))
     lk = threading.Lock()
 

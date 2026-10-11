@@ -269,6 +269,17 @@ def test_pin_lock_doubles_and_caps(app, clock):
     assert waits[0] <= 300 and waits[1] <= 600 and waits[1] > waits[0] and max(waits) <= 3600, waits
 
 
+def test_pin_guess_via_settings_endpoint_is_locked_too(app, clock):
+    """세션을 이미 가진 공격자가 PIN 변경/해제 요청의 current_pin 으로 추측해도 같은 잠금에 걸린다(실패 기록이 롤백되지 않는다)."""
+    with TestClient(app, base_url=ORIGIN) as c:
+        t = login(c).json()["csrf_token"]
+        _set_pin(c, t, "4821")
+        codes = [c.patch("/api/v1/settings", headers=hdr(t), json={"pin": {"action": "clear", "current_pin": f"{i:04d}"}}).status_code for i in range(6)]
+        assert codes == [401, 401, 401, 401, 429, 429], codes
+        clock.advance(minutes=5, seconds=1)
+        assert c.patch("/api/v1/settings", headers=hdr(t), json={"pin": {"action": "clear", "current_pin": "4821"}}).status_code == 200
+
+
 @pytest.mark.parametrize("pin", ["", "abcd", "12", "1" * 13, "12 34", "１２３４", "1234\n", "0" * 64, "'; DROP TABLE settings_kv;--"])
 def test_pin_format_is_validated_on_set(client, csrf, pin):
     r = client.patch("/api/v1/settings", headers=hdr(csrf), json={"pin": {"action": "set", "new_pin": pin}})
@@ -324,6 +335,17 @@ def test_session_issue_rate_limit_and_foreign_bucket_isolated(settings, engine, 
         assert login(c).status_code == 200
 
 
+def test_foreign_origin_flood_has_its_own_cap(settings, engine, seeded, clock, monkeypatch):
+    """교차 출처 요청은 소유자 한도를 쓰지 않는 대신 자체 한도(분당 global_per_min)에 걸려야 한다 - 무제한 403 폭주 방지."""
+    ft = FakeTime()
+    app = build_app(settings, clock, rate_limits=RateLimits(global_per_min=30, write_per_min=30, auth_per_min=10), time_fn=ft, monkeypatch=monkeypatch)
+    with TestClient(app, base_url=ORIGIN) as c:
+        codes = [c.post("/api/v1/auth/session", headers={"Origin": "http://evil.com"}).status_code for _ in range(45)]
+        assert codes.count(403) == 30 and codes.count(429) == 15, (codes.count(403), codes.count(429))
+        ft.t += 61
+        assert c.post("/api/v1/auth/session", headers={"Origin": "http://evil.com"}).status_code == 403
+
+
 def test_body_size_limits(client, csrf):
     big = "x" * (1024 * 1024 + 10)
     r = client.patch("/api/v1/settings", headers={**hdr(csrf), "content-type": "application/json"}, content=json.dumps({"tone": [big]}))
@@ -374,11 +396,16 @@ def test_no_docs_or_admin_surface(client, path):
     assert "swagger" not in r.text.lower() and "openapi" not in r.text.lower()
 
 
-def test_websocket_rejected(client):
+def test_websocket_rejected_with_policy_violation_code(client):
     from starlette.websockets import WebSocketDisconnect
-    with pytest.raises((WebSocketDisconnect, RuntimeError, Exception)):
+    with pytest.raises(WebSocketDisconnect) as ei:
         with client.websocket_connect("/api/v1/ws"):
             pass
+    assert ei.value.code == 1008  # GuardMiddleware 가 정책 위반(1008)으로 닫는다 - 라우트 부재로 인한 우연한 거부가 아니다
+    with pytest.raises(WebSocketDisconnect) as ei:
+        with client.websocket_connect("/api/v1/auth/me"):
+            pass
+    assert ei.value.code == 1008
 
 
 def test_cors_not_enabled_and_no_wildcard(client):

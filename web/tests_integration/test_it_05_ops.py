@@ -558,8 +558,8 @@ def test_it_503_migration_0001_to_0002_on_deployed_db_revokes_app_dml_and_is_rev
 # ─────────────────────────── 기동 순서(콜드 스타트) ───────────────────────────
 
 @pytest.mark.destructive
-def test_it_053_cold_start_order_from_docker_events_and_single_loopback_publish():
-    """IT-053: 컨테이너를 모두 내렸다가(볼륨은 유지) 다시 올릴 때의 실제 이벤트 시각으로 기동 순서를 확인한다:
+def test_it_505_cold_start_order_from_docker_events_and_single_loopback_publish():
+    """IT-505: 컨테이너를 모두 내렸다가(볼륨은 유지) 다시 올릴 때의 실제 이벤트 시각으로 기동 순서를 확인한다:
     db healthy → migrate 시작 → migrate 정상 종료(코드 0) → api·worker 시작 → api healthy → web 시작 → web healthy.
     호스트 게시는 web 의 127.0.0.1:<시험 포트> 하나뿐이다. 검증: D-01, D-02, D-07b, NFR-W04, W-016"""
     since = int(time.time())

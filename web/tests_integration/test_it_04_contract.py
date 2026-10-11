@@ -798,7 +798,7 @@ def test_it_427_migration_0001_to_0002_keeps_data_and_tightens_app_role():
 # ─────────────────────────── 사유 코드·감사 action 표 ───────────────────────────
 
 _SKIP_REACHABLE = {"approval_missing", "approval_tampered", "approval_used", "approval_expired", "plan_mismatch", "suggestion_state", "suggestion_blocked", "video_excluded",
-                   "pending_change_exists", "limit_interval", "limit_count"}                       # IT-112(IT-062) 가 실제로 일으킨다
+                   "pending_change_exists", "limit_interval", "limit_count"}                       # IT-112 가 실제로 일으킨다
 _SKIP_UNREACHABLE = {
     "title_invalid": "새 제목은 plan_hash 에 묶여 있어 DB 를 바꾸면 plan_mismatch 가 먼저 나온다(설정 파일의 제목 규격을 승인 뒤에 바꿔야만 도달)",
     "same_as_current": "영상 제목을 바꾸면 plan_hash 가 달라져 plan_mismatch 가 먼저 나온다",
@@ -960,6 +960,18 @@ _DOCUMENTED_ERROR_CODES = [
 ]
 
 
+_DOC_MISSING_CODES = {"session_required"}      # DEF-7-005: 서버가 가장 흔하게 내는 401 코드인데 API.md 어디에도 적혀 있지 않다
+
+
+@pytest.mark.xfail(strict=True, reason="DEF-7-005: API.md 가 401 `session_required`(세션 없음·만료)를 어느 절에도 적지 않았다(서버는 모든 보호 엔드포인트에서 이 코드를 낸다). 문서에 추가하면 XPASS(strict 실패)로 알려 주므로 이 표시와 _DOC_MISSING_CODES 를 지운다")
+def test_it_435_api_md_documents_session_required_error_code():
+    """IT-435(결함 고정, DEF-7-005): 세션 없이 보호 엔드포인트를 부르면 401 `session_required` 가 나오고(실제), 같은 코드가 API.md 에 적혀 있어야 한다(프런트가 이 코드로 세션 만료 화면을 띄운다).
+    검증: API.md 1-7, S-W02"""
+    r = Api().get("/api/v1/dashboard")
+    assert r.status_code == 401 and r.json()["code"] == "session_required"
+    assert "`session_required`" in API_MD
+
+
 def test_it_421_zz_documented_error_codes_vs_observed_session_wide_and_hints_are_korean():
     """IT-421: (B 트랙 시험 전체를 한 번에 돌린 세션에서만 의미가 있다) (a) API.md 에 적힌 오류 코드(51개)가 모두 문서에 실제로 있다 (b) 서버가 낸 모든 오류 코드는
     API.md 에 적혀 있다(문서에 없는 코드를 내보내면 실패) (c) 문서화된 코드는 이 세션에서 관찰됐거나 도달 불가 사유가 있다 (d) 관찰된 모든 오류 응답에 한국어 title·hint 가 있다
@@ -967,10 +979,12 @@ def test_it_421_zz_documented_error_codes_vs_observed_session_wide_and_hints_are
     if len(OBSERVED) < 3000:
         pytest.skip("B 트랙 전체 세션(02+03+04 함께)에서만 판정한다 — 관찰 기록이 부족함: %d" % len(OBSERVED))
     for code in _DOCUMENTED_ERROR_CODES:
+        if code in _DOC_MISSING_CODES:
+            continue          # API.md 에 아직 없는 것으로 확인된 코드는 IT-435 (결함 DEF-7-005 고정)가 따로 본다
         assert f"`{code}`" in API_MD or f"{code}`" in API_MD, f"{code}: 목록과 API.md 가 어긋남"
     errs = [(m, p, st, code, body) for m, p, st, code, body in OBSERVED if st >= 400]
     observed_codes = {code for _, _, _, code, _ in errs if code}
-    undocumented = sorted(c for c in observed_codes if f"`{c}`" not in API_MD and c not in ("not_found", "method_not_allowed"))
+    undocumented = sorted(c for c in observed_codes if f"`{c}`" not in API_MD and c not in ("not_found", "method_not_allowed") and c not in _DOC_MISSING_CODES)
     assert not undocumented, f"서버가 내보냈지만 API.md 에 없는 오류 코드: {undocumented}"
     never = sorted(c for c in _DOCUMENTED_ERROR_CODES if c not in observed_codes and c not in _UNREACHABLE_DOC_CODES)
     assert not never, f"문서에는 있으나 이 세션에서 한 번도 관찰되지 않았고 도달 불가 사유도 없는 코드: {never}"
@@ -1002,6 +1016,8 @@ def test_it_423_zz_audit_actions_observed_match_api_md_list():
     도달 불가 사유가 있다. 검증: API.md 7장, S-W16"""
     if len(OBSERVED) < 3000:
         pytest.skip("B 트랙 전체 세션에서만 판정 — 관찰 기록 부족: %d" % len(OBSERVED))
+    from itlib_b import harvest_actions
+    harvest_actions()                       # 마지막 시험이 남긴 DB 의 action 까지 합친다
     seen = set(ACTIONS_SEEN)
     extra = sorted(seen - _DOC_ACTIONS - {"batch.item.deferred"})
     assert not extra, f"API.md 7장 목록에 없는 감사 action: {extra}"

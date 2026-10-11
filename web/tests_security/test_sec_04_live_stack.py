@@ -565,6 +565,33 @@ def test_db_runtime_settings_and_password_storage():
     assert all(l.endswith("SCRAM-SHA-256$") or "SCRAM-SHA-256$" in l for l in r.stdout.strip().splitlines()) and len(r.stdout.strip().splitlines()) == 2, r.stdout
 
 
+HOSTILE_NAMES = ["../x.dump", "..%2fx.dump", "/etc/passwd.dump", "a b.dump", "a;id.dump", "$(id).dump", "`id`.dump", "a|b.dump", "a&b.dump", "x.dump\n", "x", "x.sql", ".dump", "a\u202e.dump", "x.dump/../../etc/passwd", "-rf.dump x"]
+
+
+def test_ytweb_db_admin_script_rejects_hostile_file_names():
+    """백업·복원 스크립트(DB 컨테이너 안, 소유자 권한)에 파일 이름으로 명령/경로를 주입할 수 없다."""
+    for cmd in ("dump", "list", "restore", "remove"):
+        for name in HOSTILE_NAMES:
+            r = docker("exec", cname("db"), "ytweb-db", cmd, name)
+            assert r.returncode != 0 and "올바르지 않습니다" in r.stderr + r.stdout, (cmd, repr(name), r.returncode, (r.stdout + r.stderr)[:120])
+    r = docker("exec", cname("db"), "bash", "-c", "ls /backups /tmp | grep -c -E 'x\\.dump|passwd' || true")
+    assert r.stdout.strip() in ("0", "")
+
+
+def test_ytweb_db_dump_and_list_work_with_a_good_name_and_leave_no_secrets():
+    name = f"sec-{uuid.uuid4().hex[:8]}.dump"
+    try:
+        r = docker("exec", cname("db"), "ytweb-db", "dump", name)
+        assert r.returncode == 0, r.stderr
+        assert docker("exec", cname("db"), "ytweb-db", "list", name).returncode == 0
+        mode = docker("exec", cname("db"), "stat", "-c", "%a %U", f"/backups/{name}").stdout.strip()
+        assert mode == "600 postgres", mode  # umask 077
+        txt = docker("exec", cname("db"), "bash", "-c", f"pg_restore -f - /backups/{name} | grep -c -i -E 'PASSWORD|approval_hmac|SCRAM-SHA' || true").stdout.strip()
+        assert txt == "0", "백업(덤프)에 비밀번호/서명 키 흔적이 있다"
+    finally:
+        docker("exec", cname("db"), "ytweb-db", "remove", name)
+
+
 # ───────────── 앱 흐름(실스택) : 승인 키·감사 체인 ─────────────
 
 def test_end_to_end_flow_on_postgres_keeps_audit_chain_and_key_permissions(sess):
@@ -577,12 +604,14 @@ def test_end_to_end_flow_on_postgres_keeps_audit_chain_and_key_permissions(sess)
             break
         time.sleep(1)
     assert j["status"] == "succeeded", j
-    vids = sess.get("/api/v1/videos?excluded=false&page_size=5").json()["items"]
-    vid = vids[0]["video_id"]
-    r = sess.send("POST", f"/api/v1/videos/{vid}/suggestions", {"count": 3})
-    assert r.status == 201, r.text
-    ok = [s for s in r.json() if s["validation_result"] in ("pass", "warn") and s["status"] == "candidate"]
-    assert ok
+    ok = []
+    for v in sess.get("/api/v1/videos?excluded=false&page_size=40").json()["items"]:
+        r = sess.send("POST", f"/api/v1/videos/{v['video_id']}/suggestions", {"count": 3})
+        assert r.status == 201, r.text
+        ok = [s for s in r.json() if s["validation_result"] in ("pass", "warn") and s["status"] == "candidate"]
+        if ok:
+            break
+    assert ok, "승인할 수 있는 후보가 없다(스택을 새로 만들어 다시 실행)"
     r = sess.send("POST", f"/api/v1/suggestions/{ok[0]['id']}/approve", {"approver": "보안점검"})
     assert r.status == 200, r.text
     st = dexec("api", "stat", "-c", "%a %u %g", "/var/lib/ytweb/secrets/approval_hmac.key").stdout.strip()
@@ -596,9 +625,14 @@ def test_end_to_end_flow_on_postgres_keeps_audit_chain_and_key_permissions(sess)
 
 
 def test_xss_and_csv_payloads_through_real_stack(sess):
-    vid = sess.get("/api/v1/videos?excluded=false&page_size=1").json()["items"][0]["video_id"]
-    r = sess.send("POST", f"/api/v1/videos/{vid}/suggestions", {"count": 3})
-    sid = [x["id"] for x in r.json() if x["status"] in ("candidate", "blocked")][0]
+    sid = None
+    for v in sess.get("/api/v1/videos?excluded=false&page_size=30&order=desc").json()["items"]:
+        r = sess.send("POST", f"/api/v1/videos/{v['video_id']}/suggestions", {"count": 3})
+        cand = [x["id"] for x in r.json() if x["status"] in ("candidate", "blocked")]
+        if cand:
+            sid = cand[0]
+            break
+    assert sid is not None
     e = sess.send("PATCH", f"/api/v1/suggestions/{sid}", {"title": f"<img src=x onerror=alert(1)> {uuid.uuid4().hex[:8]} 순서"})
     assert e.status == 200 and e.json()["status"] == "blocked"
     assert e.headers["content-type"].startswith("application/json") and e.headers["x-content-type-options"] == "nosniff"
