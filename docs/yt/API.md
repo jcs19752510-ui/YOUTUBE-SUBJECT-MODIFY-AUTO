@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |---|---|
-| 문서 상태 | **초안(검증 대기)** — 6단계 독립 검증 4건이 진행 중이라 결함이 나오면 갱신된다. 상단 "검증 대기 항목" 표는 `DESIGN.md` 맨 위에 있다 |
-| 작성 기준일 | 2026-10-10 |
-| 근거 | 실제 코드 `web/backend/ytweb/routers/*.py`, `ytweb/domain/schemas.py`, `ytweb/core/*.py`(직접 읽음), 앱 객체에서 직접 생성한 `docs/yt/openapi.json`(31개 동작), 임시 SQLite+워커로 실제 호출해 얻은 응답 예시(이 문서의 JSON 예시는 모두 그 호출 결과이며 값만 줄였다) |
+| 문서 상태 | **초안** — 2026-10-11 11단계 최종 대조 1차 반영(8단계 전체 시험 전). 독립 검증 결과로 갱신될 수 있다. "검증 대기 항목" 표는 `DESIGN.md` 맨 위에 있다 |
+| 작성 기준일 | 2026-10-10 (2026-10-11 대조 갱신) |
+| 근거 | 실제 코드 `web/backend/ytweb/routers/*.py`, `ytweb/domain/schemas.py`, `ytweb/core/*.py`(직접 읽음), 앱 객체에서 직접 생성한 `docs/yt/openapi.json`(34개 동작, 31개 경로), 임시 SQLite+워커로 실제 호출해 얻은 응답 예시(이 문서의 JSON 예시는 그 호출 결과이며 값만 줄였다. 2026-10-11 추가·변경분은 코드를 읽어 적었고 새로 호출해 본 것은 아니다) |
 | 짝 문서 | `DESIGN.md`(Part B 설계서), `WEB_DESIGN.md`(압축 설계), `openapi.json`(기계용 스키마) |
-| 모드 | **M1 데모 전용**: 유튜브·AI를 실제로 호출하지 않는다. 모든 영상·성과는 시연용 가상 데이터 |
+| 모드 | **기본은 데모**: 구글 연결 파일이 없으면 유튜브·AI를 호출하지 않고 모든 영상·성과는 시연용 가상 데이터. 구글 연결(읽기)·실제 제목 수정(M2·M3)은 코드로 만들어졌고 가짜 구글로 자동 시험했을 뿐 **실제 구글에는 접속해 본 적이 없다**. AI는 모의 제안기뿐 |
 | 엔드포인트 ID | `EVT-W01`~`EVT-W31`(DESIGN.md 부록 A와 같은 번호) |
 
 > 읽는 법: 사람이 쓰는 화면은 이 API를 그대로 호출한다. 직접 호출해 볼 때는 2장의 "세션 시작" 순서를 지켜야 한다. 계약(스키마)의 최종 기준은 `openapi.json`이지만, 그 파일에는 아래 "알려진 스키마 한계"(9장)가 있어 오류 응답과 일부 응답 본문은 이 문서가 더 정확하다.
@@ -130,7 +130,7 @@ curl -b jar.txt -X POST -H 'Origin: http://127.0.0.1:8080' -H 'X-CSRF-Token: uQo
   "queue": {"pending_items": 0, "next_run_date": null}
 }
 ```
-`today`는 KST 하루 기준 반영 건수와 하루 상한, `quota`는 태평양 시간 기준 API 사용 단위. 호출할 때마다 만료된 승인을 `expired`로 정리한다. `active_job`은 진행 중 작업 1건(`JobOut`)이거나 `null`.
+`mode`는 실제 수정 3조건(`YTWEB_LIVE_WRITE=1`·쓰기 토큰 연결·허용 영상 1개 이상)이 모두 맞으면 `"live"`, 아니면 `"demo"`이고 `live_enabled`는 같은 조건의 불리언이다(위 예시는 데모). `google.mode`는 연결 파일이 있으면 `"read"`, 없으면 `"demo"`, `google.connected`는 읽기 로그인 여부. 화면의 상단 띠는 이 값으로 "실제 수정 모드 / 구글 연결됨(읽기) / 데모 모드"를 고른다. `today`는 KST 하루 기준 반영 건수와 하루 상한, `quota`는 태평양 시간 기준 API 사용 단위. 호출할 때마다 만료된 승인을 `expired`로 정리한다. `active_job`은 진행 중 작업 1건(`JobOut`)이거나 `null`.
 
 ### EVT-W23 `GET /api/v1/jobs/{job_id}`
 `job_id`는 UUID(36자). 응답 200 `JobOut`:
@@ -165,7 +165,7 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 실제 수정은 ①`YTWEB_LIVE_WRITE=1` ②쓰기 토큰 연결 ③`YTWEB_LIVE_ALLOWED_VIDEOS` 1개 이상, 세 조건이 모두 맞을 때만 일어난다. 이때 배치 사전 점검의 `confirm_text` 는 `실제 실행 N건`(데모는 `실행 N건`)이고, 허용 목록에 없는 영상은 초안 단계에서 막히며(`blocked`에 `live_not_allowed`), 롤백도 같은 목록을 적용한다(409 `live_not_allowed`). 변경 기록의 `mode` 는 `live`/`demo` 로 구분한다.
 
 ### EVT-W01~W04 `GET /healthz`, `/api/healthz`, `/readyz`, `/api/readyz`
-세션·CSRF·Host 검사 없음(컨테이너 헬스체크용). `healthz` → 200 `{"status":"ok"}`. `readyz` → 200 `{"status":"ok","db":"ok","mode":"demo"}`, DB 연결 실패 시 **503** `{"status":"degraded","db":"down","mode":"demo"}`(이 503은 `openapi.json`에 없음). 구글·AI 연결 상태는 아직 포함하지 않는다(M2·M3).
+세션·CSRF·Host 검사 없음(컨테이너 헬스체크용). `healthz` → 200 `{"status":"ok"}`. `readyz` → 200 `{"status":"ok","db":"ok","mode":"demo"}`(`mode` 는 서버 기본 모드 값 `demo` 고정이며 실제 수정 상태를 나타내지 않는다 — 그건 `/dashboard`·`/google/status`), DB 연결 실패 시 **503** `{"status":"degraded","db":"down","mode":"demo"}`(이 503은 `openapi.json`에 없음). 구글·AI 연결 상태는 아직 포함하지 않는다(M2·M3).
 
 ---
 
@@ -194,7 +194,7 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 `limits`는 이 영상에 지금 새 변경을 담을 수 있는지(간격 72시간, 영상당 3회, 최소 노출수, 하루 상한)를 보여 준다.
 
 ### EVT-W11 `POST /api/v1/videos/sync`
-(데모) 가상 영상 200개를 만들거나 새로고침하는 작업을 큐에 넣는다. CSRF 필요, 본문 없음. 응답 **202** `JobOut`. 이미 `queued/running`인 같은 작업이 있으면 **새로 만들지 않고 그 작업을 돌려준다**(연타 방지). 같은 입력이면 결과가 같고 다시 실행해도 200개 그대로(중복 없음). 이미 우리 앱이 제목을 바꾼 영상은 되돌리지 않는다.
+구글 읽기 로그인이 없으면 가상 영상 200개를 만들거나 새로고침하는 작업을, 로그인이 되어 있으면 내 채널 영상(최대 2,000개, 읽기만)을 읽어 오는 작업을 큐에 넣는다(`result.source:"youtube"`). 데모 영상에 제안·배치·변경 기록이 있으면 작업이 `demo_data_in_use`("데모 기록이 있어 불러올 수 없습니다")로 실패하고, 구글 오류는 `google_*` 코드로 실패한다. CSRF 필요, 본문 없음. 응답 **202** `JobOut`. 이미 `queued/running`인 같은 작업이 있으면 **새로 만들지 않고 그 작업을 돌려준다**(연타 방지). 같은 입력이면 결과가 같고 다시 실행해도 200개 그대로(중복 없음). 이미 우리 앱이 제목을 바꾼 영상은 되돌리지 않는다.
 
 ### EVT-W12 `POST /api/v1/videos/{video_id}/suggestions`
 한 영상의 제안을 **즉시(동기)** 만들고 검증한다. 본문 `{"count": 1~5}`(생략하면 설정 `suggestions_per_video`, 기본 3). 응답 **201** `Suggestion[]`:
@@ -283,13 +283,14 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 `Batch`(항목·사전 점검 포함). `status`: `draft`(초안) → `queued`(실행 확정, 대기 중) → `running`(**실제로 처리 중인 항목이 있을 때만**) → `done`. 사용자 중지 `cancelled`. `paused`는 정의만 있고 M1에서 쓰지 않는다. 배치 상태에 `failed`는 없다(실패는 항목 상태와 `counts.failed`). 항목 `status`: `pending|running|success|failed|skipped|cancelled`; `skip_reason`은 `[코드] 한국어 사유` 형식. 404 `batch_not_found`.
 
 ### EVT-W21 `POST /api/v1/batches/{batch_id}/execute` (Idempotency-Key 필수)
-본문 `{"confirm_text": "실행 1건"}` — 문구는 **정확히 `실행 {대기 항목 수}건`**(사전 점검의 `confirm_text`). 실행 확정 시점에 모든 항목의 승인·제외·한도를 다시 확인하고(하나라도 어긋나면 전체 거부), 예정일을 배정하며, 제안을 `queued`로 바꾸고, `batch.execute` 작업을 큐에 넣는다. 응답 **202** `{batch, job}`. 반영은 워커가 비동기로 한다 — 오늘 몫(하루 상한 − 이미 반영한 수)만 오늘 처리하고 나머지는 예정일에 맞춰 워커가 자동으로 처리한다(꺼져 있다 켜져도 **놓친 예약을 몰아서 실행하지 않는다**).
+본문 `{"confirm_text": "실행 1건"}` — 문구는 **정확히 `실행 {대기 항목 수}건`**(실제 수정 모드에서는 `실제 실행 {대기 항목 수}건`. 어느 쪽이든 사전 점검의 `confirm_text` 값). 화면의 "A/B 테스트 중이 아님" 확인란은 화면 단계이며 이 요청에는 담기지 않는다. 실행 확정 시점에 모든 항목의 승인·제외·한도를 다시 확인하고(하나라도 어긋나면 전체 거부), 예정일을 배정하며, 제안을 `queued`로 바꾸고, `batch.execute` 작업을 큐에 넣는다. 응답 **202** `{batch, job}`. 반영은 워커가 비동기로 한다 — 오늘 몫(하루 상한 − 이미 반영한 수)만 오늘 처리하고 나머지는 예정일에 맞춰 워커가 자동으로 처리한다(꺼져 있다 켜져도 **놓친 예약을 몰아서 실행하지 않는다**).
 | 오류 | 의미 |
 |---|---|
 | 409 `batch_not_draft` | 이미 실행했거나 취소된 배치 |
 | 422 `confirm_text_mismatch` | 확인 문구 불일치(`detail`에 정답 문구) |
 | 409 `precheck_stale` | 사전 점검 이후 항목 상태 변동(승인 만료·한도·제외). 배치를 취소하고 새로 만들어야 함 |
 | 400 / 422 / 409 `idempotency_*` | 1-6 참고 |
+항목 단위로는: 실행 확정 때와 실제 수정 모드 설정이 달라졌으면 그 항목은 `skipped` + `[live_mode_changed]`, 허용 영상이 아니면 `[live_not_allowed]` 로 건너뛴다(아무것도 바뀌지 않음).
 
 ### EVT-W22 `POST /api/v1/batches/{batch_id}/cancel`
 본문 없음, CSRF 필요(멱등성 키 불필요). `pending` 항목은 `cancelled`(사유 `[cancelled] 사용자가 배치를 중지했습니다.`, **초안이면 `[cancelled] 사용자가 초안을 버렸습니다.`**)로, 진행 중(`running`) 항목은 끝날 때까지 둔다. 제안은 승인이 아직 유효하면 `approved`, 아니면 `expired`로 돌아온다. **초안(draft)도 취소할 수 있다 — 화면의 [초안 버리기]가 이 호출이며, 담겨 있던 제안은 바로 새 배치에 다시 담을 수 있다.** 같은 배치에 대한 동시 취소·실행은 배치 행 잠금으로 한 줄로 서므로 한 번만 적용되고 나머지는 409다(취소 뒤 실행 `batch_not_draft`, 두 번째 취소 `batch_not_cancellable`). 감사 `batch.cancel`(`detail`: `cancelled_items`, `was_draft`). 응답 200 `Batch`(`status:"cancelled"`). 409 `batch_not_cancellable`(이미 `done`/`cancelled`).
@@ -297,7 +298,7 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 ### 항목 처리 중 사유 코드 (`skip_reason`의 `[코드]`, 변경 이력의 `error_code`)
 | 구분 | 코드 |
 |---|---|
-| 건너뜀(`skipped`, 아무것도 바꾸지 않음) | `approval_missing` `approval_tampered` `approval_used` `approval_expired` `plan_mismatch` `suggestion_state` `suggestion_blocked` `title_invalid` `same_as_current` `video_excluded` `pending_change_exists` `limit_interval` `limit_count` `limit_impressions` `limit_daily` `quota_exhausted` `title_changed` `video_changed` `batch_not_active` `suggestion_missing` `cancelled` |
+| 건너뜀(`skipped`, 아무것도 바꾸지 않음) | `approval_missing` `approval_tampered` `approval_used` `approval_expired` `plan_mismatch` `suggestion_state` `suggestion_blocked` `title_invalid` `same_as_current` `video_excluded` `pending_change_exists` `limit_interval` `limit_count` `limit_impressions` `limit_daily` `quota_exhausted` `title_changed` `video_changed` `batch_not_active` `suggestion_missing` `cancelled` `live_not_allowed` `live_mode_changed` |
 | 실패(`failed`, 시도했으나 실패) | `read_failed` `video_not_found` `snippet_invalid` `body_invalid` `update_failed` `result_unknown`(반영됐을 수도 있음 — 유튜브에서 확인) `internal_error` `verify_failed`(제목은 바뀌었으나 보존 항목 검증 불일치 — 변경은 `success`로 남고 롤백 가능) `interrupted`(재시작 복구에서 제목이 바뀌지 않았음을 확인) |
 - **이월(`deferred`)**: 오늘 몫(하루 상한)을 다 쓴 뒤 도달한 항목은 영구 건너뜀이 아니라 `pending`으로 되돌아가 예정일이 다음 KST 날로 옮겨지고, 감사 로그에 `batch.item.deferred`가 남는다(6단계 DEF-VB-01). `limit_daily`로 건너뛰는 경우는 하루 상한 외 다른 한도가 함께 걸린 때뿐이다.
 - 데모 모드의 교체 한도 판정은 '재변경 최소 노출수'를 0으로 완화한다(DEC-042 D1, 72시간 간격·횟수 한도는 그대로). 리포트의 '데이터 부족' 기준(노출 1,000)은 바뀌지 않는다.
@@ -326,6 +327,9 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 | 422 `typed_video_id_mismatch` | 입력한 ID가 대상과 다름 |
 | 409 `later_change_exists` | 이후 같은 영상에 다른 변경(success/planned)이 있음 |
 | 409 `backup_invalid` / `already_restored` / `pending_change_exists` | 백업 불일치 / 이미 원래 제목 / 진행 중 변경 있음 |
+| 409 `live_mode_mismatch` | 변경을 반영한 때와 실제 수정 모드 설정이 달라 되돌리지 않음(`hint`: 같은 모드로 맞추거나 Studio 에서 직접) |
+| 409 `live_not_allowed` | 실제 수정 모드에서 허용 영상이 아님(Studio 에서 직접 되돌리거나 허용 목록에 추가) |
+| 409 `live_changed_since_apply` | 실제 수정 모드에서 반영한 뒤 제목·설명·태그·카테고리·언어가 유튜브에서 바뀌어 백업으로 덮어쓰지 않고 거부(`detail`에 바뀐 항목). 반영 중 보존 항목이 손상된 변경(`verify_failed`)은 예외로 통째 복원. 데모 모드 롤백은 영향 없음 |
 | 429 `quota_exhausted` | 오늘 쿼터 부족(태평양 시간 자정에 초기화) |
 | 502 `gateway_error` | 재조회·갱신 실패(결과 불확실이면 `planned`가 남을 수 있음 — Studio에서 확인) |
 
@@ -343,7 +347,7 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
   "prev_hash": "b934ceae...", "hash": "d0fa29e8..."}],
  "total": 9, "page": 1, "page_size": 2, "chain_ok": true}
 ```
-`chain_ok=false`는 기록이 중간에서 바뀌거나 지워졌음을 뜻한다(꼬리 삭제는 이 방법만으로는 탐지 못한다 — DESIGN.md W9장). 최신순. 주요 `action`: `session.create/denied/delete`, `settings.update`, `videos.sync_request`·`videos.sync`, `suggestion.generate_request/generate/generate_failed/edit/approve/reject`, `batch.create/execute/cancel`, `batch.item.skipped/failed/recovered`, `change.apply/rollback/rollback_failed`. 재시작 복구로 확정된 반영도 `change.apply`(`actor:worker`, `detail`에 `recovered:true, reason:"restart_recovery"`와 변경·영상·제안·배치 ID)를 남기고, `batch.item.recovered`의 `detail`에도 `batch_id`·`video_id`·`change_id`가 들어간다. 비밀·PIN 값·본문 전체는 기록하지 않는다. `actor`: `owner`(세션), `web`(화면 요청), `worker`.
+`chain_ok=false`는 기록이 중간에서 바뀌거나 지워졌음을 뜻한다(꼬리 삭제는 이 방법만으로는 탐지 못한다 — DESIGN.md W9장). 최신순. 주요 `action`: `session.create/denied/delete`, `settings.update`, `videos.sync_request`·`videos.sync`, `suggestion.generate_request/generate/generate_failed/edit/approve/reject`, `batch.create/execute/cancel`, `batch.item.skipped/failed/recovered/deferred`, `change.apply/rollback/rollback_failed`, 구글 연결: `google.connect.start`·`google.connect_write.start`·`google.connected`·`google.write_connected`·`google.connect.failed`·`google.disconnected`, `videos.sync.live`. 재시작 복구로 확정된 반영도 `change.apply`(`actor:worker`, `detail`에 `recovered:true, reason:"restart_recovery"`와 변경·영상·제안·배치 ID)를 남기고, `batch.item.recovered`의 `detail`에도 `batch_id`·`video_id`·`change_id`가 들어간다. 비밀·PIN 값·본문 전체는 기록하지 않는다. `actor`: `owner`(세션), `web`(화면 요청), `worker`.
 
 ---
 
@@ -355,6 +359,7 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
  "read_only": {"enable_live": false, "live_allowlist": [],
    "note": "라이브 반영 허용과 허용 영상 목록은 화면에서 바꿀 수 없습니다."}}
 ```
+`read_only` 는 정책 설정 파일(`settings.local.yaml`)의 값이며 `YTWEB_LIVE_WRITE`·`YTWEB_LIVE_ALLOWED_VIDEOS` 를 반영하지 않는다. 실제 수정 상태는 `GET /dashboard`(`mode`/`live_enabled`)와 `GET /google/status`(`live_write_ready`)로 본다.
 
 ### EVT-W30 `PATCH /api/v1/settings`
 본문은 아래 **4개 키만** 허용(섞여 있으면 전체 거부). 하나라도 허용 목록 밖이면 `400 setting_not_allowed`(`enable_live`·`live_allowlist` 포함 — **라이브 허용은 이 API로 켤 수 없다**).
@@ -381,4 +386,5 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 | 일시 | 버전 | 변경 | 사유 |
 |---|---|---|---|
 | 2026-10-10 | v0.1 | 최초 작성(as-built) | STATE §6 "문서 개정 3건"의 3단계 산출물. 코드·실제 호출 결과 기준, 6단계 독립 검증 결과 반영 전 |
+| 2026-10-11 | v0.3 | 11단계 대조 1차: 머리말(모드·근거·34개 동작), 대시보드 `mode`/`live_enabled` 설명, `videos/sync` 실제 읽기, 실행 확인 문구(`실제 실행 N건`), 건너뜀 코드 `live_not_allowed`·`live_mode_changed`, 롤백 오류 `live_mode_mismatch`·`live_not_allowed`·`live_changed_since_apply`, 감사 action 목록, 설정 `read_only` 설명 | 실제 코드·화면 문구와의 한 줄씩 대조 |
 | 2026-10-11 | v0.2 | 수정 단위 W-FIX-BE 반영: 초안 취소 계약·`blocked[].batch_id`·`precheck.notice`·리포트 `notes` 면책 첫 줄·세션 유휴 만료·`session_required` 명시·ID 상한 422·`count_invalid` 정정·복구 감사(`change.apply` recovered) | DEC-046, DEF-7-009·7B-001·7B-002·9-001·9-003·9-004·9-007·7-003~005 |

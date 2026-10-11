@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 문서 상태 | **v2 (2026-10-10) — 구현 결과(as-built)에 맞춰 개정한 압축판.** 원래는 1차 데모(M1) 구현용 속도 우선 설계(DEC-038)였고, 풀 설계서는 `DESIGN.md` **Part B**다. 두 문서가 다르면 Part B와 실제 코드가 기준이며, 아래 "변경 이력"(맨 끝)에 바뀐 곳을 표시했다. 6단계 독립 검증 대기 항목은 `DESIGN.md` 맨 위 표 참고 |
+| 문서 상태 | **v4 (2026-10-11 11단계 대조 1차 반영; 본문 골격은 v2 2026-10-10) — 구현 결과(as-built)에 맞춰 개정한 압축판.** 원래는 1차 데모(M1) 구현용 속도 우선 설계(DEC-038)였고, 풀 설계서는 `DESIGN.md` **Part B**다. 두 문서가 다르면 Part B와 실제 코드가 기준이며, 아래 "변경 이력"(맨 끝)에 바뀐 곳을 표시했다. 6단계 독립 검증 대기 항목은 `DESIGN.md` 맨 위 표 참고 |
 | 근거 | `웹프로그램으로수정요청.md`, DEC-032~042, 1단계 조사 조각 `docs/harness/_parallel/01-axis*.md`, 구현 노트 `docs/harness/units/web-WU-*-note.md`, 실제 코드(개정 근거) |
 | 작성일 | 2026-10-10 |
 | 읽는 사람 | 구현 담당(백엔드 2, 프런트 1, 인프라 1)과 채널 소유자 |
@@ -12,8 +12,8 @@
 | 마일스톤 | 내용 | 라이브 위험 |
 |---|---|---|
 | **M1 (구현·자체 테스트 완료, 독립 검증 대기)** | **데모 모드** 웹 1차: 가짜 영상 200개, 모의 AI 제안, 기존 검증기, 승인, 배치 미리보기·모의 반영, 이력·롤백, 설정, 리포트. `web\scripts\start.ps1`(내부적으로 `docker compose`) 한 번으로 내 PC `http://127.0.0.1:8080` | **없음** — 유튜브·AI 호출 코드가 아예 연결되지 않음 |
-| M2 | 구글 웹 방식 OAuth(읽기)로 내 채널 영상 실제 가져오기 **(코드 구현됨·가짜 구글 시험만, 실제 접속 미수행 — §12)** | 읽기만 |
-| M3 | 실제 AI 어댑터(서비스 확정 후), 쓰기 로그인, 라이브 반영(테스트 영상 1개로 먼저, 사용자 승인) | 사용자 승인 필수 |
+| M2 | 구글 OAuth(데스크톱 앱 클라이언트, 읽기 전용 범위)로 내 채널 영상 실제 가져오기 **(코드 구현됨·가짜 구글 시험만, 실제 접속 미수행 — §12)** | 읽기만 |
+| M3 | 쓰기 로그인·라이브 반영 코드는 **구현됨(가짜 구글 시험만, 실제 접속·실제 제목 변경 미수행 — §12)**. 실제 AI 어댑터는 **미구현**(서비스 미정). 실제 제목 변경은 테스트 영상 1개로 먼저, 사용자 승인 필수 | 사용자 승인 필수 |
 | M4 | 통합·전체·보안·구동 검증 문서(7~11단계) 마무리, 풀 설계서 확정 | - |
 
 ## 1. 구성
@@ -26,7 +26,7 @@
 - 상시 서비스 4개(web, api, worker, db) + 1회성 `migrate`(compose 서비스 5개). 기동 순서 `db healthy → migrate 성공 → api/worker → api healthy → web`. *(v2: 원문 "4서비스"에 migrate 명시)*
 - 호스트 게시 포트는 `127.0.0.1:8080:8080`(web) **하나뿐**. api/worker/db는 호스트 포트 없음. `app` 네트워크는 `internal: true`이고, **web만 게시를 위해 비-internal `edge` 네트워크에 추가로 붙는다**(internal 전용 컨테이너는 호스트 게시가 안 되는 것으로 알려져 분리, internal 단독 게시는 시험하지 않음 — 편차 DV-W02). 구글·AI 통신이 필요한 M2·M3에서는 `compose.online.yaml`로 api/worker에만 외부 네트워크를 연다. *(v2 추가)*
 - 저장소 레이아웃(신규): `web/backend/ytweb/`(백엔드 패키지), `web/frontend/`(Vite React TS), `web/docker/`(Dockerfile·nginx·db 초기화), `web/compose.yaml`, `web/scripts/*.ps1`. 기존 `src/youtube_title`은 **패키지로 설치해 재사용(복사 금지)**.
-- 코어 재사용(복사 없이 `PYTHONPATH=/app/backend:/app/src`로 같은 소스, 순수 함수만): `youtube_title.validator.validate_file`, `youtube_title.candidates.CandidateFile/Candidate`, `youtube_title.banned_terms.load_dictionary`, `youtube_title.limits.evaluate_limits`(+`LimitFacts`), `youtube_title.updater.compute_plan_hash/validate_new_title/snippet_hash`, `youtube_title.config.load_settings`(정책 기본값 `config/settings.yaml`). sqlite3 직접 의존 모듈(`db.py`, `history.py`, `quota.py`, `live_guard.py`)은 재사용하지 않고 웹에서 PostgreSQL 기반으로 재구현한다(M3에서 14단계 게이트 포팅).
+- 코어 재사용(복사 없이 `PYTHONPATH=/app/backend:/app/src`로 같은 소스, 순수 함수만): `youtube_title.validator.validate_file`, `youtube_title.candidates.CandidateFile/Candidate`, `youtube_title.banned_terms.load_dictionary`, `youtube_title.limits.evaluate_limits`(+`LimitFacts`), `youtube_title.updater.compute_plan_hash/validate_new_title/snippet_hash`, `youtube_title.config.load_settings`(정책 기본값 `config/settings.yaml`). sqlite3 직접 의존 모듈(`db.py`, `history.py`, `quota.py`, `live_guard.py`)은 재사용하지 않고 웹에서 PostgreSQL 기반으로 재구현한다(M3 의 실제 모드 안전장치는 포팅이 아니라 웹에 새로 구현했다: §12-4, §12-7).
 - 스택(DEC-035, 실제 채택): FastAPI 0.143.0+Pydantic 2.14.0+Uvicorn 0.54.0, SQLAlchemy 2.1.4(동기)+Alembic 1.20.0+psycopg 3.3.6, **PostgreSQL 17**(DEC-041), React **19.3.0**+TypeScript 5.9.3+Vite 8.3.4+TanStack Query 5.104.1+**react-router-dom 7(HashRouter)**, nginx. *(v2: DEC-035의 "React 18, TanStack Router"는 실제와 달라 정정 — 편차 DV-W10)* 라이선스 확인은 `DESIGN.md` W2-1(psycopg는 LGPL-3.0).
 - 시간: DB는 UTC(timestamptz). 일일 반영 건수 기준일은 KST 날짜, API 쿼터 기준일은 태평양 시간(기존 `limits._pt_day_bounds`와 같은 규칙). API 시각 출력은 UTC이며 `Z`/`+00:00` 표기가 섞인다(DV-W06). 상세 `DESIGN.md` W6.
 
@@ -47,7 +47,7 @@
 | GET `/api/v1/auth/me` | 세션 확인(쿠키 없이도 호출 가능) | `{authenticated, pin_required, csrf_token\|null}` |
 | POST `/api/v1/auth/session` | 세션 발급(Host·Origin·`Sec-Fetch-Site` 검증, PIN 설정 시 `{pin}`, 5회 실패 시 429 `pin_locked`) | `{csrf_token}` + `Set-Cookie ytw_session`(HttpOnly, SameSite=Strict, Path=/api, `Secure` 없음) |
 | DELETE `/api/v1/auth/session` | 로그아웃 | 204 |
-| GET `/api/v1/dashboard` | 홈 요약 | `{mode:"demo"\|"live", live_enabled:false, google:{mode,connected}, counts:{videos,excluded,suggested,approved,queued,applied}, today:{applied,cap}, quota:{used,limit,remaining,pt_date}, active_job, queue:{pending_items,next_run_date}}` |
+| GET `/api/v1/dashboard` | 홈 요약 | `{mode:"demo"\|"live", live_enabled:bool(실제 수정 3조건이 모두 맞을 때 true), google:{mode:"demo"\|"read",connected}, counts:{videos,excluded,suggested,approved,queued,applied}, today:{applied,cap}, quota:{used,limit,remaining,pt_date}, active_job, queue:{pending_items,next_run_date}}` |
 | GET `/api/v1/videos` `?q,status,excluded,sort,order,page,page_size` | 영상 목록(서버측 필터·정렬) | Page<VideoSummary> |
 | GET `/api/v1/videos/{video_id}` | 영상 상세 | VideoDetail |
 | POST `/api/v1/videos/sync` | (데모) 가짜 영상 200개 시드/새로고침. 이미 진행 중인 같은 작업이 있으면 그 작업을 돌려줌 | 202 Job |
@@ -59,7 +59,7 @@
 | POST `/api/v1/suggestions/{id}/reject` | 반려 | Suggestion |
 | POST `/api/v1/batches` `{suggestion_ids[], note?}` + `Idempotency-Key` | 배치 초안+사전 점검 | 201 `{batch, precheck}` |
 | GET `/api/v1/batches` · `/{id}` | 목록 · 상세(항목 상태) | Page<Batch> · Batch |
-| POST `/api/v1/batches/{id}/execute` `{confirm_text}` + Idempotency-Key | 실행(`confirm_text == "실행 {n}건"`), 확정 시점에 항목을 전부 다시 점검(하나라도 어긋나면 409 `precheck_stale`), 일일 상한만큼 오늘, 나머지는 다음 날로 예약 | 202 `{batch, job}` |
+| POST `/api/v1/batches/{id}/execute` `{confirm_text}` + Idempotency-Key | 실행(`confirm_text == "실행 {n}건"`, 실제 수정 모드는 `"실제 실행 {n}건"`), 확정 시점에 항목을 전부 다시 점검(하나라도 어긋나면 409 `precheck_stale`), 일일 상한만큼 오늘, 나머지는 다음 날로 예약 | 202 `{batch, job}` |
 | POST `/api/v1/batches/{id}/cancel` | 중지(남은 `pending` 항목 취소, 진행 중 항목은 완료까지, 초안도 취소 가능) | Batch |
 | GET `/api/v1/jobs/{id}` | 작업 진행 | Job `{id,type,status,progress,total,error,result}` |
 | GET `/api/v1/changes` `?video_id,batch_id,result` | 변경 이력 | Page<Change> |
@@ -68,14 +68,17 @@
 | GET `/api/v1/reports/export.csv` | CSV 내보내기 | text/csv |
 | GET `/api/v1/audit` | 감사 로그(읽기 전용, 최신순). 호출마다 체인 전체를 검증 | Page<AuditEntry> + `chain_ok:bool` |
 | GET/PATCH `/api/v1/settings` | 안전 설정만 변경(`daily_apply_cap` 1~20 기본 10, `suggestions_per_video` 1~5 기본 3, `tone` 문자열 최대 5개·각 20자, `pin` `{action:"set"\|"clear",new_pin?,current_pin?}`). 그 외 키는 400 `setting_not_allowed`(**라이브 허용·허용 영상 목록은 API로 변경 불가**, 읽기 전용 표시) | Settings `{daily_apply_cap,suggestions_per_video,tone,pin_enabled,mode,read_only{enable_live,live_allowlist,note}}` |
-| GET `/api/v1/google/status` | 구글 연결 상태 | `{mode:"demo", connected:false, message}` (M1) — M2·M3 에서 필드가 늘었다: §12 |
+| GET `/api/v1/google/status` | 구글 연결 상태 | `{mode:"demo"\|"read", connected, client_ready, message, last_error, write_connected, live_write_enabled, live_allowed_count, live_write_ready}` (M2·M3, §12) |
+| POST `/api/v1/google/connect` · `/connect-write` | 읽기 / 제목 수정 권한 구글 로그인 주소 발급(CSRF 필요) | `{auth_url}` |
+| GET `/api/v1/google/callback` (OpenAPI 제외) | 구글에서 돌아오는 이동. 세션 대신 1회용 state+PKCE 로 보호 | 303 `/#/` |
+| POST `/api/v1/google/disconnect` | 읽기·쓰기 로그인 정보 삭제(CSRF 필요) | `{connected:false}` |
 
-주요 스키마(필드 대조 결과는 `DESIGN.md` 부록 A-2): **VideoSummary** `{video_id,title,privacy_status,duration_sec,is_short,excluded,exclusion_reasons[],workflow_status("none|suggested|approved|queued|applied|rolled_back"),suggestion_count,last_change_at,views}` / **Suggestion** `{id,video_id,title,evidence,source,topic,strict,validation_result("pass|warn|block"),reasons[{code,severity,message}],length,match_ratio,status,plan_hash,approval{approver,approved_at,expires_at}|null,created_at}` / **VideoDetail** = VideoSummary + `{description_excerpt,suggestions[],changes[],limits{allowed,reasons[],next_allowed_at},preserved{category_id,tags[],default_language,default_audio_language,description_chars}}` *(v2: `preserved` 추가)* / **Change** `{id,video_id,video_title,change_type,previous_title,new_title,result,mode,approver,applied_at,verified_at,error_code,rollbackable,batch_id}` / **Batch** `{id,status(draft|queued|running|paused|done|cancelled — paused는 M1 미사용, failed 없음),note,created_at,executed_at,counts{pending,running,success,failed,skipped,cancelled},items[BatchItem],precheck?}` *(v2: `precheck`는 상세·생성·실행 응답에서만 채움, 목록은 `items:[]`·null)* / **BatchItem** `{id,suggestion_id,video_id,video_title,previous_title,new_title,seq,scheduled_date,status,skip_reason,change_id}` / **precheck** `{item_count,estimated_units,daily_cap,quota_remaining_units,schedule[{date,count}],warnings[],blocked[{suggestion_id,reason,code?}],confirm_text}`. **Job** `{id(UUID),type(videos.sync|suggestions.generate|batch.execute),status(queued|running|succeeded|failed|cancelled),progress,total,error,result}`.
+주요 스키마(필드 대조 결과는 `DESIGN.md` 부록 A-2): **VideoSummary** `{video_id,title,privacy_status,duration_sec,is_short,excluded,exclusion_reasons[],workflow_status("none|suggested|approved|queued|applied|rolled_back"),suggestion_count,last_change_at,views}` / **Suggestion** `{id,video_id,title,evidence,source,topic,strict,validation_result("pass|warn|block"),reasons[{code,severity,message}],length,match_ratio,status,plan_hash,approval{approver,approved_at,expires_at}|null,created_at}` / **VideoDetail** = VideoSummary + `{description_excerpt,suggestions[],changes[],limits{allowed,reasons[],next_allowed_at},preserved{category_id,tags[],default_language,default_audio_language,description_chars}}` *(v2: `preserved` 추가)* / **Change** `{id,video_id,video_title,change_type,previous_title,new_title,result,mode,approver,applied_at,verified_at,error_code,rollbackable,batch_id}` / **Batch** `{id,status(draft|queued|running|paused|done|cancelled — paused는 M1 미사용, failed 없음),note,created_at,executed_at,counts{pending,running,success,failed,skipped,cancelled},items[BatchItem],precheck?}` *(v2: `precheck`는 상세·생성·실행 응답에서만 채움, 목록은 `items:[]`·null)* / **BatchItem** `{id,suggestion_id,video_id,video_title,previous_title,new_title,seq,scheduled_date,status,skip_reason,change_id}` / **precheck** `{item_count,estimated_units,daily_cap,quota_remaining_units,schedule[{date,count}],warnings[],blocked[{suggestion_id,reason,code?,batch_id?}],confirm_text,notice}`. **Job** `{id(UUID),type(videos.sync|suggestions.generate|batch.execute),status(queued|running|succeeded|failed|cancelled),progress,total,error,result}`.
 
 ## 4. 동작 규칙 (기존 안전장치 이식)
-1. **M1은 데모 모드뿐**: `YTWEB_MODE=demo` 고정. 유튜브 게이트웨이는 `MockYouTubeGateway`(`videos` 테이블이 곧 "유튜브")만 존재, 라이브 게이트웨이는 코드에 없음. AI는 `MockSuggester`(결정적 한국어 템플릿, 일부러 경고·차단 후보 포함)만 존재하며 어댑터 인터페이스(`TitleSuggester`)는 실서비스 교체 가능하게 정의.
+1. **M1은 데모 모드뿐**: `YTWEB_MODE=demo` 고정. 기본 유튜브 게이트웨이는 `MockYouTubeGateway`(`videos` 테이블이 곧 "유튜브")이고, M3 에서 실제 수정 3조건이 맞을 때만 쓰는 `LiveYouTubeGateway`(`youtube/live_write.py`)와 선택 로직(`domain/live_gateway.py`)이 추가됐다(§12). AI는 `MockSuggester`(결정적 한국어 템플릿, 일부러 경고·차단 후보 포함)만 존재하며 어댑터 인터페이스(`TitleSuggester`)는 실서비스 교체 가능하게 정의.
 2. **승인**: 승인은 `plan_hash`(영상 ID·후보 ID·이전/새 제목·snippet 해시)와 HMAC 서명에 묶이고 1회용이며 TTL(기본 24시간, `approval.ttl_hours`) 후 만료. 제목 수정·영상 변경 시 무효. **만료 판정 시각은 "배치 실행 확정 시각"**(여러 날에 걸친 배치가 둘째 날부터 전부 건너뛰는 것을 막기 위함, DEC-042 D3 — M3에서 재평가, DV-W11). *(v2: 판정 시각 명시)* 차단(block) 판정은 승인 불가, 경고(warn)는 사유 확인 후 승인 가능(엄격 모드 주제는 경고도 차단 — 기존 검증기 규칙 그대로).
-3. **한도**: 하루 반영 건수 `daily_apply_cap`(기본 10, 최대 20)과 배치당 최대 50건 두 겹. 영상별 재변경 간격 72시간, 영상당 최대 3회, 최소 노출수 1000(`youtube_title.limits.evaluate_limits`; **데모 최소 노출수 0 결정은 코드 미반영**, DV-W15). API 쿼터는 호출 전 **3행(재조회+갱신+검증 재조회=52단위) 일괄 예약**(`reserved`→`ok|failed`, 전부/전무), 일일 한도 기본 6,000단위의 80%에서 경고(기존 설정). 제외 영상(Shorts·비공개·아동용·예약)은 제안·승인·배치·반영 4곳에서 차단.
+3. **한도**: 하루 반영 건수 `daily_apply_cap`(기본 10, 최대 20)과 배치당 최대 50건 두 겹. 영상별 재변경 간격 72시간, 영상당 최대 3회, 최소 노출수 1000(`youtube_title.limits.evaluate_limits`; 데모 모드에서는 '재변경 최소 노출수'를 0 으로 낮춰 판정하도록 **코드에 반영됨** — `domain/common.py` `Env.build`. 72시간 간격·영상당 3회 제한과 리포트의 '데이터 부족' 기준은 그대로). API 쿼터는 호출 전 **3행(재조회+갱신+검증 재조회=52단위) 일괄 예약**(`reserved`→`ok|failed`, 전부/전무), 일일 한도 기본 6,000단위의 80%에서 경고(기존 설정). 제외 영상(Shorts·비공개·아동용·예약)은 제안·승인·배치·반영 4곳에서 차단.
 4. **배치 실행(워커)**: `execute` → 항목에 `scheduled_date` 배정(오늘 남은 상한만큼 오늘, 이후 날짜는 상한씩). 워커는 `scheduled_date <= 오늘(KST)`인 `pending` 항목을 **오늘 남은 상한 안에서만** 처리한다(PC가 꺼져 있다 켜져도 놓친 예약을 몰아서 실행하지 않음). 항목 처리 = ①승인 유효·해시 일치 ②한도 ③쿼터 예약 ④실행 직전 재조회(이전 제목 변동 시 중단) ⑤(모의) 갱신 ⑥재조회 검증(제목 일치, description·tags·categoryId 등 보존) ⑦changes 기록. 어느 단계든 실패하면 해당 항목만 `failed|skipped`로 기록하고 이중 반영을 막는다. 행 잠금(`FOR UPDATE SKIP LOCKED`)으로 워커 중복 처리 방지, 재시작 후 `running`으로 남은 항목은 재조회로 상태 확정 후 정리.
 5. **롤백**: 대상 영상의 `typed_video_id` 입력 일치 필요, 해당 변경 이후 다른 변경이 있으면 거부(기존 `plan_rollback` 규칙), 백업 snippet **전체** 기준 복원, 결과 재조회 검증. 쿼터는 쓰지만 교체 한도(간격·횟수·하루 상한)는 적용하지 않는다. 사후 검증 불일치는 변경 `success`+`error_code=verify_failed`·항목 `failed`로 알리고 자동 롤백은 하지 않는다(DV-W12). *(v2 보강)*
 6. **감사 로그**: 세션 발급·거부·삭제, 설정 변경, 영상 새로고침, 제안 생성·수정·승인·반려, 배치 생성·실행·취소·항목 실패/복구, 반영, 롤백을 모두 기록(비밀·PIN·본문 전체는 제외).
@@ -84,7 +87,7 @@
 Host 허용 목록(`127.0.0.1:8080`, `localhost:8080`) · Origin 정확히 일치 + `Sec-Fetch-Site`가 있으면 same-origin만(상태 변경·세션 발급) · 쿠키 세션(HttpOnly, SameSite=Strict, `Secure` 없음) + CSRF 토큰 · 보안 헤더(nginx: CSP `default-src 'self'`에 `style-src-attr 'unsafe-inline'`·`img-src data:` 예외, `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy: same-origin`, `Permissions-Policy`, COOP/CORP) · OpenAPI 문서(`/docs`)는 `YTWEB_ENABLE_DOCS=1`일 때만(개발 프로필 없음, DV-W03) · 요청 크기·속도 제한 · 로그 마스킹 · DB 비밀번호는 secrets 파일 · 컨테이너 비루트·`read_only`·`cap_drop: ALL`·`no-new-privileges`·자원 상한 · 외부 CDN 금지 · `dangerouslySetInnerHTML` 금지 · 입력은 Pydantic 검증. 위협 모델 STRIDE 갱신은 M4에서 확정(DEC-038) — 입력 목록은 `DESIGN.md` W9-6(특히 PIN이 꺼져 있으면 같은 PC의 다른 프로그램이 세션을 얻을 수 있음). S-W 요구별 구현 위치는 `DESIGN.md` W9-1.
 
 ## 6. 화면 (M1, PC 우선, 최신 Chrome/Edge)
-홈(오늘 할 일·사용량·대기열·상태) / 영상 목록(검색·필터·정렬·체크박스·가상 스크롤 아님이면 페이지네이션 허용) / 영상 상세(현재 제목, AI 제안 생성, 검증 결과, 변경 전후 비교, 수정·승인·반려) / 배치(선택 → 사전 점검 → 확인 문구 → 실행, 진행률·중지) / 이력·롤백 / 성과 리포트 / 설정 / 구글 상태 배지("데모 모드" 상시 표시, "dry-run"은 "미리보기"로 표기). 디자인 토큰(색·간격·타이포)을 한 파일에 정의, 한국어 문구는 한 파일(`ko.ts`)에서 관리, 키보드 조작·포커스 표시·상태 색 외 아이콘/텍스트 병기.
+홈(오늘 할 일·사용량·대기열·상태) / 영상 목록(검색·필터·정렬·체크박스·가상 스크롤 아님이면 페이지네이션 허용) / 영상 상세(현재 제목, AI 제안 생성, 검증 결과, 변경 전후 비교, 수정·승인·반려) / 배치(선택 → 사전 점검 → 확인 문구 → 실행, 진행률·중지) / 이력·롤백 / 성과 리포트 / 설정 / 상단 모드 띠(서버가 알려 준 상태에 따라 "데모 모드 — 유튜브에 아무것도 전송되지 않습니다" · "구글 연결됨(읽기) — 제목은 바뀌지 않습니다" · "실제 수정 모드 — 허용된 영상의 제목이 실제 유튜브에서 바뀝니다", "dry-run"은 "미리보기"로 표기) / 모든 화면 바닥글의 면책·AI 안내 / 배치 실행 화면의 A/B 테스트 아님 확인란과 [초안 버리기]. 디자인 토큰(색·간격·타이포)을 한 파일에 정의, 한국어 문구는 한 파일(`ko.ts`)에서 관리, 키보드 조작·포커스 표시·상태 색 외 아이콘/텍스트 병기.
 
 ## 7. 작업 단위 (M1 — 4개 모두 구현 완료, 독립 검증 대기)
 | WU | 담당 | 범위 | 파일 소유 범위(겹치지 않음) |
@@ -144,11 +147,12 @@ def pt_date(now: datetime) -> date             # America/Los_Angeles 날짜
 |---|---|---|---|
 | 2026-10-10 | v1 | 최초 작성(속도 우선 압축판) | DEC-038 |
 | 2026-10-10 | v2 | 헤더(상태·근거·짝 문서), §0 M1 상태·진입점, §1 서비스 5개(migrate)·edge 네트워크·PG17·실제 프런트 버전·시간 표기, §2 14테이블·승인 서명·감사 체인 한계, §3 공통 규약(Origin·멱등 3종·페이지 422)·healthz 행·세션 행·sync·approve·execute/cancel·audit·settings 행·스키마 추가 필드(`preserved`, `precheck`, `blocked.code`, Job), §4 승인 만료 기준·한도(52단위 선예약·최소 노출수)·롤백 세부·감사 범위, §5 보안 세부, §7 완료 표시, §8 테스트 환경 정정(DEC-039)·결과, §9 질문 이관, §10 추가 공개 항목, 본 이력 추가 | 구현 결과(as-built)에 맞춘 풀 설계서(`DESIGN.md` Part B)와 일치시키기. 각 변경은 실제 코드와 대조했다(`DESIGN.md` 부록 A). **의미를 바꾸는 수정은 없다** — 문서와 코드가 달랐던 곳은 편차 표(DV-W)에 올렸다 |
+| 2026-10-11 | v4 | 11단계 대조 1차: §3 dashboard·execute·google 행, precheck 필드, §4-3 데모 최소 노출수(코드 반영됨), §6 화면(모드 띠 3상태·면책 바닥글·초안 버리기), §12-3·12-6 상태 갱신, §12-7 신설 | 실제 코드·화면 문구와의 한 줄씩 대조 |
 | 2026-10-11 | v3 | §12 M2·M3(구글 읽기 연동·제목 수정) 신설, §3 google/status 행에 §12 참조 | M2·M3 구현 반영(DEC-048), 11단계 문서 갱신 |
 
 ## 12. M2·M3 — 구글 읽기 연동과 실제 제목 수정 (2026-10-11 추가, as-built)
 
-> **검증 상태 (정확히)**: 코드와 가짜 구글 자동 시험(백엔드·화면)만 있다. **실제 구글 서버 접속, 실제 채널 영상 읽기, 실제 제목 변경은 한 번도 하지 않았다.** 독립 검증 결과서(`docs/harness/units/web-WU-M23-FE-test.md` 등)에 열린 결함이 있다(아래 12-6). 근거 결정: DEC-046~048.
+> **검증 상태 (정확히)**: 코드와 가짜 구글 자동 시험(백엔드·화면)만 있다. **실제 구글 서버 접속, 실제 채널 영상 읽기, 실제 제목 변경은 한 번도 하지 않았다.** 독립 검증 결과서(`docs/harness/units/web-WU-M23-FE-test.md` 등)의 결함은 조치됐으나 일부 표시 제한이 남았다(아래 12-6, 12-7). 근거 결정: DEC-046~049.
 
 ### 12-1. OAuth 흐름 (데스크톱 앱 클라이언트, DEC-048)
 1. 소유자가 구글 클라우드에서 **데스크톱 앱** 유형 클라이언트 ID 를 만들고 JSON 을 `web\secrets\google_client.json` 으로 저장 → `start.ps1` 재실행. 이 파일이 있을 때만 `_common.ps1` 의 `Invoke-Compose` 가 `web/compose.online.yaml` 을 함께 쓴다(api·worker 가 `egress` 네트워크 + Docker secret `google_client`). 없으면 M1 데모와 동일(외부 통신 없음).
@@ -175,7 +179,7 @@ def pt_date(now: datetime) -> date             # America/Los_Angeles 날짜
 3. `YTWEB_LIVE_ALLOWED_VIDEOS`(쉼표 구분 영상 ID)에 1개 이상
 - 반영이 확인되면 같은 값으로 `videos` 행(title·snippet)을 동기화한다(오류 시 DB 불변).
 - `GET /api/v1/google/status` 필드: `mode`, `connected`, `client_ready`, `message`, `last_error`, `write_connected`, `live_write_enabled`, `live_allowed_count`, `live_write_ready`.
-- **미해소 (확인 필요)**: `YTWEB_LIVE_WRITE`·`YTWEB_LIVE_ALLOWED_VIDEOS` 를 컨테이너에 전달하는 항목이 `compose.yaml`·`compose.online.yaml`·스크립트에 **없다**(2026-10-11 확인). 켜는 공식 방법을 정해야 한다(DEF-VMF-004, Q-11-10).
+- **해소**: `YTWEB_LIVE_WRITE`·`YTWEB_LIVE_ALLOWED_VIDEOS` 는 `compose.online.yaml` 이 api·worker 에 `${...}` 로 전달한다(기본 0·빈 값). 값은 `web/.env`(복사 원본 `web/.env.example`)에서 읽는다. 구글 연결 파일이 없으면 이 파일 자체가 쓰이지 않는다. Windows PC 실동작은 미확인.
 
 ### 12-4. 안전장치 3가지 (실제 모드 = 위 3조건 충족)
 1. **허용 영상만**: 초안 단계(`_eligibility`) → 반영 직전(변경 기록·쿼터 확정 전) → 롤백 → 게이트웨이(`live_write`, 네트워크 호출 전 재검사)에서 허용 목록 밖은 `live_not_allowed`. 목록이 비면 수정 0건. 설정 API 로 목록을 바꿀 수 없음.
@@ -189,9 +193,15 @@ def pt_date(now: datetime) -> date             # America/Los_Angeles 날짜
 ### 12-6. 알려진 결함·후속 조치 (6단계 프런트 독립 검증, `web-WU-M23-FE-test.md`)
 | ID | 내용 | 등급 | 상태 |
 |---|---|---|---|
-| **DEF-VMF-001** | **대시보드 모드 표시 결함**: 상단 띠("데모 모드 — 유튜브에 아무것도 전송되지 않습니다")와 홈 "연결 상태" 칸이 고정값(`Layout.tsx`, `domain/dashboard.py` 가 `mode:"demo"`, `live_enabled:false` 를 항상 내려 줌)이라 구글 연결·실제 수정 상태와 모순된다 | High | **Open — 후속 조치 예정(실제 구글 연결 전 필수).** 제안: 상단 배지를 3상태(데모/읽기 연결/실제 수정 가능)로, 대시보드 응답을 실제 상태에서 계산 |
-| DEF-VMF-002 | 읽기 로그인만 풀리고 쓰기 토큰이 남은 드문 경우 경고 숨김 | Low | Open |
-| DEF-VMF-003 | "꺼짐" 안내가 무엇이 부족한지(켜기 vs 허용 영상 0개) 구분 못 함 | Low | Open |
-| DEF-VMF-004 | 설정 방법(어디에 어떻게)이 화면·문서에 없음 — 이 문서의 12-3 미해소 항목과 같음 | Low | Open (문서에 '확인 필요'로 반영) |
+| **DEF-VMF-001** | 대시보드 모드 표시 결함(상단 띠·홈 "연결 상태"가 고정값) | High | **조치됨(코드 확인)**: 대시보드가 실제 상태에서 `mode`/`live_enabled` 를 계산하고 상단 띠는 3상태. 단 홈 "연결 상태" 첫 줄은 연결 파일만 있어도 "구글 연결됨"으로 나올 수 있고, 설정 > 세션·연결의 "실행 모드"는 아직 고정 문구(새로 확인한 표시 제한, 미조치) |
+| DEF-VMF-002 | 읽기 로그인만 풀리고 쓰기 토큰이 남은 드문 경우 경고 숨김 | Low | **조치됨(코드 확인)**: "제목 수정 권한" 구역이 읽기 또는 쓰기 연결 중 하나만 있어도 보인다 |
+| DEF-VMF-003 | "꺼짐" 안내가 무엇이 부족한지 구분 못 함 | Low | **조치됨(코드 확인)**: 켜기 / 허용 영상 0개를 나눠 안내 |
+| DEF-VMF-004 | 설정 방법이 화면·문서에 없음 | Low | **조치됨**: `web/.env` 전달 + 화면 안내 문구 |
 - 외부 통신 모듈은 `google_oauth.py`·`live_read.py`·`live_write.py` 3개로 한정하고 그 밖은 시험이 금지한다(`test_tc_vb_278`).
-- 위협 모델: `threat_model.md` W9(TW-37~44). 미반영: `API.md` 상세·`openapi.json` 은 2026-10-11 갱신됨(EVT-W31~35), 독립 검증·9단계 재검증은 이 장을 아직 다루지 않았다.
+- 위협 모델: `threat_model.md` W9(TW-37~44). `API.md` 상세·`openapi.json` 은 2026-10-11 갱신됨(EVT-W31~35).
+
+### 12-7. 이후 추가된 실제 모드 안전장치 (DEC-049 등, 2026-10-11, 코드 기준)
+- **모드 일관성**: 배치 실행 확정 때의 모드(`precheck.executed_live`)와 반영 시점의 게이트웨이가 다르면 항목을 `live_mode_changed` 로 건너뛴다. 롤백은 대상 변경의 `mode` 와 현재 게이트웨이가 다르면 `live_mode_mismatch`(409)로 거부한다.
+- **실제 모드 롤백은 보수적 기본**(DEC-049): 반영 뒤 유튜브에서 제목·설명·태그·카테고리·언어가 바뀌었으면 백업으로 덮어쓰지 않고 409 `live_changed_since_apply`. 반영 중 보존 항목이 손상된 변경(`verify_failed`)은 통째 복원. 데모 롤백은 불변.
+- **콜백 보호 보강**: 모르는 state 로 들어온 교차 사이트 콜백은 감사 기록을 쌓지 않고, 구글 호출은 리다이렉트를 따르지 않는다(DEC-049).
+- **화면 단계 확인**: 배치 실행에 'A/B 테스트 아님' 확인란(화면 전용, 서버 필드는 실제 반영 단계에서 결정 — DEC-047).
