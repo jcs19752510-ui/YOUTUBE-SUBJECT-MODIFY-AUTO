@@ -645,3 +645,39 @@ Linux 6.18, 파이썬 3.13, pytest, pip-audit(임시 `--target` 설치, `.harnes
 - **시험 변경 사유**: 위 재현용 시험 2건(`test_a9_…_repro`, `test_e2_…_repro`)은 결함을 "재현"하는 형태로 통과했었다. 조치 후 같은 시나리오의 기대값을 "결함 없음"으로 뒤집고 이름을 바꿨다(조치 확인). 원래 통과(=결함 재현) 사실은 본문 R 절에 남아 있다.
 - **재실행**: 보안 시험(`web/tests_security`, 컨테이너 필요한 `test_sec_04` 제외)과 백엔드 시험 통과, 아래 STATE 에 수치 기록.
 - **여전히 열림(사용자 결정 필요, R-Q)**: DEF-9B-002(A/B 서버 필드), DEF-9B-008(쓰기 토큰 평문·revoke), DEF-9B-009(egress 도메인 제한), DEF-9B-004/005/007 Low. 이 때문에 9단계 판정은 사용자 결정 전까지 **CONDITIONAL** 로 본다(데모 모드에서는 Critical/High 없음).
+
+---
+## R-S. 개정 2판 보충(실스택) — 2026-10-11 23:18:04Z ~ 23:21Z (약 3분, 시간 상한 12분 내)
+범위: `web/tests_security/test_sec_04_live_stack.py`(89건)를 실제 컨테이너 스택에 실행. 스택 `harness-tmp-s3`(127.0.0.1:18084), 이미지는 기존 `harness-tmp-i2-*:local` 재사용(재빌드 없음, `harness-tmp-s3-*:local` 태그만 추가). 비밀 폴더 `.harness-tmp/s3/secrets`(임시, 가짜). 구글 접속 없음, 소스 수정 없음, 커밋 없음.
+
+### 합격/불합격 (첫 실행 결과 그대로)
+| 회차 | 결과 | 비고 |
+|---|---|---|
+| 1회차 | 87 통과 / 1 실패 / 1 xfail(알려진 한계) | 실패: `test_no_secret_values_in_inspect_env_cmdline_or_image_history` — `db_app_password` 가 31자라 시험 전제(32자 이상) 불충족. **내 스택 준비 오류(시험 설정), 제품 결함 아님**. 이 항목은 "미수행(비밀 길이 전제 위반)"으로 센다(PASS 아님). 기대값은 바꾸지 않았다 |
+| 2회차(같은 스택 재실행) | 86 통과 / 2 실패 / 1 xfail | 위 1건 동일 + `test_known_limit_app_role_can_modify_non_audit_tables_tw32` 실패: `DELETE FROM changes` 가 batch_items 외래키로 거부됨 — 1회차가 만든 데이터가 남은 **재사용 스택에서 시험이 멱등이지 않음**(DEF-9C-001) |
+
+### 번들·응답 헤더 실측(직접 curl/exec, 이미지 `web` 컨테이너)
+| 항목 | 결과 |
+|---|---|
+| 보안 헤더 1벌(CSP, nosniff, X-Frame DENY, Referrer, Permissions-Policy, COOP, CORP) | 합격, 각 1회 |
+| Cache-Control 중복 | 합격: `/` 1개(no-cache), 자산 1개(immutable 1년), `/api/healthz` 1개 |
+| 소스맵·시험 파일 | 합격: 이미지 안 `*.map`·`*.test.*`·`*.spec.*` 0개, `sourceMappingURL` 0, `/assets/x.map` 404. 단 `/index.html.map` 은 200 이지만 본문이 SPA `index.html`(맵 아님) — 노출 없음(참고) |
+| 번들에 vite/vitest 설정 문자열 | 0개 |
+| 면책·AI 고지 문구 | 합격: "면책 및 AI 안내", "AI가 생성한 제안" 존재 |
+| 비밀·내부 호스트명(api-1, db-1, harness-tmp, postgres://, localhost:5432, AIza…, client_secret) | 0건 |
+번들은 `index-*.js`·`style-*.css` 2파일뿐.
+
+### 결함
+- **DEF-9C-001 (Low, 시험 자산)**: TW-32 알려진 한계 시험이 재사용 스택에서 외래키로 실패(비멱등). 재현: 같은 스택에 04 시험 2회 연속 실행. 소스 결함 아님, 시험을 DB 상태 무관하게(예: 존재하는 행이 있으면 다른 표로) 고치거나 매 실행 새 스택 사용 권고. 수정하지 않음.
+- 신규 소스 결함 0건.
+
+### 미수행 목록
+- 이미지 취약점 스캔: **미수행(trivy·grype·syft 도구 없음)**.
+- 비밀 평문 부재 시험(위 1회·2회 실패 항목): **미수행(시험 설정 오류: 31자 비밀)** — 새 32자 이상 비밀로 새 스택을 띄워 재실행 필요(DB 비밀 교체가 필요해 12분 상한 내 불가).
+- 실제 구글 접속, Windows/Docker Desktop 실동작: 미수행(범위 밖).
+
+### 최종 9단계 판정
+**CONDITIONAL 유지**(실스택 보충 후에도 소스 신규 결함 0건, Critical/High 0건 — DEF-9-002 는 R-조치로 조치됨). 단 ①R-Q 사용자 결정 5건(DEF-9B-002 A/B 서버 필드, DEF-9B-008 토큰 평문·revoke, DEF-9B-009 egress 제한, DEF-9-002 롤백 방식 DEC-049 확인, 시험 자산 담당)이 미해결이고 ②비밀 평문 부재 실스택 시험·이미지 스캔이 미수행이라 PASS 로 확정하지 않는다.
+
+### 정리
+`harness-tmp-s3` 접두사 자원(컨테이너 4, 네트워크 3, 이미지 태그 3, `.harness-tmp/s3`)만 삭제. i2 스택·이미지는 건드리지 않음. 검증 로그: `docs/harness/verify-logs/verify-log_security-web-m1-rev2-stack.md`.
