@@ -436,10 +436,10 @@ def test_it_433_unschemaed_responses_have_documented_fields(fresh_demo):
     assert set(d["queue"]) >= {"pending_items", "next_run_date"} and set(d["today"]) >= {"applied", "cap"}
     g = a.get("/api/v1/google/status").json()
     assert g == {"mode": "demo", "connected": False, "message": g["message"]} and "시연용" in g["message"]
-    for path in ("/healthz", "/api/healthz"):
+    for path in ("/api/healthz",):      # 루트 /healthz·/readyz 는 nginx 가 SPA 로 돌려준다 → DEF-7-006 (IT-436, xfail)
         r = a.c.get(path)
         assert r.status_code == 200 and r.json() == {"status": "ok"}
-    for path in ("/readyz", "/api/readyz"):
+    for path in ("/api/readyz",):
         r = a.c.get(path)
         assert r.status_code == 200 and r.json() == {"status": "ok", "db": "ok", "mode": "demo"}
     # 로그아웃: 204, 본문 없음, 같은 쿠키는 이후 401
@@ -721,9 +721,26 @@ def test_it_432_response_headers_request_id_no_store_and_unique(fresh_demo):
         assert re.fullmatch(r"[0-9a-f]{32}", rid) and rid not in seen, (path, rid)
         seen.add(rid)
         assert r.headers.get("cache-control", "").lower().count("no-store") == 1 or "no-store" in r.headers.get("cache-control", ""), path
-        assert "default-src 'none'" in r.headers.get("content-security-policy", ""), path
+        assert "default-src" in r.headers.get("content-security-policy", ""), path     # 'none' 이 아니라 nginx 의 'self' 정책 → DEF-7-007 (IT-437, xfail)
     r = a.c.post("/api/v1/videos/sync", headers={"Origin": "http://evil.example"})
     assert re.fullmatch(r"[0-9a-f]{32}", r.headers.get("x-request-id", ""))
+
+
+@pytest.mark.xfail(strict=True, reason="DEF-7-006: API.md 1장·EVT-W01~04 는 /healthz·/readyz 가 같은 포트에서 열린다고 적었으나 nginx 는 /api/ 만 넘기고 나머지는 SPA(index.html 200 text/html)로 돌려준다 — 헬스 프로브가 HTML 200 을 받아 거짓 정상으로 오판할 수 있음")
+def test_it_436_root_healthz_and_readyz_reach_backend_through_nginx():
+    """IT-436: http://127.0.0.1:<포트>/healthz, /readyz 가 JSON 상태를 돌려준다(문서 기준)."""
+    import httpx
+    from itlib import BASE, HOST_OK
+    for path, want in (("/healthz", {"status": "ok"}), ("/readyz", {"status": "ok", "db": "ok", "mode": "demo"})):
+        r = httpx.get(BASE + path, headers={"Host": HOST_OK}, timeout=10)
+        assert r.status_code == 200 and r.headers["content-type"].startswith("application/json") and r.json() == want, (path, r.headers["content-type"])
+
+
+@pytest.mark.xfail(strict=True, reason="DEF-7-007: API.md 1-2 는 /api 응답 CSP 가 default-src 'none' 이라고 적었으나 nginx 가 백엔드 헤더를 숨기고 페이지용 default-src 'self' 정책을 덧씌운다(JSON 응답이라 실효 위험은 낮음, 문서·동작 불일치)")
+def test_it_437_api_responses_carry_documented_csp_default_src_none(fresh_demo):
+    """IT-437: /api 응답의 CSP 가 문서대로 default-src 'none' 이다."""
+    r = fresh_demo.get("/api/v1/dashboard")
+    assert "default-src 'none'" in r.headers.get("content-security-policy", "")
 
 
 # ─────────────────────────── 마이그레이션 0001 → 0002 ───────────────────────────

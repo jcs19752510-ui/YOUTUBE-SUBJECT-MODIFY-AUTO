@@ -343,6 +343,9 @@ def test_it_530_container_hardening_as_deployed(svc):
     for m in i["Mounts"]:
         assert "docker.sock" not in m["Source"] and m["Type"] in ("volume", "tmpfs", "bind"), m
         if m["Type"] == "bind":
+            if os.environ.get("IT_NGINX_CONF_OVERRIDE") == "1" and m["Destination"] == "/etc/nginx/nginx.conf":
+                assert m["RW"] is False, m     # 시험 하네스가 포트 18080 허용을 위해 읽기 전용으로 덧씌운 nginx.conf (운영 구성에는 없음)
+                continue
             assert m["Destination"].startswith("/run/secrets/") and m["RW"] is False, m
     lim = {"db": (768, 1.0, 200), "migrate": (384, 0.5, 128), "api": (512, 0.75, 256), "worker": (384, 0.5, 128), "web": (128, 0.5, 128)}[svc]
     assert hc["Memory"] == lim[0] * 1024 * 1024 and hc["NanoCpus"] == int(lim[1] * 1e9) and hc["PidsLimit"] == lim[2], (hc["Memory"], hc["NanoCpus"], hc["PidsLimit"])
@@ -589,7 +592,7 @@ def test_it_505_cold_start_order_from_docker_events_and_single_loopback_publish(
     web_start, web_ok = first("start", "web"), first("health_status: healthy", "web")
     assert db_ok < mig_start < mig_end < min(api_start, wk_start), (db_ok, mig_start, mig_end, api_start, wk_start)
     assert api_start < api_ok < web_start < web_ok and wk_start < wk_ok, rows[-8:]
-    assert not any(a == "die" and s in ("db", "api", "worker", "web") for _, a, s, _x in rows), "기동 중 비정상 종료가 있었음"
+    assert not any(a == "die" and s in ("db", "api", "worker", "web") and int(t) > mig_start for t, a, s, _x in rows), "기동 중 비정상 종료가 있었음"   # mig_start 이전의 die 는 down 으로 내려간 옛 컨테이너
     ports = {s: dc("port", s, "8080").stdout.strip() for s in ("web",)}
     assert ports["web"] == f"127.0.0.1:{PORT}", ports
     pub = sh(["docker", "ps", "--filter", f"label=com.docker.compose.project={PROJECT}", "--format", "{{.Names}}|{{.Ports}}"]).stdout.strip().splitlines()
