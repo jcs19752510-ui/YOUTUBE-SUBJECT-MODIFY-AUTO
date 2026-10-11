@@ -184,3 +184,66 @@
 - **시험 표식**: 위 결함의 strict xfail 표식을 제거했다(조치 후 XPASS(strict)가 나와 실패로 보고된 것이 조치 확인 신호). 시험 2건(TC-VM-122·129)은 제거된 내부 속성 `ctx.write_states` 를 직접 참조해 `ctx.pending.peek_kind()` 기반으로 바꿨다 — 검증하는 행동(최근 쓰기 로그인은 쓰기 저장소에 저장, state 는 한도 내 유지·소진)은 같다.
 - **재실행(백엔드 전체, verify_wfixbe 제외)**: 1840 통과 · 102 건너뜀 · 1 xfail(DEF-VM-004) · 실패 0 (3분 52초). 실제 구글 호출 없음.
 - **안 한 것**: 조치 후 변이 점검 재실행, 별도 독립 검증자의 재검증(오케스트레이터가 직접 조치함 → 9단계 재검증에서 함께 다시 확인 예정).
+
+## 부록 C. 조치 후 변이 점검 (2026-10-11)
+
+방법: 소스는 수정하지 않고 `.harness-tmp/mut_be/mNN/` 사본(매 변이마다 원본에서 새로 복사, 사본 안에서만 1곳 변경)에서 가드 관련 시험(test_live_guard·test_db_transient·test_live_gateway·test_google_router·test_changes_reports·test_batches·verify_m23/*(PostgreSQL 전용 vm_09 제외)·test_google_oauth·test_live_write)을 실행. 시험 실패=killed, 통과=survived. 사본은 종료 후 삭제.
+
+첫 실행(1차): 48곳 중 killed 39, survived 9 — 1(live_mode_changed 코드명), 6(planned_id None 조건 제거), 7(InterfaceError 제외), 13(복구 중 rollback 삭제), 16·17·19(live_changed_since_apply 검사 삭제/예외 반전/보존 필드 제외), 26·27(google_state mode/connected)이 생존... 추가로 34·36·37·38·43 도 생존(아래 표). 실제 생존 합계는 14곳(1,6,7,13,16,17,19,26,27,34,36,37,38,43).
+
+| # | 위치 | 변이 내용 | 1차 결과 | 동등/공백 판정 | 추가 시험 후 |
+|---|---|---|---|---|---|
+| 0 | batches 모드 불일치 | `!=`→`==` | killed | | |
+| 1 | batches | 코드명 live_mode_changed→X | survived | 공백(코드 미검증) | killed(901) |
+| 2 | batches | executed_live 읽기 반전 | killed | | |
+| 3 | batches | executed_live 항상 False 기록 | killed | | |
+| 4 | batches | executed_live 기록 반전 | killed | | |
+| 5 | batches | DB끊김 복귀 분기 삭제 | killed | | |
+| 6 | batches | `planned_id is None` 조건 제거 | survived | 공백(쓰기 시도 후 DB 오류 미검증) | killed(904) |
+| 7 | batches | InterfaceError 제외 | survived | 공백 | killed(903) |
+| 8 | batches | 복귀 상태 pending→failed | killed | | |
+| 9 | batches | outcome 코드 db_unavailable→other | killed | | |
+| 10 | batches | 틱 중단(break) 삭제 | killed | | |
+| 11 | batches | stopped_by 값 변경 | killed | | |
+| 12 | batches | 복구 GatewayError except 삭제 | killed | | |
+| 13 | batches | 복구 GatewayError 시 `s.rollback()` 삭제 | survived | 동등(세션이 with 종료로 폐기, 이후 쓰기 없음) | 동등 |
+| 14 | changes | 롤백 모드불일치 `!=`→`==` | killed | | |
+| 15 | changes | 롤백 모드불일치 검사 삭제 | killed | | |
+| 16 | changes | live_changed_since_apply 검사 삭제 | survived | 공백(오류 코드를 단언하는 시험 없음) | killed(905) |
+| 17 | changes | verify_failed 예외 조건 반전 | survived | 공백 | killed(905, 단 verify_failed 면제 경로 자체의 양성 시험은 없음: 잔여) |
+| 18 | changes | `if changed` 반전 | killed | | |
+| 19 | changes | 보존 필드(description 등) 비교 제외 | survived | 공백 | killed(905) |
+| 20 | live_gateway | confirm_text 항상 데모 문구 | killed | | |
+| 21 | live_gateway | confirm_text 실제 n+1 | killed | | |
+| 22 | live_gateway | not_allowed_reason 반전 | killed | | |
+| 23 | live_gateway | not_allowed live_mode 조건 삭제 | killed | | |
+| 24 | live_gateway | 확인 접두사 "실제 실행"→"실행" | killed | | |
+| 25 | dashboard | live_ready 항상 False | killed | | |
+| 26 | dashboard | mode 항상 "read" | survived | 공백 | killed(908) |
+| 27 | dashboard | connected 에서 client_ready 제거 | survived | 공백 | killed(908) |
+| 28 | google_oauth | PendingAuth kind 항상 read | killed | | |
+| 29 | google_oauth | peek_kind 항상 write | killed | | |
+| 30 | google_oauth | finish 에서 kind 소진 삭제 | killed | | |
+| 31 | google_oauth | load_client dict 검사 삭제 | killed | | |
+| 32 | google_oauth | client_secret 검사 삭제 | killed | | |
+| 33 | google_oauth | section dict 검사 삭제 | killed | | |
+| 34 | google_oauth | is_fresh 시간대 없음 검사 삭제 | survived | 동등(naive-aware 뺄셈 비교 시 TypeError→except→False로 같은 결과) | 동등 |
+| 35 | google_oauth | is_fresh 경계 `>`→`>=` | killed | | |
+| 36 | google_oauth | 리다이렉트 추종 허용 | survived | 공백 | killed(910) |
+| 37 | google_oauth | opener 설치 삭제 | survived | 공백 | killed(910) |
+| 38 | live_write | `import google_oauth` 부작용 import 삭제 | survived | 동등(다른 경로로 이미 import 됨, 시험 환경에서 관측 불가) | 동등 |
+| 39 | live_write | 본문 id 검사 삭제 | killed | | |
+| 40 | live_write | categoryId 검사 삭제 | killed | | |
+| 41 | live_write | title 공백 검사 삭제 | killed | | |
+| 42 | live_write | 응답 제목 확인 삭제 | killed | | |
+| 43 | routers/google | state_invalid 감사 생략 삭제 | survived | 공백 | killed(911) |
+| 44 | routers/google | 모든 실패 감사 생략 | killed | | |
+| 45 | routers/google | 콜백 write 분기 삭제 | killed | | |
+| 46 | routers/google | is_write 항상 False | killed | | |
+| 47 | routers/google | is_write 항상 True | killed | | |
+
+집계: 총 변이 48. 1차 killed 34, survived 14(공백 11, 동등 3: #13·#34·#38). 추가 시험 후 killed 45 / 48 (동등 3은 분모 제외 시 45/45). (위 상단 "39/9" 문구는 오기: 정확한 1차 집계는 killed 34·survived 14.)
+
+추가 시험(시험 파일만, 소스 무수정): `web/backend/tests/verify_m23/test_vm_90_mutation_gaps.py` TC-VM-901~911(11개). 원본에서 11개 모두 통과, 위 표의 공백 변이 사본에서 실패 확인. 잔여: verify_failed 인 변경의 실제 롤백 면제 경로(#17)는 양성 시험 없음 — 후속 과제. 시간 상한 내 PostgreSQL 전용 시험은 제외.
+
+확인: `git diff --stat -- web/backend/ytweb` 결과 0줄(소스 무수정). 사본 디렉터리 삭제 완료.

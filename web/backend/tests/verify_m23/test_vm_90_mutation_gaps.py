@@ -6,7 +6,7 @@ from sqlalchemy.exc import InterfaceError, OperationalError
 
 from tests.domain.helpers import eligible_video_ids, queued_batch
 from tests.domain.test_live_guard import live_env  # noqa: F401
-from ytweb.db.models import BatchItem, Change
+from ytweb.db.models import AuditLog, BatchItem, Change
 from ytweb.domain import live_gateway as lg
 from ytweb.domain.batches import apply_one
 from ytweb.youtube.mock import MockYouTubeGateway
@@ -131,3 +131,28 @@ def test_tc_vm_908_google_state_mode_and_connected_depend_on_client_file_and_tok
     client.unlink()  # 토큰만 남고 클라이언트 파일 없음
     st = google_state(env)
     assert st["mode"] == "demo" and st["connected"] is False
+
+
+def test_tc_vm_909_is_fresh_rejects_naive_timestamp_and_keeps_aware_future():
+    from datetime import datetime, timedelta, timezone
+    from ytweb.youtube.google_oauth import TokenStore
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    assert TokenStore.is_fresh({"expires_at": (now + timedelta(hours=1)).replace(tzinfo=None).isoformat()}, now) is False
+    assert TokenStore.is_fresh({"expires_at": (now + timedelta(hours=1)).isoformat()}, now) is True
+
+
+def test_tc_vm_910_urllib_opener_does_not_follow_redirects():
+    import urllib.request
+    from ytweb.youtube import google_oauth as oauth
+    req = urllib.request.Request("https://example.invalid/", headers={"Authorization": "Bearer X"})
+    assert oauth._NoRedirect().redirect_request(req, None, 302, "Found", {}, "https://evil.invalid/") is None
+    opener = getattr(urllib.request, "_opener", None)
+    assert opener is not None and any(isinstance(h, oauth._NoRedirect) for h in opener.handlers)
+
+
+def test_tc_vm_911_unknown_state_callback_writes_no_audit_row(gapp, csrf, fg, db):
+    from sqlalchemy import func
+    before = db.execute(select(func.count()).select_from(AuditLog)).scalar_one()
+    assert gapp.get("/api/v1/google/callback?code=C&state=unknown-state", follow_redirects=False).status_code == 303
+    db.expire_all()
+    assert db.execute(select(func.count()).select_from(AuditLog)).scalar_one() == before
