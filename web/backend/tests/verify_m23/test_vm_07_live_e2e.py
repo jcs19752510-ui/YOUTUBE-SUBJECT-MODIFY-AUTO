@@ -361,10 +361,19 @@ def test_tc_vm_661_audit_chain_valid_and_records_live_actions(live):
         assert a in acts, a
 
 
-def test_tc_vm_662_dashboard_reports_live_state_consistently_OBSERVATION(live):
-    d = live.api.get("/api/v1/dashboard").json()
+def test_tc_vm_662_dashboard_live_flag_must_follow_real_state(live):
+    """홈 대시보드는 사용자에게 '라이브 켜짐/꺼짐'을 알려 주는 유일한 요약이다. 3조건이 모두 맞아 실제 수정이 가능한 상태면 켜짐이어야 한다."""
     s = live.api.get("/api/v1/google/status").json()
     assert s["live_write_ready"] is True and s["live_allowed_count"] == 1 and s["live_write_enabled"] is True
-    # 대시보드의 mode/live_enabled 는 M3 이전 고정값일 수 있다 — 값을 그대로 기록(판정 근거 아님)
-    print("dashboard mode/live_enabled:", d["mode"], d["live_enabled"])
-    assert d["mode"] in ("demo", "live")
+    d = live.api.get("/api/v1/dashboard").json()
+    assert d["live_enabled"] is True and d["mode"] == "live", f"대시보드가 실제 상태와 다름: mode={d['mode']}, live_enabled={d['live_enabled']}"
+
+
+def test_tc_vm_663_dashboard_google_connected_must_follow_real_state(live):
+    d = live.api.get("/api/v1/dashboard").json()
+    assert d["google"]["connected"] is True, f"구글 연결됨인데 대시보드 google={d['google']}"
+
+
+def test_tc_vm_664_dashboard_in_pure_demo_world_says_demo_and_live_off(gapp, csrf):
+    d = gapp.get("/api/v1/dashboard").json()
+    assert d["mode"] == "demo" and d["live_enabled"] is False and d["google"]["connected"] is False

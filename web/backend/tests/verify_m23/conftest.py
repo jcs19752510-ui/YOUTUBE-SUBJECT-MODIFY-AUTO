@@ -150,6 +150,8 @@ KNOWN_DEFECTS = {
     "test_tc_vm_122_many_unfinished_write_logins": "DEF-VM-003",
     "test_tc_vm_411_non_dict_body_must_be_gateway_error": "DEF-VM-005",
     "test_tc_vm_702_google_read_failure_during_recovery": "DEF-VM-009",
+    "test_tc_vm_662_dashboard_live_flag": "DEF-VM-010",
+    "test_tc_vm_663_dashboard_google_connected": "DEF-VM-010",
 }
 
 
