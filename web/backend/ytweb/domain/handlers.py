@@ -13,6 +13,9 @@ from ytweb.core.errors import ProblemError
 from ytweb.core.settings_store import DEFAULT_SUGGESTIONS_PER_VIDEO, get_web_setting
 from ytweb.db.models import Job
 from ytweb.domain.batches import run_due_items
+from ytweb.domain.live_sync import google_access_from_env, sync_live
+from ytweb.youtube.base import GatewayError
+from ytweb.youtube.live_read import YouTubeReader
 from ytweb.domain.common import default_env
 from ytweb.domain.seed import seed_demo
 from ytweb.domain.suggestions import generate_for_video
@@ -28,12 +31,29 @@ def _progress(factory: sessionmaker, job_id: str, n: int, total: int | None = No
 
 def handle_videos_sync(factory: sessionmaker, job: Job) -> dict:
     env, now = default_env(), utcnow()
+    access = google_access_from_env(env.secrets_dir)
+    if access.connected():  # 구글 연결이 돼 있으면 내 채널의 실제 영상 목록(읽기 전용)을 불러온다
+        return _sync_live(factory, job, env, access, now)
     with factory() as s:
         result = seed_demo(s, now, env.policy)
         audit.record(s, actor="worker", action="videos.sync", target_type="job", target_id=job.id, detail={"created": result.created, "updated": result.updated, "total": result.total}, now=now)
         s.commit()
     _progress(factory, job.id, result.total, result.total)
     return {"created": result.created, "updated": result.updated, "snapshots_created": result.snapshots_created, "total": result.total}
+
+
+def _sync_live(factory: sessionmaker, job: Job, env, access, now) -> dict:
+    reader = YouTubeReader(lambda: access.access_token(now))
+    try:
+        with factory() as s:
+            r = sync_live(s, reader, now, env.policy)
+            audit.record(s, actor="worker", action="videos.sync.live", target_type="job", target_id=job.id,
+                         detail={"created": r.created, "updated": r.updated, "total": r.total, "demo_removed": r.demo_removed}, now=now)
+            s.commit()
+    except GatewayError as e:
+        raise ProblemError(502, "google_" + e.code, "구글(유튜브) 영상 목록을 불러오지 못했습니다", e.message) from None
+    _progress(factory, job.id, r.total, r.total)
+    return {"created": r.created, "updated": r.updated, "snapshots_created": 0, "total": r.total, "source": "youtube", "demo_removed": r.demo_removed}
 
 
 def handle_suggestions_generate(factory: sessionmaker, job: Job) -> dict:
