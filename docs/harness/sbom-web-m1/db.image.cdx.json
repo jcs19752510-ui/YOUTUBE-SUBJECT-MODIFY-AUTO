@@ -2,10 +2,10 @@
  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
  "bomFormat": "CycloneDX",
  "specVersion": "1.7",
- "serialNumber": "urn:uuid:633470c6-c766-42a1-8de9-e268c8761b33",
+ "serialNumber": "urn:uuid:9a0e8c2d-03b5-4c33-9bf0-1e193584d9f6",
  "version": 1,
  "metadata": {
-  "timestamp": "2026-10-11T08:15:55+00:00",
+  "timestamp": "2026-10-11T09:01:54+00:00",
   "tools": {
    "components": [
     {
@@ -20,9 +20,9 @@
    ]
   },
   "component": {
-   "bom-ref": "de92ded2-e4b7-4ea9-bfe3-c23437e46a7c",
+   "bom-ref": "5aff259a-5e9a-4f6d-be18-a6fab0b43e17",
    "type": "container",
-   "name": "ytweb-db image (PostgreSQL 17 + 초기화 스크립트)",
+   "name": "ytweb-db:local (docker image, built from web/docker/db.Dockerfile)",
    "properties": [
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -38,10 +38,6 @@
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:420010beef17b3bda7d9724590a6c70e88a0e322c30059c381dddae7e098c7d6"
-    },
-    {
-     "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:5942497814fb7d0528685166ad6152e616850cbe99bb5717b5df42965bbc5d82"
     },
     {
@@ -50,11 +46,7 @@
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:75573eda5499aaa74f7e53d31d5ece9a8251dab0d6ace8c8186829e08783eeec"
-    },
-    {
-     "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:767aab354a6aaeb2cc2e457ce16a304bd7c350c210070cf227d01168b6cb3766"
+     "value": "sha256:6dc911835a05320004200d7c1b6b2251300ab467039e5d7430cf24882f5d4948"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -62,7 +54,7 @@
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:7b5ef3056491989c81f4bdc8856ad5351efd1ef2651125acc0c04112ea7794d4"
+     "value": "sha256:800ffcbfb457c3ddc0bd0be70f91b0e172c1d7909e13df4461ac54b8617ac55b"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -74,7 +66,15 @@
     },
     {
      "name": "aquasecurity:trivy:DiffID",
+     "value": "sha256:a95b080d939503c8c561ed582e283620056bec3150d4be4269173d45577ef06a"
+    },
+    {
+     "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:b86701429362be1890ab3c0f46ead475a134d071bd385739340dce8b82071c8f"
+    },
+    {
+     "name": "aquasecurity:trivy:DiffID",
+     "value": "sha256:cb5aec7f35034f02bdc40e3b8a2e5a635252b310fc1eb97f4c60eb285865ce24"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -86,15 +86,11 @@
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:e5211d705d9eb819d7678600f5a9d6cf070f638c08d6b833013d086d8fcfeb9d"
-    },
-    {
-     "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:e58989146fcec76699871403b9897b5c014af1ccd85f5a9300a215e7975525d7"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:e6ea3f1b0715c0da4ceeb25407a80e87619363b55325b422a2de15076e1d7b1f"
+     "value": "sha256:ee759eb6b5fd1ed0d1b25b26b6e460e215afd944699f462f47292943cf5e6bf6"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -105,16 +101,20 @@
      "value": "sha256:f6e8749b3f1e1f03e3a35aff3cb51dfe35c6b94aaa1aa0842b338dd2a1b1ad23"
     },
     {
+     "name": "aquasecurity:trivy:DiffID",
+     "value": "sha256:f705c88ab99217cb1efbaa9e72ade5b6c24c0f02f7a72bcf42f48f396b884d07"
+    },
+    {
      "name": "aquasecurity:trivy:ImageID",
-     "value": "sha256:7917fd0409bbbaf787536216b720933239ef8d6d40f7a7dd165ad378c7e15179"
+     "value": "sha256:4a2e3c56fd1bec6943554c318a38b3d8af4bf46c21374b81bf365ab3b71a5911"
     },
     {
      "name": "aquasecurity:trivy:Reference",
-     "value": "ytweb-db:local"
+     "value": "harness-tmp-sec-db:local"
     },
     {
      "name": "aquasecurity:trivy:RepoTag",
-     "value": "ytweb-db:local"
+     "value": "harness-tmp-sec-db:local"
     },
     {
      "name": "aquasecurity:trivy:SchemaVersion",
@@ -123,33 +123,13 @@
     {
      "name": "aquasecurity:trivy:Size",
      "value": "453477376"
-    },
-    {
-     "name": "ytweb:dockerfile",
-     "value": "web/docker/db.Dockerfile"
-    },
-    {
-     "name": "ytweb:base-image",
-     "value": "postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
-    },
-    {
-     "name": "ytweb:generated-by",
-     "value": "harness stage 9 (web M1): trivy 0.75.0 image --format cyclonedx, 2026-10-11"
-    },
-    {
-     "name": "ytweb:build-note",
-     "value": "builder 단계에만 프록시 CA 2줄을 더한 Dockerfile 사본으로 빌드(최종 단계 동일). 이미지 ID 는 빌드마다 달라질 수 있음"
-    },
-    {
-     "name": "ytweb:privacy-note",
-     "value": "패키지 관리자·유지보수자 이메일 주소는 개인정보 최소화를 위해 제거함(supplier.name 의 <...> 부분)"
     }
    ]
   }
  },
  "components": [
   {
-   "bom-ref": "45966f6c-1f83-448d-be7b-e6ed87f06167",
+   "bom-ref": "88e5230c-40d1-47c0-bd6c-178fd4d60017",
    "type": "operating-system",
    "name": "debian",
    "version": "12.15",
@@ -165,7 +145,7 @@
    ]
   },
   {
-   "bom-ref": "bfc8fbc8-debb-4fec-adf9-9d6d6bf764d9",
+   "bom-ref": "986b0f5f-fb1d-4ed9-b599-21106c9ab1f4",
    "type": "application",
    "name": "usr/local/bin/gosu",
    "properties": [
@@ -4912,7 +4892,7 @@
    "bom-ref": "pkg:deb/debian/libicu72@72.1-3%2Bdeb12u1?arch=amd64&distro=debian-12.15",
    "type": "library",
    "supplier": {
-    "name": "Laszlo Boszormenyi (GCS)"
+    "name": "Laszlo Boszormenyi (GCS"
    },
    "name": "libicu72",
    "version": "72.1-3+deb12u1",
@@ -7734,7 +7714,7 @@
    "bom-ref": "pkg:deb/debian/libsqlite3-0@3.40.1-2%2Bdeb12u2?arch=amd64&distro=debian-12.15",
    "type": "library",
    "supplier": {
-    "name": "Laszlo Boszormenyi (GCS)"
+    "name": "Laszlo Boszormenyi (GCS"
    },
    "name": "libsqlite3-0",
    "version": "3.40.1-2+deb12u2",
@@ -11387,7 +11367,14 @@
  ],
  "dependencies": [
   {
-   "ref": "45966f6c-1f83-448d-be7b-e6ed87f06167",
+   "ref": "5aff259a-5e9a-4f6d-be18-a6fab0b43e17",
+   "dependsOn": [
+    "88e5230c-40d1-47c0-bd6c-178fd4d60017",
+    "986b0f5f-fb1d-4ed9-b599-21106c9ab1f4"
+   ]
+  },
+  {
+   "ref": "88e5230c-40d1-47c0-bd6c-178fd4d60017",
    "dependsOn": [
     "pkg:deb/debian/apt@2.6.1?arch=amd64&distro=debian-12.15",
     "pkg:deb/debian/base-passwd@3.6.1?arch=amd64&distro=debian-12.15",
@@ -11425,16 +11412,9 @@
    ]
   },
   {
-   "ref": "bfc8fbc8-debb-4fec-adf9-9d6d6bf764d9",
+   "ref": "986b0f5f-fb1d-4ed9-b599-21106c9ab1f4",
    "dependsOn": [
     "pkg:golang/github.com/tianon/gosu@v1.19.0"
-   ]
-  },
-  {
-   "ref": "de92ded2-e4b7-4ea9-bfe3-c23437e46a7c",
-   "dependsOn": [
-    "45966f6c-1f83-448d-be7b-e6ed87f06167",
-    "bfc8fbc8-debb-4fec-adf9-9d6d6bf764d9"
    ]
   },
   {

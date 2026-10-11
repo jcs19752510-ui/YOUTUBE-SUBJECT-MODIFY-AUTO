@@ -1,97 +1,16 @@
 {
- "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
  "bomFormat": "CycloneDX",
  "specVersion": "1.6",
  "version": 1,
- "serialNumber": "urn:uuid:b3aafee9-c909-4d84-938b-b467d293397a",
+ "serialNumber": "urn:uuid:4dcfde75-aed4-4529-9ad3-b5029b782b09",
  "metadata": {
-  "timestamp": "2026-10-11T08:17:14.526Z",
+  "timestamp": "2026-10-11T09:02:53Z",
   "tools": {
    "components": [
     {
      "type": "application",
-     "name": "npm",
-     "version": "10.9.4"
-    },
-    {
-     "type": "application",
-     "name": "cyclonedx-npm",
-     "group": "@cyclonedx",
-     "version": "6.0.1",
-     "author": "Jan Kowalleck",
-     "description": "Create CycloneDX Software Bill of Materials (SBOM) from NPM projects.",
-     "licenses": [
-      {
-       "license": {
-        "id": "Apache-2.0"
-       }
-      }
-     ],
-     "externalReferences": [
-      {
-       "url": "git+https://github.com/CycloneDX/cyclonedx-node-npm.git",
-       "type": "vcs",
-       "comment": "as detected from PackageJson property \"repository.url\""
-      },
-      {
-       "url": "https://github.com/CycloneDX/cyclonedx-node-npm#readme",
-       "type": "website",
-       "comment": "as detected from PackageJson property \"homepage\""
-      },
-      {
-       "url": "https://github.com/CycloneDX/cyclonedx-node-npm/issues",
-       "type": "issue-tracker",
-       "comment": "as detected from PackageJson property \"bugs.url\""
-      }
-     ],
-     "properties": [
-      {
-       "name": "cdx:npm:package:constraint:engine:node",
-       "value": ">=20.18.0"
-      },
-      {
-       "name": "cdx:npm:package:constraint:engine:npm",
-       "value": ">=9"
-      }
-     ]
-    },
-    {
-     "type": "library",
-     "name": "cyclonedx-library",
-     "group": "@cyclonedx",
-     "version": "10.3.0",
-     "author": "Jan Kowalleck",
-     "description": "Core functionality of CycloneDX for JavaScript (Node.js or WebBrowser).",
-     "licenses": [
-      {
-       "license": {
-        "id": "Apache-2.0"
-       }
-      }
-     ],
-     "externalReferences": [
-      {
-       "url": "git+https://github.com/CycloneDX/cyclonedx-javascript-library.git",
-       "type": "vcs",
-       "comment": "as detected from PackageJson property \"repository.url\""
-      },
-      {
-       "url": "https://github.com/CycloneDX/cyclonedx-javascript-library#readme",
-       "type": "website",
-       "comment": "as detected from PackageJson property \"homepage\""
-      },
-      {
-       "url": "https://github.com/CycloneDX/cyclonedx-javascript-library/issues",
-       "type": "issue-tracker",
-       "comment": "as detected from PackageJson property \"bugs.url\""
-      }
-     ],
-     "properties": [
-      {
-       "name": "cdx:npm:package:constraint:engine:node",
-       "value": ">=20.18.0"
-      }
-     ]
+     "name": "sbom_from_npm_lock.py (web/tests_security)",
+     "version": "1"
     }
    ]
   },
@@ -99,389 +18,242 @@
    "type": "application",
    "name": "ytitle-web-frontend",
    "version": "0.1.0",
-   "bom-ref": "ytitle-web-frontend@0.1.0",
-   "purl": "pkg:npm/ytitle-web-frontend@0.1.0",
-   "properties": [
-    {
-     "name": "cdx:npm:package:constraint:engine:node",
-     "value": ">=22.12.0"
-    },
-    {
-     "name": "cdx:npm:package:private",
-     "value": "true"
-    },
-    {
-     "name": "cdx:npm:package:path",
-     "value": ""
-    }
-   ]
-  }
+   "bom-ref": "root"
+  },
+  "properties": [
+   {
+    "name": "scope",
+    "value": "production-only"
+   }
+  ]
  },
  "components": [
   {
    "type": "library",
-   "name": "react-query",
-   "group": "@tanstack",
+   "bom-ref": "pkg:npm/%40tanstack/query-core@5.104.1",
+   "name": "@tanstack/query-core",
    "version": "5.104.1",
-   "bom-ref": "ytitle-web-frontend@0.1.0|@tanstack/react-query@5.104.1",
-   "licenses": [
-    {
-     "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
-     }
-    }
-   ],
-   "purl": "pkg:npm/%40tanstack/react-query@5.104.1",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.104.1.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "673ef41208da84d23b682cfc059c4cdef506538e32731100cccb825232de03b4958613a48376603e33c93ef1e3b3a466932fddb669eed56ce31873479a10a865"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/@tanstack/react-query"
-    }
-   ]
-  },
-  {
-   "type": "library",
-   "name": "react-dom",
-   "version": "19.3.0",
-   "bom-ref": "ytitle-web-frontend@0.1.0|react-dom@19.3.0",
-   "licenses": [
-    {
-     "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
-     }
-    }
-   ],
-   "purl": "pkg:npm/react-dom@19.3.0",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.0.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "24393c76089fe753a31680c4ef4f8e4fd202c98afeebd1e59a284dc29d7e36c7db9dadede6c22209af59264b43990e3fd5bfeb9f6ea1200476b985c332be6bd1"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/react-dom"
-    }
-   ]
-  },
-  {
-   "type": "library",
-   "name": "react-router-dom",
-   "version": "7.18.4",
-   "bom-ref": "ytitle-web-frontend@0.1.0|react-router-dom@7.18.4",
-   "licenses": [
-    {
-     "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
-     }
-    }
-   ],
-   "purl": "pkg:npm/react-router-dom@7.18.4",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.18.4.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "cab7e62472290c6eed682a6a2a34f51b907aab73b62be44df3f7e035fd254e30b088f6d0d1e8babd75fd663411fbb95df13afb679c66c8c9d9f1826ba6159053"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/react-router-dom"
-    }
-   ]
-  },
-  {
-   "type": "library",
-   "name": "react",
-   "version": "19.3.0",
-   "bom-ref": "ytitle-web-frontend@0.1.0|react@19.3.0",
-   "licenses": [
-    {
-     "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
-     }
-    }
-   ],
-   "purl": "pkg:npm/react@19.3.0",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/react/-/react-19.3.0.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "13c2d471bb415addb46db9766281dfc7864305dc554df38ab42667f5c0d227897afe7ba8029729201723e3bb76c19a155fc836647b8c1db892860091d53e52a2"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/react"
-    }
-   ]
-  },
-  {
-   "type": "library",
-   "name": "query-core",
-   "group": "@tanstack",
-   "version": "5.104.1",
-   "bom-ref": "ytitle-web-frontend@0.1.0|@tanstack/query-core@5.104.1",
-   "licenses": [
-    {
-     "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
-     }
-    }
-   ],
    "purl": "pkg:npm/%40tanstack/query-core@5.104.1",
-   "externalReferences": [
+   "hashes": [
     {
-     "url": "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.104.1.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "4e246085cac69144c4f8ce09071be93d2a41871bc8cd06a2af0f9c92cac7606afedaec02efbc96d5263d9d8c6761160ea69bee71ff2b120e9be5bca8cf8ad3a7"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+     "alg": "SHA-512",
+     "content": "4e246085cac69144c4f8ce09071be93d2a41871bc8cd06a2af0f9c92cac7606afedaec02efbc96d5263d9d8c6761160ea69bee71ff2b120e9be5bca8cf8ad3a7"
     }
    ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/@tanstack/query-core"
-    }
-   ]
-  },
-  {
-   "type": "library",
-   "name": "scheduler",
-   "version": "0.28.0",
-   "bom-ref": "ytitle-web-frontend@0.1.0|scheduler@0.28.0",
    "licenses": [
     {
      "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
+      "id": "MIT"
      }
-    }
-   ],
-   "purl": "pkg:npm/scheduler@0.28.0",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "8eea2b7c2988908c3cb53fa9e415d29ba3c98d017fc9c11898acb3511088b7f45a64884bf8fba56d0f58bb6cf51dd3890dda834e5c40d7ec4a0661d726c73303"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/scheduler"
     }
    ]
   },
   {
    "type": "library",
-   "name": "react-router",
-   "version": "7.18.4",
-   "bom-ref": "ytitle-web-frontend@0.1.0|react-router@7.18.4",
+   "bom-ref": "pkg:npm/%40tanstack/react-query@5.104.1",
+   "name": "@tanstack/react-query",
+   "version": "5.104.1",
+   "purl": "pkg:npm/%40tanstack/react-query@5.104.1",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "673ef41208da84d23b682cfc059c4cdef506538e32731100cccb825232de03b4958613a48376603e33c93ef1e3b3a466932fddb669eed56ce31873479a10a865"
+    }
+   ],
    "licenses": [
     {
      "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
+      "id": "MIT"
      }
-    }
-   ],
-   "purl": "pkg:npm/react-router@7.18.4",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/react-router/-/react-router-7.18.4.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "3d43d070c84c19102c94b72fb653f3fe49b304458f84b7602c5acbee92cd7a904be9d5f49568f8583d9c518560602b93de3c6f82160583cd5c0d38f8e0385eb5"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/react-router"
     }
    ]
   },
   {
    "type": "library",
+   "bom-ref": "pkg:npm/cookie@1.1.1",
    "name": "cookie",
    "version": "1.1.1",
-   "bom-ref": "ytitle-web-frontend@0.1.0|cookie@1.1.1",
+   "purl": "pkg:npm/cookie@1.1.1",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "7a2f00a2cee36b4c1e469173267100f541c9ffb5d09aa8256d1c277f60138dc07d5aaf3be15287f647e38e2acce94854dbf1397c561a77297284595d72a4a275"
+    }
+   ],
    "licenses": [
     {
      "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
+      "id": "MIT"
      }
-    }
-   ],
-   "purl": "pkg:npm/cookie@1.1.1",
-   "externalReferences": [
-    {
-     "url": "https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "7a2f00a2cee36b4c1e469173267100f541c9ffb5d09aa8256d1c277f60138dc07d5aaf3be15287f647e38e2acce94854dbf1397c561a77297284595d72a4a275"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-    }
-   ],
-   "properties": [
-    {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/cookie"
     }
    ]
   },
   {
    "type": "library",
-   "name": "set-cookie-parser",
-   "version": "2.7.2",
-   "bom-ref": "ytitle-web-frontend@0.1.0|set-cookie-parser@2.7.2",
+   "bom-ref": "pkg:npm/react@19.3.0",
+   "name": "react",
+   "version": "19.3.0",
+   "purl": "pkg:npm/react@19.3.0",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "13c2d471bb415addb46db9766281dfc7864305dc554df38ab42667f5c0d227897afe7ba8029729201723e3bb76c19a155fc836647b8c1db892860091d53e52a2"
+    }
+   ],
    "licenses": [
     {
      "license": {
-      "id": "MIT",
-      "acknowledgement": "declared"
+      "id": "MIT"
      }
     }
-   ],
-   "purl": "pkg:npm/set-cookie-parser@2.7.2",
-   "externalReferences": [
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react-dom@19.3.0",
+   "name": "react-dom",
+   "version": "19.3.0",
+   "purl": "pkg:npm/react-dom@19.3.0",
+   "hashes": [
     {
-     "url": "https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-2.7.2.tgz",
-     "type": "distribution",
-     "hashes": [
-      {
-       "alg": "SHA-512",
-       "content": "a1e33596953f52f853c70fa0ddc21fc571f225173fba275ddf22b53f6e368331ddb34b9d401633b37cbc8f8802096f9927b69dd3272d95df1160ef9b76eae5bf"
-      }
-     ],
-     "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+     "alg": "SHA-512",
+     "content": "24393c76089fe753a31680c4ef4f8e4fd202c98afeebd1e59a284dc29d7e36c7db9dadede6c22209af59264b43990e3fd5bfeb9f6ea1200476b985c332be6bd1"
     }
    ],
-   "properties": [
+   "licenses": [
     {
-     "name": "cdx:npm:package:path",
-     "value": "node_modules/set-cookie-parser"
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react-router@7.18.4",
+   "name": "react-router",
+   "version": "7.18.4",
+   "purl": "pkg:npm/react-router@7.18.4",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "3d43d070c84c19102c94b72fb653f3fe49b304458f84b7602c5acbee92cd7a904be9d5f49568f8583d9c518560602b93de3c6f82160583cd5c0d38f8e0385eb5"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react-router-dom@7.18.4",
+   "name": "react-router-dom",
+   "version": "7.18.4",
+   "purl": "pkg:npm/react-router-dom@7.18.4",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "cab7e62472290c6eed682a6a2a34f51b907aab73b62be44df3f7e035fd254e30b088f6d0d1e8babd75fd663411fbb95df13afb679c66c8c9d9f1826ba6159053"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/scheduler@0.28.0",
+   "name": "scheduler",
+   "version": "0.28.0",
+   "purl": "pkg:npm/scheduler@0.28.0",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "8eea2b7c2988908c3cb53fa9e415d29ba3c98d017fc9c11898acb3511088b7f45a64884bf8fba56d0f58bb6cf51dd3890dda834e5c40d7ec4a0661d726c73303"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/set-cookie-parser@2.7.2",
+   "name": "set-cookie-parser",
+   "version": "2.7.2",
+   "purl": "pkg:npm/set-cookie-parser@2.7.2",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "a1e33596953f52f853c70fa0ddc21fc571f225173fba275ddf22b53f6e368331ddb34b9d401633b37cbc8f8802096f9927b69dd3272d95df1160ef9b76eae5bf"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
     }
    ]
   }
  ],
  "dependencies": [
   {
-   "ref": "ytitle-web-frontend@0.1.0",
+   "ref": "pkg:npm/%40tanstack/query-core@5.104.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:npm/%40tanstack/react-query@5.104.1",
    "dependsOn": [
-    "ytitle-web-frontend@0.1.0|@tanstack/react-query@5.104.1",
-    "ytitle-web-frontend@0.1.0|react-dom@19.3.0",
-    "ytitle-web-frontend@0.1.0|react-router-dom@7.18.4",
-    "ytitle-web-frontend@0.1.0|react@19.3.0"
+    "pkg:npm/%40tanstack/query-core@5.104.1"
    ]
   },
   {
-   "ref": "ytitle-web-frontend@0.1.0|@tanstack/react-query@5.104.1",
+   "ref": "pkg:npm/cookie@1.1.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:npm/react-dom@19.3.0",
    "dependsOn": [
-    "ytitle-web-frontend@0.1.0|@tanstack/query-core@5.104.1",
-    "ytitle-web-frontend@0.1.0|react@19.3.0"
+    "pkg:npm/scheduler@0.28.0"
    ]
   },
   {
-   "ref": "ytitle-web-frontend@0.1.0|react-dom@19.3.0",
+   "ref": "pkg:npm/react-router-dom@7.18.4",
    "dependsOn": [
-    "ytitle-web-frontend@0.1.0|react@19.3.0",
-    "ytitle-web-frontend@0.1.0|scheduler@0.28.0"
+    "pkg:npm/react-router@7.18.4"
    ]
   },
   {
-   "ref": "ytitle-web-frontend@0.1.0|react-router-dom@7.18.4",
+   "ref": "pkg:npm/react-router@7.18.4",
    "dependsOn": [
-    "ytitle-web-frontend@0.1.0|react-dom@19.3.0",
-    "ytitle-web-frontend@0.1.0|react-router@7.18.4",
-    "ytitle-web-frontend@0.1.0|react@19.3.0"
+    "pkg:npm/cookie@1.1.1",
+    "pkg:npm/set-cookie-parser@2.7.2"
    ]
   },
   {
-   "ref": "ytitle-web-frontend@0.1.0|react@19.3.0"
+   "ref": "pkg:npm/react@19.3.0",
+   "dependsOn": []
   },
   {
-   "ref": "ytitle-web-frontend@0.1.0|@tanstack/query-core@5.104.1"
+   "ref": "pkg:npm/scheduler@0.28.0",
+   "dependsOn": []
   },
   {
-   "ref": "ytitle-web-frontend@0.1.0|scheduler@0.28.0"
-  },
-  {
-   "ref": "ytitle-web-frontend@0.1.0|react-router@7.18.4",
-   "dependsOn": [
-    "ytitle-web-frontend@0.1.0|cookie@1.1.1",
-    "ytitle-web-frontend@0.1.0|react-dom@19.3.0",
-    "ytitle-web-frontend@0.1.0|react@19.3.0",
-    "ytitle-web-frontend@0.1.0|set-cookie-parser@2.7.2"
-   ]
-  },
-  {
-   "ref": "ytitle-web-frontend@0.1.0|cookie@1.1.1"
-  },
-  {
-   "ref": "ytitle-web-frontend@0.1.0|set-cookie-parser@2.7.2"
+   "ref": "pkg:npm/set-cookie-parser@2.7.2",
+   "dependsOn": []
   }
  ]
 }

@@ -409,3 +409,11 @@ def test_ci_files_inventory_and_known_hardening_gaps():
     assert "npm install -g @anthropic-ai/claude-code" in wf and "@anthropic-ai/claude-code@" not in wf  # 버전 미고정
     assert re.search(r"^env:\s*\n\s+ANTHROPIC_API_KEY", wf, re.M)  # 비밀이 워크플로 전체 환경변수
     assert "production-deploy-approval" in wf              # 배포 승인 environment 는 있음
+
+
+@pytest.mark.xfail(strict=True, reason="DEF-9-017: .dockerignore 는 거부 목록이라 *.pem·*.key·credentials*.json·.ruff_cache 등 비밀형/개발 캐시 파일이 이미지 빌드 컨텍스트에 들어갈 수 있다. 허용 목록 방식으로 바꾸거나 항목을 추가한 뒤 이 표식을 지운다.")
+def test_dockerignore_covers_secret_like_and_dev_cache_patterns():
+    lines = {l.strip() for l in (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
+    allowlist = "*" in lines  # 허용 목록 방식이면 아래 항목은 필요 없다
+    needed = {"*.pem", "*.key", "credentials*.json", ".ruff_cache", "**/.ruff_cache"}
+    assert allowlist or ({"*.pem", "*.key"} <= lines and "credentials*.json" in lines and bool(lines & {".ruff_cache", "**/.ruff_cache"})), needed - lines

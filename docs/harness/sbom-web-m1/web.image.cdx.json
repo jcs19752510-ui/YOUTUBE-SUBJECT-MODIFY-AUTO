@@ -2,10 +2,10 @@
  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
  "bomFormat": "CycloneDX",
  "specVersion": "1.7",
- "serialNumber": "urn:uuid:24f0f458-e83d-48dd-9da9-7388ab0937b9",
+ "serialNumber": "urn:uuid:2fcfbb31-16fa-414c-b19a-874eac947c9e",
  "version": 1,
  "metadata": {
-  "timestamp": "2026-10-11T08:15:50+00:00",
+  "timestamp": "2026-10-11T09:01:53+00:00",
   "tools": {
    "components": [
     {
@@ -20,25 +20,25 @@
    ]
   },
   "component": {
-   "bom-ref": "076195c4-bd22-419e-8882-0e6ac6fb9756",
+   "bom-ref": "2ee0797a-38e6-4771-ba37-4e79d50e3b59",
    "type": "container",
-   "name": "ytweb-web image (nginx + React build)",
+   "name": "ytweb-web:local (docker image, built from web/docker/web.Dockerfile)",
    "properties": [
+    {
+     "name": "aquasecurity:trivy:DiffID",
+     "value": "sha256:228b98bee9c8523d3f67c2f804d32b798019d730794f451a9929083879fafe01"
+    },
     {
      "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:28d40a9a804fab1489cbd2881dbb3543819fdad3c0ba7d318196fe508d3f9939"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:3a72d2a78b8bbeb97d25f5388c928751043681aa3ab7608804c4ccd367524e26"
+     "value": "sha256:2c29321185261f63caac68da8c09c0f254e77eb014332f464d44622456aca8b1"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:44304498376bb7b7afa09fddd9ecc91c2247acdf9a17f314486e80a3e2598d56"
-    },
-    {
-     "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:475758819b5b31b372765592eddf271107ae6f038c3cce8a64357c30e189e100"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -47,6 +47,10 @@
     {
      "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:66308c73e780a4f695fd32a40b5d76fa2addab15fc1459f9a78c107af639c4c2"
+    },
+    {
+     "name": "aquasecurity:trivy:DiffID",
+     "value": "sha256:708b96a20fcdf203bf201c314c2f5fb5f3ba824b144c02c9b7587118dffebb81"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
@@ -62,23 +66,19 @@
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:b5eb5d0c67f17455b39f763ac1b8e4eacf0a59382b0802dc47e947b850f58795"
+     "value": "sha256:afb94c1ed3669e0210959aa936da2a0f398ea106f6bb336af9252ab26659423d"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:d98409d8fb122479f336cef15279a523b40e99d253af737774c7c4e24b4d04ce"
+     "value": "sha256:b5eb5d0c67f17455b39f763ac1b8e4eacf0a59382b0802dc47e947b850f58795"
     },
     {
      "name": "aquasecurity:trivy:DiffID",
      "value": "sha256:da908592be251a15b39387ab8c97f4899e75dbef111015bdf11e248339f0c693"
     },
     {
-     "name": "aquasecurity:trivy:DiffID",
-     "value": "sha256:e3b1fccda6d367fcdb02ef61fb80b7030e916d266349935a3334c5cd120bb453"
-    },
-    {
      "name": "aquasecurity:trivy:ImageID",
-     "value": "sha256:8f12d833747d190a8d8bab216701afab162571247288d97202759d3ad45ca7bd"
+     "value": "sha256:475ba39e7b40744a66fa5d4649abc0627f501b265aac0d4eb55aab15953ccb35"
     },
     {
      "name": "aquasecurity:trivy:Labels:maintainer",
@@ -118,11 +118,11 @@
     },
     {
      "name": "aquasecurity:trivy:Reference",
-     "value": "ytweb-web:local"
+     "value": "harness-tmp-sec-web:local"
     },
     {
      "name": "aquasecurity:trivy:RepoTag",
-     "value": "ytweb-web:local"
+     "value": "harness-tmp-sec-web:local"
     },
     {
      "name": "aquasecurity:trivy:SchemaVersion",
@@ -131,33 +131,13 @@
     {
      "name": "aquasecurity:trivy:Size",
      "value": "61907456"
-    },
-    {
-     "name": "ytweb:dockerfile",
-     "value": "web/docker/web.Dockerfile"
-    },
-    {
-     "name": "ytweb:base-image",
-     "value": "nginxinc/nginx-unprivileged:stable-alpine@sha256:15c994d10d6d78658721c3bcafff14cb281fba2a4bdf9d5ba92c416a472516e3"
-    },
-    {
-     "name": "ytweb:generated-by",
-     "value": "harness stage 9 (web M1): trivy 0.75.0 image --format cyclonedx, 2026-10-11"
-    },
-    {
-     "name": "ytweb:build-note",
-     "value": "builder 단계에만 프록시 CA 2줄을 더한 Dockerfile 사본으로 빌드(최종 단계 동일). 이미지 ID 는 빌드마다 달라질 수 있음"
-    },
-    {
-     "name": "ytweb:privacy-note",
-     "value": "패키지 관리자·유지보수자 이메일 주소는 개인정보 최소화를 위해 제거함(supplier.name 의 <...> 부분)"
     }
    ]
   }
  },
  "components": [
   {
-   "bom-ref": "4b57c35e-dbad-432b-a795-2eb8a293fc7f",
+   "bom-ref": "8d2744ab-7041-4108-8f7b-86273a8e9c9e",
    "type": "operating-system",
    "name": "alpine",
    "version": "3.24.2",
@@ -3770,13 +3750,13 @@
  ],
  "dependencies": [
   {
-   "ref": "076195c4-bd22-419e-8882-0e6ac6fb9756",
+   "ref": "2ee0797a-38e6-4771-ba37-4e79d50e3b59",
    "dependsOn": [
-    "4b57c35e-dbad-432b-a795-2eb8a293fc7f"
+    "8d2744ab-7041-4108-8f7b-86273a8e9c9e"
    ]
   },
   {
-   "ref": "4b57c35e-dbad-432b-a795-2eb8a293fc7f",
+   "ref": "8d2744ab-7041-4108-8f7b-86273a8e9c9e",
    "dependsOn": [
     "pkg:apk/alpine/alpine-baselayout@3.7.2-r1?arch=x86_64&distro=3.24.2",
     "pkg:apk/alpine/alpine-release@3.24.2-r0?arch=x86_64&distro=3.24.2",

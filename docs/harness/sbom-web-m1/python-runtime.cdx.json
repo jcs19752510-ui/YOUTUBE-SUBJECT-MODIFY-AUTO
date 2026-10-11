@@ -1069,17 +1069,6 @@
   },
   {
    "dependsOn": [
-    "SQLAlchemy==2.1.4",
-    "alembic==1.20.0",
-    "fastapi==0.143.0",
-    "psycopg==3.3.6",
-    "pydantic==2.14.0",
-    "uvicorn==0.54.0"
-   ],
-   "ref": "root-component"
-  },
-  {
-   "dependsOn": [
     "PyYAML==6.0.3",
     "anyio==4.15.1",
     "opentelemetry-api==1.45.1",
@@ -1111,14 +1100,7 @@
   }
  ],
  "metadata": {
-  "component": {
-   "bom-ref": "root-component",
-   "description": "ytitle 웹 백엔드(데모 모드 M1)",
-   "name": "ytweb",
-   "type": "application",
-   "version": "0.1.0"
-  },
-  "timestamp": "2026-10-11T08:16:25.014320+00:00",
+  "timestamp": "2026-10-11T09:01:09.444570+00:00",
   "tools": {
    "components": [
     {
@@ -1222,7 +1204,7 @@
    ]
   }
  },
- "serialNumber": "urn:uuid:d01c9d25-35d7-4ed7-a93d-572cd1a38a7a",
+ "serialNumber": "urn:uuid:793c3937-2032-4ebc-af83-c07316bcd268",
  "version": 1,
  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
  "bomFormat": "CycloneDX",
