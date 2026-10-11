@@ -162,8 +162,11 @@ export interface Precheck {
   quota_remaining_units: number;
   schedule: { date: string; count: number }[];
   warnings: string[];
-  blocked: { suggestion_id: number; reason: string }[];
+  /** video_id·video_title 은 서버가 주면 쓰고(선택), 없으면 화면이 제안 목록에서 찾는다 */
+  blocked: { suggestion_id: number; reason: string; video_id?: string; video_title?: string }[];
   confirm_text: string;
+  /** 서버가 내려 주는 면책 문구(선택). 없으면 화면 문구(ko.legal.disclaimer)를 쓴다 */
+  notice?: string;
 }
 export interface Batch {
   id: number;

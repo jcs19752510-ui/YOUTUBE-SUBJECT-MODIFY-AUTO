@@ -199,6 +199,7 @@ def test_session_issue_purges_expired_rows(web_settings, engine, factory, clock,
         assert s.execute(select(func.count()).select_from(SessionRow)).scalar_one() == 1
 
 
+@pytest.mark.no_idle
 def test_session_lookup_updates_last_seen_but_not_expiry(client, clock, factory):
     """TC-VA-171 [S-W08] 세션 사용 시 last_seen 은 현재 시각으로 갱신되고 만료 시각(절대 TTL)은 늘어나지 않는다."""
     from sqlalchemy import select

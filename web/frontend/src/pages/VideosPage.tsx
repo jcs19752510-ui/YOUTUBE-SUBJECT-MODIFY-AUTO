@@ -194,19 +194,21 @@ export function VideosPage() {
               <thead>
                 <tr>
                   <th scope="col">
-                    <input
-                      ref={headRef}
-                      type="checkbox"
-                      aria-label={ko.videos.selectPage}
-                      checked={allOnPage}
-                      disabled={selectable.length === 0}
-                      onChange={(e) =>
-                        sel.setMany(
-                          selectable.map((v) => ({ id: v.video_id, title: v.title })),
-                          e.target.checked,
-                        )
-                      }
-                    />
+                    <label className="check-hit">
+                      <input
+                        ref={headRef}
+                        type="checkbox"
+                        aria-label={ko.videos.selectPage}
+                        checked={allOnPage}
+                        disabled={selectable.length === 0}
+                        onChange={(e) =>
+                          sel.setMany(
+                            selectable.map((v) => ({ id: v.video_id, title: v.title })),
+                            e.target.checked,
+                          )
+                        }
+                      />
+                    </label>
                   </th>
                   <SortHeader
                     label={ko.videos.colTitle}
@@ -337,13 +339,15 @@ function Row({
   return (
     <tr aria-selected={selected}>
       <td>
-        <input
-          type="checkbox"
-          checked={selected}
-          disabled={v.excluded}
-          aria-label={ko.videos.selectOne(v.title)}
-          onChange={onToggle}
-        />
+        <label className="check-hit">
+          <input
+            type="checkbox"
+            checked={selected}
+            disabled={v.excluded}
+            aria-label={ko.videos.selectOne(v.title)}
+            onChange={onToggle}
+          />
+        </label>
       </td>
       <td className="cell-title">
         <Link to={`/videos/${encodeURIComponent(v.video_id)}`}>{v.title}</Link>

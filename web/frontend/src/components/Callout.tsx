@@ -7,14 +7,16 @@ export function Callout({
   title,
   children,
   role,
+  id,
 }: {
   tone?: keyof typeof ICON;
   title?: ReactNode;
   children?: ReactNode;
   role?: 'alert' | 'status';
+  id?: string;
 }) {
   return (
-    <div className={`callout${tone === 'info' ? '' : ` callout--${tone}`}`} role={role}>
+    <div id={id} className={`callout${tone === 'info' ? '' : ` callout--${tone}`}`} role={role}>
       <span className="callout__icon" aria-hidden="true">
         {ICON[tone]}
       </span>

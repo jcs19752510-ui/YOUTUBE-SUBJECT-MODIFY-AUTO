@@ -28,13 +28,15 @@
 ### 1-1. 요청 헤더 규약
 | 헤더 | 필요한 곳 | 설명 |
 |---|---|---|
-| `Cookie: ytw_session=...` | `auth/me`·`auth/session`(발급)을 제외한 모든 `/api/v1` 호출 | 세션 쿠키. `HttpOnly; SameSite=Strict; Path=/api`, 최대 12시간(`YTWEB_SESSION_TTL_HOURS`). 토큰 원문은 DB에 저장되지 않는다(sha256만) |
+| `Cookie: ytw_session=...` | `auth/me`·`auth/session`(발급)을 제외한 모든 `/api/v1` 호출 | 세션 쿠키. `HttpOnly; SameSite=Strict; Path=/api`, 절대 최대 12시간(`YTWEB_SESSION_TTL_HOURS`)이면서 **마지막 사용 후 30분이 지나면 만료**(`YTWEB_SESSION_IDLE_MINUTES`, 0이면 끔). 사용할 때마다 유휴 시계가 새로 시작된다. 토큰 원문은 DB에 저장되지 않는다(sha256만) |
 | `X-CSRF-Token` | 상태를 바꾸는 모든 호출(POST/PUT/PATCH/DELETE, `auth/session` 발급 제외) | `POST auth/session` 또는 `GET auth/me` 응답의 `csrf_token`. 세션마다 다르다. 틀리면 `403 csrf_invalid` |
 | `Origin` | 상태 변경 + 세션 발급 | 허용 출처(`http://127.0.0.1:8080`, `http://localhost:8080`)와 **정확히 일치**해야 한다. 없거나 `null`이면 `403 origin_not_allowed`. 브라우저가 `Sec-Fetch-Site`를 보내면 `same-origin`이어야 한다(아니면 `403 cross_site_request`) |
 | `Idempotency-Key` | `POST /batches`, `POST /batches/{id}/execute`, `POST /changes/{id}/rollback` | **필수**(없으면 `400 idempotency_key_required`). 형식 `[A-Za-z0-9._:-]{8,80}`. 다른 엔드포인트는 보내도 무시된다 |
 | `Content-Type: application/json` | 본문이 있는 호출 | |
 
 검사 순서(상태 변경): Host → 본문 크기 → 속도 제한 → **출처(Origin/Sec-Fetch-Site)** → 세션 → CSRF → 본문 검증 → 멱등성 → 업무 규칙. 출처 검사가 세션 확인보다 먼저라서 허용되지 않은 출처에는 세션 유무도 알리지 않는다.
+
+세션이 없거나 만료되면(절대 12시간·유휴 30분 포함) 보호된 모든 호출이 **`401 session_required`** 로 끝난다(상태 변경 호출도 출처 검사 뒤 같은 코드). 화면은 이 코드로 세션 만료 안내를 띄우고 `POST auth/session`으로 새 세션을 받는다.
 
 ### 1-2. 응답 헤더
 모든 응답에 `X-Request-Id`(요청 번호, 로그 검색용). `/api` 응답은 `Cache-Control: no-store`, CSP `default-src 'none'`. 브라우저에 보이는 보안 헤더 한 벌(CSP·`X-Frame-Options`·`Referrer-Policy: same-origin` 등)은 nginx가 붙인다.
@@ -50,7 +52,7 @@
 - 날짜 필드: `scheduled_date`, `queue.next_run_date`, `schedule[].date`는 **한국 시간(KST) 날짜**, `quota.pt_date`는 **태평양 시간 날짜**(`YYYY-MM-DD`). 규칙은 `DESIGN.md` W6장.
 
 ### 1-5. 페이지네이션 (목록 공통)
-`?page=1&page_size=50` → `{items, total, page, page_size}`. `page`≥1, `page_size` 1~200(**200 초과는 잘리지 않고 `422 validation_error`**). 정렬 기본: 영상 `video_id` 오름차순, 그 외 `id` 내림차순(최신순).
+`?page=1&page_size=50` → `{items, total, page, page_size}`. `page` 1~1,000,000, `page_size` 1~200(**200 초과는 잘리지 않고 `422 validation_error`**). 경로·쿼리·본문의 모든 ID(`batch_id`·`suggestion_id`·`change_id`·`batch_id` 필터·`suggestion_ids[]`)는 1~2^63-1 이며 범위를 벗어나면 `422 validation_error`다. 정렬 기본: 영상 `video_id` 오름차순, 그 외 `id` 내림차순(최신순).
 
 ### 1-6. 멱등성 동작
 - 같은 키 + 같은 요청(경로·본문) → **저장된 첫 응답을 그대로 재생**(상태 코드 포함, 부작용 1회).
@@ -193,7 +195,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 |---|---|
 | 404 `video_not_found` | 영상 없음 |
 | 409 `video_excluded` | 제외 대상(Shorts·비공개·아동용·예약). `detail`에 사유 |
-| 422 `count_invalid` | 1~5 아님 |
+| 422 `validation_error` | `count`가 1~5 아님(스키마 단계에서 거부). 서비스의 `count_invalid`는 내부 방어용이라 정상 경로에서는 나오지 않는다 |
 | 502 `ai_unavailable` / `ai_no_candidates` | 제안기 장애 / 쓸 수 있는 후보 없음(M1 모의 제안기는 정상일 때 발생하지 않음) |
 
 ### EVT-W13 `POST /api/v1/suggestions/generate`
@@ -209,7 +211,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 오류: 404 `suggestion_not_found`, 409 `suggestion_state`(배치에 담김 `queued`/이미 `applied`/`rolled_back`이면 수정 불가), 409 `duplicate_suggestion`, 422 `title_empty`·`title_too_long`·`title_invalid`.
 
 ### EVT-W16 `POST /api/v1/suggestions/{suggestion_id}/approve`
-본문 `{"approver": "홍길동"}`(1~40자, 제어 문자 없음). 응답 200 `Suggestion`(`status:"approved"`, `plan_hash`, `approval`):
+본문 `{"approver": "홍길동"}`(1~40자, 제어 문자와 제로폭·방향 제어 같은 보이지 않는 문자(유니코드 서식 문자) 없음). 응답 200 `Suggestion`(`status:"approved"`, `plan_hash`, `approval`):
 ```json
 {"status": "approved", "plan_hash": "f9312f51...e292c",
  "approval": {"approver": "홍길동", "approved_at": "2026-10-10T16:25:38.349680Z", "expires_at": "2026-10-11T16:25:38.349680Z"}}
@@ -243,10 +245,12 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
  "precheck": {"item_count": 1, "estimated_units": 52, "daily_cap": 10, "quota_remaining_units": 6000,
   "schedule": [{"date": "2026-10-11", "count": 1}],
   "warnings": ["Studio에서 해당 영상의 제목 A/B 테스트가 진행 중이 아닌지 확인하세요."],
-  "blocked": [], "confirm_text": "실행 1건"}}
+  "blocked": [], "confirm_text": "실행 1건",
+  "notice": "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다."}}
 ```
 - `precheck.schedule`은 하루 상한(KST 기준)에 따라 나눈 반영 예정일. 위 예시는 UTC 16:25가 KST로 다음 날 01:25라 "내일"(2026-10-11)로 잡힌 실제 결과다.
-- `estimated_units`는 1건당 52단위(재조회 1 + 갱신 50 + 검증 재조회 1)×건수. `blocked[]` = `{suggestion_id, reason, code}`(제외된 제안과 사유; `code`는 계약 외 추가 필드).
+- `estimated_units`는 1건당 52단위(재조회 1 + 갱신 50 + 검증 재조회 1)×건수. `blocked[]` = `{suggestion_id, reason, code, batch_id}`(제외된 제안과 사유; `code`·`batch_id`는 계약 외 추가 필드). 이미 다른 **초안 배치**에 담긴 제안은 `code:"already_in_batch"`, `reason`에 `초안 배치 #N에 이미 담겨 있습니다…`, `batch_id`=N 으로 돌려준다(그 초안을 `cancel`로 버리면 다시 담을 수 있다). `batch_id`는 `already_in_batch`일 때만 있다.
+- `precheck.notice` = 면책 고지 문장(고정). 이 필드가 없던 옛 기록은 `null`.
 - 영상당 한 번에 한 제목만 담긴다(같은 영상의 다른 제안은 `duplicate_video`로 blocked).
 - 응답의 `batch.precheck`는 목록(`GET /batches`)에서는 `null`, 단건·생성·실행 응답에서는 채워진다(계약 외 추가 필드).
 | 오류 | 의미 |
@@ -255,7 +259,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 | 422 `batch_empty` | 담을 수 있는 제안이 하나도 없음(`detail`에 사유). 빈 목록 자체는 스키마 단계에서 422 `validation_error` |
 | 422 `batch_too_large` | 50건 초과(스키마 상한은 500, 서비스가 50건으로 거부) |
 | 422 `duplicate_suggestion` | 같은 제안을 두 번 선택 |
-| 409 `already_in_batch` | 방금 다른 배치가 먼저 담음 |
+| 409 `already_in_batch` | 방금 다른 배치가 먼저 담음(경합). 순차 요청에서는 사전 점검의 `blocked[]`로 나온다 |
 | 409 `schedule_overflow` | 예약 가능한 날짜 범위(400일) 초과 |
 
 ### EVT-W19 `GET /api/v1/batches`
@@ -274,7 +278,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 | 400 / 422 / 409 `idempotency_*` | 1-6 참고 |
 
 ### EVT-W22 `POST /api/v1/batches/{batch_id}/cancel`
-본문 없음, CSRF 필요(멱등성 키 불필요). `pending` 항목은 `cancelled`(사유 `[cancelled] 사용자가 배치를 중지했습니다.`)로, 진행 중(`running`) 항목은 끝날 때까지 둔다. 제안은 승인이 아직 유효하면 `approved`, 아니면 `expired`로 돌아온다. 초안(draft)도 취소할 수 있다. 응답 200 `Batch`(`status:"cancelled"`). 409 `batch_not_cancellable`(이미 `done`/`cancelled`).
+본문 없음, CSRF 필요(멱등성 키 불필요). `pending` 항목은 `cancelled`(사유 `[cancelled] 사용자가 배치를 중지했습니다.`, **초안이면 `[cancelled] 사용자가 초안을 버렸습니다.`**)로, 진행 중(`running`) 항목은 끝날 때까지 둔다. 제안은 승인이 아직 유효하면 `approved`, 아니면 `expired`로 돌아온다. **초안(draft)도 취소할 수 있다 — 화면의 [초안 버리기]가 이 호출이며, 담겨 있던 제안은 바로 새 배치에 다시 담을 수 있다.** 같은 배치에 대한 동시 취소·실행은 배치 행 잠금으로 한 줄로 서므로 한 번만 적용되고 나머지는 409다(취소 뒤 실행 `batch_not_draft`, 두 번째 취소 `batch_not_cancellable`). 감사 `batch.cancel`(`detail`: `cancelled_items`, `was_draft`). 응답 200 `Batch`(`status:"cancelled"`). 409 `batch_not_cancellable`(이미 `done`/`cancelled`).
 
 ### 항목 처리 중 사유 코드 (`skip_reason`의 `[코드]`, 변경 이력의 `error_code`)
 | 구분 | 코드 |
@@ -312,10 +316,10 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 | 502 `gateway_error` | 재조회·갱신 실패(결과 불확실이면 `planned`가 남을 수 있음 — Studio에서 확인) |
 
 ### EVT-W26 `GET /api/v1/reports/changes`
-쿼리 `video_id`(선택). 응답 `{items: VideoReport[], notes: string[]}`(최대 200영상). `VideoReport.status`: `no_change`(변경 없음) · `insufficient`(**"데이터 부족" + `reasons[]`**) · `ok`(`before/after` 스냅샷과 `metrics[]` 비교). `notes`에는 "원인을 단정할 수 없다", "데이터 부족이면 결론을 내지 않는다", "데모 성과는 가상 데이터" 문구가 항상 들어간다. 롤백이 끼어 있거나 변경 후 지표가 없으면 `insufficient`. 404 `video_not_found`.
+쿼리 `video_id`(선택). 응답 `{items: VideoReport[], notes: string[]}`(최대 200영상). `VideoReport.status`: `no_change`(변경 없음) · `insufficient`(**"데이터 부족" + `reasons[]`**) · `ok`(`before/after` 스냅샷과 `metrics[]` 비교). `notes`의 **첫 줄은 면책 고지** `이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.` 이고, 이어서 "원인을 단정할 수 없다", "데이터 부족이면 결론을 내지 않는다", "데모 성과는 가상 데이터" 문구가 항상 들어간다. 롤백이 끼어 있거나 변경 후 지표가 없으면 `insufficient`. 404 `video_not_found`.
 
 ### EVT-W27 `GET /api/v1/reports/export.csv`
-쿼리 `video_id`(선택). 응답 200 `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="ytitle-report.csv"`, UTF-8 BOM. 열: `video_id,title,status,label,changed_at,previous_title,new_title,before_period,before_impressions,before_ctr,before_views,before_watch_minutes,after_period,after_impressions,after_ctr,after_views,after_watch_minutes,reasons,note`. 셀이 `= + - @` 탭·CR로 시작하면 앞에 `'`를 붙여 엑셀 수식 주입을 막는다(숫자는 그대로).
+쿼리 `video_id`(선택). 응답 200 `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="ytitle-report.csv"`, UTF-8 BOM. 열: `video_id,title,status,label,changed_at,previous_title,new_title,before_period,before_impressions,before_ctr,before_views,before_watch_minutes,after_period,after_impressions,after_ctr,after_views,after_watch_minutes,reasons,note`. 셀이 `= + - @` 탭·CR로 시작하면 앞에 `'`를 붙여 엑셀 수식 주입을 막는다(숫자는 그대로). 표 아래 빈 줄 뒤에 `notes`(면책 고지 포함)가 한 줄에 한 문장씩 같은 방식으로 들어간다 — `#` 주석 줄이 아니라 일반 행이다.
 
 ### EVT-W28 `GET /api/v1/audit`
 읽기 전용. 쿼리는 페이지만. 응답 `Page<AuditEntry>` + `chain_ok`:
@@ -325,7 +329,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
   "prev_hash": "b934ceae...", "hash": "d0fa29e8..."}],
  "total": 9, "page": 1, "page_size": 2, "chain_ok": true}
 ```
-`chain_ok=false`는 기록이 중간에서 바뀌거나 지워졌음을 뜻한다(꼬리 삭제는 이 방법만으로는 탐지 못한다 — DESIGN.md W9장). 최신순. 주요 `action`: `session.create/denied/delete`, `settings.update`, `videos.sync_request`·`videos.sync`, `suggestion.generate_request/generate/generate_failed/edit/approve/reject`, `batch.create/execute/cancel`, `batch.item.skipped/failed/recovered`, `change.apply/rollback/rollback_failed`. 비밀·PIN 값·본문 전체는 기록하지 않는다. `actor`: `owner`(세션), `web`(화면 요청), `worker`.
+`chain_ok=false`는 기록이 중간에서 바뀌거나 지워졌음을 뜻한다(꼬리 삭제는 이 방법만으로는 탐지 못한다 — DESIGN.md W9장). 최신순. 주요 `action`: `session.create/denied/delete`, `settings.update`, `videos.sync_request`·`videos.sync`, `suggestion.generate_request/generate/generate_failed/edit/approve/reject`, `batch.create/execute/cancel`, `batch.item.skipped/failed/recovered`, `change.apply/rollback/rollback_failed`. 재시작 복구로 확정된 반영도 `change.apply`(`actor:worker`, `detail`에 `recovered:true, reason:"restart_recovery"`와 변경·영상·제안·배치 ID)를 남기고, `batch.item.recovered`의 `detail`에도 `batch_id`·`video_id`·`change_id`가 들어간다. 비밀·PIN 값·본문 전체는 기록하지 않는다. `actor`: `owner`(세션), `web`(화면 요청), `worker`.
 
 ---
 
@@ -363,3 +367,4 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 | 일시 | 버전 | 변경 | 사유 |
 |---|---|---|---|
 | 2026-10-10 | v0.1 | 최초 작성(as-built) | STATE §6 "문서 개정 3건"의 3단계 산출물. 코드·실제 호출 결과 기준, 6단계 독립 검증 결과 반영 전 |
+| 2026-10-11 | v0.2 | 수정 단위 W-FIX-BE 반영: 초안 취소 계약·`blocked[].batch_id`·`precheck.notice`·리포트 `notes` 면책 첫 줄·세션 유휴 만료·`session_required` 명시·ID 상한 422·`count_invalid` 정정·복구 감사(`change.apply` recovered) | DEC-046, DEF-7-009·7B-001·7B-002·9-001·9-003·9-004·9-007·7-003~005 |

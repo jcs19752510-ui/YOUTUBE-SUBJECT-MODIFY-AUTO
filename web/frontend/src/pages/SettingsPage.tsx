@@ -22,6 +22,7 @@ import {
 } from '../components';
 import { ko } from '../i18n/ko';
 import { fmtDateTime } from '../lib/format';
+import { auditActionLabel, auditActorLabel, auditTargetLabel } from '../lib/labels';
 
 const T = ko.settings;
 
@@ -386,10 +387,21 @@ function AuditCard() {
                       {d.items.map((a) => (
                         <tr key={a.id}>
                           <td className="nowrap">{fmtDateTime(a.ts)}</td>
-                          <td>{a.actor}</td>
-                          <td>{a.action}</td>
-                          <td className="mono">
-                            {[a.target_type, a.target_id].filter(Boolean).join(' ')}
+                          <td>
+                            {auditActorLabel(a.actor)}
+                            {a.actor !== auditActorLabel(a.actor) && (
+                              <div className="muted mono">{a.actor}</div>
+                            )}
+                          </td>
+                          <td>
+                            {auditActionLabel(a.action)}
+                            {a.action !== auditActionLabel(a.action) && (
+                              <div className="muted mono">{a.action}</div>
+                            )}
+                          </td>
+                          <td>
+                            {a.target_type ? auditTargetLabel(a.target_type) : ''}
+                            {a.target_id && <span className="mono"> {a.target_id}</span>}
                           </td>
                         </tr>
                       ))}

@@ -19,6 +19,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -263,6 +264,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -319,6 +321,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Batch Id"
             }
@@ -362,6 +365,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Batch Id"
             }
@@ -447,6 +451,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Batch Id"
             }
@@ -525,6 +530,7 @@
               "anyOf": [
                 {
                   "type": "integer",
+                  "maximum": 9223372036854775807,
                   "minimum": 1
                 },
                 {
@@ -562,6 +568,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -618,6 +625,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Change Id"
             }
@@ -1177,6 +1185,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -1233,6 +1242,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Suggestion Id"
             }
@@ -1302,6 +1312,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Suggestion Id"
             }
@@ -1371,6 +1382,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "maximum": 9223372036854775807,
               "minimum": 1,
               "title": "Suggestion Id"
             }
@@ -1520,6 +1532,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 1000000,
               "minimum": 1,
               "default": 1,
               "title": "Page"
@@ -1820,7 +1833,9 @@
         "properties": {
           "suggestion_ids": {
             "items": {
-              "type": "integer"
+              "type": "integer",
+              "maximum": 9.223372036854776e+18,
+              "minimum": 1.0
             },
             "type": "array",
             "maxItems": 500,
@@ -2070,6 +2085,17 @@
               }
             ],
             "title": "Code"
+          },
+          "batch_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Id"
           }
         },
         "type": "object",
@@ -2689,6 +2715,17 @@
           "confirm_text": {
             "type": "string",
             "title": "Confirm Text"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice"
           }
         },
         "type": "object",

@@ -17,6 +17,7 @@ RUN npm run build \
 FROM ${NGINX_IMAGE} AS runtime
 COPY --chown=0:0 web/docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY --chown=0:0 web/docker/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY --chown=0:0 web/docker/nginx/security-headers-api.conf /etc/nginx/snippets/security-headers-api.conf
 COPY --chown=0:0 web/docker/nginx/proxy.conf /etc/nginx/snippets/proxy.conf
 COPY --from=build --chown=0:0 /src/web/frontend/dist /usr/share/nginx/html
 USER 101:101

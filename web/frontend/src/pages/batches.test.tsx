@@ -175,6 +175,8 @@ describe('배치 초안 점검·실행', () => {
     expect(exec).toBeDisabled();
     await user.clear(input);
     await user.type(input, '실행 2건');
+    expect(exec).toBeDisabled();
+    await user.click(screen.getByRole('checkbox', { name: /A\/B 테스트 중이 아님/ }));
     expect(exec).toBeEnabled();
     await user.click(exec);
     await waitFor(() => expect(calls.some((c) => c.path.endsWith('/execute'))).toBe(true));
@@ -193,6 +195,7 @@ describe('배치 초안 점검·실행', () => {
     ]);
     await screen.findByText('실행 확인');
     await user.type(screen.getByRole('textbox'), '실행 2건');
+    await user.click(screen.getByRole('checkbox', { name: /A\/B 테스트 중이 아님/ }));
     await user.click(screen.getByRole('button', { name: '실행' }));
     expect(await screen.findByText('한도에 도달했습니다')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '실행' }));

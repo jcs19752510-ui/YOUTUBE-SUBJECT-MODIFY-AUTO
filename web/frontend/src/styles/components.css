@@ -535,3 +535,33 @@
   flex-direction: column;
   gap: var(--sp-2);
 }
+
+/* ===== 면책·AI 고지 ===== */
+.legal-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--c-border);
+}
+.legal-note p {
+  margin: 0;
+}
+
+/* ===== 표 안의 체크박스: 칸 전체를 눌러도 선택되도록 클릭 영역을 넓힌다 ===== */
+.check-hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  cursor: pointer;
+}
+.check-hit input {
+  width: 1.4rem;
+  height: 1.4rem;
+  accent-color: var(--c-primary);
+}
+.check-hit input:disabled {
+  cursor: not-allowed;
+}

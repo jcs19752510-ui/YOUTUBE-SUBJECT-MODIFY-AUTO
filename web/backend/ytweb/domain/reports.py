@@ -15,6 +15,7 @@ from ytitle.timeutil import utc_iso
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import Change, MetricsSnapshot, Video
 from ytweb.domain.common import Env
+from ytweb.domain.notices import DISCLAIMER
 
 MAX_REPORT_VIDEOS = 200
 EXTRA_NOTE = "데이터가 부족하면 결론을 내지 않고 '데이터 부족'과 그 이유만 표시합니다. 표의 숫자는 참고용입니다."
@@ -72,7 +73,7 @@ def build_reports(session: Session, env: Env, video_id: str | None = None) -> di
         ).scalars())
     titles = dict(session.execute(select(Video.video_id, Video.title).where(Video.video_id.in_(ids))).all()) if ids else {}
     items = [_report_dict(build_report(vid, titles.get(vid), _changes_for(session, vid), _snapshots_for(session, vid), rules)) for vid in ids]
-    return {"items": items, "notes": [LIMIT_NOTE, CAUSAL_NOTE, EXTRA_NOTE, SOURCE_NOTE]}
+    return {"items": items, "notes": [DISCLAIMER, LIMIT_NOTE, CAUSAL_NOTE, EXTRA_NOTE, SOURCE_NOTE]}
 
 
 CSV_COLUMNS = (

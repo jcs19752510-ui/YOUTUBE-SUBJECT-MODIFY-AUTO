@@ -127,3 +127,38 @@ alembic upgrade head --sql | head     # 오프라인 렌더(PYTHONPATH=. 필요)
 - traceability: 웹 보안 요구(Host/Origin/CSRF/세션/PIN/감사 체인/멱등성/잡 큐/마이그레이션) 항목의 작업 단위=W-BE-A, 구현 상태=구현 완료(6단계 대기).
 - decisions: (a) 출처 검증 규칙(Sec-Fetch-Site same-origin 강제 + Origin 항상 일치), (b) 헬스 경로 Host 예외, (c) 쿠키에 Secure·`__Host-` 미사용(Q-WA-1), (d) 잡 핸들러 실패는 자동 재시도하지 않음, (e) PIN 잠금 정책 5회/5분 지수 증가.
 - 질문(규칙 A): Q-WA-1 `Secure` 없는 쿠키의 실제 브라우저 동작 확인, Q-WA-2 린트 도구 선정, Q-WA-3 속도 제한 수치 확정, Q-WA-4 PIN 본문 형식을 W-FE 에 전달.
+
+---
+
+## 수정 단위 (2026-10-11) — W-FIX-BE 코어 부분
+
+- 근거: DEC-046. 병렬 웨이브(W-FIX-FE, W-FIX-INF 동시). `web/backend/` 안에서만 수정, 새 패키지 없음.
+
+### 변경 파일(코어)
+`ytweb/core/jobs.py`(stale 규칙), `ytweb/worker.py`(기동 시 고아 작업 정리·1분 주기 정리), `ytweb/core/sessions.py`·`ytweb/core/deps.py`·`ytweb/routers/auth.py`·`ytweb/config.py`(세션 유휴 만료), `pyproject.toml`(pytest 표식 `no_idle`), 시험 `tests/core/test_wbx_core.py`(TC-WBX-019~033).
+
+### 결함 ↔ 변경 ↔ TC
+| 결함 | 변경 | TC |
+|---|---|---|
+| DEF-7B-001 | **규칙**: ① 워커 기동 직후(`Worker.run`, 항목 복구 `recover_running_items` 다음) running 작업을 전부 고아로 보고 `requeue_stale(stale_after=0)` — 시도 3회 미만이면 `queued`, 이상이면 `failed(worker_lost)`. ② 실행 중에는 `reap_stale_jobs` 가 틱마다(최대 1분 간격) `requeue_stale` 호출: `batch.execute` 는 `locked_at` 이 **5분** 넘게 갱신되지 않으면, 그 밖의 유형은 기존 10분. `locked_at` 이 NULL 인 running 은 항상 고아. ③ PostgreSQL 에서는 `FOR UPDATE SKIP LOCKED` 로 동시 정리 시 같은 행을 두 번 처리하지 않음 | 026~033, 037, 038 |
+| DEF-9-003 ① | `lookup_session(..., idle_timeout)`·`create_session`·`purge_expired` 가 `last_seen + 유휴 시간 <= now` 를 만료로 처리(행 삭제). 설정 `YTWEB_SESSION_IDLE_MINUTES`(기본 **30**, `0`=끔, 음수·비정수는 기동 오류). 절대 만료(12h)는 그대로 | 019~025 |
+
+**재큐 안전성 근거(코드로 확인)**: `batch.execute` 핸들러는 `run_due_items(batch_id=…)` 이며 ① 항목 선점이 `UPDATE … WHERE status='pending'` compare-and-set(`_claim`), ② 영상당 `planned` 고유 인덱스(이중 반영 차단), ③ PG advisory lock 아래서 한도 재검사를 하므로 같은 배치를 두 핸들러가 동시에 돌려도 항목은 한 번만 반영된다. 재큐된 작업은 이미 끝난 배치에서는 처리할 항목이 없어 곧바로 `succeeded` 가 된다(TC-WBX-038: 재시작 후 6건 반영·영상당 1건·`change.apply` 감사 6건).
+**전제**: 기동 시 정리는 "워커는 compose 에서 1개"(기존 `recover_running_items` 와 같은 전제)를 쓴다. 워커를 여러 개 띄우면 새로 뜬 워커가 다른 워커가 처리 중인 작업을 재큐할 수 있으나(위 안전성으로 이중 반영은 없음) 불필요한 중복 실행이 생긴다 → 다중 워커 도입 시 재검토.
+
+### 계약·설정 변경
+- 보호된 호출은 마지막 사용 후 30분이 지나면 401 `session_required` (사용마다 갱신). 화면이 폴링(대시보드 등)을 계속하면 유지되고, 탭을 30분 넘게 방치하면 다음 요청에서 만료 안내가 나온다. 운영자는 `YTWEB_SESSION_IDLE_MINUTES` 로 조정(기본값이라 compose 수정 불필요 — 인프라 담당이 환경 변수 노출 여부를 판단).
+- `WebSettings.session_idle_minutes` 추가(기본 30), `session_idle_timeout` 속성.
+
+### 기존 시험 수정(사유)
+- `tests/conftest.py` `web_settings`: `no_idle` 표식이 있으면 유휴 만료 0(끔). 표식을 단 3개 시험(`test_auth.py::test_session_expires_after_ttl`, `verify_wa/test_va_02…::test_session_expiry_boundary…`, `verify_wa/test_va_11…::test_session_lookup_updates_last_seen…`)은 **활동 없이 시계를 3~12시간 건너뛰어** 절대 만료(TTL)·`last_seen` 을 보는 시험이라 새 유휴 규칙과 의도가 겹친다. 시험 의도(절대 만료)는 그대로 유지.
+- `tests/domain/test_batches.py::test_tc_wb_049`·`test_routers.py::test_tc_wb_122`: 사전 점검 응답에 `notice` 가 생겨 기대 키/값에 추가.
+
+### 알려진 제한
+- 세션 상한 20으로 인한 축출(DEF-9-003 ②)은 PIN 필수화(Q-W1) 결정 사항이라 손대지 않았다.
+- 9단계 `web/tests_security/test_sec_01`: `test_session_absolute_expiry_and_documented_idle_gap`·`test_session_activity_does_not_extend_lifetime` 는 활동 없이 11~12시간을 건너뛰어 이제 유휴 규칙으로 401 이 된다(결함이 고쳐진 결과). 소유 범위 밖이라 수정하지 않았다 → 독립 검증 담당이 갱신.
+- DEF-7-001(Cache-Control 중복)·DEF-7-006(`/healthz` SPA 응답)·DEF-7-007(CSP 덮어쓰기)은 nginx 설정(인프라) 소유라 처리하지 않았다.
+
+### 시험 숫자 (PostgreSQL 포함, `YTWEB_TEST_PG_URL=…ytweb_test_f`)
+- 수정 전 기준선: `tests` 전체 **1222 통과** · 건너뜀 0 · 실패 0 (`-x`, 중간에 소스 편집이 시작되어 엄밀한 동결 기준선은 아님).
+- 수정 후: **1279 통과** · 건너뜀 0 · 실패 0 (신규 TC-WBX 57개 = 001~038, 파라미터 전개 포함; 기존 1222개 회귀 없음). 신규 PG 시험 10개는 위 숫자에 포함.

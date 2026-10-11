@@ -1032,6 +1032,7 @@ describe('확인 문구 일치 안내', () => {
     await user.clear(box);
     await user.type(box, '실행 2건');
     expect(status.textContent).toContain('✓');
+    await user.click(screen.getByRole('checkbox', { name: /A\/B 테스트 중이 아님/ }));
     expect(screen.getByRole('button', { name: '실행' })).toBeEnabled();
   });
 });

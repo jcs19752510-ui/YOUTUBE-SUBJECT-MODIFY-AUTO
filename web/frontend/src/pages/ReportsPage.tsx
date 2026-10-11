@@ -159,6 +159,9 @@ export function ReportsPage() {
               {(d.notes.length > 0 ? d.notes : [ko.reports.fallbackNote]).map((n, i) => (
                 <p key={i}>{n}</p>
               ))}
+              {/* 서버가 같은 면책 문장을 이미 내려 주면 두 번 보이지 않게 한다 */}
+              {!d.notes.some((n) => /법률 자문/.test(n)) && <p>{ko.legal.disclaimer}</p>}
+              <p>{ko.legal.reportsNote}</p>
             </Callout>
             <form
               className="toolbar"

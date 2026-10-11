@@ -9,6 +9,19 @@ const lookup = (map: Record<string, string>, key: string | null | undefined): st
 export const workflowLabel = (s: string) => lookup(ko.workflow, s);
 export const suggestionStatusLabel = (s: string) => lookup(ko.suggestionStatus, s);
 export const batchStatusLabel = (s: string) => lookup(ko.batchStatus, s);
+/** 실행한 적 없는 채로 중지된 배치는 "버려진 초안"으로 보여 준다(실행 중 중지와 구분) */
+export const batchStatusText = (b: { status: string; executed_at: string | null }) =>
+  b.status === 'cancelled' && !b.executed_at
+    ? ko.batches.discardedLabel
+    : batchStatusLabel(b.status);
+export const auditActorLabel = (s: string) => lookup(ko.settings.actors, s);
+export const auditActionLabel = (s: string) =>
+  Object.hasOwn(ko.settings.actions, s)
+    ? ko.settings.actions[s]!
+    : s.startsWith('batch.item.')
+      ? '배치 항목 처리'
+      : s;
+export const auditTargetLabel = (s: string | null) => lookup(ko.settings.targets, s);
 export const itemStatusLabel = (s: string) => lookup(ko.itemStatus, s);
 export const changeTypeLabel = (s: string) => lookup(ko.changeType, s);
 export const changeResultLabel = (s: string) => lookup(ko.changeResult, s);

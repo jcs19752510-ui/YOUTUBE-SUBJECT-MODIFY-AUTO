@@ -147,3 +147,56 @@ npm run lint | typecheck | format:check | test | build
 4. 모의 서버를 끄면 "서버 연결 끊김" 표시, 켜면 "다시 연결"로 복구.
 5. 설정에서 라이브/허용 영상은 읽기 전용이고 "이 화면에서는 켤 수 없습니다"가 보인다.
 6. 키보드만으로 위 흐름이 가능하고 포커스 링이 보인다(수동). 색 대비는 브라우저 도구로 별도 측정.
+
+---
+
+## 수정 단위 W-FIX-FE (2026-10-11, DEC-046 승인)
+
+속도 트랙: 표기 없음 → L3. 단독 호출(프런트 소유 범위 `web/frontend/`만 수정; 백엔드·인프라는 다른 담당이 병렬 작업).
+
+### 변경 파일
+- 문구·라벨: `src/i18n/ko.ts`(`legal` 절 신설, `suggestionStatus`에 blocked·rolled_back, `changeResult`에 aborted + `resultFilter`, `errors/errorHints.validation_error`, 배치 초안 버리기·이미 담김 문구, 감사 로그 한국어 맵, 홈 새로고침), `src/lib/labels.ts`(`batchStatusText`, 감사 라벨 함수).
+- 화면: `app/Layout.tsx`(푸터, 화면 이동 시 성공 알림 정리), `pages/SuggestionCard.tsx`, `VideoDetailPage.tsx`, `BatchDetailPage.tsx`, `BatchesPage.tsx`, `DiscardDraft.tsx`(신규), `HistoryPage.tsx`, `ReportsPage.tsx`, `HomePage.tsx`, `SettingsPage.tsx`, `VideosPage.tsx`.
+- 공용: `components/Toast.tsx`(5초 자동 닫기, `clearTransient`), `Callout.tsx`(id), `ErrorPanel.tsx`(영어 원문 → 한국어), `api/types.ts`(Precheck.notice, blocked.video_id/video_title: 모두 선택 필드), `styles/*.css`.
+- 모의 서버 `dev/mock-server.mjs`: 차단 후보 status=blocked, 초안 담김 시 already_in_batch, changes result 422(영어 원문), 리포트 notes·CSV·precheck.notice에 면책, 목록 응답 items 비움(실서버와 동일).
+- 시험: `src/pages/wfx.test.tsx`(신규 TC-WFX-001~028). 기존 시험 수정(사유: 의도된 구조·문구 변경) — `batches.test.tsx` TC-WF-050·051, `detail.test.tsx` TC-WF-034(사유가 두 곳에 보임), `verify/confirm.verify.test.tsx`(goBatch에서 A/B 확인란 선택), `verify/round2.verify.test.tsx` TC-VF-231, `verify/screens.verify.test.tsx` TC-VF-172(중지된 배치에 executed_at 부여: 실행 전 취소는 "버려진 초안"으로 구분됨).
+
+### 결함 ↔ 변경 ↔ TC
+| 결함 | 변경 | TC |
+|---|---|---|
+| DEF-9-007 (POL-002) | `ko.legal.disclaimer`(CLI `DISCLAIMER`와 동일 문장) → 전 화면 푸터, 영상 상세, 승인 대화상자, 사전 점검, 리포트(서버 notes에 이미 있으면 중복 생략) | 001·002·005·006·007·009 |
+| DEF-9-008 (POL-006) | `aiNotice` 카드·승인 대화상자·이력·푸터 | 003·005·010 |
+| DEF-9-008 (POL-008) | `aiLimit` 카드·승인 대화상자·사전 점검, 엄격 모드는 `strictCaution` 경고 상자 | 003·004·007 |
+| DEF-9-008 (POL-013) | 실행 확인에 "A/B 테스트 중이 아님" 확인란, 미선택 시 실행 버튼 비활성(요청 본문은 변경 없음) | 008 |
+| DEF-7-011 | 위와 동일 | - |
+| DEF-7-008 (C-1) | blocked 한국어 "차단됨", "승인할 수 없는 이유" 상자, 수정·반려 가능, 승인만 불가(aria-describedby) | 011·012·013 |
+| DEF-7-012 | blocked·rolled_back·aborted 라벨 | 011·020 |
+| DEF-7-009 (C-2) | [초안 버리기](상세·목록, 확인 대화상자) = `POST /batches/{id}/cancel`; 초안에 담긴 제안은 "초안 배치 #N에 있음" 사유·링크, 선택 불가; 버려진 초안 표기 | 014~018 |
+| DEF-7-010 | 결과 선택지 4값, 영어 검증 오류 한국어화 | 020·021·022 |
+| DEF-7-017 | 성공 알림 5초 자동 닫기(오류 유지), 화면 이동 시 성공 알림 정리 | 023·024·025 |
+| DEF-7-018 | 감사 로그 행위자·동작·대상 한국어 + 코드 보조 | 026 |
+| DEF-7-013 | 홈 [새로고침] 상시 | 027 |
+| DEF-7-019(일부) | 체크박스 클릭 영역 확대, 제외 항목에 영상 제목 | 028·019 |
+
+### 문구 위치 표
+| 문구(`ko.legal.*`) | 위치 |
+|---|---|
+| disclaimer | Layout 푸터(전 화면), VideoDetailPage 제안 구역, 승인 대화상자, 사전 점검 카드(서버 `notice` 우선), 리포트 안내 상자 |
+| aiNotice | 푸터, SuggestionCard(AI 출처만), 승인 대화상자, HistoryPage |
+| aiLimit | SuggestionCard, 승인 대화상자, 사전 점검 카드 |
+| strictCaution | 엄격 모드 카드(경고 상자), 승인 대화상자 |
+| abHint·abConfirm·abNeeded | BatchDetailPage 실행 확인 |
+| validationNote | VideoDetailPage |
+| historyNote·reportsNote | HistoryPage, ReportsPage |
+
+### 확인한 것
+- `npm run check`: 타입·린트·포맷 통과, 시험 533 통과/21 건너뜀(기존 505 + 신규 28), 빌드 성공. `npm audit` 0건.
+- `test_sec_05_regulatory_ai_notice.py`를 `--noconftest`로 실행: 소스 시험 5건이 XPASS(strict → 의도된 실패 = 해소 확인), 회귀 3건 통과. 번들 시험은 스택이 없어 건너뜀 — 빌드 산출물(`dist`)에 "법률 자문이 아니", "AI가 생성", "표시·광고", "A/B 테스트 중이 아님" 각 1건 확인. xfail 표식 제거는 9단계 재검증 담당.
+- Chromium+모의 서버 스크린샷(`.harness-tmp/fe_wfx/*.png`)으로 푸터, 카드·승인 대화상자 고지, 차단 카드, A/B 확인란(미선택 시 비활성 실측), 초안 담김 사유·초안 버리기, 성공 토스트 5초 소멸 확인.
+
+### 알려진 제한 / 건너뜀
+- 서버가 `notice`·blocked의 `video_title`을 주지 않아도 동작(화면 문구, 제안 목록→영상 상세 조회로 대체). 초안 목록 조회는 최대 200개 배치만 본다.
+- A/B 확인은 화면 단계 확인이며 서버로 전송하지 않는다(서버 필드 `ab_test_confirmed`가 필요하면 별도 결정).
+- 한도 사유 문구(DEF-7-014, 서버 문구), 데모 리포트 한계(015), 쪽 표시 "1 / 1 쪽 · 2"·좁은 폭 가로 넘침(019 나머지)은 범위 밖으로 건너뜀.
+- 문구의 법적 충분성은 판단하지 않았다(전문가 확인 필요).
+- 실제 백엔드와의 결합(초안 취소 시 제안 해제, 서버 notes/CSV 면책)은 이 단위에서 검증하지 못함(통합 재시험 필요).

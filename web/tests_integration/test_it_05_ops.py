@@ -450,10 +450,9 @@ def _audit_head(api: Api) -> dict:
 
 @needs_pwsh
 @pytest.mark.destructive
-@pytest.mark.xfail(strict=True, reason="DEF-7-002: restore.ps1(pg_restore --clean + audit-guard.sql)이 alembic_version 의 앱 계정 쓰기 권한을 되돌려 놓는다(마이그레이션 0002 의 회수가 복원 뒤 사라짐)")
 def test_it_504_restore_keeps_alembic_version_protected_from_app_role():
-    """IT-504(결함 고정, DEF-7-002): 백업 → 복원(restore.ps1) 뒤에도 앱 계정은 alembic_version 을 UPDATE/DELETE 할 수 없어야 한다(0002 가 보장하는 상태).
-    현재는 복원이 audit_log 만 다시 회수하고(audit-guard.sql) alembic_version 은 회수하지 않아 앱 계정이 버전표를 바꿀 수 있다. 검증: S-W16, S-W13a, D-07a, D-07b"""
+    """IT-504(DEF-7-002 수정 확인): 백업 → 복원(restore.ps1) 뒤에도 앱 계정은 alembic_version 을 UPDATE/DELETE 할 수 없어야 한다(0002 가 보장하는 상태).
+    복원 뒤 audit-guard.sql 이 audit_log 와 alembic_version 의 권한을 함께 다시 회수한다. 검증: S-W16, S-W13a, D-07a, D-07b"""
     _clear_backups()
     a = _state_with_changes(1)
     a.close()

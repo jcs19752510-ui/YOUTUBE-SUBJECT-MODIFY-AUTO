@@ -14,7 +14,7 @@ from ytweb.core.errors import ProblemError
 from ytweb.db.models import Video
 from ytweb.domain.common import VIDEO_ID_PATTERN, Env
 from ytweb.domain.deps import get_env
-from ytweb.domain.schemas import ApproveIn, GenerateIn, JobOut, Page, SuggestionOut, TitleEditIn
+from ytweb.domain.schemas import MAX_ID, MAX_PAGE, ApproveIn, GenerateIn, JobOut, Page, SuggestionOut, TitleEditIn
 from ytweb.domain.serialize import job_dict, suggestion_dict
 from ytweb.domain.suggestions import approve, edit_title, list_suggestions, reject
 
@@ -39,7 +39,7 @@ def get_suggestions(
     video_id: str | None = Query(default=None, pattern=VIDEO_ID_PATTERN),
     status: Literal["candidate", "approved", "queued", "applied", "rolled_back", "rejected", "blocked", "expired"] | None = None,
     result: Literal["pass", "warn", "block"] | None = None,
-    page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200),
     session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), _=Depends(require_session),
 ):
     rows, total = list_suggestions(session, video_id=video_id, status=status, result=result, page=page, page_size=page_size, now=clock())
@@ -47,15 +47,15 @@ def get_suggestions(
 
 
 @router.patch("/{suggestion_id}", response_model=SuggestionOut)
-def patch_suggestion(body: TitleEditIn, suggestion_id: int = Path(ge=1), session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), env: Env = Depends(get_env), _=Depends(require_csrf)):
+def patch_suggestion(body: TitleEditIn, suggestion_id: int = Path(ge=1, le=MAX_ID), session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), env: Env = Depends(get_env), _=Depends(require_csrf)):
     return suggestion_dict(edit_title(session, suggestion_id, body.title, now=clock(), env=env))
 
 
 @router.post("/{suggestion_id}/approve", response_model=SuggestionOut)
-def post_approve(body: ApproveIn, suggestion_id: int = Path(ge=1), session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), env: Env = Depends(get_env), _=Depends(require_csrf)):
+def post_approve(body: ApproveIn, suggestion_id: int = Path(ge=1, le=MAX_ID), session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), env: Env = Depends(get_env), _=Depends(require_csrf)):
     return suggestion_dict(approve(session, suggestion_id, body.approver, now=clock(), env=env))
 
 
 @router.post("/{suggestion_id}/reject", response_model=SuggestionOut)
-def post_reject(suggestion_id: int = Path(ge=1), session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), _=Depends(require_csrf)):
+def post_reject(suggestion_id: int = Path(ge=1, le=MAX_ID), session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), _=Depends(require_csrf)):
     return suggestion_dict(reject(session, suggestion_id, now=clock()))

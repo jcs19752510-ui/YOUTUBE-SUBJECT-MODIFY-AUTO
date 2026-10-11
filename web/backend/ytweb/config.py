@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 
 MODES = ("demo",)  # M1은 데모 모드뿐. 'live'는 M3에서 추가한다(DEC-038, WEB_DESIGN §0).
@@ -15,6 +16,13 @@ def _read_secret(env: dict[str, str], file_var: str, plain_var: str | None = Non
     return env.get(plain_var) if plain_var else None
 
 
+def _non_negative_int(env: dict[str, str], name: str, default: int) -> int:
+    value = int(env.get(name, str(default)))
+    if value < 0:
+        raise ValueError(f"{name} 는 0 이상의 정수여야 합니다: {value}")
+    return value
+
+
 @dataclass(frozen=True)
 class WebSettings:
     mode: str
@@ -24,9 +32,14 @@ class WebSettings:
     allowed_hosts: tuple[str, ...]
     port: int = 8080
     session_ttl_hours: int = 12
+    session_idle_minutes: int = 30      # 마지막 사용 뒤 이 시간이 지나면 세션 만료(0 이면 유휴 만료 끔, 절대 만료 session_ttl_hours 만 적용)
     enable_docs: bool = False           # /docs 는 개발 프로필에서만
     log_json: bool = True
     extra: dict = field(default_factory=dict)
+
+    @property
+    def session_idle_timeout(self) -> timedelta | None:
+        return timedelta(minutes=self.session_idle_minutes) if self.session_idle_minutes > 0 else None
 
 
 def load_web_settings(env: dict[str, str] | None = None) -> WebSettings:
@@ -54,6 +67,7 @@ def load_web_settings(env: dict[str, str] | None = None) -> WebSettings:
         allowed_hosts=hosts,
         port=port,
         session_ttl_hours=int(e.get("YTWEB_SESSION_TTL_HOURS", "12")),
+        session_idle_minutes=_non_negative_int(e, "YTWEB_SESSION_IDLE_MINUTES", 30),
         enable_docs=e.get("YTWEB_ENABLE_DOCS", "0") == "1",
         log_json=e.get("YTWEB_LOG_JSON", "1") == "1",
     )

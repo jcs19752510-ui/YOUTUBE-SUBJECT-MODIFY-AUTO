@@ -13,6 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 T = TypeVar("T")
 VIDEO_ID = r"^[A-Za-z0-9_-]{11}$"
+MAX_ID = 2**63 - 1       # DB 정수 범위. 이보다 큰 ID·쪽 번호는 DB 오류(500)가 되기 전에 스키마에서 422 로 거부한다(DEF-9-001)
+MAX_PAGE = 1_000_000
 WorkflowStatus = Literal["none", "suggested", "approved", "queued", "applied", "rolled_back"]
 Validation = Literal["pass", "warn", "block"]
 
@@ -149,6 +151,7 @@ class BlockedItem(BaseModel):
     suggestion_id: int
     reason: str
     code: str | None = None
+    batch_id: int | None = None  # code=already_in_batch 일 때 제안을 붙잡고 있는 배치(초안이면 버릴 수 있다)
 
 
 class PrecheckOut(BaseModel):
@@ -160,6 +163,7 @@ class PrecheckOut(BaseModel):
     warnings: list[str]
     blocked: list[BlockedItem]
     confirm_text: str
+    notice: str | None = None  # 면책 고지(POL-002). 이 필드가 없던 옛 사전 점검 기록은 null
 
 
 class BatchOut(BaseModel):
@@ -284,7 +288,7 @@ class ApproveIn(_In):
 
 
 class BatchCreateIn(_In):
-    suggestion_ids: list[int] = Field(min_length=1, max_length=500)  # 50건 상한은 서비스가 한국어 메시지로 거부
+    suggestion_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]] = Field(min_length=1, max_length=500)  # 50건 상한은 서비스가 한국어 메시지로 거부
     note: str | None = Field(default=None, max_length=1000)
 
 

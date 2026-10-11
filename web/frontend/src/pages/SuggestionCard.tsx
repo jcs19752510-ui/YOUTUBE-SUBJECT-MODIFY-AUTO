@@ -68,11 +68,18 @@ export function SuggestionCard({
   };
 
   // 서버 규칙과 같다: 차단이거나, 엄격 모드(건강·금융 등)에서 통과가 아니면 승인할 수 없다
-  const blocked = s.validation_result === 'block' || (s.strict && s.validation_result !== 'pass');
+  const blocked =
+    s.status === 'blocked' ||
+    s.validation_result === 'block' ||
+    (s.strict && s.validation_result !== 'pass');
   const warned = !blocked && s.validation_result === 'warn';
-  const open = s.status === 'candidate' || s.status === 'expired';
+  // 차단(blocked) 제안도 서버는 수정·반려를 허용한다. 승인만 막는다.
+  const open = s.status === 'candidate' || s.status === 'expired' || s.status === 'blocked';
   const canReject = open || s.status === 'approved';
   const canEdit = open || s.status === 'approved';
+  const isAi = s.source !== 'manual';
+  const blockReasons = s.reasons.filter((r) => r.severity === 'error' || r.severity === 'block');
+  const whyList = blockReasons.length > 0 ? blockReasons : s.strict ? s.reasons : [];
 
   const titleError =
     title.trim() === ''
@@ -123,6 +130,15 @@ export function SuggestionCard({
         </span>
       </div>
       {s.strict && <p className="muted">{ko.suggestion.strictHint}</p>}
+      {s.strict && (
+        <Callout tone="warning">
+          <p>{ko.legal.strictCaution}</p>
+        </Callout>
+      )}
+      <div className="legal-note muted">
+        {isAi && <p>{ko.legal.aiNotice}</p>}
+        <p>{ko.legal.aiLimit}</p>
+      </div>
 
       <div>
         <p className="field__label">{ko.suggestion.compare}</p>
@@ -187,9 +203,20 @@ export function SuggestionCard({
         )}
       </div>
       {open && blocked && (
-        <p id={`${headingId}-blocked`} className="field__error">
-          {ko.suggestion.approveBlocked}
-        </p>
+        <Callout id={`${headingId}-blocked`} tone="danger" title={ko.suggestion.cannotApproveTitle}>
+          <p>{ko.suggestion.approveBlocked}</p>
+          {whyList.length > 0 ? (
+            <ul>
+              {whyList.map((r, i) => (
+                <li key={`${r.code}-${i}`}>{r.message}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>{ko.suggestion.cannotApproveNoReason}</p>
+          )}
+          {s.strict && blockReasons.length === 0 && <p>{ko.suggestion.cannotApproveStrict}</p>}
+          {canEdit && <p>{ko.suggestion.blockedStatusHint}</p>}
+        </Callout>
       )}
 
       {dialog === 'edit' && (
@@ -249,6 +276,12 @@ export function SuggestionCard({
         >
           <form id={`${headingId}-approve`} className="stack" onSubmit={submitApprove}>
             <TitleDiff before={currentTitle} after={s.title} />
+            <div className="legal-note">
+              {isAi && <p>{ko.legal.aiNotice}</p>}
+              <p>{ko.legal.aiLimit}</p>
+              {s.strict && <p>{ko.legal.strictCaution}</p>}
+              <p>{ko.legal.disclaimer}</p>
+            </div>
             {warned && (
               <Callout tone="warning" title={ko.validation.warn}>
                 <ul>

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useApi } from '../api/context';
@@ -22,10 +22,54 @@ import {
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
 import { fmtDate, fmtDateTime, fmtNum } from '../lib/format';
-import { batchStatusLabel, isBatchActive, itemStatusLabel, itemTone } from '../lib/labels';
+import { batchStatusText, isBatchActive, itemStatusLabel, itemTone } from '../lib/labels';
+import { DiscardDraftButton } from './DiscardDraft';
 
 function isPrecheck(v: unknown): v is Precheck {
   return typeof v === 'object' && v !== null && 'confirm_text' in v && 'item_count' in v;
+}
+
+const BLOCKED_LOOKUP_MAX = 20;
+
+/** 제외된 항목마다 영상 제목을 보여 준다. 서버가 video_title 을 주면 그것을, 아니면 제안 목록→영상 상세에서 찾는다. */
+function BlockedList({ blocked }: { blocked: Precheck['blocked'] }) {
+  const api = useApi();
+  const sug = useQuery({
+    queryKey: ['suggestions', 'approved'],
+    queryFn: () => api.suggestions({ status: 'approved', page_size: 200 }),
+  });
+  const videoIdOf = (b: Precheck['blocked'][number]) =>
+    b.video_id ?? sug.data?.items.find((x) => x.id === b.suggestion_id)?.video_id;
+  const vids = useQueries({
+    queries: blocked.slice(0, BLOCKED_LOOKUP_MAX).map((b) => {
+      const vid = videoIdOf(b);
+      return {
+        queryKey: ['video', vid],
+        queryFn: () => api.video(vid ?? ''),
+        enabled: Boolean(vid) && !b.video_title,
+      };
+    }),
+  });
+  return (
+    <ul>
+      {blocked.map((b, i) => {
+        const vid = videoIdOf(b);
+        const name = b.video_title ?? vids[i]?.data?.title;
+        return (
+          <li key={b.suggestion_id}>
+            {name && vid ? (
+              <>
+                <Link to={`/videos/${encodeURIComponent(vid)}`}>{name}</Link>
+                {` (${ko.batches.pc.blockedSuggestion(b.suggestion_id)}): ${b.reason}`}
+              </>
+            ) : (
+              ko.batches.pc.blockedLine(b.suggestion_id, b.reason)
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 function PrecheckView({ pc }: { pc: Precheck }) {
@@ -102,14 +146,14 @@ function PrecheckView({ pc }: { pc: Precheck }) {
             </Badge>
           ) : (
             <Callout tone="danger">
-              <ul>
-                {pc.blocked.map((b) => (
-                  <li key={b.suggestion_id}>{t.blockedLine(b.suggestion_id, b.reason)}</li>
-                ))}
-              </ul>
+              <BlockedList blocked={pc.blocked} />
             </Callout>
           )}
         </div>
+      </div>
+      <div className="legal-note muted">
+        <p>{ko.legal.aiLimit}</p>
+        <p>{pc.notice ?? ko.legal.disclaimer}</p>
       </div>
     </Card>
   );
@@ -163,6 +207,7 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
   const keys = useIdempotency();
   const [phrase, setPhrase] = useState('');
   const [stopOpen, setStopOpen] = useState(false);
+  const [abAck, setAbAck] = useState(false);
 
   const pc = pcFromNav ?? batch.precheck ?? null;
   const draft = batch.status === 'draft';
@@ -173,6 +218,7 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
   const doneCount =
     batch.counts.success + batch.counts.failed + batch.counts.skipped + batch.counts.cancelled;
   const blockedAll = pc ? pc.item_count === 0 : pendingCount === 0;
+  const discarded = batch.status === 'cancelled' && !batch.executed_at;
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['batch', batch.id] });
@@ -213,11 +259,12 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
                     : 'neutral'
               }
             >
-              {batchStatusLabel(batch.status)}
+              {batchStatusText(batch)}
             </Badge>
             <span className="muted">{fmtDateTime(batch.created_at)}</span>
             {batch.note && <span>{batch.note}</span>}
           </div>
+          {draft && <DiscardDraftButton batchId={batch.id} />}
         </div>
       </Card>
 
@@ -239,13 +286,28 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
           ) : (
             <div className="stack">
               <p>{ko.batches.confirmBody}</p>
+              <Callout tone="warning">
+                <p>{ko.legal.abHint}</p>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={abAck}
+                    aria-describedby="ab-needed"
+                    onChange={(e) => setAbAck(e.target.checked)}
+                  />
+                  {ko.legal.abConfirm}
+                </label>
+              </Callout>
               <ConfirmPhrase phrase={expected} value={phrase} onChange={setPhrase} />
+              <p id="ab-needed" className="muted" aria-live="polite">
+                {abAck ? '' : ko.legal.abNeeded}
+              </p>
               {execute.isError && <ErrorPanel error={execute.error} />}
               <div>
                 <Button
                   variant="danger"
                   busy={execute.isPending}
-                  disabled={phrase !== expected}
+                  disabled={phrase !== expected || !abAck}
                   onClick={() => execute.mutate()}
                 >
                   {execute.isPending ? ko.batches.executing : ko.batches.execute}
@@ -256,7 +318,14 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
         </Card>
       )}
 
-      {!draft && (
+      {discarded && (
+        <Callout tone="info" role="status">
+          <p>{ko.batches.discardedBody}</p>
+          <Link to="/batches">{ko.batches.backToList}</Link>
+        </Callout>
+      )}
+
+      {!draft && !discarded && (
         <Card title={ko.batches.progressTitle}>
           <div className="stack">
             <Progress value={doneCount} max={total} label={ko.batches.progressLabel} />

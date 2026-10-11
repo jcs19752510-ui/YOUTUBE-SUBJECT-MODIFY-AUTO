@@ -91,7 +91,6 @@ def test_web_container_reaches_host_gateway_listener_repro():
     assert api_open, "internal 망의 api 가 호스트 게이트웨이에 도달하지 못한다면 범위 확대 사실이 바뀐 것이다 → 기대를 뒤집는다"
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-9-017: .dockerignore 가 거부 목록 방식이라 개발 캐시(.ruff_cache 등)가 api 이미지에 들어간다. 고치면 이 표식을 지운다.")
 def test_api_image_has_no_dev_cache_directories():
     r = docker("run", "--rm", "--entrypoint", "sh", f"{PROJECT}-api:local", "-c",
                "find /app -name .ruff_cache -o -name .mypy_cache -o -name .pytest_cache -o -name .coverage -o -name '*.egg-info' | head")

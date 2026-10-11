@@ -16,7 +16,7 @@ from ytweb.db.models import Job
 from ytweb.domain.common import VIDEO_ID_PATTERN, Env
 from ytweb.domain.deps import get_env, get_title_suggester
 from ytweb.domain.handlers import DEFAULT_TONE
-from ytweb.domain.schemas import JobOut, Page, SuggestionCreateIn, SuggestionOut, VideoDetailOut, VideoSummaryOut
+from ytweb.domain.schemas import MAX_PAGE, JobOut, Page, SuggestionCreateIn, SuggestionOut, VideoDetailOut, VideoSummaryOut
 from ytweb.domain.serialize import job_dict, suggestion_dict
 from ytweb.domain.suggestions import generate_for_video
 from ytweb.domain.videos import list_videos, video_detail
@@ -31,7 +31,7 @@ def get_videos(
     q: str | None = Query(default=None, max_length=100),
     status: Literal["none", "suggested", "approved", "queued", "applied", "rolled_back"] | None = None,
     excluded: bool | None = None, sort: SortField = "video_id", order: Literal["asc", "desc"] = "asc",
-    page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200),
     session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), _=Depends(require_session),
 ):
     items, total = list_videos(session, now=clock(), q=q, status=status, excluded=excluded, sort=sort, order=order, page=page, page_size=page_size)

@@ -18,7 +18,10 @@ interface ToastItem {
 }
 interface ToastApi {
   push: (tone: ToastTone, text: string) => void;
+  /** 화면을 옮길 때 오래된 성공·안내 알림을 치운다(오류 알림은 남긴다) */
+  clearTransient: () => void;
 }
+const AUTO_CLOSE_MS = 5000;
 const Ctx = createContext<ToastApi | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -29,11 +32,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (tone: ToastTone, text: string) => {
       const id = ++seq.current;
       setItems((l) => [...l.slice(-3), { id, tone, text }]);
-      if (tone !== 'error') window.setTimeout(() => remove(id), 6000);
+      if (tone !== 'error') window.setTimeout(() => remove(id), AUTO_CLOSE_MS);
     },
     [remove],
   );
-  const api = useMemo(() => ({ push }), [push]);
+  const clearTransient = useCallback(
+    () => setItems((l) => l.filter((t) => t.tone === 'error')),
+    [],
+  );
+  const api = useMemo(() => ({ push, clearTransient }), [push, clearTransient]);
   return (
     <Ctx.Provider value={api}>
       {children}

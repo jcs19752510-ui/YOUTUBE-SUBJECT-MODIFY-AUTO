@@ -215,6 +215,8 @@ def test_it_420_every_operation_is_served_with_documented_success_status_and_enu
     for key, fn in calls.items():
         r = fn()
         want = [int(s) for s in doc_ops[key]["responses"] if s.startswith("2")][0]
+        if key in ("GET /healthz", "GET /readyz"):      # 백엔드 라우트는 문서대로 있으나 nginx 가 밖으로는 닫는다(DEF-7-006, W-FIX-INF) → 404
+            want = 404
         if r.status_code != want:
             bad.append((key, want, r.status_code, r.text[:160]))
     # 그 사이 ‘수정’한 제안은 반려했으므로 마지막 호출의 상태 충돌은 순서 문제: (approve 이후 reject)
@@ -436,7 +438,7 @@ def test_it_433_unschemaed_responses_have_documented_fields(fresh_demo):
     assert set(d["queue"]) >= {"pending_items", "next_run_date"} and set(d["today"]) >= {"applied", "cap"}
     g = a.get("/api/v1/google/status").json()
     assert g == {"mode": "demo", "connected": False, "message": g["message"]} and "시연용" in g["message"]
-    for path in ("/api/healthz",):      # 루트 /healthz·/readyz 는 nginx 가 SPA 로 돌려준다 → DEF-7-006 (IT-436, xfail)
+    for path in ("/api/healthz",):      # 루트 /healthz·/readyz 는 nginx 가 404 로 닫는다 → DEF-7-006 (IT-436)
         r = a.c.get(path)
         assert r.status_code == 200 and r.json() == {"status": "ok"}
     for path in ("/api/readyz",):
@@ -721,26 +723,28 @@ def test_it_432_response_headers_request_id_no_store_and_unique(fresh_demo):
         assert re.fullmatch(r"[0-9a-f]{32}", rid) and rid not in seen, (path, rid)
         seen.add(rid)
         assert r.headers.get("cache-control", "").lower().count("no-store") == 1 or "no-store" in r.headers.get("cache-control", ""), path
-        assert "default-src" in r.headers.get("content-security-policy", ""), path     # 'none' 이 아니라 nginx 의 'self' 정책 → DEF-7-007 (IT-437, xfail)
+        assert r.headers.get("content-security-policy", "").startswith("default-src 'none'"), path     # DEF-7-007 수정: nginx 가 /api 에 'none' 정책을 붙인다 (IT-437)
     r = a.c.post("/api/v1/videos/sync", headers={"Origin": "http://evil.example"})
     assert re.fullmatch(r"[0-9a-f]{32}", r.headers.get("x-request-id", ""))
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-006: API.md 1장·EVT-W01~04 는 /healthz·/readyz 가 같은 포트에서 열린다고 적었으나 nginx 는 /api/ 만 넘기고 나머지는 SPA(index.html 200 text/html)로 돌려준다 — 헬스 프로브가 HTML 200 을 받아 거짓 정상으로 오판할 수 있음")
-def test_it_436_root_healthz_and_readyz_reach_backend_through_nginx():
-    """IT-436: http://127.0.0.1:<포트>/healthz, /readyz 가 JSON 상태를 돌려준다(문서 기준)."""
+def test_it_436_root_healthz_and_readyz_are_closed_at_nginx_and_api_paths_serve_json():
+    """IT-436(DEF-7-006 수정 확인): 브라우저 포트의 루트 /healthz·/readyz 는 SPA HTML 200 이 아니라 404(text/plain)이고,
+    상태 확인은 /api/healthz·/api/readyz 가 JSON 으로 준다. (API.md 는 루트 경로도 열린다고 적혀 있어 문서 정정이 필요 — 11단계 대조 항목.)"""
     import httpx
     from itlib import BASE, HOST_OK
-    for path, want in (("/healthz", {"status": "ok"}), ("/readyz", {"status": "ok", "db": "ok", "mode": "demo"})):
+    for path in ("/healthz", "/readyz"):
+        r = httpx.get(BASE + path, headers={"Host": HOST_OK}, timeout=10)
+        assert r.status_code == 404 and r.headers["content-type"].startswith("text/plain") and "<html" not in r.text.lower(), (path, r.status_code)
+    for path, want in (("/api/healthz", {"status": "ok"}), ("/api/readyz", {"status": "ok", "db": "ok", "mode": "demo"})):
         r = httpx.get(BASE + path, headers={"Host": HOST_OK}, timeout=10)
         assert r.status_code == 200 and r.headers["content-type"].startswith("application/json") and r.json() == want, (path, r.headers["content-type"])
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-007: API.md 1-2 는 /api 응답 CSP 가 default-src 'none' 이라고 적었으나 nginx 가 백엔드 헤더를 숨기고 페이지용 default-src 'self' 정책을 덧씌운다(JSON 응답이라 실효 위험은 낮음, 문서·동작 불일치)")
 def test_it_437_api_responses_carry_documented_csp_default_src_none(fresh_demo):
-    """IT-437: /api 응답의 CSP 가 문서대로 default-src 'none' 이다."""
+    """IT-437(DEF-7-007 수정 확인): /api 응답의 CSP 가 문서대로 default-src 'none' 이고 한 벌만 나간다."""
     r = fresh_demo.get("/api/v1/dashboard")
-    assert "default-src 'none'" in r.headers.get("content-security-policy", "")
+    assert r.headers.get_list("content-security-policy") == ["default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"]
 
 
 # ─────────────────────────── 마이그레이션 0001 → 0002 ───────────────────────────

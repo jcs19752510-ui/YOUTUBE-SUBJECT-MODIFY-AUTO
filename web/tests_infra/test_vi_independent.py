@@ -338,10 +338,12 @@ def test_tc_vi_019_nginx_security_baseline():
 def test_tc_vi_020_nginx_every_location_that_adds_headers_includes_security_headers_and_limits_methods():
     c = read(DOCKER_DIR / "nginx" / "nginx.conf")
     blocks = re.findall(r"(?s)(location [^{]+)\{(.*?)\n        \}", c)
-    assert len(blocks) == 7
+    assert len(blocks) == 9      # W-FIX-INF: /healthz·/readyz 404 두 곳 추가(DEF-7-006)
     for head, body in blocks:
         if "add_header" in body or "return" in body or "proxy_pass" in body or "try_files" in body:
-            assert "include /etc/nginx/snippets/security-headers.conf;" in body, head
+            # /api 계열은 JSON 응답용 헤더 파일(CSP default-src 'none', DEF-7-007), 나머지는 페이지용
+            want = "security-headers-api.conf" if "proxy_pass" in body else "security-headers.conf"
+            assert f"include /etc/nginx/snippets/{want};" in body, head
         if "proxy_pass" in body:
             assert "limit_req zone=" in body and "include /etc/nginx/snippets/proxy.conf;" in body, head
             if head.strip() not in ("location = /api/healthz", "location = /api/readyz"):  # 관찰 O-VI-01: 두 곳은 메서드 제한이 없다
@@ -650,7 +652,8 @@ def _ngx_gen(tag: str):
         ng = DOCKER_DIR / "nginx"
         r = docker("run", "-d", "--name", names[1], "--network", NGX_NET, "--read-only", "--cap-drop", "ALL", "--tmpfs", "/tmp:rw,noexec,nosuid,uid=101,gid=101,mode=1777",
                    "-v", f"{ng/'nginx.conf'}:/etc/nginx/nginx.conf:ro", "-v", f"{ng/'security-headers.conf'}:/etc/nginx/snippets/security-headers.conf:ro",
-                   "-v", f"{ng/'proxy.conf'}:/etc/nginx/snippets/proxy.conf:ro", f"{PROJECT}-web:local")
+                   "-v", f"{ng/'proxy.conf'}:/etc/nginx/snippets/proxy.conf:ro",
+                   "-v", f"{ng/'security-headers-api.conf'}:/etc/nginx/snippets/security-headers-api.conf:ro", f"{PROJECT}-web:local")
         assert r.returncode == 0, r.stderr
         ip = ""
         for _ in range(30):
@@ -740,8 +743,11 @@ def test_tc_vi_042_security_headers_present_exactly_once_on_all_responses(ngx, p
     for k in SEC_HEADERS:
         assert len(h.get(k, [])) == 1, (path, method, status, k, h.get(k))
     csp = dict((d.strip().split(" ", 1) + [""])[:2] for d in h["content-security-policy"][0].split(";") if d.strip())
-    assert csp == {"default-src": "'self'", "script-src": "'self'", "style-src": "'self'", "style-src-attr": "'unsafe-inline'", "img-src": "'self' data:",
-                   "font-src": "'self'", "connect-src": "'self'", "object-src": "'none'", "base-uri": "'none'", "frame-ancestors": "'none'", "form-action": "'self'"}, csp
+    if path.startswith("/api/"):        # W-FIX-INF(DEF-7-007): JSON 응답은 아무것도 불러오지 못하게 default-src 'none'
+        assert csp == {"default-src": "'none'", "frame-ancestors": "'none'", "base-uri": "'none'", "form-action": "'none'"}, csp
+    else:
+        assert csp == {"default-src": "'self'", "script-src": "'self'", "style-src": "'self'", "style-src-attr": "'unsafe-inline'", "img-src": "'self' data:",
+                       "font-src": "'self'", "connect-src": "'self'", "object-src": "'none'", "base-uri": "'none'", "frame-ancestors": "'none'", "form-action": "'self'"}, csp
     assert h["x-frame-options"] == ["DENY"] and h["x-content-type-options"] == ["nosniff"]
     assert "server" not in h or not re.search(r"\d", h["server"][0]), h.get("server")
 

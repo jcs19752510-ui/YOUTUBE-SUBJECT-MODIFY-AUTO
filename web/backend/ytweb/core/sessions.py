@@ -6,7 +6,7 @@ import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from ytweb.db.models import SessionRow
@@ -27,8 +27,8 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def create_session(db: Session, *, now: datetime, ttl_hours: int) -> tuple[str, SessionInfo]:
-    purge_expired(db, now=now)
+def create_session(db: Session, *, now: datetime, ttl_hours: int, idle_timeout: timedelta | None = None) -> tuple[str, SessionInfo]:
+    purge_expired(db, now=now, idle_timeout=idle_timeout)
     active = db.execute(select(SessionRow.id).order_by(SessionRow.created_at.desc())).scalars().all()
     for old in active[MAX_ACTIVE_SESSIONS - 1:]:
         db.execute(delete(SessionRow).where(SessionRow.id == old))
@@ -43,13 +43,14 @@ def create_session(db: Session, *, now: datetime, ttl_hours: int) -> tuple[str, 
     return token, SessionInfo(row.id, csrf, row.expires_at)
 
 
-def lookup_session(db: Session, token: str | None, *, now: datetime) -> SessionInfo | None:
+def lookup_session(db: Session, token: str | None, *, now: datetime, idle_timeout: timedelta | None = None) -> SessionInfo | None:
+    """idle_timeout 이 있으면 마지막 사용(last_seen) 뒤 그 시간이 지난 세션도 만료로 보고 지운다(DEF-9-003). None 이면 절대 만료(expires_at)만 본다."""
     if not token or len(token) > 128:
         return None
     row = db.get(SessionRow, hash_token(token))
     if row is None:
         return None
-    if row.expires_at <= now:
+    if row.expires_at <= now or (idle_timeout is not None and row.last_seen + idle_timeout <= now):
         db.delete(row)
         db.flush()
         return None
@@ -67,6 +68,9 @@ def delete_other_sessions(db: Session, keep_id: str) -> None:
     db.flush()
 
 
-def purge_expired(db: Session, *, now: datetime) -> int:
-    res = db.execute(delete(SessionRow).where(SessionRow.expires_at <= now))
+def purge_expired(db: Session, *, now: datetime, idle_timeout: timedelta | None = None) -> int:
+    cond = SessionRow.expires_at <= now
+    if idle_timeout is not None:
+        cond = or_(cond, SessionRow.last_seen <= now - idle_timeout)
+    res = db.execute(delete(SessionRow).where(cond))
     return res.rowcount or 0

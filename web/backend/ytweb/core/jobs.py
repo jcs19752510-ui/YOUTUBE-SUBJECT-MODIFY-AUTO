@@ -9,7 +9,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from ytweb.core.clock import utcnow
@@ -20,6 +20,8 @@ log = logging.getLogger("ytweb.jobs")
 
 MAX_ATTEMPTS = 3
 STALE_AFTER = timedelta(minutes=10)
+# 항목 단위 compare-and-set·planned 고유 인덱스로 중복 실행이 안전하고 항목마다 생존 신호(update_progress)를 남기는 작업은 더 짧게 본다(DEF-7B-001).
+STALE_AFTER_BY_TYPE: dict[str, timedelta] = {"batch.execute": timedelta(minutes=5)}
 _ERROR_MAX = 300
 
 Handler = Callable[[sessionmaker, Job], "dict | None"]
@@ -91,14 +93,23 @@ def fail(session: Session, job_id: str, *, error: str, now: datetime) -> None:
     session.flush()
 
 
-def requeue_stale(session: Session, *, now: datetime, stale_after: timedelta = STALE_AFTER) -> tuple[int, int]:
-    """비정상 종료로 running 에 남은 작업을 재큐(시도 횟수 초과면 failed). (재큐 수, 실패 처리 수) 반환."""
-    cutoff = now - stale_after
-    stale = session.execute(
-        select(Job).where(Job.status == "running", Job.locked_at < cutoff)
-    ).scalars().all()
+def requeue_stale(session: Session, *, now: datetime, stale_after: timedelta | None = None) -> tuple[int, int]:
+    """비정상 종료로 running 에 남은 작업을 재큐(시도 횟수 초과면 failed). (재큐 수, 실패 처리 수) 반환.
+
+    stale_after=None 이면 작업 유형별 기본값(STALE_AFTER_BY_TYPE, 없으면 STALE_AFTER)을 쓴다. 0 을 주면 running 인 작업을 전부 고아로 본다 —
+    워커가 하나뿐인 기동 직후에만 쓴다. locked_at 이 비어 있는 running 작업은 생존 신호가 없으므로 항상 고아다.
+    다른 처리자가 같은 행을 잡고 있으면(PostgreSQL SKIP LOCKED) 건너뛰어 같은 작업을 두 번 재큐하지 않는다."""
+    def limit(job_type: str) -> timedelta:
+        return stale_after if stale_after is not None else STALE_AFTER_BY_TYPE.get(job_type, STALE_AFTER)
+
+    shortest = stale_after if stale_after is not None else min([STALE_AFTER, *STALE_AFTER_BY_TYPE.values()])
+    stmt = select(Job).where(Job.status == "running", or_(Job.locked_at.is_(None), Job.locked_at < now - shortest))
+    if session.get_bind().dialect.name == "postgresql":
+        stmt = stmt.with_for_update(skip_locked=True)
     requeued = failed = 0
-    for job in stale:
+    for job in session.execute(stmt).scalars().all():
+        if job.locked_at is not None and job.locked_at >= now - limit(job.type):
+            continue
         if job.attempts >= MAX_ATTEMPTS:
             job.status, job.error, job.finished_at = "failed", "worker_lost", now
             failed += 1

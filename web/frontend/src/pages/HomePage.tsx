@@ -122,7 +122,15 @@ export function HomePage() {
   });
   return (
     <>
-      <PageHead title={ko.home.title} subtitle={ko.home.subtitle} />
+      <PageHead
+        title={ko.home.title}
+        subtitle={ko.home.subtitle}
+        actions={
+          <Button busy={q.isFetching && !q.isPending} onClick={() => void q.refetch()}>
+            {q.isFetching && !q.isPending ? ko.home.refreshing : ko.home.refresh}
+          </Button>
+        }
+      />
       <QueryView query={q} lines={6}>
         {(d) => {
           const pct = d.quota.limit > 0 ? (d.quota.used / d.quota.limit) * 100 : 0;

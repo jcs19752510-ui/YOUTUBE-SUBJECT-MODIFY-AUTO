@@ -98,7 +98,6 @@ def test_gitignore_covers_secret_and_artifact_paths():
         assert need in g, f".gitignore 에 {need} 가 없다"
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-9-006: .gitignore 에 client_secret*.json 이 없다(TW-18 은 있다고 적었고 .dockerignore 에는 있다). 구글이 내려주는 client_secret_*.json 을 저장소 루트에 두면 git add 로 올라간다. 고치면 이 표식을 지운다.")
 def test_gitignore_has_client_secret_pattern():
     assert any("client_secret" in x for x in _ignore_lines(".gitignore"))
 
@@ -231,7 +230,8 @@ def test_nginx_conf_rules():
     assert len(blocks) >= 6
     for b in blocks:
         if "add_header" in b:
-            assert "security-headers.conf" in b, "add_header 가 있는 location 이 보안 헤더를 include 하지 않는다: " + b.splitlines()[0]
+            # 2026-10-11 W-FIX-INF: /api 계열 location 은 JSON 용 헤더 파일(security-headers-api.conf, CSP default-src 'none')을 include 한다
+            assert re.search(r"security-headers(-api)?\.conf", b), "add_header 가 있는 location 이 보안 헤더를 include 하지 않는다: " + b.splitlines()[0]
     proxies = re.findall(r"proxy_pass\s+([^;]+);", n)
     assert proxies and all(p.startswith("$api_upstream") for p in proxies), proxies
     assert re.findall(r"set \$api_upstream (\S+);", n) == ["http://api:8000"] * 4
@@ -411,7 +411,6 @@ def test_ci_files_inventory_and_known_hardening_gaps():
     assert "production-deploy-approval" in wf              # 배포 승인 environment 는 있음
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-9-017: .dockerignore 는 거부 목록이라 *.pem·*.key·credentials*.json·.ruff_cache 등 비밀형/개발 캐시 파일이 이미지 빌드 컨텍스트에 들어갈 수 있다. 허용 목록 방식으로 바꾸거나 항목을 추가한 뒤 이 표식을 지운다.")
 def test_dockerignore_covers_secret_like_and_dev_cache_patterns():
     lines = {l.strip() for l in (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")}
     allowlist = "*" in lines  # 허용 목록 방식이면 아래 항목은 필요 없다

@@ -111,6 +111,10 @@ function Detail({ v }: { v: VideoDetail }) {
             {suggest.isPending ? ko.detail.suggesting : ko.detail.suggest}
           </Button>
         </div>
+        <div className="legal-note muted">
+          <p>{ko.legal.validationNote}</p>
+          <p>{ko.legal.disclaimer}</p>
+        </div>
         {suggest.isError && <ErrorPanel error={suggest.error} />}
         {v.suggestions.length === 0 ? (
           <EmptyState title={ko.detail.suggestionsEmpty}>

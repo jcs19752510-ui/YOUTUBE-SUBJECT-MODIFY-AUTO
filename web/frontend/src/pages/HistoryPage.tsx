@@ -131,6 +131,10 @@ export function HistoryPage() {
   return (
     <>
       <PageHead title={ko.history.title} subtitle={ko.history.subtitle} />
+      <div className="legal-note muted">
+        <p>{ko.legal.historyNote}</p>
+        <p>{ko.legal.aiNotice}</p>
+      </div>
       <form
         className="toolbar"
         role="search"
@@ -157,9 +161,9 @@ export function HistoryPage() {
             }}
           >
             <option value="">{ko.history.resultAll}</option>
-            {Object.entries(ko.changeResult).map(([k, v]) => (
+            {ko.resultFilter.map((k) => (
               <option key={k} value={k}>
-                {v}
+                {changeResultLabel(k)}
               </option>
             ))}
           </select>

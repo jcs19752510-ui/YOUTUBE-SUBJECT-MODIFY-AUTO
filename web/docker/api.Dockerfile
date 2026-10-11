@@ -29,7 +29,10 @@ COPY --from=builder /opt/venv /opt/venv
 # 코어(src/ytitle)는 복사하지 않고 PYTHONPATH 로 같은 소스를 쓴다(웹 전용 사본 금지, WEB_DESIGN §1).
 COPY src/ytitle /app/src/ytitle
 COPY config /app/config
-COPY web/backend /app/backend
+# 실행에 필요한 것만 복사한다(DEF-9-017): 개발 캐시·시험·요구 파일·egg-info 가 작업 폴더에 있어도 이미지에 들어가지 않는다.
+COPY web/backend/ytweb /app/backend/ytweb
+COPY web/backend/alembic /app/backend/alembic
+COPY web/backend/alembic.ini /app/backend/alembic.ini
 WORKDIR /app/backend
 # 읽기 전용 루트에서 .pyc 를 쓸 수 없으므로 빌드 때 미리 만든다. 임포트 스모크 테스트로 의존성 누락을 빌드 단계에서 잡는다.
 RUN python -m compileall -q /app/backend /app/src \

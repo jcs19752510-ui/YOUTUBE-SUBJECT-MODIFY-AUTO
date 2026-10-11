@@ -44,7 +44,8 @@ describe('영상 상세', () => {
     expect(within(card(2)).getByText('경고')).toBeInTheDocument();
     expect(within(card(2)).getByText(/공포를 조장할 수 있는 표현/)).toBeInTheDocument();
     expect(within(card(3)).getByText('차단')).toBeInTheDocument();
-    expect(within(card(3)).getByText(/근거 없는 100% 단정/)).toBeInTheDocument();
+    // 같은 사유가 "검증 사유"와 "승인할 수 없는 이유" 두 곳에 보인다(DEF-7-008)
+    expect(within(card(3)).getAllByText(/근거 없는 100% 단정/).length).toBeGreaterThanOrEqual(2);
     expect(within(card(3)).getByText('[차단 사유]')).toBeInTheDocument();
   });
 

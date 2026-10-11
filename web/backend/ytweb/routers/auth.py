@@ -47,7 +47,7 @@ def me(
     db: Session = Depends(get_session),
     clock: Callable[[], datetime] = Depends(get_clock),
 ) -> dict:
-    info = lookup_session(db, request.cookies.get(COOKIE_NAME), now=clock())
+    info = lookup_session(db, request.cookies.get(COOKIE_NAME), now=clock(), idle_timeout=request.app.state.web_settings.session_idle_timeout)
     return {"authenticated": info is not None, "pin_required": pin_required(db), "csrf_token": info.csrf_token if info else None}
 
 
@@ -68,7 +68,7 @@ def create(
         audit.record(db, actor="owner", action="session.denied", target_type="session", detail={"code": exc.code}, now=now)
         db.commit()
         raise
-    token, info = create_session(db, now=now, ttl_hours=settings.session_ttl_hours)
+    token, info = create_session(db, now=now, ttl_hours=settings.session_ttl_hours, idle_timeout=settings.session_idle_timeout)
     audit.record(db, actor="owner", action="session.create", target_type="session", target_id=info.session_id[:12],
                  detail={"pin_used": pin_required(db)}, now=now)
     _set_cookie(response, token, settings.session_ttl_hours)

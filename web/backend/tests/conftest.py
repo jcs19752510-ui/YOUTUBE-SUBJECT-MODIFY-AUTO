@@ -44,7 +44,9 @@ def clock() -> FakeClock:
 
 
 @pytest.fixture
-def web_settings(tmp_path: Path) -> WebSettings:
+def web_settings(tmp_path: Path, request: pytest.FixtureRequest) -> WebSettings:
+    # 절대 만료(TTL)만 보는 오래된 시험은 no_idle 표식으로 유휴 만료(기본 30분)를 끈다.
+    idle = 0 if request.node.get_closest_marker("no_idle") else 30
     return WebSettings(
         mode="demo",
         database_url=f"sqlite:///{tmp_path / 'test.db'}",
@@ -52,6 +54,7 @@ def web_settings(tmp_path: Path) -> WebSettings:
         secrets_dir=tmp_path / "secrets",
         allowed_hosts=("127.0.0.1:8080", "localhost:8080"),
         session_ttl_hours=12,
+        session_idle_minutes=idle,
     )
 
 

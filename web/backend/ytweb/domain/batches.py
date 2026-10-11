@@ -31,6 +31,7 @@ from ytweb.core.settings_store import effective_daily_cap
 from ytweb.db.models import Batch, BatchItem, Change, Job, Suggestion, Video
 from ytweb.domain.common import MAX_BATCH_ITEMS, Env, StepFailure, clamp_page, default_env, lock_rows, single_line
 from ytweb.domain.exclusions import exclusion_reasons
+from ytweb.domain.notices import DISCLAIMER
 from ytweb.domain.limits_quota import (
     applied_today, check_video_limits, mark_call, quota_state, release_unused, reserve_calls, units_per_apply,
 )
@@ -78,11 +79,18 @@ def _eligibility(session: Session, sug: Suggestion | None, video: Video | None, 
     return None
 
 
-def _active_item(session: Session, suggestion_id: int, exclude_batch_id: int | None = None) -> BatchItem | None:
-    stmt = select(BatchItem).where(BatchItem.suggestion_id == suggestion_id, BatchItem.status.in_(("pending", "running")))
-    if exclude_batch_id is not None:
-        stmt = stmt.where(BatchItem.batch_id != exclude_batch_id)
-    return session.execute(stmt.limit(1)).scalar_one_or_none()
+def _active_holder(session: Session, suggestion_id: int) -> tuple[int, str] | None:
+    """이 제안을 지금 담고 있는 배치(번호, 상태). 초안 배치도 제안을 붙잡으므로(부분 고유 인덱스) 사유에 번호를 알려 버릴 수 있게 한다."""
+    return session.execute(
+        select(Batch.id, Batch.status).join(BatchItem, BatchItem.batch_id == Batch.id)
+        .where(BatchItem.suggestion_id == suggestion_id, BatchItem.status.in_(("pending", "running"))).limit(1)
+    ).first()
+
+
+def _holder_reason(batch_id: int, status: str) -> str:
+    if status == "draft":
+        return f"초안 배치 #{batch_id}에 이미 담겨 있습니다. 그 초안을 버리거나 실행한 뒤 다시 담을 수 있습니다."
+    return f"배치 #{batch_id}(진행 중)에 이미 담겨 있습니다."
 
 
 def assign_dates(session: Session, n: int, now: datetime, cap: int, *, exclude_batch_id: int | None = None) -> list[date]:
@@ -134,8 +142,11 @@ def create_draft(session: Session, suggestion_ids: list[int], note: str | None, 
         sug = session.get(Suggestion, sid)
         video = session.get(Video, sug.video_id) if sug is not None else None
         problem = _eligibility(session, sug, video, env, now, cap)
-        if problem is None and _active_item(session, sid) is not None:
-            problem = ("already_in_batch", "다른 배치에 이미 담겨 있습니다.")
+        holder = _active_holder(session, sid) if problem is None else None
+        if holder is not None:
+            problem = ("already_in_batch", _holder_reason(*holder))
+            blocked.append({"suggestion_id": sid, "reason": problem[1], "code": problem[0], "batch_id": holder[0]})
+            continue
         if problem is None and video.video_id in seen_videos:
             problem = ("duplicate_video", "같은 영상의 다른 제안이 이미 이 배치에 있습니다(영상당 한 번에 한 제목만).")
         if problem is not None:
@@ -191,6 +202,7 @@ def build_precheck(session: Session, batch: Batch, eligible: list[tuple[Suggesti
         "warnings": warnings,
         "blocked": blocked,
         "confirm_text": f"실행 {n}건",
+        "notice": DISCLAIMER,
     }
 
 
@@ -272,18 +284,19 @@ def cancel_batch(session: Session, batch_id: int, *, now: datetime, env: Env, ac
     batch = get_batch(session, batch_id, lock=True)
     if batch.status in ("cancelled", "done"):
         raise ProblemError(409, "batch_not_cancellable", f"이미 끝났거나 취소된 배치입니다(상태: {batch.status}).", hint="진행 중인 배치만 중지할 수 있습니다.")
+    was_draft = batch.status == "draft"
     cancelled = 0
     for it in batch.items:
         if it.status != "pending":
             continue  # 진행 중(running) 항목은 완료까지 둔다
-        it.status, it.skip_reason, it.updated_at = "cancelled", "[cancelled] 사용자가 배치를 중지했습니다.", now
+        it.status, it.skip_reason, it.updated_at = "cancelled", ("[cancelled] 사용자가 초안을 버렸습니다." if was_draft else "[cancelled] 사용자가 배치를 중지했습니다."), now
         sug = session.get(Suggestion, it.suggestion_id)
         if sug is not None:
             release_after_item(sug, session.get(Video, it.video_id), env, now, batch.executed_at or now)
         cancelled += 1
     batch.status, batch.updated_at = "cancelled", now
     session.flush()
-    audit.record(session, actor=actor, action="batch.cancel", target_type="batch", target_id=str(batch.id), detail={"cancelled_items": cancelled}, now=now)
+    audit.record(session, actor=actor, action="batch.cancel", target_type="batch", target_id=str(batch.id), detail={"cancelled_items": cancelled, "was_draft": was_draft}, now=now)
     return batch
 
 
@@ -536,6 +549,9 @@ def _recover_one(s: Session, item_id: int, now: datetime, env: Env, gateway: You
                 sug.status, sug.updated_at = "applied", now
             item.status, item.updated_at = ("success" if verify["ok"] else "failed"), now
             item.skip_reason = None if verify["ok"] else "[verify_failed] 재시작 후 검증에서 보존 항목이 맞지 않습니다."
+            # 정상 경로와 같은 추적성: 변경·영상·제안 ID 가 추가 전용 감사에 남아야 한다(changes 표만으로는 복원할 수 없다, DEF-7B-002)
+            audit.record(s, actor=WORKER, action="change.apply", target_type="change", target_id=str(change.id),
+                         detail={"batch_id": item.batch_id, "video_id": change.video_id, "suggestion_id": change.suggestion_id, "verify_ok": verify["ok"], "recovered": True, "reason": "restart_recovery"}, now=now)
         elif snap is not None and snap.get("title") == change.previous_title:
             change.result, change.error_code = "aborted", "interrupted"
             item.status, item.skip_reason, item.updated_at = "failed", "[interrupted] 반영 도중 중단되어 제목은 바뀌지 않았습니다.", now
@@ -545,7 +561,8 @@ def _recover_one(s: Session, item_id: int, now: datetime, env: Env, gateway: You
             item.status, item.skip_reason, item.updated_at = "failed", "[result_unknown] 재시작 후에도 결과를 확정하지 못했습니다. 유튜브에서 제목을 확인하세요.", now
     if batch is not None:
         refresh_after_item(s, batch, now)
-    audit.record(s, actor=WORKER, action="batch.item.recovered", target_type="batch_item", target_id=str(item.id), detail={"status": item.status}, now=now)
+    audit.record(s, actor=WORKER, action="batch.item.recovered", target_type="batch_item", target_id=str(item.id),
+                 detail={"status": item.status, "batch_id": item.batch_id, "video_id": item.video_id, "change_id": item.change_id}, now=now)
     return True
 
 

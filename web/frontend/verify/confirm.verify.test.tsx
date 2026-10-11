@@ -35,6 +35,8 @@ async function goBatch(batch = draftBatch(), extra: Handler[] = []) {
   executed = false;
   renderWithApp(batchUi, c.client, '/batches/7');
   await screen.findByLabelText(/확인 문구 입력/);
+  // 수정 단위(2026-10-11): 실행 전 "A/B 테스트 중이 아님" 확인란(POL-013)을 선택해야 실행 버튼이 켜진다
+  await userEvent.click(screen.getByRole('checkbox', { name: /A\/B 테스트 중이 아님/ }));
   return c;
 }
 let executed = false;

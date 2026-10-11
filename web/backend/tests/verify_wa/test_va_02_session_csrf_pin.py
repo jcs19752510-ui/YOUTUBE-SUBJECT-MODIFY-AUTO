@@ -134,6 +134,7 @@ def test_malformed_session_cookie_is_plain_unauthenticated(app, engine, bad):
         assert c.execute(text("select count(*) from sessions")).scalar_one() == 0
 
 
+@pytest.mark.no_idle
 def test_session_expiry_boundary_is_exclusive_absolute_and_row_deleted(client, app, clock, engine):
     """TC-VA-035 [S-W08] 만료 경계: 발급+TTL-1µs 까지 유효, 정확히 +TTL 에서 무효(행 삭제). 중간에 활동해도 만료 시각은 연장되지 않는다(절대 만료)."""
     login(client)

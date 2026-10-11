@@ -69,7 +69,7 @@ cmd_restore() {
     pg_restore -h "$DB_HOST" -p "$DB_PORT" -U ytweb_owner -d "$DB_NAME" \
         --single-transaction --exit-on-error --clean --if-exists --no-owner "$file"
     owner_psql -q -f "$SHARE_DIR/audit-guard.sql"
-    echo "복원 완료(감사 로그 권한 재확인 포함)"
+    echo "복원 완료(감사 로그·마이그레이션 버전표 권한 재확인 포함)"
 }
 
 cmd_reset_schema() {

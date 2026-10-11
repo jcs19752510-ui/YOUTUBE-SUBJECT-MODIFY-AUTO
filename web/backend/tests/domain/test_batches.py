@@ -35,6 +35,7 @@ def test_tc_wb_049_precheck_contents(seeded, env, clock):
     assert pre == {
         "item_count": 3, "estimated_units": 3 * (50 + 1 + 1), "daily_cap": 10, "quota_remaining_units": 6000,
         "schedule": [{"date": "2026-10-10", "count": 3}], "warnings": pre["warnings"], "blocked": [], "confirm_text": "실행 3건",
+        "notice": "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.",
     }
     assert any("A/B" in w for w in pre["warnings"])
     assert batch.status == "draft" and batch.note == "주간 정리" and batch.precheck == pre

@@ -95,12 +95,13 @@ def kst_day_bounds(day: date) -> tuple[datetime, datetime]:
 
 
 def clean_approver(value: object) -> str:
-    """승인자 이름: 비어 있지 않고 40자 이하, 제어 문자 없음(화면·감사 로그 위조 방지)."""
+    """승인자 이름: 비어 있지 않고 40자 이하, 제어·서식(제로폭·방향) 문자 없음(화면·감사 로그 위조 방지)."""
     if not isinstance(value, str) or not value.strip():
         raise ProblemError(422, "approver_required", "승인자 이름이 비어 있습니다.", hint="승인하는 사람의 이름을 입력하세요.")
     name = value.strip()
-    if len(name) > MAX_APPROVER_CHARS or sanitize_for_display(name) != name:
-        raise ProblemError(422, "approver_invalid", f"승인자 이름이 올바르지 않습니다(제어 문자 없이 {MAX_APPROVER_CHARS}자 이하).", hint="짧고 평범한 글자로 이름을 다시 입력하세요.")
+    # Cf(제로폭·방향 제어·소프트 하이픈)와 줄·문단 구분자는 눈에 같은 이름을 만들 수 있어 거부한다(DEF-9-004)
+    if len(name) > MAX_APPROVER_CHARS or sanitize_for_display(name) != name or any(unicodedata.category(ch) in ("Cf", "Zl", "Zp") for ch in name):
+        raise ProblemError(422, "approver_invalid", f"승인자 이름이 올바르지 않습니다(제어·보이지 않는 문자 없이 {MAX_APPROVER_CHARS}자 이하).", hint="짧고 평범한 글자로 이름을 다시 입력하세요.")
     return name
 
 

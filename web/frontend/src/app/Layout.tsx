@@ -34,8 +34,9 @@ export function Layout() {
       first.current = false;
       return;
     }
+    toast.clearTransient();
     document.querySelector<HTMLElement>('[data-page-title]')?.focus();
-  }, [pathname]);
+  }, [pathname, toast]);
 
   const online = conn.state === 'online';
   const offline = conn.state === 'offline' || conn.state === 'error';
@@ -99,6 +100,10 @@ export function Layout() {
           <Outlet />
         </ErrorBoundary>
       </main>
+      <footer className="legal-footer" aria-label={ko.legal.footerLabel}>
+        <p>{ko.legal.disclaimer}</p>
+        <p>{ko.legal.aiNotice}</p>
+      </footer>
     </div>
   );
 }

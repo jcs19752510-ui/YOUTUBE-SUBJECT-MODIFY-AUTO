@@ -34,6 +34,25 @@ export const ko = {
     reports: '성과 리포트',
     settings: '설정',
   },
+  // ---- 면책·AI 고지(규칙 I·J, POL-002·006·008·013). 문구는 이 한 곳에서만 정의한다 ----
+  // disclaimer 는 서버(리포트 notes·CSV)·CLI(ui.py DISCLAIMER)와 같은 문장이어야 한다.
+  legal: {
+    disclaimer: '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.',
+    footerLabel: '면책 및 AI 안내',
+    aiNotice: 'AI가 생성한 제안입니다. 사람이 검토하고 승인한 제목만 반영됩니다.',
+    aiLimit:
+      'AI 제안은 사실과 법령 적합성을 보장하지 않습니다. 건강·금융 내용은 표시·광고 관련 규정을 직접 확인하세요.',
+    strictCaution:
+      '건강·금융 제목입니다. 병이 낫는다거나 원금·수익이 보장된다는 식으로 읽힐 수 있는 표현이 없는지 직접 읽고 확인하세요. "통과"는 법령에 맞는다는 뜻이 아닙니다.',
+    abConfirm: '선택한 영상 모두 YouTube Studio에서 제목 A/B 테스트 중이 아님을 확인했습니다.',
+    abHint:
+      '이 프로그램은 어떤 영상이 A/B 테스트 중인지 알 수 없습니다. 테스트 중인 영상의 제목을 바꾸면 결과에 영향을 줄 수 있으니, Studio에서 직접 확인하고 해당 영상은 배치에서 빼 주세요.',
+    abNeeded: '위 확인란을 선택해야 실행할 수 있습니다.',
+    validationNote: '"통과"는 길이·금칙어·내용 일치 같은 형식 점검을 넘었다는 뜻일 뿐입니다.',
+    historyNote: '이 기록은 사람이 승인해 반영한 제목의 변화입니다.',
+    reportsNote:
+      '이 숫자는 참고용입니다. CSV 파일로 내려받아 다른 곳에 전달할 때도 같은 안내가 적용됩니다.',
+  },
   conn: {
     online: '서버 연결됨',
     offline: '서버 연결 끊김',
@@ -67,6 +86,8 @@ export const ko = {
     nextStep: '다음에 할 일',
     codeLabel: '오류 코드',
     defaultHint: '잠시 뒤 다시 시도해 주세요. 계속되면 서버 로그를 확인해 주세요.',
+    foreignDetail:
+      '서버가 한국어 설명을 주지 못한 오류입니다. 아래 오류 코드로 서버 기록을 찾을 수 있습니다.',
   },
   errors: {
     network_error: '서버에 연결할 수 없습니다.',
@@ -83,6 +104,7 @@ export const ko = {
     http_500: '서버 안에서 오류가 났습니다.',
     http_502: '서버가 응답하지 않습니다.',
     http_503: '서버가 아직 준비 중입니다.',
+    validation_error: '입력한 값이 서버가 받을 수 있는 형식이 아닙니다.',
   } as Record<string, string>,
 
   errorHints: {
@@ -90,6 +112,8 @@ export const ko = {
     pin_locked: '잠금이 풀릴 때까지 기다린 뒤 다시 입력해 주세요.',
     session_required: '화면을 새로고침해 다시 시작해 주세요.',
     csrf_invalid: '화면을 새로고침해 주세요.',
+    validation_error:
+      '입력값과 선택한 항목을 확인한 뒤 다시 시도해 주세요. 계속되면 화면을 새로고침해 주세요.',
   } as Record<string, string>,
 
   // ---- 상태 라벨 ----
@@ -108,6 +132,8 @@ export const ko = {
     queued: '반영 대기',
     applied: '반영 완료',
     expired: '승인 만료',
+    blocked: '차단됨',
+    rolled_back: '되돌림',
   } as Record<string, string>,
   validation: {
     pass: '통과',
@@ -137,14 +163,17 @@ export const ko = {
     cancelled: '취소됨',
   } as Record<string, string>,
   changeType: { apply: '반영', rollback: '롤백' } as Record<string, string>,
+  // 서버가 허용하는 결과 값은 planned|success|failed|aborted 뿐이다(찾기 선택지는 resultFilter)
   changeResult: {
     success: '성공',
     failed: '실패',
+    planned: '예정',
+    aborted: '중단됨',
     verified: '검증 완료',
     unverified: '검증 필요',
-    planned: '예정',
     rolled_back: '되돌려짐',
   } as Record<string, string>,
+  resultFilter: ['planned', 'success', 'failed', 'aborted'] as readonly string[],
   privacy: { public: '공개', unlisted: '일부 공개', private: '비공개' } as Record<string, string>,
   jobType: {
     'videos.sync': '영상 불러오기',
@@ -172,6 +201,8 @@ export const ko = {
     gotoReview: '검토하러 가기',
     gotoBatch: '배치 만들기',
     gotoQueue: '진행 상황 보기',
+    refresh: '새로고침',
+    refreshing: '다시 읽는 중…',
     syncDemo: '데모 영상 불러오기',
     syncing: '불러오는 중…',
     syncStarted: '데모 영상 불러오기를 시작했습니다.',
@@ -345,6 +376,11 @@ export const ko = {
     warnAck: '경고 사유를 모두 읽고 확인했습니다.',
     approvedToast: '승인했습니다.',
     approveBlocked: '차단 판정이라 승인할 수 없습니다. 제목을 수정해 다시 검증해 보세요.',
+    cannotApproveTitle: '승인할 수 없는 이유',
+    cannotApproveStrict:
+      '건강·금융 등 민감 주제라 경고 상태에서도 승인할 수 없습니다. 제목을 수정해 "통과"를 받아야 합니다.',
+    cannotApproveNoReason: '검증이 차단으로 판정했습니다. 사유는 위 "검증 사유"를 확인하세요.',
+    blockedStatusHint: '[제목 수정]으로 고쳐 다시 검증하거나 [반려]할 수 있습니다.',
     reject: '반려',
     rejectTitle: '이 제안을 반려할까요?',
     rejectBody: '반려한 제안은 배치에 넣을 수 없습니다. 새 제안을 다시 만들 수 있습니다.',
@@ -391,6 +427,7 @@ export const ko = {
       blocked: '제외된 항목',
       noBlocked: '제외된 항목이 없습니다.',
       blockedLine: (id: number, reason: string) => `제안 ${id}: ${reason}`,
+      blockedSuggestion: (id: number) => `제안 ${id}`,
       confirmFallback: (n: number) => `실행 ${n}건`,
       allBlocked: '반영할 수 있는 항목이 없습니다. 제외 사유를 해결한 뒤 다시 점검하세요.',
     },
@@ -441,6 +478,18 @@ export const ko = {
     batchTitle: (id: number) => `배치 #${id}`,
     notFoundTitle: '배치를 찾을 수 없습니다',
     runningBanner: '실행 중인 배치가 있습니다.',
+    discard: '초안 버리기',
+    discardTitle: '이 초안을 버릴까요?',
+    discardBody:
+      '초안에는 아직 반영된 변경이 없어 제목은 그대로입니다. 버리면 담겨 있던 제안을 다른 배치에 다시 담을 수 있습니다.',
+    discardConfirm: '버리기',
+    discardedToast: '초안을 버렸습니다.',
+    discardedLabel: '버려진 초안',
+    discardedBody:
+      '이 초안은 버려졌습니다. 제목은 바뀌지 않았고, 담겨 있던 제안은 다른 배치에 다시 담을 수 있습니다.',
+    discardAria: (id: number) => ` (배치 #${id})`,
+    inDraft: (id: number) => `초안 배치 #${id}에 있음 — 버리거나 실행하세요`,
+    inDraftOpen: (id: number) => `초안 배치 #${id} 열기`,
   },
 
   // ---- 이력·롤백 ----
@@ -562,6 +611,47 @@ export const ko = {
     colActor: '행위자',
     colAction: '동작',
     colTarget: '대상',
+    actors: {
+      owner: '소유자',
+      web: '웹 화면',
+      worker: '작업 처리기',
+      system: '시스템',
+    } as Record<string, string>,
+    actions: {
+      'session.create': '세션 시작',
+      'session.delete': '로그아웃',
+      'session.denied': '접속 거절(PIN 불일치 등)',
+      'settings.update': '설정 변경',
+      'videos.sync_request': '영상 불러오기 요청',
+      'videos.sync': '영상 불러오기 완료',
+      'suggestion.generate_request': 'AI 제안 생성 요청',
+      'suggestion.generate': 'AI 제안 생성',
+      'suggestion.generate_bulk': 'AI 제안 일괄 생성',
+      'suggestion.generate_failed': 'AI 제안 생성 실패',
+      'suggestion.edit': '제안 제목 수정',
+      'suggestion.approve': '제안 승인',
+      'suggestion.reject': '제안 반려',
+      'batch.create': '배치 초안 만들기',
+      'batch.execute': '배치 실행',
+      'batch.cancel': '배치 중지·초안 버리기',
+      'batch.item.deferred': '배치 항목 다음 날로 이월',
+      'batch.item.recovered': '배치 항목 복구',
+      'batch.item.failed': '배치 항목 실패',
+      'batch.item.skipped': '배치 항목 건너뜀',
+      'change.apply': '제목 반영',
+      'change.rollback': '롤백',
+      'change.rollback_failed': '롤백 실패',
+    } as Record<string, string>,
+    targets: {
+      session: '세션',
+      settings: '설정',
+      job: '작업',
+      suggestion: '제안',
+      batch: '배치',
+      batch_item: '배치 항목',
+      change: '변경',
+      video: '영상',
+    } as Record<string, string>,
   },
 } as const;
 

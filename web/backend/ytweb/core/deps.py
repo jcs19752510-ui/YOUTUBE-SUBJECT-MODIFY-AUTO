@@ -59,7 +59,7 @@ def require_session(
     db: Session = Depends(get_session),
     clock: Callable[[], datetime] = Depends(get_clock),
 ) -> SessionInfo:
-    info = lookup_session(db, request.cookies.get(COOKIE_NAME), now=clock())
+    info = lookup_session(db, request.cookies.get(COOKIE_NAME), now=clock(), idle_timeout=request.app.state.web_settings.session_idle_timeout)
     if info is None:
         raise ProblemError(401, "session_required", "세션이 없거나 만료되었습니다.", hint="화면을 새로고침해 다시 시작하세요.")
     return info

@@ -21,6 +21,8 @@ CSP_EXPECTED = (
     "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; "
     "font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
 )
+# W-FIX-INF(DEF-7-007): /api 응답(JSON)은 아무것도 불러오지 못하게 default-src 'none' 한 벌을 쓴다(nginx security-headers-api.conf).
+CSP_API_EXPECTED = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 SEC_HEADERS = {
     "content-security-policy": CSP_EXPECTED,
     "x-content-type-options": "nosniff",
@@ -65,6 +67,8 @@ def test_it_001_security_headers_exactly_one_set_everywhere():
         r = _get(path, method)
         assert r.status_code == want, (method, path, r.status_code, r.text[:120])
         for name, val in SEC_HEADERS.items():
+            if name == "content-security-policy" and path.startswith("/api/"):
+                val = CSP_API_EXPECTED
             got = r.headers.get_list(name)
             assert got == [val], (method, path, name, got)
         assert r.headers.get("server") == "nginx", (path, r.headers.get("server"))  # 버전 비노출
@@ -263,7 +267,10 @@ def test_it_030_proxy_paths_and_error_format_reach_browser_intact(owner):
     assert _get("/api/healthz").json() == {"status": "ok"}
     d = _get("/api/readyz").json()
     assert d == {"status": "ok", "db": "ok", "mode": "demo"}
-    assert _get("/healthz").headers["content-type"].startswith("text/html")  # 직접 /healthz 는 프록시 대상이 아님(SPA 대체)
+    # 루트 /healthz·/readyz 는 일부러 닫았다(DEF-7-006): SPA HTML 200 대신 404 (상태 확인은 /api/healthz·/api/readyz 만)
+    for root_path in ("/healthz", "/readyz"):
+        rr = _get(root_path)
+        assert rr.status_code == 404 and rr.headers["content-type"].startswith("text/plain"), (root_path, rr.status_code, rr.headers["content-type"])
     # 쿼리 문자열·한글·인코딩 보존
     vs = owner.get("/api/v1/videos", params={"q": "냉장고", "page_size": 5})
     assert vs.status_code == 200
@@ -321,7 +328,7 @@ def test_it_040_body_limits_nginx_layer_and_backend_layer():
     r = patch_len(MB + 1, False)
     assert r.status_code == 413
     assert r.headers["content-type"].startswith("text/html")   # nginx 가 직접 거절(백엔드는 problem+json)
-    assert r.headers.get_list("content-security-policy") == [CSP_EXPECTED]
+    assert r.headers.get_list("content-security-policy") == [CSP_API_EXPECTED]     # /api/ location 이 만든 오류라 JSON 용 헤더 파일 적용(DEF-7-007)
     r = patch_len(2 * MB, True)
     assert r.status_code == 413
     # 백엔드 계층(nginx 우회): api 컨테이너 안에서 127.0.0.1:8000 으로 직접
@@ -481,9 +488,8 @@ def test_it_052_health_checks_all_healthy_and_migrate_exited_zero():
     assert _get("/nginx-health").text == "ok\n"
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-001: /api 응답에 Cache-Control: no-store 가 두 번 나간다(백엔드 것을 nginx proxy_hide_header 로 숨기지 않음)")
 def test_it_053_api_responses_have_single_cache_control():
-    """IT-053(결함 고정): /api 응답의 Cache-Control 은 한 줄이어야 한다. 현재는 백엔드와 nginx 가 각각 붙여 두 줄이다(값은 같아 동작 영향 없음, 보안 헤더 '한 벌' 원칙과 불일치)."""
+    """IT-053(DEF-7-001 수정 확인): /api 응답의 Cache-Control 은 한 줄이어야 한다(proxy_hide_header Cache-Control)."""
     r = _get("/api/healthz")
     assert len(r.headers.get_list("cache-control")) == 1
 

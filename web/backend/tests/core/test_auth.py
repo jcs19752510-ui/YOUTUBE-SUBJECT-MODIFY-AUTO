@@ -147,6 +147,7 @@ def test_read_without_session_401(client):
     assert client.get("/api/v1/audit").status_code == 401
 
 
+@pytest.mark.no_idle
 def test_session_expires_after_ttl(client, csrf, clock):
     """TC-WA-042 TTL(12시간) 경과 후 요청은 401, me 는 authenticated=false."""
     clock.advance(hours=11, minutes=59)

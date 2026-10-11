@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../api/context';
@@ -20,13 +20,15 @@ import {
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
 import { fmtDateTime } from '../lib/format';
-import { batchStatusLabel, isBatchActive } from '../lib/labels';
+import { batchStatusText, isBatchActive } from '../lib/labels';
+import { DiscardDraftButton } from './DiscardDraft';
 
 export const MAX_BATCH = 50;
 
 export function BatchesPage() {
   const api = useApi();
   const nav = useNavigate();
+  const qc = useQueryClient();
   const keys = useIdempotency();
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [note, setNote] = useState('');
@@ -43,6 +45,25 @@ export function BatchesPage() {
       q.state.data?.items.some((b) => isBatchActive(b.status)) ? 2000 : false,
   });
 
+  // 초안 배치에 이미 담긴 제안은 새 배치에 담을 수 없다. 어느 초안에 있는지 보여 주려고 초안 상세를 읽는다.
+  const draftList = useQuery({
+    queryKey: ['batches', 'drafts'],
+    queryFn: () => api.batches({ page: 1, page_size: 200 }),
+  });
+  const draftIds = (draftList.data?.items ?? [])
+    .filter((b) => b.status === 'draft')
+    .map((b) => b.id);
+  const draftDetails = useQueries({
+    queries: draftIds.map((id) => ({ queryKey: ['batch', id], queryFn: () => api.batch(id) })),
+  });
+  const inDraft = new Map<number, number>();
+  draftDetails.forEach((q) => {
+    if (q.data?.status !== 'draft') return;
+    for (const it of q.data.items) {
+      if (it.status === 'pending') inDraft.set(it.suggestion_id, q.data.id);
+    }
+  });
+
   const create = useMutation({
     mutationFn: () => {
       const ids = chosen.map((x) => x.id).sort((a, b) => a - b);
@@ -54,13 +75,16 @@ export function BatchesPage() {
     },
     onSuccess: (r) => {
       keys.clear();
+      // 초안에 담긴 제안이 승인 목록·초안 목록에 바로 반영되도록(되돌아왔을 때 낡은 목록을 보지 않게)
+      void qc.invalidateQueries({ queryKey: ['batches'] });
+      void qc.invalidateQueries({ queryKey: ['suggestions'] });
       nav(`/batches/${r.batch.id}`, { state: { precheck: r.precheck } });
     },
   });
 
   const items = approved.data?.items ?? [];
   // 목록에서 사라진 항목(승인 만료·다른 배치에 담김)을 이전에 골랐더라도 보내지 않는다
-  const chosen = items.filter((x) => picked.has(x.id));
+  const chosen = items.filter((x) => picked.has(x.id) && !inDraft.has(x.id));
   const over = chosen.length > MAX_BATCH;
   const toggle = (id: number) =>
     setPicked((s) => {
@@ -69,7 +93,8 @@ export function BatchesPage() {
       else n.add(id);
       return n;
     });
-  const allPicked = items.length > 0 && items.every((s) => picked.has(s.id));
+  const selectable = items.filter((s) => !inDraft.has(s.id));
+  const allPicked = selectable.length > 0 && selectable.every((s) => picked.has(s.id));
   const activeBatch = list.data?.items.find((b) => isBatchActive(b.status));
 
   return (
@@ -100,16 +125,19 @@ export function BatchesPage() {
                   <thead>
                     <tr>
                       <th scope="col">
-                        <input
-                          type="checkbox"
-                          aria-label={ko.batches.selectAll}
-                          checked={allPicked}
-                          onChange={(e) =>
-                            setPicked(
-                              e.target.checked ? new Set(items.map((s) => s.id)) : new Set(),
-                            )
-                          }
-                        />
+                        <label className="check-hit">
+                          <input
+                            type="checkbox"
+                            aria-label={ko.batches.selectAll}
+                            checked={allPicked}
+                            disabled={selectable.length === 0}
+                            onChange={(e) =>
+                              setPicked(
+                                e.target.checked ? new Set(selectable.map((s) => s.id)) : new Set(),
+                              )
+                            }
+                          />
+                        </label>
                       </th>
                       <th scope="col">{ko.batches.colVideo}</th>
                       <th scope="col">{ko.batches.colChange}</th>
@@ -120,12 +148,15 @@ export function BatchesPage() {
                     {items.map((s) => (
                       <tr key={s.id} aria-selected={picked.has(s.id)}>
                         <td>
-                          <input
-                            type="checkbox"
-                            checked={picked.has(s.id)}
-                            aria-label={ko.batches.selectOne(s.title)}
-                            onChange={() => toggle(s.id)}
-                          />
+                          <label className="check-hit">
+                            <input
+                              type="checkbox"
+                              checked={picked.has(s.id) && !inDraft.has(s.id)}
+                              disabled={inDraft.has(s.id)}
+                              aria-label={ko.batches.selectOne(s.title)}
+                              onChange={() => toggle(s.id)}
+                            />
+                          </label>
                         </td>
                         <td>
                           <Link to={`/videos/${encodeURIComponent(s.video_id)}`} className="mono">
@@ -134,6 +165,14 @@ export function BatchesPage() {
                         </td>
                         <td className="cell-title">
                           {s.title} <ValidationBadge result={s.validation_result} />
+                          {inDraft.has(s.id) && (
+                            <p className="field__error">
+                              {ko.batches.inDraft(inDraft.get(s.id) ?? 0)}{' '}
+                              <Link to={`/batches/${inDraft.get(s.id)}`}>
+                                {ko.batches.inDraftOpen(inDraft.get(s.id) ?? 0)}
+                              </Link>
+                            </p>
+                          )}
                         </td>
                         <td>
                           {s.approval ? (
@@ -215,17 +254,22 @@ export function BatchesPage() {
                                       : 'neutral'
                                 }
                               >
-                                {batchStatusLabel(b.status)}
+                                {batchStatusText(b)}
                               </Badge>
                             </td>
                             <td className="num">
                               {b.items.length || Object.values(b.counts).reduce((a, c) => a + c, 0)}
                             </td>
                             <td>
-                              <Link to={`/batches/${b.id}`}>
-                                {ko.batches.open}
-                                <span className="sr-only"> {ko.batches.batchTitle(b.id)}</span>
-                              </Link>
+                              <div className="row">
+                                <Link to={`/batches/${b.id}`}>
+                                  {ko.batches.open}
+                                  <span className="sr-only"> {ko.batches.batchTitle(b.id)}</span>
+                                </Link>
+                                {b.status === 'draft' && (
+                                  <DiscardDraftButton batchId={b.id} size="sm" />
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}

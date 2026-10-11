@@ -65,7 +65,7 @@ def test_tc_wb_122_openapi_exposes_contract_paths(dapp):
     have = {(m, p) for p, ops in schema["paths"].items() for m in ops}
     assert EXPECTED_PATHS <= have
     assert schema["components"]["schemas"]["SuggestionOut"]["properties"].keys() >= {"id", "video_id", "title", "evidence", "source", "topic", "strict", "validation_result", "reasons", "length", "match_ratio", "status", "plan_hash", "approval", "created_at"}
-    assert schema["components"]["schemas"]["PrecheckOut"]["properties"].keys() == {"item_count", "estimated_units", "daily_cap", "quota_remaining_units", "schedule", "warnings", "blocked", "confirm_text"}
+    assert schema["components"]["schemas"]["PrecheckOut"]["properties"].keys() == {"item_count", "estimated_units", "daily_cap", "quota_remaining_units", "schedule", "warnings", "blocked", "confirm_text", "notice"}
 
 
 def test_tc_wb_123_auth_and_csrf_are_enforced(api, csrf, data):

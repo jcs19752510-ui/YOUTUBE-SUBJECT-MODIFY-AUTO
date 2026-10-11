@@ -24,6 +24,9 @@ class Problem extends Error {
   }
 }
 
+// 서버 domain 과 CLI(ui.py DISCLAIMER)가 쓰는 문장과 같아야 한다
+const DISCLAIMER = '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.';
+
 // ---------- 상태 ----------
 export function createState(opts = {}) {
   const st = {
@@ -204,10 +207,16 @@ const suggestionDto = (st, s) => {
     created_at: iso(s.created),
   };
 };
-const effectiveStatus = (st, s) =>
-  s.status === 'approved' && s.approval && Date.parse(s.approval.expires_at) < st.now()
-    ? 'expired'
-    : s.status;
+const effectiveStatus = (st, s) => {
+  if (s.status === 'approved' && s.approval && Date.parse(s.approval.expires_at) < st.now())
+    return 'expired';
+  if (
+    s.status === 'candidate' &&
+    validateTitle(s.title, videoOf(st, s.video_id)).result === 'block'
+  )
+    return 'blocked';
+  return s.status;
+};
 const videoOf = (st, id) => st.videos.find((v) => v.video_id === id);
 const mustVideo = (st, id) => {
   const v = videoOf(st, id);
@@ -698,6 +707,8 @@ async function handle(st, req, url, body, session) {
             suggestion_id: id,
             reason: '승인 상태가 아니거나 승인이 만료되었습니다.',
           });
+        else if (inOpenBatch(st, id))
+          blocked.push({ suggestion_id: id, reason: '다른 배치에 이미 담겨 있습니다.' });
         else if (!limitsFor(st, s.video_id).allowed)
           blocked.push({ suggestion_id: id, reason: limitsFor(st, s.video_id).reasons[0] });
         else ok.push(s);
@@ -753,6 +764,7 @@ async function handle(st, req, url, body, session) {
         warnings,
         blocked,
         confirm_text: `실행 ${ok.length}건`,
+        notice: DISCLAIMER,
       };
       st.batches.unshift(b);
       audit(st, 'batch.create', 'batch', b.id, { items: ok.length });
@@ -760,7 +772,8 @@ async function handle(st, req, url, body, session) {
     });
   }
   if (p === '/api/v1/batches' && m === 'GET')
-    return [200, page(st.batches, q, (b) => batchDto(st, b))];
+    // 실제 서버의 목록 응답은 항목(items)을 비워서 준다
+    return [200, page(st.batches, q, (b) => ({ ...batchDto(st, b), items: [] }))];
   if ((r = route('GET', '/api/v1/batches/:id'))) return [200, batchDto(st, mustBatch(st, r[0]))];
   if ((r = route('POST', '/api/v1/batches/:id/execute'))) {
     const b = mustBatch(st, r[0]);
@@ -823,7 +836,16 @@ async function handle(st, req, url, body, session) {
     let list = [...st.changes].sort((a, b) => b.created - a.created);
     if (q.get('video_id')) list = list.filter((c) => c.video_id === q.get('video_id'));
     if (q.get('batch_id')) list = list.filter((c) => String(c.batch_id) === q.get('batch_id'));
-    if (q.get('result')) list = list.filter((c) => c.result === q.get('result'));
+    if (q.get('result')) {
+      if (!['planned', 'success', 'failed', 'aborted'].includes(q.get('result')))
+        throw new Problem(
+          422,
+          'validation_error',
+          '요청 값이 올바르지 않습니다.',
+          "query.result: Input should be 'planned', 'success', 'failed' or 'aborted'",
+        );
+      list = list.filter((c) => c.result === q.get('result'));
+    }
     return [200, page(list, q, (c) => changeDto(st, c))];
   }
   if ((r = route('POST', '/api/v1/changes/:id/rollback'))) {
@@ -887,6 +909,7 @@ async function handle(st, req, url, body, session) {
     const csv = [
       'video_id,title,status,metric,before,after,pct',
       ...rows.map((x) => x.map((c) => `"${String(c ?? '').replaceAll('"', '""')}"`).join(',')),
+      `# ${DISCLAIMER}`,
     ].join('\n');
     return [
       200,
@@ -1049,6 +1072,12 @@ function idempotent(st, req, route, body, handler) {
   st.idem.set(key, { fp, res });
   return res;
 }
+const inOpenBatch = (st, suggestionId) =>
+  st.batches.some(
+    (b) =>
+      ['draft', 'running'].includes(b.status) &&
+      b.items.some((i) => i.suggestion_id === suggestionId && i.status === 'pending'),
+  );
 function settleBatch(st, b, cancelled = false) {
   const open = b.items.some((i) => i.status === 'pending' || i.status === 'running');
   if (open) return;
@@ -1204,6 +1233,7 @@ function buildReports(st, onlyId) {
   return {
     items,
     notes: [
+      DISCLAIMER,
       '순차 비교는 다른 요인(시기·노출 차이)의 영향을 받아 원인을 단정할 수 없습니다.',
       '이 표는 변경 전과 후의 숫자를 나란히 놓은 것일 뿐, 제목 변경이 원인이라고 말하지 않습니다. 계절·시기, 노출 위치 변화, 썸네일, 외부 유입, 공식 A/B 테스트 같은 다른 요인이 섞여 있을 수 있습니다.',
     ],

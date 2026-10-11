@@ -566,7 +566,7 @@ describe('배치 진행 화면', () => {
 
   it('TC-VF-172 중지는 확인 대화상자를 거치고, 확인해야만 CSRF 와 함께 POST cancel 이 한 번 간다(더블클릭 포함)', async () => {
     const user = userEvent.setup();
-    const running = draftBatch({ status: 'running' });
+    const running = draftBatch({ status: 'running', executed_at: '2026-10-10T00:00:00Z' });
     let cancelled = false;
     let release: () => void = () => {};
     const gate = new Promise<void>((r) => (release = r));

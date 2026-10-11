@@ -266,7 +266,7 @@ def test_tc_wi_023_nginx_security_headers_in_every_location():
     assert "limit_req_zone" in conf and "limit_req_status 429;" in conf
     for block in re.findall(r"(?s)location [^{]+\{(.*?)\n        \}", conf):
         if "add_header" in block:
-            assert "security-headers.conf" in block
+            assert re.search(r"include /etc/nginx/snippets/security-headers(-api)?\.conf;", block)
     assert conf.count("include /etc/nginx/snippets/security-headers.conf;") >= 6
 
 

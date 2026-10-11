@@ -149,3 +149,50 @@ YTWEB_TEST_PG_URL='postgresql+psycopg://…' ../../.harness-tmp/venv_be_b/bin/py
 - traceability: W-003~W-013, POL-001~003, S-W03/06/07/12/13/16 → 작업 단위 `W-BE-B`, 구현 상태 `구현됨(데모 모드, 모의)`; TC 매핑은 §7.
 - decisions: D1(승인 만료 기준), D2(검증 실패 기록 방식), D3(제외 영상 차단 시점), D4(재변경 노출수 조건 적용) 기록 요청 — 사용자 확인 대기 항목으로 분류 권고.
 - 다른 담당 요청: W-BE-A — `pyproject.toml`의 coverage `omit`에서 도메인 모듈 제거, 워커 기동 시 `recover_running_items(..., stale_after=timedelta(0))` 1회 호출.
+
+---
+
+## 수정 단위 (2026-10-11) — W-FIX-BE 도메인 부분
+
+- 근거: DEC-046(사용자가 수정 묶음 구현 승인). 속도 트랙 L3(표기 없음). 병렬 웨이브: 프런트(W-FIX-FE)·인프라(W-FIX-INF)와 동시. `web/backend/` 안에서만 수정했고 `web/frontend`·`web/docker`·`scripts`·`compose.yaml`은 건드리지 않았다. 새 패키지 없음(매니페스트 변경 없음).
+- 가상환경 `.harness-tmp/venv_fix_be`(해시 잠금 설치), 전용 DB `ytweb_test_f`.
+
+### 변경 파일(도메인)
+`ytweb/domain/batches.py`(초안 점유 사유·취소·복구 감사), `ytweb/domain/notices.py`(신규, 면책 문구 단일 출처), `ytweb/domain/reports.py`(notes 첫 줄 면책), `ytweb/domain/schemas.py`(`MAX_ID`·`MAX_PAGE`, `BlockedItem.batch_id`, `PrecheckOut.notice`, `suggestion_ids[]` 항목 범위), `ytweb/domain/common.py`(`clean_approver`), `ytweb/routers/{batches,changes,suggestions,videos}.py`(경로·쿼리 상한). 시험: `tests/domain/test_wbx_fixes.py`(TC-WBX-001~018), `tests/domain/test_wbx_postgres.py`(TC-WBX-034~038). 문서: `docs/yt/API.md`(v0.2), `docs/yt/openapi.json`(앱에서 재생성).
+
+### 결함 ↔ 변경 ↔ TC
+| 결함 | 변경 | TC |
+|---|---|---|
+| DEF-7-009 (C-2) | `cancel_batch` 는 원래 초안도 취소했으므로 **의미는 유지**하고 (a) 항목 사유를 초안이면 `[cancelled] 사용자가 초안을 버렸습니다.` 로 구분, (b) 감사 `batch.cancel.detail.was_draft` 추가, (c) 새 배치 사전 점검에서 초안에 붙잡힌 제안은 `blocked[]` 에 `code=already_in_batch`, `reason="초안 배치 #N에 이미 담겨 있습니다…"`, `batch_id=N` 으로 돌려줌(`_active_holder`/`_holder_reason`, 기존 `_active_item` 대체). 부분 고유 인덱스 `uq_batch_items_active_suggestion`(status IN pending/running)은 항목이 `cancelled` 가 되면 풀리므로 변경 없음 | 001~007, 034(동시 취소 2건), 035(취소 vs 실행 경합 ×6), 036(같은 제안 동시 초안) |
+| DEF-7B-002 | `_recover_one` 의 "재조회로 success/failed 확정" 분기에서 `change.apply` 감사(`actor=worker`, `target=change`, `detail`: `batch_id, video_id, suggestion_id, verify_ok, recovered:true, reason:"restart_recovery"`)를 기록. `batch.item.recovered.detail` 에 `batch_id·video_id·change_id` 추가. 해시 체인은 `audit.record` 그대로 | 008~010, 038 |
+| DEF-9-007 | `notices.DISCLAIMER`; `reports/changes.notes[0]`; CSV 는 기존처럼 notes 가 빈 줄 뒤 일반 행(`csv_safe` 적용)으로 나가므로 자동 포함(`#` 주석 줄 아님); 사전 점검 응답에 `notice` | 011~013 |
+| DEF-9-001 | 경로·쿼리 ID `le=2**63-1`, `page le=1_000_000`, 본문 `suggestion_ids[]` 항목 `1..2**63-1` → 422 `validation_error` | 014~015 |
+| DEF-9-004 | `common.clean_approver` 가 유니코드 범주 Cf(제로폭·방향·소프트 하이픈·BOM)·Zl·Zp 를 거부(422 `approver_invalid`). **`ytitle.approvals.clean_approver`(CLI)는 재사용하지 않았다** — 예외 형식이 달라 웹용(`ProblemError`)이 따로 있고, CLI 쪽 같은 갭은 `src/ytitle` 소유 범위 밖이라 건드리지 않음(알려진 제한) | 016~018 |
+
+### 면책 문구 원문(프런트가 같은 문장 사용)
+`이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.` (끝 마침표 포함, CLI `ytitle.ui.DISCLAIMER` 와 동일)
+
+### 계약 변경(프런트가 알아야 할 것)
+1. `POST /batches/{id}/cancel` : 초안에서도 200 `Batch(status:"cancelled")`, 항목 전부 `cancelled`, 제안은 `approved` 로 남아 바로 새 배치에 담긴다. 두 번째 취소는 409 `batch_not_cancellable`(상태·감사 변화 없음), 취소된 초안의 실행은 409 `batch_not_draft`. 멱등성 키는 받지 않는다(기존과 동일).
+2. 사전 점검 `blocked[]` 항목에 선택 필드 `batch_id`(`already_in_batch` 일 때만). 초안이면 [초안 버리기] 대상 번호로 쓴다.
+3. `precheck.notice`(문자열|null) 추가. 4. `reports/changes.notes` 첫 항목이 면책 문장(총 5개).
+5. 모든 ID·쪽 번호 범위 초과는 422 `validation_error`(이전엔 500). 6. 승인자 이름에 보이지 않는 문자 → 422 `approver_invalid`.
+
+### 알려진 제한 / 해석
+- "멱등"은 **효과 멱등**으로 해석했다: 두 번째 취소는 409 이고 아무것도 바꾸지 않는다(기존 계약 `batch_not_cancellable`·검증된 시험 TC-VB-319 유지). 200 재생으로 바꾸려면 계약 변경이라 질문으로 남긴다.
+- 실행 확정된 배치의 제안은 상태가 `queued` 라 `not_approved` 로 먼저 막힌다 → "진행 중 배치" 사유(`_holder_reason` 비초안)는 경합 상황용 방어 문구다.
+- 9단계(web/tests_security)·7단계(web/tests_integration)의 `xfail(strict)` 시험 일부가 이제 XPASS 로 바뀐다(DEF-9-001/004/007 관련·IT-318/323/400/404/435 등). 소유 범위 밖이라 표식은 건드리지 않았다. `web/tests_integration/mutate_b.py` M08 은 사라진 `_active_item` 문자열을 가리킨다 → 독립 검증 담당이 `_active_holder` 호출로 갱신 필요.
+- 자체 코드 리뷰(게이트 2): 명세 일치 ✔ / 예외 삼킴 없음 ✔(워커의 stale 정리 실패는 `log.error(exc_info)`) / 경계 입력 검증(스키마 상한) ✔ / 하드코딩 비밀 없음 ✔ / 새 패키지 없음 ✔ / 범위 밖 변경 없음(`tests/conftest.py`·기존 4개 시험의 `no_idle` 표식 추가는 아래 BE-A 절에 사유 기록) ✔. 게이트 1: 린트 설정 없음 → 설정 파일 부재 사실만 기록, 대신 `pyflakes` 임시 설치(venv 안, 매니페스트 불변)로 변경 파일 점검: 잔여 경고 0(`ytweb/domain/__init__.py` 의 기존 부수효과 임포트 경고 1건 제외).
+
+### 인수 조건(6단계 재검증용, W-FIX-BE 전체)
+1. 초안 배치 생성 → 같은 제안으로 다시 생성하면 `blocked[0]` 에 `초안 배치 #N`·`batch_id=N` → `POST /batches/N/cancel` 200 → 같은 제안으로 새 배치 201. 취소 감사 `batch.cancel` 의 `was_draft=true`, 감사 체인 정상.
+2. 취소와 실행이 동시에 와도 최종 배치는 `cancelled`, 제안은 `approved`(`queued` 로 갇히지 않음), 반영 변경 0건.
+3. 워커를 `kill -9` 후 재기동하면 30초 안에 `batch.execute` 작업이 종료 상태(IT-318 xfail 해제 대상), 5분 넘게 갱신 없는 `batch.execute` 는 1분 안에 재큐.
+4. 반영 직후 죽은 항목이 복구되면 감사에 `change.apply`(`recovered:true`)가 변경·영상·제안 ID 와 함께 남는다(IT-323).
+5. `reports/changes.notes[0]`·CSV 끝 행·`precheck.notice` 가 면책 문장과 일치.
+6. `GET /batches/99999999999999999999999`·`?page=…` 등은 422(500 아님). 승인자 `홍​길동` 은 422 `approver_invalid`. 마지막 사용 31분 뒤 요청은 401 `session_required`.
+
+### 공유 문서 갱신 요청 (오케스트레이터가 반영)
+- traceability: DEF-7-009(C-2)·7B-001·7B-002·9-001·9-003①·9-004·9-007(서버 쪽)·7-003~005(openapi/API.md 문서) → 작업 단위 `W-FIX-BE`, 구현 상태 `구현됨(6단계 재검증 대기)`; POL-002 웹 행의 서버 쪽 근거 = `ytweb/domain/notices.py`.
+- decisions: (a) 세션 유휴 만료 기본 30분(`YTWEB_SESSION_IDLE_MINUTES`, 0=끔) — Q-S9-7 추천안 적용, (b) stale 작업 규칙(기동 시 전부 재큐 + `batch.execute` 5분/그 외 10분, 시도 3회 상한), (c) 승인자 이름 Cf/Zl/Zp 거부, (d) "취소 멱등"은 효과 멱등(두 번째 취소 409) 해석.
+- 질문(규칙 A): Q1 두 번째 취소를 409 대신 200(재생)으로 바꿀까요? Q2 유휴 30분 기본값이 선생님 사용 패턴에 너무 짧지 않은가요(탭 방치 후 재로그인 필요, PIN 없으면 새로고침만으로 복구)? Q3 CLI `ytitle.approvals.clean_approver` 의 같은 제로폭 갭도 고칠까요(src/ytitle 범위)?
