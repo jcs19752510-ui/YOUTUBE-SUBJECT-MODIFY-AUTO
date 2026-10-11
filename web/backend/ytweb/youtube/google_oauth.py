@@ -22,6 +22,7 @@ from typing import Callable
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 SCOPE_READ = "https://www.googleapis.com/auth/youtube.readonly"
+SCOPE_WRITE = "https://www.googleapis.com/auth/youtube.force-ssl"  # 제목 수정(videos.update)에 필요. 읽기 토큰과 별도 파일로 보관(M3)
 STATE_TTL_SECONDS = 600
 MAX_PENDING = 20
 
@@ -82,9 +83,9 @@ class PendingAuth:
         return item[0]
 
 
-def build_auth_url(client_id: str, redirect_uri: str, state: str, challenge: str) -> str:
+def build_auth_url(client_id: str, redirect_uri: str, state: str, challenge: str, scope: str = SCOPE_READ) -> str:
     q = {
-        "client_id": client_id, "redirect_uri": redirect_uri, "response_type": "code", "scope": SCOPE_READ,
+        "client_id": client_id, "redirect_uri": redirect_uri, "response_type": "code", "scope": scope,
         "state": state, "code_challenge": challenge, "code_challenge_method": "S256",
         "access_type": "offline", "prompt": "consent",
     }
