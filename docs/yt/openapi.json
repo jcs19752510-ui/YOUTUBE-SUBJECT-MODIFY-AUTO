@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "ytitle web",
+    "title": "유튜브 제목 웹",
     "version": "0.1.0"
   },
   "paths": {

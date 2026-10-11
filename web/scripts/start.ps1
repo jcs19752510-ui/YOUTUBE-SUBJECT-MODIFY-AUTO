@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  ytitle 웹(데모 모드)을 시작합니다. 처음 한 번 실행하면 필요한 준비를 모두 합니다.
+  유튜브 제목 웹(데모 모드)을 시작합니다. 처음 한 번 실행하면 필요한 준비를 모두 합니다.
 .DESCRIPTION
   1) Docker 설치·실행 확인  2) 비밀번호 파일 생성(없을 때만)  3) 포트 8080 점검
   4) 이미지 빌드와 컨테이너 시작  5) 준비될 때까지 대기  6) 접속 주소 안내
@@ -19,7 +19,7 @@ param(
 . (Join-Path $PSScriptRoot '_common.ps1')
 
 Write-Host ''
-Write-Host '=== ytitle 웹(데모 모드) 시작 ===' -ForegroundColor White
+Write-Host '=== 유튜브 제목 웹(데모 모드) 시작 ===' -ForegroundColor White
 Write-Host '데모 모드: 가짜 영상 데이터만 쓰며 유튜브·AI 서비스에는 아무것도 전송하지 않습니다.'
 Write-Host ''
 
