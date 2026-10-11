@@ -3,8 +3,8 @@
 #
 # 설계 요약
 #  - 호스트에 게시되는 포트는 web 의 127.0.0.1:8080 하나뿐이다. api/worker/db 는 호스트 포트가 없다.
-#  - app 네트워크는 internal(외부 통신 불가)이고 모든 서비스가 붙는다. 컨테이너가 internal 네트워크에만 붙으면
-#    호스트로 포트를 게시할 수 없으므로 web 만 edge 네트워크에 추가로 붙는다(게시 전용, 다른 서비스는 붙지 않는다).
+#  - 네트워크는 front(web↔api)·back(api/worker/migrate↔db)·edge(web 만, 호스트 포트 게시용)로 나뉜다. front·back 은 internal(외부 통신 불가)이고,
+#    web 은 DB 에 도달할 수 없다(DEC-045).
 #  - 구글·AI 외부 통신(M2·M3)은 compose.online.yaml(egress 네트워크)을 얹을 때만 api/worker 에 열린다. db 는 절대 붙지 않는다.
 name: ytweb
 

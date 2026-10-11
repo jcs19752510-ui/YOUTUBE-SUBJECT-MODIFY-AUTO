@@ -218,7 +218,6 @@ def test_vif_013_api_healthcheck_uses_internal_root_path(base):
     assert "/nginx-health" in " ".join(base["services"]["web"]["healthcheck"]["test"])
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-VIF-002 open: compose.yaml 머리 주석이 폐기된 app 네트워크 구조를 설명한다")
 def test_vif_014_compose_comment_matches_network_design():
     """TC-VIF-014 compose.yaml 설계 요약 주석이 DEC-045 이후의 3망 구조와 모순되지 않는다."""
     head = "\n".join(rd(COMPOSE).splitlines()[:10])
@@ -632,7 +631,6 @@ def test_vif_060_docs_state_root_probe_closed():
     assert re.search(r"nginx[^\n]{0,30}루트 `/healthz`·`/readyz`를 404", rd(DOCS / "API.md"))
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-VIF-003 open: DESIGN.md NFR-W07 이 브라우저 포트에서 404 인 루트 /readyz 로 가용성을 측정한다고 적는다")
 def test_vif_061_design_doc_availability_probe_path():
     """TC-VIF-061 DESIGN.md 가 사용자 포트로 측정할 수 있는 상태 경로를 안내한다(루트 /readyz 는 404)."""
     t = rd(DOCS / "DESIGN.md")
