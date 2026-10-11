@@ -37,17 +37,20 @@
   | 외부 침투 테스트·운영 환경 점검 | 이 에이전트의 권한 밖 — 별도 승인 필요(규칙 A) | 미수행 |
   | 이미지 서명(cosign) 검증, Trivy 도구 자체의 서명 검증 | 도구 없음 — 미수행(8절) | 예 |
   | 재시작 중 이중 반영·장시간 부하 | 7단계 몫 | 위임 |
-  | 사용자 계정으로의 `git` 이력 비밀 검사 | git 명령 금지 지시 — 현재 파일 트리만 점검 | 예 |
+  | Windows 에서의 호스트 게이트웨이 도달(DEF-9-011)의 의미 | Linux 엔진에서만 실측. Docker Desktop(WSL2) 에서는 게이트웨이가 Windows 호스트가 아니라 Docker VM 쪽일 수 있어 결과가 다를 수 있음 — 미수행 | 예 |
+| Docker Scout | `docker scout` 명령이 이 환경에 없음(미설치·로그인 필요) — Trivy 로 대체, Scout 결과는 **미수행** | 예 |
+| `npm audit signatures`·이미지 서명(cosign)·Trivy 서명 | 서명 키 조회 불가/도구 없음 — 미수행 | 예 |
+| `node:22-bookworm-slim` 태그의 오늘 다이제스트 재확인 | 레지스트리 429(요청 한도) — 미수행(고정값 `c3de60bf…` 은 이전 세션 기록) | 예 |
 
 ## 3. 테스트 환경
-- **실행 환경**: 위 0절. 도구 버전 — pip-audit 2.10.1, npm 10.9.4/node 22.22.0, **Trivy 0.75.0**(`aquasec/trivy:latest`, 다이제스트 `sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa`, 취약점 DB `mirror.gcr.io/aquasec/trivy-db:2` 2026-10-11 내려받음), cyclonedx-bom 7.5.0, @cyclonedx/cyclonedx-npm 6.0.1, pytest 9.1.1(저장소 잠금 파일 그대로).
-- **이미지**(저장소 `web/docker/*.Dockerfile` 에서 빌드, builder 단계에만 이 클라우드의 프록시 CA 2줄을 더한 사본을 사용 — 최종 단계 동일): `harness-tmp-sec-api:local` `sha256:e002332a…`(299 MB), `-web:local` `sha256:c7e17ae1…`(91 MB), `-db:local` `sha256:6f5abe09…`(632 MB). 런타임: Python 3.12.15, nginx 1.30.5, PostgreSQL 17.11.
+- **실행 환경**: 위 0절. 도구 버전 — pip-audit 2.10.1, npm 10.9.4/node 22.22.0, **Trivy 0.75.0**(`aquasec/trivy:latest`, 다이제스트 `sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa`, 취약점 DB `mirror.gcr.io/aquasec/trivy-db:2` 2026-10-11 내려받음, 스캐너 컨테이너에는 프록시 CA 를 읽기 전용으로 마운트 — TLS 검증은 끄지 않음), cyclonedx-bom 7.5.0, @cyclonedx/cyclonedx-npm 6.0.1, pytest 9.1.1(저장소 잠금 파일 그대로, 해시 강제 설치). 시험용 파이썬 3.13.16.
+- **이미지**(저장소 `web/docker/*.Dockerfile` 의 사본에 builder 단계의 CA 2줄만 더해 빌드 — 최종 단계 동일; 저장소 Dockerfile 은 수정하지 않음): `harness-tmp-sec-api:local` `sha256:4f68b1c5…`(299 MB), `-web:local` `sha256:57024d9e…`(91 MB), `-db:local` `sha256:5a79de4d…`(632 MB). 런타임: Python 3.12.15, nginx 1.30.5, PostgreSQL 17.11. 스택은 compose 사본(호스트 포트만 18380 으로 변경)·임의 비밀 3개(`.harness-tmp/sec/stack/secrets`, 저장소 밖)로 기동했다.
 - **테스트 데이터**: 데모 시드(`seed_demo`, 가짜 영상 60~200개), 시험이 만드는 가짜 제안·승인·배치. 임시 비밀 3종(임의 64자). 실제 개인정보·실제 채널 데이터 없음.
 - **전제 조건**: 6단계 4건 결과서 존재(백엔드 PASS 2·프런트 CONDITIONAL·인프라 CONDITIONAL → 이후 DEF-VI-001 은 네트워크 3분리로, 프런트 B01 은 백엔드 DEF-VA-010 으로 해소 보고). 7단계는 병렬로 진행 중이므로 이 문서는 7단계 결과에 의존하지 않는다.
 - **재실행 방법**: `web/tests_security/README.md` (오프라인 약 2분, 실스택 약 3분, 변이 점검 약 1시간).
 
 ## 4. 테스트 케이스 및 결과
-> 시험 코드는 `web/tests_security/` (4파일 + `mutation_check.py`). 개별 항목은 시험 함수 단위(총 **158개 함수 / 파라미터 포함 [[N_ITEMS]]건**)이며 아래는 묶음 ID 이다. "Pass(재현)" 는 알려진 한계·결함이 의도대로 **재현**됐다는 뜻이고, `xfail` 은 "바람직한 동작" 시험이 결함 때문에 실패한 것(결함 확인용)이다.
+> 시험 코드는 `web/tests_security/` (6파일 + `mutation_check.py` + `sbom_from_npm_lock.py`). 개별 항목은 시험 함수 단위(총 **174개 함수 / 파라미터 포함 313건**: 01=91, 02=93, 03=28, 04=86, 05=12, 06=3)이며 아래는 묶음 ID 이다. 최종 실행 결과: **통과 298 · xfail(결함 확인용 기대 실패) 15 · 실패 0 · 오류 0** (오프라인·정적 224건 중 05 의 번들 4건은 스택이 필요해 live 회차에서 실행). "Pass(재현)" 는 알려진 한계·결함이 의도대로 **재현**됐다는 뜻이고, `xfail` 은 "바람직한 동작" 시험이 결함 때문에 실패한 것(결함 확인용)이다.
 
 | ID | 시나리오 | 사전조건 | 실행 절차 | 예상 결과 | 실제 결과 | Pass/Fail | 비고(관련 ID) |
 |----|----------|----------|-----------|-----------|-----------|-----------|------|
@@ -119,18 +122,26 @@
 | TC-S9-074 | Trivy 파일 트리 비밀 0·Dockerfile 설정(LOW 1: db 이미지 HEALTHCHECK 없음 — compose 에 있음) | 도구 | 부록 C | 0 | 0 | Pass | TW-18 |
 | TC-S9-075 | 이미지 내용물: 소스맵·테스트·`.env`·비밀·`.git` 없음, 세계 쓰기 파일 0, 앱 비밀 폴더 0700 | 도구 | 부록 C | 없음 | 없음(단, 개발용 `requirements*.txt` 포함) | Pass | D-04·05 |
 | TC-S9-076 | SBOM 6종 생성(이미지 3 + 파이썬 런타임 + npm 2), 이전 SBOM 검토 | 도구 | 부록 D | 산출 | 산출 | Pass | D-11 |
-| TC-S9-077 | 변이 점검: 코드 74곳 + 설정 45곳 | 도구 | 부록 E | 마지막 회전 놓침 0 | [[MUT_SUMMARY]] | Pass | 규칙 B |
+| TC-S9-077 | 변이 점검: 코드 74곳 + 설정 45곳(합 119) | 도구 | 부록 E | 마지막 회전 놓침 0 | **코드 73 killed + 동치 대조군 1 생존(정상), 설정 45/45 killed, 놓침 0·오류 0** (이번 회차 재실행) | Pass | 규칙 B |
 | TC-S9-078 | 수동 프로브: web→호스트 게이트웨이, internal 망 게시 불가, `isolated` 모드 불가, nginx 오류 로그 요청 줄, 경로 변형 POST 307 | 실스택 | 8절 | — | 아래 DEF-9-011·016 | Pass(결함 별도) | TW-36, DEF-VI-003 |
+| TC-S9-079 | **규칙 I·J 문구 반영**: POL-002 면책·POL-006 AI 고지·POL-008 표시광고/한계·POL-013 A/B 확인이 `ko.ts`·화면 연결·빌드 번들에 있는가. 이미 구현된 POL-005(데모 배지)·AI 제안 배지·엄격 모드 안내·서버 사전 점검 A/B 경고는 회귀 방지로 통과해야 함 | 소스 + 실스택 번들 | `test_sec_05_regulatory_ai_notice.py` (12건) | 문구 존재·연결 | 구현분 4건 통과, **필수 문구 8건 xfail(없음)**. 번들 문자열 직접 검색: 법률 자문 0·면책 0·최종 책임 0·AI가 생성 0·표시광고 0·A/B 0 (데모 모드 3, AI 제안 8, 민감 주제 1). 수정 모사 사본(문구 추가)에서 5건이 XPASS 로 바뀜을 확인(시험이 공허하지 않음) | xfail(결함) | **DEF-9-007·008**, POL-002·006·008·013 |
+| TC-S9-080 | 이미지 내용물 재검사(이번 회차 직접): web 에 소스맵·테스트 0·세계 쓰기 파일 0·비루트(101), api 에 `.env`·테스트·소스맵 없음·세계 쓰기 0·비루트(10001), db `/backups` 0700 | 실스택 | `docker run --entrypoint sh` | 없음 | 충족. 단 api 이미지에 `/app/backend/.ruff_cache`·`.coverage`·`pyproject.toml`·`requirements*.txt` 포함 | Pass(결함 별도) | **DEF-9-017**·DEF-9-009 |
+| TC-S9-081 | `.dockerignore` 가 비밀형(`*.pem`·`*.key`·`credentials*.json`)·개발 캐시를 거르는가 | 정적 + 이미지 | `dockerignore_covers_…`, `api_image_has_no_dev_cache…` | 있어야 함 | 없음(거부 목록 방식) — 두 시험 모두 올바른 이유로 실패(`--runxfail` 로 확인: 누락 항목 5개·`/app/backend/.ruff_cache`·`.coverage`) | xfail(결함) | **DEF-9-017**, D-05, TW-18 |
+| TC-S9-082 | nginx 오류 로그가 요청 줄(쿼리)을 남기는가(api 정지 → `?code=CANARY…` 요청 → 로그 검색) | 실스택 | `nginx_error_log_keeps_query…_repro` | (한계) | 오류 로그에 쿼리 포함, 접근 로그에는 없음 — 재현 | Pass(재현) | **DEF-9-016**, TW-17 |
+| TC-S9-083 | 컨테이너→호스트 게이트웨이 도달(이 PC 의 0.0.0.0 임시 리스너): web(edge)·**api/worker/db(internal back)·web(front)** 모두 자기 망 게이트웨이:포트 OPEN, 127.0.0.1 전용 리스너 CLOSED | 실스택 | `web_container_reaches_host_gateway…_repro` + 수동 4개 망 | (한계) | **internal 망 컨테이너도 도달(범위 확대)** — 재현 | Pass(재현) | **DEF-9-011**, TW-36, D-10 |
+| TC-S9-084 | **저장소 이력 비밀 검색**(읽기 전용 git, 96커밋 전 브랜치): 비밀형 파일명(`.env`·`token*.json`·`client_secret*`·`*.pem`·`*.key`·`data/`·DB 덤프) 이력 0건, 비밀 패턴(AIza·sk-ant·개인키·ghp_·AKIA·xox·ya29.·1//0·googleusercontent 클라이언트 ID·refresh_token) 일치는 전부 명백한 시험 더미(`FAKE…`·`EXAMPLE`·`topsecretvalue`) | 정적 | 부록 K | 0 | 실제 비밀 0 | Pass | TW-18, S-W08 |
+| TC-S9-085 | Trivy fs 비밀·설정 스캔(저장소 전체, `.git`·`node_modules`·`.harness-tmp` 제외) | 도구 | 부록 K | 0 | 비밀 0, 설정 LOW 1(db.Dockerfile HEALTHCHECK 없음 — compose 에 정의) | Pass | TW-18 |
+| TC-S9-086 | 임시 스택 `/api/healthz`·`/api/readyz` 비인증 응답 | 실스택 | curl | 최소 정보 | `/api/readyz` 가 `{"status","db","mode":"demo"}` 를 인증 없이 반환(Host 허용된 요청만) | Pass(관찰) | OBS-10 |
 
 ## 5. 커버리지
 - **점검 항목 체크리스트(에이전트 정의의 최소 항목)** — 전부 수행. 결과는 아래 한 줄 요약이며 근거는 4절·부록이다.
   | 최소 점검 항목 | 수행 | 결과 |
   |---|---|---|
-  | 위협 모델 대응 확인(TW-01~36 전부) | 예 | 부록 A. 구현됨 [[A_IMPL]]·부분 [[A_PART]]·해당 없음 [[A_NA]]·미구현 [[A_NONE]]. 모델에 없던 새 표면 → 부록 G (규칙 F 요청) |
+  | 위협 모델 대응 확인(TW-01~36 전부) | 예 | 부록 A. 구현됨 19(한계·의존 표기 포함)·부분 13·해당 없음 2·수용 대기 2·미구현 0. 모델에 없던 새 표면 → 부록 G (규칙 F 요청) |
   | CI·자동화(`automation/`, `.github/`) | 예 | `.github` 없음(활성 CI 없음). 예시 워크플로 갭 → DEF-9-005 |
   | 인증/인가 우회·권한 경계 | 예 | 단일 소유자 구조(수평/수직 권한 개념 없음, IDOR 대상 없음). 세션·CSRF·Host·Origin·PIN 우회 시도 전부 실패. PIN 꺼짐 시 같은 PC 프로세스는 세션 취득 가능(TW-03, 수용 질문) |
   | 인젝션(SQL/커맨드/XSS 등)·입력 검증 | 예 | SQL·XSS·CSV·파일 이름 명령 주입·헤더 주입 모두 불성립. 입력 검증 갭 = DEF-9-001(정수 상한) |
-  | 시크릿/자격증명 | 예 | 하드코딩·로그·이미지·inspect·덤프 노출 0. 방지 장치 갭 = DEF-9-006 |
+  | 시크릿/자격증명 | 예 | 하드코딩·로그·이미지·inspect·덤프 노출 0, **현재 트리(Trivy fs+자체 14패턴)와 저장소 전체 이력(96커밋, 읽기 전용 git)에서 실제 비밀 0**(부록 K). 방지 장치 갭 = DEF-9-006(.gitignore)·DEF-9-017(.dockerignore 거부 목록) |
   | 의존성 취약점(CVE) | 예 | pip-audit·npm audit 0건(감도 확인 포함). 이미지 OS 패키지는 DEF-9-009·010 |
   | **의존성 환각** | 예 | Py 36+npm 384+베이스 이미지 4 전부 실존·해시 일치. 신선도 갭 = DEF-9-015 |
   | 민감정보 저장/전송 암호화 | 예 | 저장(볼륨)·백업·내부 구간 TLS 없음 — 문서화된 설계(README §9). 쿠키 `Secure` 없음(http 로컬). DEF-9-013 |
@@ -138,15 +149,15 @@
   | 설계서 보안 원칙 vs 구현 | 예 | 불일치: TW-18 의 ".gitignore 에 client_secret" 서술(DEF-9-006), TW-08 서술은 README 정정으로 해소 |
   | 개인정보 컴플라이언스 | 예 | M1 은 합성 데이터라 처리 대상 개인정보가 사실상 없음. 보관·파기·백업 암호화 미구현 → DEF-9-013. **PIA·ISMS-P 해당 여부는 판단하지 않음 — "확인 필요"**, 전문가 확인 권고 |
   | 라이선스 | 예 | 부록 B-4. 충돌 없음(비배포 로컬 사용). 재배포 시 LGPL/GPL 고지 필요 |
-  | **SBOM** | 예 | `docs/harness/sbom-web-m1/` 6종(CycloneDX 1.6). 이전 SBOM 은 12개 누락·라이선스 없음·OS 패키지 없음으로 **대체** |
+  | **SBOM** | 예 | `docs/harness/sbom-web-m1/` 6종(이미지 3종 CycloneDX 1.7, 나머지 1.6). 이번 회차에 이미지 재빌드분으로 재생성. 이전 `sbom-web-m1.json` 은 12개 누락·라이선스 없음·OS 패키지 없음으로 **대체**(폐기 여부는 오케스트레이터 결정) |
   | 자체 ML 모델 거버넌스(규칙 J) | 해당 없음(대상 자체가 없음) | 자체 학습/운영 모델 없음(모의 제안기 + M3 외부 서비스 예정) → 모델 카드/편향/drift 대상 아님 |
   | 외부 데이터/API 약관 | 해당 없음(M1) | 외부 호출 코드 없음(TC-S9-020). M2 에서 재점검 |
-  | **규제 민감 도메인(규칙 I)** | 예 | **POL-002 면책 문구 미노출 → DEF-9-007 (Critical)**, POL-006·008 → DEF-9-008 (High) |
-  | **AI/LLM 내장(규칙 J)** | 예 | M1 모의 AI 범위: 입력 정제·출력 새니타이즈·권한 0·사람 승인 게이트 동작 확인(TC-S9-025·026). 인젝션 직접 재현·출력 기반 XSS 재현 시도 → 불성립. 미반영: SEC-027(호출 상한, M3)·SEC-026 일부(전송 미리보기 UI)·SEC-021 지시/데이터 구획(M3) → M3 진입 차단 조건(부록 F) |
+  | **규제 민감 도메인(규칙 I)** | 예 | 실제 화면·번들·API 직접 확인(TC-S9-079, 부록 J). **POL-002 면책 문구 미노출 → DEF-9-007 (Critical)**, POL-008(표시광고·한계)·POL-013(A/B 확인 문구) → DEF-9-008 (High). POL-001(건강·금융 엄격 모드)·POL-005(데모 표시)·POL-014(제외 영상)는 구현 확인. **개별 REQ-ID 등록 갭 → DEF-9-018** |
+  | **AI/LLM 내장(규칙 J)** | 예 | M1 모의 AI 범위: 입력 정제·출력 새니타이즈·권한 0·사람 승인 게이트 동작 확인(TC-S9-025·026). 인젝션 직접 재현·출력 기반 XSS 재현 시도 → 불성립. **투명성 고지(POL-006) 미노출 → DEF-9-008**. 미반영(M3 진입 차단 조건, 부록 F-4): SEC-027(호출·비용 상한)·SEC-026 일부(전송 미리보기 UI)·SEC-021 지시/데이터 구획·SEC-028 키 주입·SEC-030 실서비스 시험 |
   | 접근 권한(최소권한·회수)·로그 보관·감사 추적 | 예 | 최소권한 = DB 3계정·시크릿 분리·api/worker 비밀 최소(TC-S9-060·062). 계정 회수 = PIN 변경 시 타 세션 폐기. 로그 보관 = json-file 10 MB×3 + 감사 로그 무기한, 보관기간 미정(DEF-9-013) |
   | 보안 사고 대응(탐지→격리→통지→복구) 근거 | 예 | `WEB_RUNBOOK.md` §11 에 4단계 있음. **비밀번호 교체 절차 미검증**(Q-11-06). 탐지 근거 = 감사 `chain_ok`·`session.denied` 기록 |
 - **코드 커버리지(보안 시험 단독)**: 오프라인 3파일이 `ytweb` 3,344문장·704분기 중 **79 %**(미실행 599문장·분기부분 136). 낮은 곳은 `worker.py`·`migrate.py`(컨테이너 안에서 실스택 시험이 실행), `core/jobs.py`·`domain/handlers.py`(워커 경로), `domain/batches.py` 62 %(실패·복구 경로는 6단계 시험이 담당). 보안 통제 모듈(`core/guard·deps·sessions·pin·audit·idempotency·logsetup`, `ai/guard`, `routers/auth·settings`)은 82~100 %.
-- **변이 점검**: 코드 74곳·설정 45곳 — 부록 E.
+- **변이 점검**: 코드 74곳(73 killed + 동치 대조군 1) · 설정 45곳(45 killed) — 부록 E.
 - 커버되지 않은 부분과 사유: 2절 제외 표, 8절.
 
 ## 6. 결함(Defect) 목록
@@ -154,12 +165,12 @@
 
 | ID | 설명 (관련 ID) | 재현 절차 | 심각도 | 상태 | 조치 내용(권장) |
 |----|---------------|-----------|--------|------|-----------------|
-| **DEF-9-007** | **면책 문구(POL-002)가 웹 화면·API 어디에도 없다.** "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다"를 검증 결과·사전 점검·성과 리포트에 상시 표기해야 하는데 `ko.ts`·화면·서버 소스·빌드된 번들(385 KB)에 "법률 자문"·"면책"이 0건. 대상 콘텐츠가 **건강·금융**(표시광고·의료광고·금융소비자 보호 규제 대상)이라 규칙 I 의 핵심 요구다. 관련: **POL-002**, RISK-003·RISK-036, C-7, 규칙 I-4, 계획 W-FIX-4 | `grep -rn "법률 자문" web/frontend/src web/backend/ytweb` → 0건; 이미지 번들 문자열 검색 `법률 자문 0, 면책 0` (부록 C); 화면에서 영상 상세·배치 사전 점검·리포트 확인 | **Critical** (규칙 I: 규제 REQ 미반영은 축소 불가. 계획서는 RISK-036 을 "중"으로 평가했으나 9단계 기준으로 상향) | **Open** — 프런트 소유(W-FIX-4) | 문구를 `ko.ts` 한 곳에 두고 영상 상세(검증 결과)·배치 사전 점검·리포트·승인 대화상자에 상시 표시. 수정 후 9단계 재검증(문구 노출 시험 추가) |
-| **DEF-9-008** | **AI 생성 고지(POL-006)·AI 한계/표시광고 규정 확인 안내(POL-008)가 없고, POL-013(A/B 확인)은 사전 점검 경고 한 줄만 있다.** 제안 카드에 "AI 제안" 배지뿐이며 "AI가 생성한 제안입니다. 사람이 검토·승인한 제목만 반영됩니다", "사실·법령 적합성을 보장하지 않으며 건강·금융은 표시광고 규정을 확인하세요" 문장이 없다. 관련: **POL-006, POL-008, POL-013**(제안 ID), SEC-029, 규칙 I·J, AI 기본법 투명성 `[확인 필요]` | `grep -rn "AI가 생성\|표시광고" web/frontend/src` → 0건; 번들 `AI가 생성 0, 표시광고 0` | **High** (POL-006·008 은 traceability.md 에 아직 등록 전의 제안 ID 라 Critical 이 아닌 High 로 둠. 등록되면 규칙 J 에 따라 Critical 로 상향) | **Open** — 프런트 소유(W-FIX-4) | DEF-9-007 과 같은 수정에 포함. 확인 문구에 "A/B 테스트 중이 아님" 확인 포함(POL-013) |
+| **DEF-9-007** | **면책 문구(POL-002)가 웹 화면·API 어디에도 없다.** 기획 문구: "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다"(CLI 는 `src/ytitle/ui.py:10 DISCLAIMER` 로 구현·표시, 웹은 미이식). 대상 콘텐츠가 **건강·금융**(표시광고·의료광고·금융소비자 보호 규제 대상)이라 규칙 I 의 핵심 요구다. 실측: `ko.ts`·`pages/**`·`app/**`·`ytweb/**`·실스택 번들(393 KB)에서 "법률 자문"·"면책"·"최종 책임"·"책임" 0건. 관련: **POL-002**(traceability 39행, 현재 CLI 근거로만 Done), RISK-003·RISK-036, C-7, 규칙 I-3, 계획 W-FIX-4 | `grep -rn "법률 자문" web/frontend/src web/backend/ytweb` → 0; `curl -H 'Host: 127.0.0.1:8080' http://127.0.0.1:18380/assets/index-*.js \| grep -c 면책` → 0; 시험 `test_sec_05` 의 `test_disclaimer_*`·`test_bundle_contains_disclaimer`(xfail) | **Critical** (규칙 I: 규제 REQ 미반영은 축소 불가. 계획서는 RISK-036 을 "중"으로 봤으나 9단계 기준으로 상향. 사용자·시장 규모가 작다는 이유로 낮추지 않음) | **Open** — 프런트 소유(W-FIX-4). **사용자 수용 불가** | **어디에**: ① `ko.ts` 에 `legal.disclaimer` 한 곳 정의 → 전 화면 공통 `app/Layout.tsx` 하단 상시 푸터(권장), 그리고 ② 영상 상세의 검증 결과(`VideoDetailPage`/`SuggestionCard`), ③ 배치 사전 점검·실행 확인 대화상자(`BatchDetailPage`), ④ 성과 리포트(`ReportsPage`) 에 명시 표시. ⑤ API: `GET /api/v1/reports/changes` 응답 `notes` 에 같은 문장 추가(→ CSV `ytitle-report.csv` 끝 주석 행에도 자동 포함), 배치 사전 점검 응답에 `notice` 필드. ⑥ `WEB_USER_MANUAL`·`WEB_LEGAL_NOTICE` 3-2 의 "미구현" 문구를 구현 후 정정. **재검증**: `test_sec_05` 의 `test_disclaimer_text_exists_in_ko_ts`·`test_disclaimer_is_rendered_globally_or_on_all_result_screens`·`test_bundle_contains_disclaimer` 가 XPASS(strict → 일부러 실패)로 바뀌면 xfail 표식을 지우고 통과를 확인한다(수정 모사로 전환 확인 완료). 문구의 법적 충분성은 이 문서가 판단하지 않는다 — 공개·실연동 전 전문가(변호사 등) 확인 필요 |
+| **DEF-9-008** | **AI 생성 고지(POL-006)·AI 한계/표시광고 규정 확인 안내(POL-008)가 없고, POL-013(A/B 확인)은 사전 점검 경고 한 줄(`domain/batches.py:184`)뿐이다.** 제안 카드에는 "AI 제안" 배지와 엄격 모드 문구("건강·금융 등 민감 주제는 경고도 차단으로 처리합니다.")만 있다. 없는 문장: "AI가 생성한 제안입니다. 사람이 검토·승인한 제목만 반영됩니다", "사실·법령 적합성을 보장하지 않으며 건강·금융은 표시·광고 규정을 확인하세요", 실행 확인 단계의 "A/B 테스트 중이 아님" 확인. 관련: **POL-006, POL-008, POL-013**(02_planning Part W 제안 ID), SEC-029, 규칙 I·J, AI 기본법 투명성 `[확인 필요]` | 번들 문자열 검색 "AI가 생성" 0·"표시광고/표시·광고" 0·"A/B" 0; `test_sec_05` 의 `test_ai_generated_notice_*`·`test_ai_limit_and_advertising_*`·`test_batch_execute_confirmation_*`·번들 2건(xfail) | **High** (POL-006·008·013 은 traceability.md 에 아직 미등록이라 Critical 대신 High — **등록되면 규칙 J·I 에 따라 Critical 로 상향**, 미등록 자체는 DEF-9-018. 어느 쪽이든 열린 High 이상이라 PASS 불가) | **Open** — 프런트 소유(W-FIX-4). **사용자 수용 불가** | **어디에**: ① POL-006 — `SuggestionCard`(제안 카드 상단 또는 배지 옆)·승인 대화상자·변경 이력(`HistoryPage`)에 `ko.suggestion.aiNotice` 상시 노출. ② POL-008 — `SuggestionCard` 에 `ko.suggestion.aiLimit`(엄격 모드 영상은 더 눈에 띄게), 배치 사전 점검 카드에도 표시. ③ POL-013 — `BatchDetailPage` 실행 확인에 체크 항목 "Studio 에서 A/B 테스트 중이 아님을 확인했습니다"(미체크 시 실행 버튼 비활성) 및 필요 시 서버 확인 필드. 문구 초안은 `WEB_LEGAL_NOTICE.md` 3-2·4 장. **재검증**: `test_sec_05` 의 해당 5건+번들 2건이 XPASS 로 바뀌면 xfail 표식 제거 후 통과 확인. 법적 충분성은 판단하지 않음(전문가 확인 필요) |
 | DEF-9-002 | **롤백이 "현재 제목이 방금 반영한 제목인지" 확인하지 않고 반영 전 백업 snippet 전체를 되돌려 쓴다** → Studio 에서 따로 고친 제목·설명·태그가 옛 값으로 덮어써진다(사후에 `changed_since_backup` 로 표시만). 관련: **TW-14**, SEC-005·010 승계, RISK-033 | `rollback_repro_overwrites_title_and_description_edited_elsewhere`(재현, 201) 와 `rollback_should_*`(xfail) — 반영 뒤 Studio 편집(모의: DB snippet 수정)→롤백 | **Medium** (M1: 모의 게이트웨이뿐이라 실채널 피해 없음. **M3 진입 시 High 로 승격 — 해결 전 M3 금지**, 위협 모델 W6 과 동일) | Open — 설계 결정(질문 Q-S9-2) | (a) 현재 제목 ≠ 반영한 제목이면 409 + Studio 수동 안내, (b) 제목만 현재 재조회 snippet 에 교체해 복원(설명 등은 현재값 유지), (c) 실계정 1건 시험 |
 | DEF-9-006 | `.gitignore` 에 `client_secret*.json` 이 없다(`.dockerignore` 에는 있음). 위협 모델 TW-18 은 "`.gitignore` 가 제외"라고 서술 → 문서-구현 불일치. 구글이 내려주는 `client_secret_*.json` 을 저장소 루트에 두면 `git add`(자동 푸시 허용됨, `.claude/settings.json`)로 올라간다. 관련: **TW-18**, D-05, S-W08, M2 | `test_gitignore_has_client_secret_pattern`(xfail) / `.gitignore` 정독 | **Medium** | Open — 공유 파일(`.gitignore`) | `client_secret*.json`, `*client_secret*.json`, `credentials*.json`, `*.pem`, `*.key` 추가. 커밋 전 비밀 검사 훅(gitleaks 등) 권장 |
 | DEF-9-010 | **베이스 이미지 OS 패키지의 HIGH/CRITICAL 취약점** (Trivy 0.75.0): api(Debian 13.7) HIGH 8개 CVE(44건·패키지별)·**수정본 없음**, web(Alpine 3.24.2) HIGH 1(`tiff` CVE-2026-4775→4.7.2-r0)·MEDIUM 1(`zlib`) **수정본 있음**, db(Debian 12.15) CRITICAL 3(`libsqlite3`·`libxml2`·`zlib1g`: 미수정/ will_not_fix)+HIGH 22 CVE 및 `gosu` Go 표준 라이브러리(수정본 있음, 단 비루트 기동이라 gosu 미사용). **현재 고정한 4개 다이제스트가 2026-10-11 기준 각 태그의 최신 다이제스트**라 다시 고정해도 해소되지 않는다. 관련: **TW-13, D-11, S-W11**, D-04 | 부록 C 표; `trivy image --input <tar> --scanners vuln` | **Medium** (도달성: 취약 구성요소 대부분이 네트워크 입력 경로 밖 — db 는 호스트 포트·외부 경로 없음, api 입력은 파이썬만 처리, web 은 이미지 변환 모듈 미사용. 악용에는 컨테이너 내 코드 실행이 선행돼야 하고 비루트·읽기 전용·cap_drop 으로 완화. 단 **상류 수정본이 없어 프로젝트가 직접 해소할 수 없음**) | Open — 추적·수용 질문(Q-S9-4) | 릴리스 전 재스캔·`pin-digests.ps1`, 수정본이 나온 항목 갱신, CI 에 이미지 스캔(고정 버전 도구) 추가, M2(외부 TLS 사용 시작) 전 `openssl`/`libssl3` 재평가 |
-| DEF-9-011 | **web(nginx) 컨테이너가 비-internal `edge` 망에 있어 호스트 게이트웨이를 통해 호스트 서비스·LAN 에 도달한다**(위협 모델 TW-36 은 "외부로 데이터를 보낼 수 있는 이론상 경로"만 서술). 실측: web→`172.24.0.1`(edge 게이트웨이)의 `0.0.0.0` 바인딩 서비스(포트 2024·2025) **OPEN**, `127.0.0.1` 전용 포트(18380·18080·54329)는 CLOSED. 망에서 edge 를 빼면 게시가 안 된다: internal 단독 컨테이너는 `-p` 가 **무시**되어 접속 불가(실측), `gateway_mode_ipv4=isolated` 는 "internal 망에서만 사용 가능"(엔진 오류). 선행조건: nginx 침해(정적 파일+프록시만 처리, 비루트·읽기 전용). 관련: **TW-36, D-10, S-W14, DEC-045** | `docker exec <web> nc -z -w2 <edge 게이트웨이> 2024` | **Medium** (선행조건이 높고 DEC-045 가 인터넷 쪽 경로는 수용했으나, 호스트·LAN 도달은 수용 범위 밖에서 새로 확인됨) | Open — 사용자 결정(Q-S9-3) | 수용을 DEC 에 확장 기록하거나, Windows 방화벽의 Docker 가상 NIC 아웃바운드 제한 안내(WEB_INSTALL), 장기적으로 게시 전용 단순 TCP 중계 컨테이너로 분리(침해 면적 축소) |
+| DEF-9-011 | **컨테이너가 자기 망의 게이트웨이 주소로 호스트(Linux 엔진)의 `0.0.0.0` 서비스에 도달한다 — web 뿐 아니라 internal 망의 api·worker·db 도 해당(이번 회차 재측정으로 범위 확대).** 위협 모델 TW-36 은 "외부로 데이터를 보낼 수 있는 이론상 경로"만 서술. 실측: 호스트에 `0.0.0.0` 임시 리스너를 열고 web(edge `172.23.0.1`·front `172.22.0.1`)·api/worker/db(back `172.21.0.1`, internal=true)에서 연결 → 전부 OPEN, `127.0.0.1` 전용 리스너는 전부 CLOSED. 즉 DEC-045 의 3망 분리는 인터넷 경로는 막지만 **호스트의 0.0.0.0 서비스 도달은 막지 못한다**. edge 를 빼면 게시가 안 된다(internal 단독 컨테이너는 `-p` 무시, `gateway_mode_ipv4=isolated` 는 internal 전용 — 이전 회차 실측). 선행조건: 컨테이너 침해(비루트·읽기 전용·cap_drop). Windows Docker Desktop 에서는 게이트웨이가 Docker VM 쪽일 수 있어 **의미가 다를 수 있음(미수행)**. 관련: **TW-36, D-10, S-W14, DEC-045** | `test_sec_06::test_web_container_reaches_host_gateway_listener_repro`(통과=재현), 수동 4개 망 프로브 | **Medium** (선행조건이 높고 호스트 쪽 0.0.0.0 서비스는 사용자 PC 에 따라 다름. 단 DEC-045 수용 범위를 넘는 새 사실) | Open — 사용자 결정(Q-S9-3) | DEC 에 확장 수용 기록 + WEB_INSTALL 에 "호스트에 0.0.0.0 로 열린 서비스가 없는지, Windows 방화벽의 Docker 가상 NIC 인바운드 제한" 안내, Docker Desktop 실측(10단계), 장기적으로 게시 전용 중계 컨테이너 분리 |
 | DEF-9-013 | **데이터 보관·파기(POL-012)·백업 암호화·보관기간(POL-016)이 미구현·미정**: `jobs`·`ai_runs`·`audit_log`·`changes.backup_snippet` 무기한 보관(`purge_expired` 는 세션만, 멱등키 48시간), 백업 덤프 무암호화, 로그 보관 정책 없음. M1 은 합성 데이터와 승인자 이름뿐이라 현재 위반 소지는 낮으나 M2(구글 유래 데이터, API 정책의 저장 기간) 전에 필요. 관련: **POL-012, POL-016, TW-19, RISK-024·035**, W-016 | 코드 정독(`worker.py maintenance`), `ytweb-db dump`, README §3 | **Medium** | Open — 사용자 결정(Q-W2·Q-W4) | 보관기간 확정 후 정리 작업·백업 암호화(예: `age`) 옵션. **개인정보 보호법·PIA·ISMS-P 해당 여부는 판단하지 않음 — 전문가 확인 필요** |
 | DEF-9-014 | **감사 로그 체인에 키가 없고, 앱 계정이 감사 외 표(`changes`·`approvals`·`batch_items`…)를 UPDATE/DELETE 할 수 있다**: DB 소유자/슈퍼유저가 기록을 고치고 해시를 다시 계산하면 `chain_ok` 가 계속 True, 꼬리(마지막 N건) 삭제도 탐지 불가. 앱 계정은 `audit_log` UPDATE/DELETE/TRUNCATE 권한이 없음을 PostgreSQL 에서 실측. 문서 불일치(README "서명 키")는 README 114행 정정으로 해소됨. 관련: **S-W16, TW-08, TW-32, DV-W08** | `audit_limitation_repro…`(재현), `known_limit_app_role_can_modify…`(재현) | **Medium** (앱 계정 침해까지는 방어 — 요구 S-W16 은 충족, 소유자 이상은 범위 밖. 수용 질문 Q-W6 대기) | Open — 사용자 결정 | HMAC(키=`app_secrets`) 체인으로 전환하거나 마지막 해시를 별도 위치(백업·화면)에 주기적으로 기록, 또는 수용을 DEC 로 기록 |
 | DEF-9-001 | **상한 없는 정수 입력이 HTTP 500 을 낸다**: `/batches/{id}`·`/suggestions/{id}`·`/changes/{id}/rollback`·`?batch_id=`·`?page=`·`suggestion_ids:[…]` 에 DB 정수 범위(2⁶³) 초과 값을 넣으면 SQLite `OverflowError`/PostgreSQL `DataError`→500(일반 문구, **누설 없음**, 서버 생존). 오류 로그 폭증 가능. 관련: **S-W13, TW-25·09**, DEF-VA-005(감사 `page` 만 고쳐짐) | `GET /api/v1/batches/99999999999999999999999` — 오프라인·PostgreSQL(실스택) 모두 | **Low** | Open — 백엔드 소유 | 경로·쿼리 `le=2**63-1`, 본문 리스트 항목 `Field(ge=1, le=…)`. 시험의 xfail 표식 제거 |
@@ -170,8 +181,10 @@
 | DEF-9-012 | `restore.ps1` 은 `.sha256` 파일이 **없으면 경고만 하고 복원을 진행**한다(무결성 확인 fail-open). `pg_restore` 는 덤프 안의 SQL 을 소유자 권한으로 실행하고, 복원 뒤 `audit-guard.sql` 은 `audit_log` 권한만 다시 회수한다(덤프의 다른 GRANT 는 유지). 선행조건: 호스트 사용자 권한으로 `web\backups` 쓰기(=이미 호스트 장악, TW-12 수용 후보). 관련: **TW-12, TW-19**, POL-016 | `restore.ps1` 36~44행 정독 | **Low** | Open | `.sha256` 없으면 중단(`-AllowNoHash` 명시 옵션), 복원 후 앱 계정 권한을 `schema-grants` 기준으로 재설정 |
 | DEF-9-015 | **의존성 신선도**: 잠금 시점(2026-10-10)에 릴리스 후 7일 미만인 버전을 채택 — fastapi 0.143.0(10-08)·pydantic 2.14.0(10-08)·pydantic-core 2.50.0(10-08)·sqlalchemy 2.1.4(10-07)·opentelemetry-api 1.45.1(10-06). 모두 대형 프로젝트(수백 릴리스)이고 해시·존재·CVE 점검은 통과했으나 갓 올라온 버전의 공급망 탈취 창을 줄이는 쿨다운이 없다. `eslint 9.39.5` 는 npm 에서 "지원 종료"로 표시. 관련: **S-W11, TW-13** | 부록 B-1 | **Low** | Open | 쿨다운(예: 최소 7일) 정책과 갱신 절차 문서화, ESLint 대체(노트의 jsx-a11y peer 제약) |
 | DEF-9-016 | **nginx 오류 로그에 요청 줄(쿼리 문자열 포함)이 남는다**(업스트림 오류 등). 실측: api 정지 후 `GET /api/v1/videos?q=…&code=OAUTHCODE_CANARY` → 로그에 `request: "GET …?q=…&code=OAUTHCODE_CANARY"`. 접근 로그는 안전. M1 API 는 비밀 쿼리가 없으나 **M2 OAuth 콜백(`?code=&state=`)이 걸리면 인가 코드가 로그에 남는다**. 6단계 DEF-VI-003 의 잔여(속도 제한 거절은 warn 으로 낮춰 해소, 업스트림 오류는 미해소). 관련: **TW-17, S-W08·W09**, DEF-VI-003 | 위 canary 요청 후 `docker logs <web>` | **Low** (M2 전 필수) | Open — 설계 결정(M2 콜백 설계 때) | 콜백 location 에 `error_log /dev/null crit;`, 또는 콜백을 POST/프래그먼트로 설계 |
+| DEF-9-017 | **`.dockerignore` 가 거부 목록 방식이라 비밀형 파일(`*.pem`·`*.key`·`credentials*.json`)과 개발 캐시가 이미지 빌드 컨텍스트에 들어간다.** 실측: api 이미지에 `/app/backend/.ruff_cache`(24 KB)·`/app/backend/.coverage` 가 실제로 포함됨(작업 폴더의 미추적 개발 산출물이 빌드 컨텍스트를 통해 유입). 빌드가 git 이 아니라 **작업 폴더** 를 쓰므로 `.gitignore` 와 무관하게 로컬 미추적 비밀 파일이 이미지에 구워질 수 있다(`.gitignore` 에도 같은 패턴이 없음, DEF-9-006). 관련: **D-05, TW-18, S-W08** | `test_sec_03::dockerignore_covers_secret_like_and_dev_cache_patterns`·`test_sec_06::api_image_has_no_dev_cache_directories`(xfail; `--runxfail` 로 올바른 이유로 실패함 확인) / `docker run --rm --entrypoint sh <api> -c 'find /app -name .ruff_cache'` | **Low** (현재 이미지에 비밀은 0건 — Trivy·이미지 열람; 잠재 경로) | Open — 인프라 소유 | `.dockerignore` 를 허용 목록(`*` 후 `!web/backend/ytweb`·`!web/backend/alembic*`·`!src/ytitle`·`!config/*.yaml`…)으로 바꾸거나 `**/.ruff_cache`·`**/.coverage`·`*.pem`·`*.key`·`credentials*.json` 추가. xfail 표식 제거 |
+| DEF-9-018 | **규칙 I·J 의 REQ-ID 등록 갭**: 웹 트랙 POL-005~016 · SEC-021~030 이 `02_planning.md` Part W 에서 "제안 ID"로만 있고 `traceability.md` 에 정식 행으로 등록되지 않았다(87행 서술 "오케스트레이터가 재부여"). POL-002 행은 CLI 근거로 `Done` 이라 웹 화면 미구현(DEF-9-007)이 추적표에서 보이지 않는다. 규칙 H·I-2·J-2 위반 소지이며 8단계 커버리지에서 빠질 수 있다. 관련: **POL-002·006·008·013, SEC-021~030, 규칙 H·I·J** | `grep -n "POL-00[5-9]\|SEC-02[1-9]" docs/harness/traceability.md` → 0건 | **Medium** (코드 취약점은 아님; DEF-9-008 의 심각도 상향 조건) | Open — 오케스트레이터(문서) | traceability 에 웹 행으로 등록(POL-002 웹 범위 분리 Not Done, POL-006·008·013 Not Done), 09 확인 결과는 부록 F-1 |
 
-- 집계: **Critical 1 · High 1 · Medium 6 · Low 8 (총 16건, 전부 Open)**. Fixed 0건(소스 수정 금지 지시). 시험 설계상의 문제로 고친 것(시험 쪽)은 검증 로그에 기록.
+- 집계: **Critical 1 · High 1 · Medium 7 · Low 9 (총 18건, 전부 Open)**. Fixed 0건(운영 소스 수정 금지 지시). 이번 회차 신규: DEF-9-017(Low)·DEF-9-018(Medium), DEF-9-011 범위 확대(여전히 Medium). **Critical/High(DEF-9-007·008)는 사용자 수용(Deferred) 불가 — 수정 후 9단계 재검증 필수.** Deferred 가능한 것은 Low·Medium 이며 수용 결정은 사용자만 한다(규칙 C 보칙 2).
 - 6단계에서 이월된 항목의 현재 상태: DEF-VI-001(web→db 도달)=**해소 확인**(web→db 이름·IP 모두 불가, 단 범위 확대 DEF-9-011), DEF-VI-002(`alembic_version` 쓰기)=**해소 확인**(권한 `f`), DEF-VI-003=**부분**(DEF-9-016), DEF-VF-B01(PIN 변경 우회 경쟁)=**해소 확인**(PostgreSQL 에서 동시 추측 직렬화 실측, TC-S9-065).
 - "결함 0건" 주장은 하지 않는다. 대신 **무엇이 불성립했는지** 부록 H 에 공격 시도별 결과를 남겼다.
 
@@ -182,14 +195,17 @@
   - 호스트 포트: 127.0.0.1:18380 (이 단위 전용)
   - 저장소 안(의도한 산출물): `web/tests_security/**`, `docs/harness/security-web-m1-test.md`, `docs/harness/verify-log_security-web-m1-test.md`, `docs/harness/sbom-web-m1/*.json`
 - 위 아티팩트를 전부 `.harness-tmp/` 하위에서만 생성했는가 (규칙 K 1번): [x] 예 — 단 Docker 객체는 파일시스템이 아니라 공유 dockerd 에 생기므로 위 접두사 규칙으로 구분했다(저장소 밖). 파이썬이 만든 `__pycache__` 는 정리.
-- 정리(삭제) 완료 여부: [[TEARDOWN_STATE]]
-- 정리 후 `git status` 실행 결과: **실행하지 않음** — 호출 지시에 "git 명령 금지"와 "7절에 git status 원문"이 함께 있어 충돌한다. git 금지를 우선했다. 대신 파일시스템 점검 결과를 아래에 붙인다. **오케스트레이터가 웨이브 종료 후 `git status` 원문과 `harness-janitor.sh --check` 결과를 이 절에 덧붙여 달라(질문 Q-S9-9).**
+- 정리(삭제) 완료 여부: [x] **완료**. `docker compose -p harness-tmp-sec down -v`(컨테이너 5·네트워크 3·볼륨 3 삭제), 이미지 `harness-tmp-sec-{api,web,db}:local`·`harness-tmp-sec-trivy:scan`·`mirror.gcr.io/aquasec/trivy:latest`(내가 받은 스캐너 태그) 삭제, `.harness-tmp/sec/`(venv 3·스택·비밀 3개·스캔 결과·변이 사본·npm·trivy 캐시) 삭제, `web/tests_security/__pycache__` 삭제. 확인(원문): `docker ps -a | grep harness-tmp-sec` 0줄, `docker network ls` 0줄, `docker volume ls` 0줄, `docker images | grep -i 'harness-tmp-sec\|trivy'` 0줄, `.harness-tmp/` 에 `sec` 없음(남은 항목은 7단계·이전 단위 소유: int·vinf·pg·venv_* 등). 임시 PostgreSQL 내 내 DB `ytweb_test_g`: 이번 감사는 SQLite 임시 파일과 컨테이너 안 DB 만 사용해 **접속·생성한 객체가 없음**. **dockerd·임시 PostgreSQL 은 끄지 않았다**: 내가 띄운 것이 아니고, 7단계 에이전트의 `harness-tmp-int-*` 컨테이너 4개가 지금 실행 중이라 끄면 그 시험이 깨진다 — 웨이브 종료 후 오케스트레이터가 종료해 달라. 공유 Docker 빌드 캐시는 프로젝트별로 구분되지 않아 건드리지 않았다. 파이썬 `__pycache__`(cpython-313)가 `web/backend/ytweb`·`src/ytitle` 에 생길 수 있으나 `.gitignore` 대상이다.
+- 정리 후 `git status` 실행 결과: 읽기 전용 `git status --short` 를 실행했다(쓰기 git 명령은 쓰지 않음). 원문은 아래.
   ```
-  [[FS_CHECK]]
+  $ git status --short   (읽기 전용, 정리 후)
+ M docs/harness/security-web-m1-test.md        <- 이 단계의 의도된 산출물(9단계 소유)
+(이 단계가 만든 `web/tests_security/test_sec_05·06`, `sbom_from_npm_lock.py`, `docs/harness/sbom-web-m1/*` 는 02ec286 에 이미 커밋됨; verify-log 는 마지막에 수정됨)
+$ docker ps -a / network ls / volume ls / images  -> harness-tmp-sec 접두사 0건 (위 원문 요약)
   ```
 - 병렬 실행이었다면: 7단계가 `harness-tmp-int`·`.harness-tmp/int*`·포트 18080 을, 11단계 대조가 `.harness-tmp/doc_reconcile` 을 쓰고 있었다. 나는 그 폴더·컨테이너·이미지(`harness-tmp-int-*`, `harness-tmp-vinf-*`)를 건드리지 않았다(삭제·정지 없음). 이 단위가 만든 임시 아티팩트·미추적 잔여물은 위 "정리 완료"의 확인 범위에서 없음. 웨이브 종료 후 전체 트리 점검은 오케스트레이터 몫.
 - 이번 테스트 도중 강제 중단: [x] 없음(백그라운드 변이 점검 한 번을 내가 직접 중지·재시작: 프로세스 PID 로 내 것만 종료).
-- 이 절은 규칙 K 2번에 따라 `git status` 확인 전에는 PASS 판정의 전제를 충족하지 못한다 → 어차피 9절은 FAIL.
+- 규칙 K 2번의 "깨끗함" 판정은 위 원문으로 한다. 다른 에이전트(7단계)가 동시에 같은 저장소·dockerd 를 쓰고 있어, 전체 트리 점검은 웨이브 종료 후 오케스트레이터 몫이다. 9절은 어차피 FAIL 이다.
 
 ## 8. 리스크 및 잔존 이슈
 - **이번 테스트로 커버되지 않는 알려진 리스크(PASS 로 세지 않음)**
@@ -202,10 +218,10 @@
   7. 비밀번호 교체·유출 대응 절차 검증(Q-11-06), 백업 복원 후 `audit-guard` 재회수 — 6·7단계 결과에 의존.
   8. 브라우저 없이 확인하지 못한 프런트 페이지별 전수 정독: 위험 싱크는 소스 전수 grep(0건)·ESLint 금지 규칙·번들 문자열 검사로 확인했고 페이지 컴포넌트 전체를 줄 단위로 정독하지는 않았다.
 - **후속 조치가 필요한 항목**
-  - 즉시(재검증 전 필수): DEF-9-007·008.
+  - 즉시(재검증 전 필수): DEF-9-007·008(프런트 W-FIX-4), DEF-9-018(추적표 등록). 수정 후 `test_sec_05` 의 xfail 해제·통과와 전체 재실행.
   - M2 전: DEF-9-016, DEF-9-013(보관·파기), DEF-9-006, 토큰 저장·OAuth 설계 시 TW-35 재평가.
   - M3 전: DEF-9-002(롤백), SEC-021·026·027·028·030, Q-W10(AI topic 의존 제거), PIN 필수화·쓰기 재로그인, TW-15.
-  - 릴리스 전: DEF-9-010 재스캔, DEF-9-009.
+  - 릴리스 전: DEF-9-010 재스캔, DEF-9-009, DEF-9-017(.dockerignore), DEF-9-011 의 Docker Desktop 실측(10단계).
 - 11단계 Runbook 에 담을 보안 사고 대응 근거: 탐지(`GET /api/v1/audit` 의 `chain_ok`, `session.denied`, 429/403 빈도) → 격리(`stop.ps1`, 필요 시 네트워크 분리) → 통지(소유자 판단, 개인정보 포함 시 법적 통지 의무 확인 `[확인 필요]`) → 복구(`restore.ps1` 해시 확인 필수·비밀번호 교체 절차 **미검증**). 부록 F-2 의 11단계 대조 항목 참고.
 
 ## 9. 결론 및 판정
@@ -213,14 +229,14 @@
 - [ ] PASS (수용된 알려진 제한 포함)
 - [ ] CONDITIONAL PASS
 - [x] **FAIL** — 사유: **Critical 1건(DEF-9-007: 규제 도메인 면책 문구 미노출, 규칙 I) + High 1건(DEF-9-008: AI 고지·표시광고 안내 미노출, 규칙 I·J)이 Open**이다. 7절 `git status` 원문이 없어 Teardown 확인도 미완이다.
-  - 재작업 요청: ① 화면에 POL-002·006·008·013 문구 반영(W-FIX-4, 프런트 소유) → 9단계가 문구 노출 시험을 추가해 재검증. ② 나머지 Medium 6건은 사용자 결정(부록 F-3 질문 목록)을 받아 수정 또는 Deferred(DEC-ID)로 닫는다. Deferred 는 Low·Medium 만 가능하다.
-  - 판정 근거 요약: 위협 모델 36개 중 구현 확인 [[A_IMPL]], 부분 [[A_PART]], 해당 없음 [[A_NA]]. 공격자 관점 시험에서 **Critical/High 급 기술 취약점(인증 우회·인젝션·비밀 노출·권한 상승)은 발견되지 않았다.** 막은 것은 실제 동작으로 확인했다. FAIL 은 기술 취약점 때문이 아니라 규칙 I·J 의 "규제·AI 고지 문구 미반영" 때문이다.
+  - 재작업 요청: ① 화면·API 에 POL-002·006·008·013 문구 반영(W-FIX-4, 프런트 소유; 위치는 DEF-9-007·008 의 "어디에") → 9단계가 `test_sec_05` 로 재검증(xfail strict → XPASS 전환 확인 후 표식 제거). ② DEF-9-018 추적표 등록(오케스트레이터). ③ 나머지 Medium 7건은 사용자 결정(부록 F-3 질문 목록)을 받아 수정 또는 Deferred(DEC-ID)로 닫는다. Deferred 는 Low·Medium 만 가능하다. **Critical/High 는 사용자가 원해도 수용할 수 없다.**
+  - 판정 근거 요약: 위협 모델 36개 중 구현 확인 19(한계·의존 표기 포함), 부분 13, 해당 없음 2, 수용 대기 2, 미구현 0. 공격자 관점 시험(313건, 통과 298·xfail 15·실패 0)에서 **Critical/High 급 기술 취약점(인증 우회·인젝션·비밀 노출·권한 상승)은 발견되지 않았다.** 막은 것은 실제 동작으로 확인했고 시험이 통제 파괴를 잡는지는 변이 119곳으로 확인했다. FAIL 은 기술 취약점 때문이 아니라 규칙 I·J 의 "규제·AI 고지 문구 미반영" 때문이다.
   - 다음 단계(10 배포 테스트) 진행: 가능하나 DEF-9-007·008 이 닫히기 전에는 12단계(배포) 승인 요청을 올리지 않는다.
 
 ## 10. 내부 검증 (최소 2회, `verification-log-template.md` 사용)
-- 1차 검증 결과 요약(작성자 관점): 최소 점검 항목 체크리스트 19개 전부 수행. 시험 자신의 오류 12건(잘못된 기대·상태 오염)을 고쳐 가며 통과시킴. 이 과정에서 DEF-9-001·003·004·006·007·008·009~016 후보 발견.
-- 2차 검증 결과 요약(공격자 관점, 카테고리 연쇄 포함): 변이 점검 1회전에서 8곳이 살아남아(시험의 구멍) 시험 12건 보강 → 2회전 보강 생존 2곳 추가 보강 → 최종 회전 놓침 0. 연쇄 공격 9경로를 따로 점검(부록 H) — 인증 우회+출력 새니타이즈 누락, 프롬프트 인젝션+엄격 모드 우회, 공급망+컨테이너 격리 등. 새 결함 2건(DEF-9-011 범위 확대, DEF-9-016 실측) 추가.
-- 3차(결함 0건 확인 회차): 소스·시험 확정 후 전체 재실행 — 오프라인 [[FINAL_OFFLINE]], 실스택 [[FINAL_LIVE]]. **기록된 결함 16건 외 신규 결함 0건** 확인.
+- 1차 검증 결과 요약(작성자 관점): 최소 점검 항목 체크리스트 19개 전부 수행(이번 회차에 환경을 처음부터 재구성해 오프라인·실스택·변이 점검·스캐너·SBOM 을 재현, 이전 숫자와 일치 확인). 시험 코드 자체의 오류 1건 발견·수정(신규 `.dockerignore` 시험이 `REPO` 이름 오류로 NameError 로 xfail 되던 공허한 시험 — `--runxfail` 로 발견, 올바른 이유로 실패하도록 수정). SBOM 도구 한계 1건 발견(cyclonedx-npm 이 잠금 파일의 중첩 12개를 누락) → 잠금 기반 생성기 추가.
+- 2차 검증 결과 요약(공격자 관점, 카테고리 연쇄 포함): 변이 119곳(코드 73 killed+대조군 1, 설정 45 killed)을 재실행해 시험 실효성 재확인(놓침 0). 새 연쇄 경로 점검 CH-10(컨테이너 침해 → 게이트웨이 → 호스트 0.0.0.0 서비스)·CH-11(AI 고지 부재 + 인간 승인 → 건강·금융 과장 제목 승인) 추가. 이 과정에서 **새 사실 3건**: DEF-9-011 범위 확대(internal 망 컨테이너도 호스트 도달), DEF-9-017(.dockerignore 거부 목록·이미지 내 `.ruff_cache`/`.coverage`), DEF-9-018(POL/SEC 제안 ID 미등록). 수정 모사 사본으로 `test_sec_05` 의 5개 xfail 이 XPASS 로 전환됨을 확인(시험의 비공허성).
+- 3차(결함 0건 확인 회차): 시험·소스 확정 후 **새로 만든 스택에서 전체 재실행** — 오프라인·정적(01·02·03·05) 224건: 통과 210·xfail 10·건너뜀 4(05 번들, 스택 필요)·실패 0, 실스택(04·05 번들 포함) 98건: 통과 89·xfail 9·실패 0, 06 3건: 통과 2·xfail 1·실패 0. 합산(중복 제외) 313건 통과 298·xfail 15·실패 0. **기록된 결함 18건 외 신규 결함 0건** 확인. (xfail 15 = DEF-9-001×2, DEF-9-002×2, DEF-9-006×1, DEF-9-007×3, DEF-9-008×5, DEF-9-017×2 — 합 15.)
 - 검증 로그 파일 경로: `docs/harness/verify-log_security-web-m1-test.md`
 
 ---
@@ -247,7 +263,7 @@
 | TW-15 | 간접 프롬프트 인젝션 | **부분(M1 모의)** | `ai/guard.py:46,77`, `domain/suggestions.py:108` | TC-S9-025·026·026b | 엄격 모드 키워드 25개 한계 재현; 지시/데이터 구획·상한 M3 |
 | TW-16 | 부인 방지 | **구현됨(한계)** | `audit.record` 호출(9곳+auth/settings), `domain/common.py:97` | TC-S9-029·023 | 제로폭 문자 허용(DEF-9-004) |
 | TW-17 | 로그·오류 노출 | **구현됨(잔여 1)** | `core/logsetup.py:22`, `core/guard.py:179`, `app.py:63`, `compose.yaml:141` | TC-S9-016·032·060 | nginx 오류 로그 요청 줄(DEF-9-016) |
-| TW-18 | 비밀이 이미지·저장소에 | **부분** | `compose.yaml:267`, `.dockerignore` | TC-S9-040·040b·060·073·074 | `.gitignore` 에 client_secret 없음(DEF-9-006); 이미지·inspect·히스토리·로그·덤프 비밀 0 |
+| TW-18 | 비밀이 이미지·저장소에 | **부분** | `compose.yaml:267`, `.dockerignore` | TC-S9-040·040b·060·073·074 | `.gitignore` 에 client_secret 없음(DEF-9-006); 이미지·inspect·히스토리·로그·덤프 비밀 0 ; `.dockerignore` 거부 목록·이미지에 `.ruff_cache`(DEF-9-017) |
 | TW-19 | 백업 유출 | **부분** | `scripts/backup.ps1`, `_common.ps1 Set-OwnerOnlyAcl` | TC-S9-063 | 덤프 무비밀·600 확인; 암호화·보관기간 미정(DEF-9-013); Windows ACL 미실측 |
 | TW-20 | 세션 탈취·장기 | **부분** | `core/sessions.py:16,30,46` | TC-S9-009·010 | 유휴 만료 없음·상한 축출(DEF-9-003) |
 | TW-21 | DB 접근·권한 | **구현됨** | `docker/db/pg_hba.conf:13`, `schema-grants.sql:8`, `init/01-roles.sh:40` | TC-S9-061·062 | 권한 공격 26종 거부 |
@@ -265,7 +281,7 @@
 | TW-33 | 설정 API 안전장치 우회 | **구현됨** | `routers/settings.py:40,94-98`, `config.py:8` | TC-S9-028 | |
 | TW-34 | 문서·관리 경로 | **구현됨** | `app.py:110-112`, `core/guard.py:78` | TC-S9-015·057 | |
 | TW-35 | SSRF | **해당 없음 확인** | 외부 호출 코드 없음 | TC-S9-020(소켓 차단 하 전 흐름) | M2 재평가 |
-| TW-36 | web 침해 시 외부 경로 | **부분 → 범위 확대** | `compose.yaml:233,251-259` | TC-S9-061·078 | **호스트 게이트웨이의 0.0.0.0 서비스·LAN 도달 실측**; edge 제거는 게시 불가(실측) → DEF-9-011 |
+| TW-36 | web 침해 시 외부 경로 | **부분 → 범위 확대** | `compose.yaml:233,251-259` | TC-S9-061·078·083 | **internal 망 컨테이너(api·worker·db)도 자기 망 게이트웨이로 호스트 0.0.0.0 서비스에 도달(이번 회차 재측정)**; 인터넷 경로는 차단됨; edge 제거는 게시 불가(실측) → DEF-9-011 |
 
 ## 부록 B. 의존성 점검
 ### B-1 파이썬 (고유 36개 = 이름·버전 쌍: 백엔드 런타임 20·개발 추가 10·ytitle 3 + CLI 직접 의존 3)
@@ -280,10 +296,10 @@
 ### B-3 베이스 이미지 (공식 레지스트리)
 | 이미지 | 고정 다이제스트 | 2026-10-11 태그의 최신 다이제스트 |
 |---|---|---|
-| python:3.12-slim | `sha256:a6e34c59…c11b1` | 동일 |
-| node:22-bookworm-slim | `sha256:c3de60bf…78392` | 동일 |
-| nginxinc/nginx-unprivileged:stable-alpine | `sha256:15c994d1…516e3` | 동일 |
-| postgres:17-bookworm | `sha256:3645570c…03826` | 동일 |
+| python:3.12-slim | `sha256:a6e34c59…c11b1` | 동일(오늘 재확인) |
+| node:22-bookworm-slim | `sha256:c3de60bf…78392` | **미확인**(오늘 조회가 레지스트리 429 로 실패; 이전 세션 기록은 동일) |
+| nginxinc/nginx-unprivileged:stable-alpine | `sha256:15c994d1…516e3` | 동일(오늘 재확인) |
+| postgres:17-bookworm | `sha256:3645570c…03826` | 동일(오늘 재확인) |
 ### B-4 라이선스
 - 파이썬 런타임 24개: MIT·BSD-3·Apache-2.0·PSF-2.0 중심, **`psycopg`·`psycopg-binary` = LGPL-3.0-only**(동적 사용·비수정·비배포 → 문제 없음. 이미지를 남에게 배포하면 고지·재링크 조건 필요). 개발 전용 `certifi` = MPL-2.0.
 - npm 운영 의존 9개 전부 MIT. 개발 전용: MPL-2.0 13개(`lightningcss*`·`axe-core`), CC-BY-4.0(`caniuse-lite` 데이터), Python-2.0(`argparse`), BlueOak-1.0.0 4개, CC0 2개 — 번들에 들어가지 않음.
@@ -302,13 +318,13 @@
 - 도달성 판단은 DEF-9-010 설명 참조. `pip` 취약점은 설치 시 `--only-binary` 라 sdist 추출 경로(CVE-2025-8869)가 열리지 않는다.
 
 ## 부록 D. SBOM
-- 산출물 `docs/harness/sbom-web-m1/`: `api.image.cdx.json`(113 구성요소)·`web.image.cdx.json`(71)·`db.image.cdx.json`(150) — Trivy 이미지 SBOM(OS 패키지+언어 패키지+라이선스+의존 그래프, CycloneDX 1.6), `python-runtime.cdx.json`(24)·`frontend-npm-all.cdx.json`(384)·`frontend-npm-prod.cdx.json`(9) — cyclonedx-py/cyclonedx-npm(라이선스·그래프 포함). 개인정보 최소화를 위해 패키지 유지보수자 **이메일 주소 302건을 제거**했다(이름만 남김).
+- 산출물 `docs/harness/sbom-web-m1/`(이번 회차 재생성): `api.image.cdx.json`(113 구성요소)·`web.image.cdx.json`(71)·`db.image.cdx.json`(150) — Trivy 이미지 SBOM(OS 패키지+언어 패키지+라이선스+의존 그래프, **CycloneDX 1.7**), `python-runtime.cdx.json`(24, cyclonedx-py environment, 1.6), `frontend-npm-all.cdx.json`(**382 고유 name@version**, 잠금 항목 384), `frontend-npm-prod.cdx.json`(9) — `web/tests_security/sbom_from_npm_lock.py`(잠금 파일 기반 CycloneDX 1.6, 해시·라이선스·의존 그래프 포함). **왜 직접 생성기인가**: `@cyclonedx/cyclonedx-npm 6.0.1` 은 `--package-lock-only` 에서 같은 이름·다른 버전의 중첩 12개를 합쳐 370개만 내고, 설치 기반 실행은 이 OS 에 설치되지 않는 선택 의존성을 뺀다(347개). 잠금 파일이 "설치 가능한 전부"의 근거이므로 도구 출력 대신 잠금 기반 산출물을 정본으로 하고 이 한계를 명시한다. 개인정보 최소화를 위해 패키지 유지보수자 **이메일 주소 302건을 제거**했다(이미지 SBOM 3종, 이름만 남김; 제거 후 purl 훼손 0 확인). 이미지 SBOM 의 metadata 이름은 `/in/x.tar` 대신 이미지 이름으로 바꿨다.
 - **이전 SBOM(`docs/harness/sbom-web-m1.json`, 427개) 검토 결과**: ① npm 12개 누락(lock 382 고유 중 370), ② 파이썬 구성요소에 라이선스 없음, ③ 의존 그래프 없음, ④ 베이스 이미지는 "내용 미열거" — OS 패키지 없음, ⑤ 컨테이너 버전이 태그만. → 위 6종으로 **대체**한다(이전 파일은 삭제하지 않았으니 오케스트레이터가 폐기 여부 결정).
 - 생성 도구 한계: 이미지 SBOM 의 이미지 ID 는 빌드마다 달라질 수 있다(재현 가능 빌드 아님).
 
 ## 부록 E. 변이 점검 (시험이 보안 통제 파괴를 잡는지 — 원본 소스 미수정, 사본에서만)
 - 방법: `web/tests_security/mutation_check.py`. 사본 `.harness-tmp/sec/mut/` 에 한 곳만 고쳐 오프라인 시험을 돌린다. 대상 문자열은 **원본에 정확히 1곳**임을 자동 확인(아니면 오류). 동치 대조군 1곳(독스트링)은 "살아남는 것이 정상".
-- 회전: **코드 변이** 1회전 58곳 → 8곳 생존(시험 구멍) → 시험 보강 후 2회전(생존분+신규 16곳) → 신규/보강 2곳 생존 → 보강 → **최종 회전 74곳** [[MUT_CODE_FINAL]]. **설정 변이** 1회전 45곳 → 5곳 생존 → 보강 → 2회전 5/5 → **최종 회전 45곳** [[MUT_INFRA_FINAL]].
+- 회전(이전 세션 기록): **코드 변이** 1회전 58곳 → 8곳 생존(시험 구멍) → 시험 보강 후 2회전 → 최종 회전 74곳. **설정 변이** 1회전 45곳 → 5곳 생존 → 보강 → 최종 45곳. **이번 회차 재실행(최종 시험·소스 기준)**: 코드 74곳 = **73 killed + 동치 대조군 1(독스트링만 변경, 생존이 정상)**, SURVIVED 0, ERROR 0 (2분할 병렬, 각 8~9분); 설정 45곳 = **45 killed**, SURVIVED 0 (1.6분). 합계 119곳 중 118 killed, 놓침 0. 참고: 변이 재실행 이후 `test_sec_03` 에 xfail 시험 1건(DEF-9-017)과 `test_sec_05`·`06` 이 추가됐으나 변이 점검 대상 시험(01·02, 설정은 03)의 기존 시험은 바꾸지 않았다.
 - 1회전 생존과 조치: 교차 출처 별도 한도 제거(자체 상한 시험 추가)·CSV 주석 행(외부 값 주입 시험)·승인 1회용·승인 만료(경계 단위 시험)·감사 `prev_hash` 열·롤백 후속 변경·배치 확인 문구·`/docs` 노출(변이 자체가 동치였음 — `docs_url` 만 바꾸면 `openapi_url` 이 None 이라 라우트가 없음 → `openapi_url` 변이로 교체)·nginx assets location 헤더·X-Frame-Options 값·CSP 인라인 허용·앱 DB 슈퍼유저·해시 줄 주석 처리(정적 시험을 값·구조 검사로 강화)·PIN 실패 기록 commit·수정 가능 상태.
 - 변이 목록 전체: `mutation_check.py` 의 `M`(코드)·`MC`(설정). 위협별 분포: TW-01~04·06~08·10·11·13·14·17·20·21·23·25·31~34 와 LLM01·02·05.
 
@@ -341,7 +357,12 @@
 | POL-006·008 | **미구현/부분(DEF-9-008)** |
 | POL-007 | M3 예정 |
 | POL-012·016 | 미구현·미정(DEF-9-013) |
-| POL-013 | 부분(사전 점검 경고 문구만) |
+| POL-013 | 부분(사전 점검 경고 문구만; 확인 문구에 "A/B 테스트 중이 아님" 없음 — DEF-9-008) |
+| POL-001 | 확인(건강·금융 엄격 모드, 키워드 25개 한계 OBS-3) |
+| POL-005 | 확인(데모 배지 상시, TC-S9-079) |
+| POL-014 | 확인(제외 영상 차단은 6단계 시험 근거; 9단계는 코드 정독) |
+| SEC·POL 제안 ID 전체 | **traceability.md 미등록 — DEF-9-018** |
+| D-01·D-07·D-07b·D-08·D-09·D-12·D-13·D-14 | 확인(부록 I 대응표) |
 ### F-2 11단계 문서 대조에 줄 사실 (실측으로 확인된 것)
 1. `WEB_RUNBOOK.md` §13 "edge 제거 가능 여부는 미시험" → **시험함**: internal 단독 시 게시 불가(포트 매핑 무시), `isolated` 게이트웨이 모드는 internal 전용. 대안은 방화벽·중계 컨테이너.
 2. `WEB_RUNBOOK.md` §13-1 C-7(면책·고지 없음)은 **정확**하다 — 9단계가 Critical/High 로 확정(DEF-9-007·008).
@@ -361,6 +382,9 @@
 | Q-S9-8 | CI 예시 워크플로를 실제로 활성화할 계획이 있나요(DEF-9-005)? 없으면 Deferred(DEC) 처리. | 계획 확정 전 Deferred |
 | Q-S9-9 | 호출 지시의 "7절에 git status 원문"과 "git 명령 금지"가 충돌합니다. 오케스트레이터가 `git status`/janitor 결과를 7절에 덧붙여 주세요. | — |
 | Q-S9-10 | POL-006·008 이 traceability.md 에 등록되면 DEF-9-008 을 Critical 로 올립니다(규칙 J). 등록 시점은? | 지금 등록 |
+| Q-S9-12 | `.dockerignore` 를 허용 목록 방식으로 바꿀까요(DEF-9-017)? | 예 |
+| Q-S9-13 | POL-006·008·013·SEC-021~030 을 traceability 에 정식 등록(DEF-9-018)하고 DEF-9-008 을 Critical 로 올릴까요? | 지금 등록 |
+| Q-S9-14 | 법률 검토(면책·표시광고·AI 고지의 충분성, PIA·ISMS-P 해당 여부)를 누가 언제 받을까요? 이 문서는 판단하지 않았습니다. | 실연동(M2·M3) 전 전문가 확인 |
 | Q-S9-11 | 이전 `sbom-web-m1.json` 을 폐기하고 `sbom-web-m1/` 로 일원화할까요? | 예 |
 ### F-4 M3 진입 차단 조건(지금 결함으로 세지 않지만 해결 전 M3 금지)
 DEF-9-002 · SEC-021(지시/데이터 구획 — 보안 경계 아님을 문서화)·SEC-026(전송 미리보기·영상별 제외)·SEC-027(호출·토큰·비용 상한)·SEC-028(키 주입 경로)·SEC-030(인젝션 시험 세트 실서비스 수행)·Q-W10(AI topic 판정 의존 제거)·PIN 필수화·쓰기 재로그인·TW-15 재평가·`error_log` 요청 줄(DEF-9-016).
@@ -373,6 +397,7 @@ DEF-9-002 · SEC-021(지시/데이터 구획 — 보안 경계 아님을 문서�
 | TW-17 | 상태 유지, 잔여 = nginx 오류 로그 요청 줄(DEF-9-016) |
 | TW-18 | 서술 정정: `.gitignore` 에 `client_secret*.json` 없음(DEF-9-006). 실스택에서 비밀 노출 0 확인 추가 |
 | TW-20·03 | 세션 상한 20 축출(DoS) 추가(DEF-9-003) |
+| TW-36(재측정) | internal 망 컨테이너(api·worker·db)도 호스트 0.0.0.0 서비스에 도달 — 3망 분리(DEC-045)는 인터넷 경로만 막음. 아래 기존 서술에 이어 반영 |
 | TW-36 | **범위 확대**: 외부 인터넷뿐 아니라 호스트 게이트웨이의 0.0.0.0 서비스·LAN 도달(실측). edge 제거 불가(게시 불가 실측)를 근거로 추가. 위험도 "낮음~중" 유지 또는 "중" 상향 검토 |
 | 신규 표면(제안 ID TW-37) | CI/자동화 공급망(예시 워크플로, 에이전트 `dontAsk` 실행 + 비밀) — DEF-9-005 |
 | 신규(제안 TW-38) | 입력 경계: 상한 없는 정수 → 500·로그 폭증(DEF-9-001), `/audit` 는 행 수에 비례하는 검증 비용 |
@@ -395,5 +420,78 @@ Host/Origin/Sec-Fetch-Site 위조, 로그인 CSRF, 상태 변경 전수 CSRF, �
 | CH-7 | 세션 21개 생성 → 소유자 로그아웃 → (PIN 꺼짐) 재로그인 | 성립(가용성만) | DEF-9-003 |
 | CH-8 | 세션 탈취 → PIN 변경/해제 | 불성립: 현재 PIN 필요, 틀리면 잠금 | TC-S9-011 |
 | CH-9 | 백업 폴더 쓰기 → `.sha256` 삭제 → `restore.ps1` → 덤프 SQL 소유자 권한 실행 | 성립(호스트 사용자 권한 전제 = TW-12 수용 후보) | DEF-9-012 |
+| CH-10 | api 침해(가정) → 자기 망 게이트웨이 → 호스트 0.0.0.0 서비스 → (호스트에 있는 다른 서비스) | 성립(Linux 실측) — 선행조건 api 코드 실행(비루트·읽기 전용·cap_drop 으로 완화) | DEF-9-011 (범위 확대) |
+| CH-11 | AI 고지·표시광고 안내 부재 + 사람 승인(승인자 자유 입력) → 건강·금융 과장 제목이 "통과" 표시만 믿고 승인 | 부분 성립: 엄격 모드가 차단하는 제목은 막히나 경고 수준·목록 밖 키워드 제목은 승인 가능하고, 화면은 "검증 통과"가 법적 적합성이 아님을 알리지 않음 | DEF-9-007·008, OBS-3 |
 ### H-3 관찰(결함으로 세지 않음)
-- OBS-1 쿠키 `Secure` 없음 — http://127.0.0.1 설계(Q-WA-1). OBS-2 내부 구간 TLS 없음(README §9). OBS-3 엄격 모드 키워드 25개 목록(CH-3). OBS-4 `planned` 잔류 시 해제 수단 없음(안전 쪽, 런북 필요). OBS-5 GET 이 승인 만료 정리 수행. OBS-6 루트 `requirements.txt`(CLI)는 해시 잠금이 아님(웹 이미지는 `requirements-ytitle.txt` 해시 사용). OBS-7 scrypt N=2^14(OWASP 권고보다 약함; 4~12자리 PIN 은 잠금 정책이 방어선). OBS-8 `GIT연동(CLAUDE-TO-YOUTUBE)2222.MD` 에 소유자 이메일 주소 1건이 들어 있다(개인정보 최소화 관점에서 저장소 공개 여부 확인 필요; 사용자 본인 정보). OBS-9 `.claude/settings.json` 이 `git add/commit/push` 를 무확인 허용 — 커밋 전 비밀 검사 훅이 없음(DEF-9-006 과 함께 보완 권장).
+- OBS-1 쿠키 `Secure` 없음 — http://127.0.0.1 설계(Q-WA-1). OBS-2 내부 구간 TLS 없음(README §9). OBS-3 엄격 모드 키워드 25개 목록(CH-3). OBS-4 `planned` 잔류 시 해제 수단 없음(안전 쪽, 런북 필요). OBS-5 GET 이 승인 만료 정리 수행. OBS-6 루트 `requirements.txt`(CLI)는 해시 잠금이 아님(웹 이미지는 `requirements-ytitle.txt` 해시 사용). OBS-7 scrypt N=2^14(OWASP 권고보다 약함; 4~12자리 PIN 은 잠금 정책이 방어선). OBS-8 `GIT연동(CLAUDE-TO-YOUTUBE)2222.MD` 에 소유자 이메일 주소 1건이 들어 있다(개인정보 최소화 관점에서 저장소 공개 여부 확인 필요; 사용자 본인 정보). OBS-10 `/api/readyz` 가 인증 없이 `mode`(demo/live)를 노출(Host 허용 요청 한정, 6단계 질문 W-BE-A). OBS-9 `.claude/settings.json` 이 `git add/commit/push` 를 무확인 허용 — 커밋 전 비밀 검사 훅이 없음(DEF-9-006 과 함께 보완 권장).
+
+## 부록 I. 요구사항 ↔ 9단계 시험 대응표 (S-W01~S-W16, D-01~D-14 — 누락 0 확인)
+> 근거: `웹프로그램으로수정요청.md` 7장(D-xx)·9장(S-W). "시험" 열은 TC-S9 묶음 ID(4절)이고 해당 없음/미수행은 사유를 적었다. 이 표에서 시험 연결이 비어 있는 행은 없다.
+
+| 요구 | 9단계 시험·확인 | 결과 |
+|---|---|---|
+| S-W01 127.0.0.1 한정 게시 | TC-S9-050 | 충족(Linux). Windows 미수행 |
+| S-W02 세션·CSRF·Host/Origin | TC-S9-001~007·011·012·051·057·065 | 충족. PIN 꺼짐 시 같은 PC 프로세스 취득 가능(TW-03 수용 대기) |
+| S-W03 GET 상태 변경 금지·CSRF·확인 문구 | TC-S9-006·008·030·033 | 충족(OBS-5 GET 이 만료 정리 수행) |
+| S-W04 쿠키·보안 헤더 | TC-S9-005·014·056 | 충족 |
+| S-W05 XSS | TC-S9-022·045·079(번들) | 충족. 브라우저 미수행 |
+| S-W06 프롬프트 인젝션 방어 | TC-S9-025·026·026b | M1 모의 범위 충족, 실서비스 M3(SEC-030) |
+| S-W07 AI 전송 최소화·비용 상한 | TC-S9-020·025 | 부분(비용 상한·미리보기 M3) |
+| S-W08 비밀·OAuth state/PKCE | TC-S9-040·040b·060·073·084·085·081 | 비밀 관리 충족, OAuth 해당 없음(M2). DEF-9-006·017 |
+| S-W09 로그 JSON·마스킹·오류 비노출 | TC-S9-016·032·060·082 | 충족, DEF-9-016 |
+| S-W10 업로드 검증 | (해당 없음: 업로드 기능 없음, M2) CSV 내보내기 TC-S9-024 | 해당 없음 |
+| S-W11 의존성 실존·라이선스·취약점·고정 | TC-S9-044·070~072·076, 부록 B | 충족, DEF-9-015 |
+| S-W12 동시성·이중 반영 | TC-S9-028·065 (재시작 중 이중 반영은 7단계) | PIN 직렬화 실측 충족 |
+| S-W13 크기·속도 제한·SQL 바인딩 | TC-S9-012·013·017·021·055·066 | 충족, DEF-9-001 |
+| S-W13a DB 보안 | TC-S9-050·060·062·063 | 충족, DEF-9-014 한계 |
+| S-W14 컨테이너 격리 | TC-S9-042·059·061·080 | 충족(Linux), DEF-9-011 |
+| S-W15 위협 모델 갱신 | 부록 G (갱신 요청) | 요청함(오케스트레이터 반영) |
+| S-W16 감사 로그 추가 전용 | TC-S9-029·062·062b | 충족(앱 계정 기준), DEF-9-014 |
+| D-01 compose 4서비스·healthy 순서 | 실스택 기동(전 서비스 healthy), TC-S9-042 | 충족. dev/test 프로필 미구현(6단계 기록) |
+| D-02 127.0.0.1 게시 | TC-S9-042·050 | 충족 |
+| D-03 비루트·읽기 전용·cap_drop | TC-S9-042·059·080 | 충족 |
+| D-04 다이제스트 고정·멀티스테이지 | TC-S9-041·075·080 | 충족, DEF-9-009 |
+| D-05 .dockerignore·이미지에 비밀 없음 | TC-S9-040·060·073·075·080·081 | 비밀 0, DEF-9-017 |
+| D-06 비밀은 secrets 파일 | TC-S9-042·060 | 충족 |
+| D-07 명명 볼륨·down -v 금지 | TC-S9-042·046 | 충족 |
+| D-07a PostgreSQL 하드닝 | TC-S9-043·062 | 충족 |
+| D-07b Alembic 만으로 스키마 변경 | TC-S9-062(앱 계정 DDL 거부)·064(migrate 후 흐름) | 충족 |
+| D-08 헬스체크·재시작·로그 제한 | TC-S9-042·059 | 충족(우아한 종료는 7단계) |
+| D-09 시간대 | TC-S9-009(만료 시각)·정독 | 충족 |
+| D-10 internal 네트워크 | TC-S9-061·078·083 | 부분(DEF-9-011) |
+| D-11 이미지 취약점·SBOM | TC-S9-070~076, 부록 C·D | 수행(Trivy, Docker Scout 미수행), DEF-9-010 |
+| D-12 Windows 스크립트 | TC-S9-046 (정적), 복원 fail-open 정독 | 정적 충족, DEF-9-012. Windows 실행 미수행 |
+| D-13 harness-tmp 접두사·정리 | 이 감사 자체(접두사 `harness-tmp-sec`, 7절) | 충족 |
+| D-14 자원 상한 | TC-S9-042·059 | 충족 |
+
+## 부록 J. 규칙 I(규제 민감)·규칙 J(AI) 항목별 실제 반영 여부
+| ID | 요구 | 실제 화면·코드 | 판정 |
+|---|---|---|---|
+| POL-001 | 건강·금융 엄격 모드 | `ai/guard.py`·검증기 구현, 화면 "엄격 모드" 배지+안내문, TC-S9-026 | 구현(키워드 25개 한계 OBS-3) |
+| POL-002 | 면책 문구 상시 표기 | 화면·번들·API 0건 | **미반영 — DEF-9-007 Critical** |
+| POL-005 | 데모 모드 상시 표시 | `Layout.tsx` `demoBadge`, 번들 3회 | 구현 |
+| POL-006 | AI 생성 고지 문장 | "AI 제안" 배지만, 문장 없음 | **미반영 — DEF-9-008 High** |
+| POL-008 | AI 한계·표시광고 규정 확인 | 없음 | **미반영 — DEF-9-008** |
+| POL-013 | A/B 테스트 확인 | 서버 사전 점검 경고 1줄만, 확인 문구 없음 | 부분 — DEF-9-008 |
+| POL-014 | 제외 영상 4단계 차단 | `domain/exclusions.py`(정독) | 구현(동작 시험은 6단계) |
+| POL-007·012·016 | 외부 전송 고지·보관·백업 정책 | M3 예정/미구현 | M3·DEF-9-013 |
+| SEC-021 | 입력 비신뢰·정제·상한 | `ai/guard.py`, TC-S9-025 | 부분(구획은 M3, 보조일 뿐) |
+| SEC-022 | AI 도구 권한 0 | `TitleSuggester.suggest()` 가 세션·게이트웨이를 받지 않음, TC-S9-020(소켓 차단 하 전 흐름) | 구현 |
+| SEC-023 | 응답 스키마·길이·URL 폐기 | TC-S9-026 (11종) | 구현 |
+| SEC-024 | AI 후보도 검증기·엄격 모드 | TC-S9-026·026b | 구현(키워드 한계) |
+| SEC-025 | 사람 승인 없이 반영 불가 | TC-S9-027 | 구현 |
+| SEC-026 | 전송 최소화·마스킹 | TC-S9-025 | 부분(미리보기·영상별 제외 없음, M3) |
+| SEC-027 | 호출·비용 상한 | 코드 없음(M1 모의) | **미구현(M3 진입 차단)** |
+| SEC-028 | 키는 secrets·프롬프트 원문 비저장 | `prompt_hash` 만 저장 | 부분(M3) |
+| SEC-029 | AI 응답은 텍스트로 렌더 | 소스 grep 0·ESLint·TC-S9-022 | 구현 |
+| SEC-030 | 인젝션 시험 세트 | M1 정제 시험만 | 실서비스 M3 |
+| 프롬프트 인젝션 직접 재현 | 설명 속 지시문·역할 탈취·링크/연락처·`tool_calls` 형식 | 모의 AI 출력 정제로 차단. M1 은 실제 LLM 이 없어 지시문이 모델에 도달하지 않음 | 불성립(M1 범위) |
+| 출력 기반 XSS | `<script>`·`<img onerror>` 제목 | 검증기 차단 + React 텍스트 렌더 + API JSON/nosniff/CSP none | 불성립 |
+| 모델 거버넌스 | 자체 학습/운영 ML 모델 | 없음(모의 제안기 + M3 외부 서비스) | 해당 없음(대상 없음) |
+| 관할 | 적용 법규 기준 | decisions.md 기본 대한민국 — 법적 충분성 판단 없음, 전문가 확인 필요 | — |
+
+## 부록 K. 비밀 유출 점검 (현재 트리 + 저장소 이력)
+- 현재 트리: Trivy fs(비밀·설정, 저장소 전체 – `.git`·`node_modules`·`.harness-tmp` 제외) 비밀 0·설정 LOW 1, 시험 `test_sec_03` 비밀 패턴 14종 0건·비밀형 파일 0건.
+- 이력(96커밋, 전 브랜치, **읽기 전용 git**): ① 파일명 검색 — `.env`·`token*.json`·`client_secret*`·`credentials*.json`·`*.pem`·`*.key`·`*.p12`·`secrets/`·`data/`·DB 덤프 이력 **0건**. ② 추가 줄(+) 정규식 — Google API 키(`AIza…`)·Anthropic/OpenAI 키·개인키 블록·GitHub 토큰·AWS 키·Slack 토큰·OAuth 액세스/리프레시 토큰(`ya29.`·`1//0`)·클라이언트 ID(`*.apps.googleusercontent.com`)·`refresh_token` JSON·`password/secret/token/api_key = "…16자+"` 패턴. 일치한 줄은 전부 시험 더미(`FAKE…`·`…EXAMPLE`·`topsecretvalue`·`SuperSecretValue-12345`·`GOCSPX-fakeclientsecret…`)로 **실제 비밀 0건**.
+- 한계: 정규식 기반이라 임의 형식 비밀은 놓칠 수 있다(gitleaks 등 전용 도구는 이 환경에서 미사용). 커밋 전 비밀 검사 훅이 없다는 점은 OBS-9·DEF-9-006 에 기록.
+- OBS-8: `GIT연동(CLAUDE-TO-YOUTUBE)2222.MD` 에 소유자 이메일 1건 — 사용자 본인 정보, 공개 저장소 여부 확인 필요.
