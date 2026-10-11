@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from wu4_support import NOW, SNIPPET, VID, add_candidate, add_change, add_video, clock, open_db, ts
 
-from ytitle import cli
-from ytitle.banned_terms import load_dictionary
-from ytitle.updater import compute_plan_hash
+from youtube_title import cli
+from youtube_title.banned_terms import load_dictionary
+from youtube_title.updater import compute_plan_hash
 
 REAL_DICT = Path(__file__).resolve().parent.parent / "config" / "banned_terms.yaml"
 DICT_HASH = load_dictionary(REAL_DICT).short_hash
@@ -23,7 +23,7 @@ def proj(project):
 
 @pytest.fixture
 def db(proj):
-    c = open_db(proj / "data" / "ytitle.sqlite3")
+    c = open_db(proj / "data" / "youtube_title.sqlite3")
     yield c
     c.close()
 
@@ -33,7 +33,7 @@ def go(proj, streams, argv):
 
 
 def table_count(proj, table):
-    c = sqlite3.connect(proj / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(proj / "data" / "youtube_title.sqlite3")
     n = c.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
     c.close()
     return n
@@ -86,7 +86,7 @@ def test_plan_writes_nothing_but_run_log(proj, db, streams, no_network):
     assert go(proj, streams, ["plan", "--candidate", str(cid)]) == 0
     assert {t: table_count(proj, t) for t in before} == before
     assert table_count(proj, "run_logs") == 1
-    c = sqlite3.connect(proj / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(proj / "data" / "youtube_title.sqlite3")
     assert c.execute("SELECT status FROM title_candidates").fetchone()[0] == "filtered" and c.execute("SELECT mode FROM run_logs").fetchone()[0] == "dry_run"
     c.close()
     assert no_network == []

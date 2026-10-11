@@ -3,11 +3,11 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from ytitle import db
-from ytitle.config import load_settings
-from ytitle.errors import InputError, QuotaError
-from ytitle.quota import QuotaManager
-from ytitle.timeutil import FixedClock
+from youtube_title import db
+from youtube_title.config import load_settings
+from youtube_title.errors import InputError, QuotaError
+from youtube_title.quota import QuotaManager
+from youtube_title.timeutil import FixedClock
 
 
 def make(project, clock, **overrides):
@@ -182,7 +182,7 @@ def test_used_today_counts_all_statuses(project, clock):
 
 def test_database_failure_becomes_database_error(project, clock):
     """TC-213: quota_usage 테이블을 읽거나 쓰지 못하면 한국어 DatabaseError(YT-200)이다. [FR-015, NFR-007]"""
-    from ytitle.errors import DatabaseError
+    from youtube_title.errors import DatabaseError
 
     q, conn = make(project, clock)
     rid = q.reserve("a", 1, None)

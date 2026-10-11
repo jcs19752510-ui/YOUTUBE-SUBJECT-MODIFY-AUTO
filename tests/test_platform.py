@@ -4,13 +4,13 @@ import sys
 
 import pytest
 
-from ytitle import platform_utils as pu
+from youtube_title import platform_utils as pu
 
 
 def test_default_token_dir_is_outside_project_and_named():
-    """TC-050: 기본 토큰 폴더는 사용자 프로필 아래 ytitle/tokens 이다. [ADR-004, SEC-015]"""
+    """TC-050: 기본 토큰 폴더는 사용자 프로필 아래 youtube_title/tokens 이다. [ADR-004, SEC-015]"""
     p = pu.default_token_dir()
-    assert p.parts[-2:] == ("ytitle", "tokens")
+    assert p.parts[-2:] == ("youtube-title", "tokens")
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX 권한 모델")

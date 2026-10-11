@@ -1,6 +1,6 @@
-from ytitle.errors import QuotaError, YtError
-from ytitle.textsafe import display_width
-from ytitle.ui import BADGES, DISCLAIMER, UiOptions, badge, confirm_by_typing, error_block, footer, progress_steps, render_table, title_line
+from youtube_title.errors import QuotaError, YtError
+from youtube_title.textsafe import display_width
+from youtube_title.ui import BADGES, DISCLAIMER, UiOptions, badge, confirm_by_typing, error_block, footer, progress_steps, render_table, title_line
 
 
 def test_status_badges_are_symbol_plus_text_and_color_optional():

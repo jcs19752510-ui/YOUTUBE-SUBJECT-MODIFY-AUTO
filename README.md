@@ -10,7 +10,7 @@ py -3.12 -m venv .venv
 pip install -r requirements-dev.txt
 pip install -e .
 pytest                      # 구글 연결 없이 전체 테스트
-python -m ytitle --help     # 명령 목록
+python -m youtube_title --help     # 명령 목록
 ```
 Linux/macOS는 `python3 -m venv .venv`, `source .venv/bin/activate`만 다릅니다. PowerShell에서 스크립트 실행이 막히면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`가 필요할 수 있습니다.
 

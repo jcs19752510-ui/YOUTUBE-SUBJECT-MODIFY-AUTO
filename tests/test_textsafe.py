@@ -1,6 +1,6 @@
 import pytest
 
-from ytitle.textsafe import char_count, display_width, normalize_for_match, pad_display, sanitize_for_display, truncate_display
+from youtube_title.textsafe import char_count, display_width, normalize_for_match, pad_display, sanitize_for_display, truncate_display
 
 
 def test_sanitize_strips_ansi_and_control_chars():

@@ -72,7 +72,7 @@
 | TC-047 | 확인 문구를 정확히 입력해야 통과하고, 3번 틀리면 중단한다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_ui.py::test_confirm_accepts_exact_text_only` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | SEC-001 |
 | TC-048 | 빈 줄이나 입력 불가(EOF)는 취소로 처리한다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_ui.py::test_confirm_cancel_on_blank_and_eof` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | SEC-001 |
 | TC-049 | 면책 문구가 고정되어 있고 진행 표시가 단계 상태를 보여 준다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_ui.py::test_footer_and_progress` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | POL-002 |
-| TC-050 | 기본 토큰 폴더는 사용자 프로필 아래 ytitle/tokens 이다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_platform.py::test_default_token_dir_is_outside_project_and_named` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | ADR-004, SEC-015 |
+| TC-050 | 기본 토큰 폴더는 사용자 프로필 아래 youtube_title/tokens 이다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_platform.py::test_default_token_dir_is_outside_project_and_named` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | ADR-004, SEC-015 |
 | TC-051 | POSIX에서 파일 권한이 소유자 전용(600)으로 제한된다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_platform.py::test_restrict_permissions_posix` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | SEC-008 |
 | TC-052 | 없는 파일에 대해 예외 없이 실패 결과(False)와 한국어 메시지를 돌려준다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_platform.py::test_restrict_permissions_missing_file_does_not_raise` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | NFR-007 |
 | TC-053 | 표준 출력이 바뀐 환경에서도 UTF-8 설정이 예외 없이 동작한다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_platform.py::test_ensure_utf8_console_is_safe_on_replaced_streams` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | NFR-002 |
@@ -96,7 +96,7 @@
 | TC-071 | 지금 실행 중인 명령의 run_logs 행은 삭제 대상에서 제외된다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_purge.py::test_run_log_of_current_run_survives_purge` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | FR-020 |
 | TC-072 | --base-dir/--plain이 명령 앞·뒤 어느 위치에서도 적용되고, 현재 폴더에는 아무것도 만들지 않는다(회귀 방지). | 자동 테스트 환경(임시 폴더) | `pytest tests/test_cli.py::test_global_options_honored_before_and_after_subcommand` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | FR-017 |
 | TC-073 | 사용자가 Ctrl+C로 중단하면 한국어 안내와 함께 종료 코드 130이 된다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_edge.py::test_keyboard_interrupt_exit_130` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | FR-020, NFR-008 |
-| TC-074 | `python -m ytitle --version`이 실제로 실행되어 버전을 출력한다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_edge.py::test_python_dash_m_entrypoint_works` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | FR-017 |
+| TC-074 | `python -m youtube_title --version`이 실제로 실행되어 버전을 출력한다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_edge.py::test_python_dash_m_entrypoint_works` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | FR-017 |
 | TC-075 | 비어 있는 설정 파일은 기본값으로, 항목이 목록/숫자 형태로 잘못되면 ConfigError. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_edge.py::test_empty_yaml_and_wrong_section_type` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | NFR-007 |
 | TC-076 | 마이그레이션 SQL이 실패하면 한국어 DatabaseError가 되고 DB는 부분 적용되지 않는다. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_edge.py::test_migration_failure_becomes_database_error` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | ADR-002 |
 | TC-077 | tzdata가 없어 태평양 시간대를 못 찾으면 설치 방법을 안내하는 ConfigError. | 자동 테스트 환경(임시 폴더) | `pytest tests/test_edge.py::test_missing_tzdata_gives_actionable_error` | docstring의 기대 결과가 모두 충족 | Pass(1건) | Pass | ADR-006 |
@@ -127,20 +127,20 @@
 - 전체 지표: 줄+분기 합산 **95%** (pytest-cov, `--cov-branch`)
 - 호환 실행: 3.11 → 108 passed, 1 skipped / 3.13 → 108 passed, 1 skipped / 3.12(주) → 108 passed, 1 skipped
 - 커버되지 않은 부분과 사유:
-  - src/ytitle/__init__.py                                                                  1      0      0      0   100%
-  - src/ytitle/__main__.py                                                                  4      4      2      0     0%   1-6
-  - src/ytitle/cli.py                                                                     116      4     22      5    93%   53->exit, 87, 89->85, 104, 147->150, 153-154
-  - src/ytitle/commands/__init__.py                                                         0      0      0      0   100%
-  - src/ytitle/commands/purge.py                                                           56      0      8      0   100%
-  - src/ytitle/config.py                                                                  107      0     30      0   100%
-  - src/ytitle/db.py                                                                       69      1     18      2    97%   97, 100->102
-  - src/ytitle/errors.py                                                                   26      0      0      0   100%
-  - src/ytitle/logging_setup.py                                                            36      0      6      0   100%
-  - src/ytitle/platform_utils.py                                                           33     11     10      3    63%   16-17, 26-33, 45-48
-  - src/ytitle/retry.py                                                                    26      0      8      0   100%
-  - src/ytitle/textsafe.py                                                                 37      0     12      1    98%   46->52
-  - src/ytitle/timeutil.py                                                                 32      0      2      0   100%
-  - src/ytitle/ui.py                                                                       69      0     18      0   100%
+  - src/youtube_title/__init__.py                                                                  1      0      0      0   100%
+  - src/youtube_title/__main__.py                                                                  4      4      2      0     0%   1-6
+  - src/youtube_title/cli.py                                                                     116      4     22      5    93%   53->exit, 87, 89->85, 104, 147->150, 153-154
+  - src/youtube_title/commands/__init__.py                                                         0      0      0      0   100%
+  - src/youtube_title/commands/purge.py                                                           56      0      8      0   100%
+  - src/youtube_title/config.py                                                                  107      0     30      0   100%
+  - src/youtube_title/db.py                                                                       69      1     18      2    97%   97, 100->102
+  - src/youtube_title/errors.py                                                                   26      0      0      0   100%
+  - src/youtube_title/logging_setup.py                                                            36      0      6      0   100%
+  - src/youtube_title/platform_utils.py                                                           33     11     10      3    63%   16-17, 26-33, 45-48
+  - src/youtube_title/retry.py                                                                    26      0      8      0   100%
+  - src/youtube_title/textsafe.py                                                                 37      0     12      1    98%   46->52
+  - src/youtube_title/timeutil.py                                                                 32      0      2      0   100%
+  - src/youtube_title/ui.py                                                                       69      0     18      0   100%
   - Windows 분기(`platform_utils` 16~17, 26~33, 45~48행 중 일부): Linux에서 실행 불가 → TC-054는 **미수행(Windows 필요)**
   - `__main__.py`: 별도 프로세스에서 실행되어 측정되지 않음(TC-074가 실제 실행으로 대신 검증)
   - `cli.py` 일부 방어 분기(예: 설정 오류 후 컨텍스트가 없을 때의 정리): 도달 조건이 인위적
@@ -162,7 +162,7 @@
 
 ## 7. 테스트 환경 정리(Teardown) 확인 — 규칙 K
 - 이번 테스트에서 생성한 임시 아티팩트: `.harness-tmp/junit_06.xml`, `.harness-tmp/junit_py311.xml`, `.harness-tmp/junit_py313.xml`, `.harness-tmp/venv_05_wu0`, `.harness-tmp/venv_05_wu0_py311`, `.harness-tmp/venv_05_wu0_py312`, `.harness-tmp/venv_py311`, `.harness-tmp/venv_py312`, `.harness-tmp/venv_py313` (+ 변이 점검용 임시 사본 `.harness-tmp/mut_06/`, 편집 설치로 생긴 `src/*.egg-info`, 캐시 `__pycache__`/`.coverage`)
-- 위 아티팩트를 전부 `.harness-tmp/` 하위에서만 생성했는가 (규칙 K 1번): [x] 예 [ ] 아니오 — 예외: 편집 설치가 `src/ytitle.egg-info/`를 만들고 파이썬이 `__pycache__`를 만든다(둘 다 `.gitignore` 대상이며 정리 대상에 포함)
+- 위 아티팩트를 전부 `.harness-tmp/` 하위에서만 생성했는가 (규칙 K 1번): [x] 예 [ ] 아니오 — 예외: 편집 설치가 `src/youtube_title.egg-info/`를 만들고 파이썬이 `__pycache__`를 만든다(둘 다 `.gitignore` 대상이며 정리 대상에 포함)
 - 정리(삭제) 완료 여부: 예. 결과서 생성 스크립트가 `.harness-tmp/`, `data/`, `.coverage`, `src/*.egg-info`, `__pycache__`를 삭제했다
 - **정리 후 점검: `git status`는 실행하지 않았다** — 프로젝트 지시(프롬프트 §1)로 git 명령 전면 금지(DEC-006). 대신 파일시스템 점검 결과를 첨부한다: 잔여물 없음 (점검 목록: .harness-tmp, .venv*, venv, *.egg-info, .pytest_cache, .coverage*, __pycache__, data)
 - 병렬 실행이었다면: 해당 없음(단독 실행)
@@ -217,7 +217,7 @@
 `tests/test_config.py` TC-008을 보강했다. 위험한 YAML 태그를 설정 파일에 넣고 **표식 폴더가 만들어지지 않음**(코드 비실행)과 한국어 오류를 함께 확인한다. 변이 점검(설정 `safe_load`→`UnsafeLoader`)이 WU-3 결과서에서 이 테스트로 잡힘을 확인했다. 판정 변경 없음(PASS).
 
 ### 부록 C. 사후 변경 기록 (2026-10-10, DEC-031)
-- 변경: `--base-dir`이 없을 때 기준 폴더를 실행한 폴더(cwd)가 아니라 프로젝트 루트(`pyproject.toml`과 `src/ytitle/cli.py`가 있는 곳)로 고정(소스 트리 밖 설치형은 cwd). 사용자 지시("권장사항으로 진행").
+- 변경: `--base-dir`이 없을 때 기준 폴더를 실행한 폴더(cwd)가 아니라 프로젝트 루트(`pyproject.toml`과 `src/youtube_title/cli.py`가 있는 곳)로 고정(소스 트리 밖 설치형은 cwd). 사용자 지시("권장사항으로 진행").
 - 추가 테스트: TC-103(루트 고정·cwd 무관), TC-104(소스 트리 밖 폴백, pyproject만 있는 폴더 거부), TC-105(기본 실행이 루트를 기준으로 쓰고 현재 폴더를 오염하지 않음). AC-11(전역 옵션·현재 폴더 비오염)에 연결.
-- 변이 점검(수작업 5개, 모두 적발): 기준을 cwd로 되돌림 / 루트 판정에서 `src/ytitle/cli.py` 조건 제거 / `pyproject.toml` 조건 제거 / 상위 폴더 수 변경 / 폴백을 cwd 대신 루트로 변경. 1회차에서 `src/ytitle/cli.py` 조건 제거를 놓쳐 TC-104에 'pyproject만 있는 폴더' 사례를 추가한 뒤 5/5 적발.
+- 변이 점검(수작업 5개, 모두 적발): 기준을 cwd로 되돌림 / 루트 판정에서 `src/youtube_title/cli.py` 조건 제거 / `pyproject.toml` 조건 제거 / 상위 폴더 수 변경 / 폴백을 cwd 대신 루트로 변경. 1회차에서 `src/youtube_title/cli.py` 조건 제거를 놓쳐 TC-104에 'pyproject만 있는 폴더' 사례를 추가한 뒤 5/5 적발.
 - 전체 회귀: 1,154 통과 / 1 건너뜀 / 2 예상 실패(xfail).

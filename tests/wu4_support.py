@@ -5,9 +5,9 @@ import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
-from ytitle import db as dbmod
-from ytitle.config import load_settings
-from ytitle.timeutil import FixedClock, utc_iso
+from youtube_title import db as dbmod
+from youtube_title.config import load_settings
+from youtube_title.timeutil import FixedClock, utc_iso
 
 NOW = datetime(2026, 10, 10, 12, 0, 0, tzinfo=timezone.utc)
 VID = "abc123DEF45"

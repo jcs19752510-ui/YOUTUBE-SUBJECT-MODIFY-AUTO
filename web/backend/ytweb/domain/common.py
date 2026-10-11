@@ -9,9 +9,9 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.sql import Select
-from ytitle.banned_terms import Dictionary, load_dictionary
-from ytitle.config import Settings, load_settings
-from ytitle.textsafe import sanitize_for_display
+from youtube_title.banned_terms import Dictionary, load_dictionary
+from youtube_title.config import Settings, load_settings
+from youtube_title.textsafe import sanitize_for_display
 
 from ytweb.config import WebSettings, load_web_settings
 from ytweb.core.errors import ProblemError

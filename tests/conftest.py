@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ytitle.timeutil import FixedClock
+from youtube_title.timeutil import FixedClock
 
 
 @pytest.fixture(autouse=True)

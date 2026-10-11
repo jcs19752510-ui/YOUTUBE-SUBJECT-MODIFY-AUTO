@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
-from ytitle.config import Settings
+from youtube_title.config import Settings
 
 from ytweb.db.models import SettingKV
 

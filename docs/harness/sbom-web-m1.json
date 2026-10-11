@@ -2349,7 +2349,7 @@
    ]
   },
   {
-   "bom-ref": "python-ytitle-core-runtime:pkg:pypi/python-dotenv@1.2.4",
+   "bom-ref": "python-youtube_title-core-runtime:pkg:pypi/python-dotenv@1.2.4",
    "description": "requirements line 9: python-dotenv==1.2.4     --hash=sha256:42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc     --hash=sha256:f0d53e69935a851c0dcc78f3ab7aaccd8cabef0b92382b576b824212902873c0",
    "externalReferences": [
     {
@@ -2376,12 +2376,12 @@
    "properties": [
     {
      "name": "ytweb:group",
-     "value": "python-ytitle-core-runtime(api image)"
+     "value": "python-youtube_title-core-runtime(api image)"
     }
    ]
   },
   {
-   "bom-ref": "python-ytitle-core-runtime:pkg:pypi/pyyaml@6.0.3",
+   "bom-ref": "python-youtube_title-core-runtime:pkg:pypi/pyyaml@6.0.3",
    "description": "requirements line 5: pyyaml==6.0.3     --hash=sha256:9149cad251584d5fb4981be1ecde53a1ca46c891a79788c0df828d2f166bda28     --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc     --hash=sha256:d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f",
    "externalReferences": [
     {
@@ -2412,12 +2412,12 @@
    "properties": [
     {
      "name": "ytweb:group",
-     "value": "python-ytitle-core-runtime(api image)"
+     "value": "python-youtube_title-core-runtime(api image)"
     }
    ]
   },
   {
-   "bom-ref": "python-ytitle-core-runtime:pkg:pypi/tzdata@2026.5",
+   "bom-ref": "python-youtube_title-core-runtime:pkg:pypi/tzdata@2026.5",
    "description": "requirements line 12: tzdata==2026.5     --hash=sha256:b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac     --hash=sha256:8cc73c0a0bfca7dbfa59235d60b2eff82231dee33f53d206db1acd9173cfc0a7",
    "externalReferences": [
     {
@@ -2444,7 +2444,7 @@
    "properties": [
     {
      "name": "ytweb:group",
-     "value": "python-ytitle-core-runtime(api image)"
+     "value": "python-youtube_title-core-runtime(api image)"
     }
    ]
   },
@@ -5731,7 +5731,7 @@
      "type": "library",
      "name": "dom-accessibility-api",
      "version": "0.6.3",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@testing-library/jest-dom@7.0.1|dom-accessibility-api@0.6.3",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@testing-library/jest-dom@7.0.1|dom-accessibility-api@0.6.3",
      "licenses": [
       {
        "license": {
@@ -6121,7 +6121,7 @@
      "type": "library",
      "name": "aria-query",
      "version": "5.3.2",
-     "bom-ref": "ytitle-web-frontend@0.1.0|eslint-plugin-jsx-a11y@6.10.2|aria-query@5.3.2",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|eslint-plugin-jsx-a11y@6.10.2|aria-query@5.3.2",
      "licenses": [
       {
        "license": {
@@ -6333,7 +6333,7 @@
      "type": "library",
      "name": "lru-cache",
      "version": "11.5.3",
-     "bom-ref": "ytitle-web-frontend@0.1.0|jsdom@30.1.2|lru-cache@11.5.3",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|jsdom@30.1.2|lru-cache@11.5.3",
      "licenses": [
       {
        "license": {
@@ -7092,7 +7092,7 @@
      "type": "library",
      "name": "ansi-styles",
      "version": "5.2.0",
-     "bom-ref": "ytitle-web-frontend@0.1.0|pretty-format@27.5.1|ansi-styles@5.2.0",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|pretty-format@27.5.1|ansi-styles@5.2.0",
      "licenses": [
       {
        "license": {
@@ -8212,7 +8212,7 @@
      "type": "library",
      "name": "eslint-visitor-keys",
      "version": "3.4.3",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@eslint-community/eslint-utils@4.10.1|eslint-visitor-keys@3.4.3",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@eslint-community/eslint-utils@4.10.1|eslint-visitor-keys@3.4.3",
      "licenses": [
       {
        "license": {
@@ -8472,7 +8472,7 @@
      "type": "library",
      "name": "globals",
      "version": "14.0.0",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@eslint/eslintrc@3.3.7|globals@14.0.0",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@eslint/eslintrc@3.3.7|globals@14.0.0",
      "licenses": [
       {
        "license": {
@@ -9679,7 +9679,7 @@
      "type": "library",
      "name": "lru-cache",
      "version": "11.5.3",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@asamuzakjp/css-color@7.1.4|lru-cache@11.5.3",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@asamuzakjp/css-color@7.1.4|lru-cache@11.5.3",
      "licenses": [
       {
        "license": {
@@ -9763,7 +9763,7 @@
      "type": "library",
      "name": "lru-cache",
      "version": "11.5.3",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@asamuzakjp/dom-selector@9.2.4|lru-cache@11.5.3",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@asamuzakjp/dom-selector@9.2.4|lru-cache@11.5.3",
      "licenses": [
       {
        "license": {
@@ -10659,7 +10659,7 @@
      "type": "library",
      "name": "ignore",
      "version": "7.0.12",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@typescript-eslint/eslint-plugin@8.71.1|ignore@7.0.12",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@typescript-eslint/eslint-plugin@8.71.1|ignore@7.0.12",
      "licenses": [
       {
        "license": {
@@ -10787,7 +10787,7 @@
      "type": "library",
      "name": "minimatch",
      "version": "10.2.6",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|minimatch@10.2.6",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|minimatch@10.2.6",
      "licenses": [
       {
        "license": {
@@ -10825,7 +10825,7 @@
      "type": "library",
      "name": "semver",
      "version": "7.8.5",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|semver@7.8.5",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|semver@7.8.5",
      "licenses": [
       {
        "license": {
@@ -10863,7 +10863,7 @@
      "type": "library",
      "name": "brace-expansion",
      "version": "5.0.12",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|brace-expansion@5.0.12",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|brace-expansion@5.0.12",
      "licenses": [
       {
        "license": {
@@ -10901,7 +10901,7 @@
      "type": "library",
      "name": "balanced-match",
      "version": "4.0.4",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|balanced-match@4.0.4",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@typescript-eslint/typescript-estree@8.71.1|balanced-match@4.0.4",
      "licenses": [
       {
        "license": {
@@ -15256,7 +15256,7 @@
      "type": "library",
      "name": "eslint-visitor-keys",
      "version": "5.0.1",
-     "bom-ref": "ytitle-web-frontend@0.1.0|@typescript-eslint/visitor-keys@8.71.1|eslint-visitor-keys@5.0.1",
+     "bom-ref": "youtube-title-web-frontend@0.1.0|@typescript-eslint/visitor-keys@8.71.1|eslint-visitor-keys@5.0.1",
      "licenses": [
       {
        "license": {

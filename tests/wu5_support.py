@@ -12,15 +12,15 @@ import httplib2
 from googleapiclient.errors import HttpError
 from wu4_support import NOW, SNIPPET, VID, add_candidate, add_metric, add_video, open_db, ts
 
-from ytitle import approvals
-from ytitle.config import load_settings
-from ytitle.errors import AuthError
-from ytitle.live_guard import LiveEnv
-from ytitle.quota import QuotaManager
-from ytitle.timeutil import FixedClock
-from ytitle.ui import UiOptions, confirm_by_typing
-from ytitle.updater import create_plan
-from ytitle.youtube_read import YouTubeReader
+from youtube_title import approvals
+from youtube_title.config import load_settings
+from youtube_title.errors import AuthError
+from youtube_title.live_guard import LiveEnv
+from youtube_title.quota import QuotaManager
+from youtube_title.timeutil import FixedClock
+from youtube_title.ui import UiOptions, confirm_by_typing
+from youtube_title.updater import create_plan
+from youtube_title.youtube_read import YouTubeReader
 
 FAKE_ACCESS = "ya29.FAKEWRITEACCESSTOKEN0123456789abcdef"
 FAKE_REFRESH = "1//0FAKEWRITEREFRESHTOKEN0123456789abcdefghij"
@@ -204,7 +204,7 @@ class World:
     def env(self) -> LiveEnv:
         return LiveEnv(
             conn=self.conn, settings=self.settings, clock=self.clock, run_id="run1", say=self.said.append, confirm=self._confirm, ui=UiOptions(),
-            logger=logging.getLogger("ytitle.test"), make_reader=self._make_reader, make_write_service=self.write_service_factory or self._make_write, sleep=self.sleeps.append,
+            logger=logging.getLogger("youtube_title.test"), make_reader=self._make_reader, make_write_service=self.write_service_factory or self._make_write, sleep=self.sleeps.append,
         )
 
     # ── 관찰 ──
@@ -229,7 +229,7 @@ class World:
 
 def fill_quota(conn, clock, units: int) -> None:
     """오늘(태평양 시간) 쿼터를 units만큼 이미 쓴 상태로 만든다."""
-    from ytitle.timeutil import pt_date, utc_iso
+    from youtube_title.timeutil import pt_date, utc_iso
 
     conn.execute("INSERT INTO quota_usage (pt_date, method, units, called_at, run_id, status) VALUES (?,?,?,?,?,?)", (pt_date(clock.now()).isoformat(), "prefill", units, utc_iso(clock.now()), "pre", "ok"))
     conn.commit()
@@ -255,7 +255,7 @@ __all__ = ["AppliedThenRaise", "NOW", "SNIPPET", "VID", "World", "FakeServer", "
 
 def patch_services(monkeypatch, world: World) -> None:
     """CLI 테스트용: live_guard가 만드는 읽기/쓰기 서비스를 가짜 서버로 바꾼다(명령이 쓰는 DB 연결을 그대로 쓴다)."""
-    from ytitle import live_guard
+    from youtube_title import live_guard
 
     def reader(ctx):
         world.events.append(("read_service", None))
@@ -269,6 +269,6 @@ def patch_services(monkeypatch, world: World) -> None:
 
 
 def cli_run(world: World, streams, argv, *, input_fn=None):
-    from ytitle import cli
+    from youtube_title import cli
 
     return cli.main(["--base-dir", str(world.project)] + argv, out=streams.out, err=streams.err, env={"YT_TOKEN_DIR": str(world.tokens)}, clock=world.clock, input_fn=input_fn or world._input)

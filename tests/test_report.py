@@ -4,9 +4,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from ytitle import db
-from ytitle import report as rp
-from ytitle.report import Change, Rules, Snapshot, build_report
+from youtube_title import db
+from youtube_title import report as rp
+from youtube_title.report import Change, Rules, Snapshot, build_report
 
 RULES = Rules(min_impressions=1000, min_period_days=7, evaluation_window_days=14)
 APPLIED = "2026-09-01T03:00:00Z"  # 변경 시각(UTC), 날짜 2026-09-01

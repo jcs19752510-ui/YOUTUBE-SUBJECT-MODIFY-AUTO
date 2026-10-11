@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from ytitle.logging_setup import MASK, mask, setup_logging
+from youtube_title.logging_setup import MASK, mask, setup_logging
 
 SECRETS = [
     "ya29.a0AfH6SMBxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -39,7 +39,7 @@ def test_log_file_masks_message_args_and_traceback(tmp_path):
         logger.error("실패: %s", "Bearer topsecret.token", exc_info=True)
     for h in logger.handlers:
         h.flush()
-    text = (tmp_path / "logs" / "ytitle.log").read_text(encoding="utf-8")
+    text = (tmp_path / "logs" / "youtube-title.log").read_text(encoding="utf-8")
     assert "topsecret" not in text and "ya29.zzzz" not in text
     assert "run123" in text and "실패" in text
 

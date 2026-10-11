@@ -18,7 +18,7 @@ def _read(*parts: str) -> str:
 
 
 def test_disclaimer_sentence_is_identical_in_server_cli_and_frontend():
-    cli = _read("src", "ytitle", "ui.py")
+    cli = _read("src", "youtube_title", "ui.py")
     m = re.search(r"DISCLAIMER\s*=\s*\(?\s*[\"']([^\"']+)[\"']", cli)
     assert m and m.group(1) == DISC, m and m.group(1)
     assert f'DISCLAIMER = "{DISC}"' in _read("web", "backend", "ytweb", "domain", "notices.py")

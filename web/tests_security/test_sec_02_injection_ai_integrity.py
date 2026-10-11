@@ -209,7 +209,7 @@ def test_csv_export_neutralizes_formulas_in_every_cell(client, csrf, factory, en
         db.commit()
     r = client.get("/api/v1/reports/export.csv")
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
-    assert r.headers["content-disposition"] == 'attachment; filename="ytitle-report.csv"' and r.headers["x-content-type-options"] == "nosniff"
+    assert r.headers["content-disposition"] == 'attachment; filename="youtube-title-report.csv"' and r.headers["x-content-type-options"] == "nosniff"
     rows = list(csv.reader(io.StringIO(r.content.decode("utf-8-sig"))))
     assert len(rows) >= 2
     for row in rows:

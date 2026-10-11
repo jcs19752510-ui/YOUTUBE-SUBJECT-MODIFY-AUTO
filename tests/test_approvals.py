@@ -6,9 +6,9 @@ from datetime import timedelta
 import pytest
 from wu4_support import NOW, VID, make_settings
 
-from ytitle import approvals
-from ytitle.approvals import ApprovalError, approval_path, clean_approver, create_approval, inspect_active, load_approval, mark_used, remove_approval, verify_approval
-from ytitle.errors import InputError, SafetyGateError
+from youtube_title import approvals
+from youtube_title.approvals import ApprovalError, approval_path, clean_approver, create_approval, inspect_active, load_approval, mark_used, remove_approval, verify_approval
+from youtube_title.errors import InputError, SafetyGateError
 
 H64 = "a" * 64
 H64_B = "b" * 64

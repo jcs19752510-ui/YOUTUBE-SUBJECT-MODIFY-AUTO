@@ -1,7 +1,7 @@
 """보안 시험이 정말 보안 통제를 잡아내는지 확인하는 변이 점검(원본 소스는 건드리지 않는다).
 
 사용:  <venv>/bin/python web/tests_security/mutation_check.py [--only N,M] [--out 결과.json]
-- 원본 web/backend/ytweb 와 src/ytitle 를 .harness-tmp/sec/mut/<번호>/ 로 복사한 뒤 한 곳만 고치고,
+- 원본 web/backend/ytweb 와 src/youtube_title 를 .harness-tmp/sec/mut/<번호>/ 로 복사한 뒤 한 곳만 고치고,
   YTWEB_SEC_BACKEND_DIR/YTWEB_SEC_SRC_DIR 로 그 사본을 가리켜 오프라인 시험(01·02)을 돌린다.
 - 시험이 하나라도 실패하면 killed(잡음), 모두 통과하면 survived(놓침, 시험 보강 또는 동치 변이 근거 필요).
 - 대상 문자열은 원본 소스에 정확히 1곳이어야 한다(아니면 오류로 중단).
@@ -26,7 +26,7 @@ SUITES = [S1, S2, S7]
 # 먼저 돌릴 시험 파일(빨리 잡히게). 못 잡으면 둘 다 돌려 최종 판정한다.
 HINT = {"core/deps.py": [S1], "core/guard.py": [S1], "routers/auth.py": [S1], "core/sessions.py": [S1], "core/pin.py": [S1], "routers/settings.py": [S1, S2], "core/ratelimit.py": [S1], "app.py": [S1]}
 
-# (id, 위협, 파일(web/backend/ytweb 기준 또는 src/ytitle), 원문, 변이, 설명)
+# (id, 위협, 파일(web/backend/ytweb 기준 또는 src/youtube_title), 원문, 변이, 설명)
 M = [
     ("core/deps.py", "if origin is None or origin.strip().lower() not in allowed_origins(settings):", "if False:", "TW-01", "Origin 검증 제거"),
     ("core/deps.py", 'if sec is not None and sec.strip().lower() != "same-origin":', "if False:", "TW-01", "Sec-Fetch-Site 검증 제거"),
@@ -210,7 +210,7 @@ def run_one(idx: int, spec) -> dict:
         shutil.rmtree(d)
     (d / "backend").mkdir(parents=True)
     shutil.copytree(ROOT / "web/backend/ytweb", d / "backend/ytweb", ignore=shutil.ignore_patterns("__pycache__"))
-    shutil.copytree(ROOT / "src/ytitle", d / "src/ytitle", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(ROOT / "src/youtube_title", d / "src/youtube_title", ignore=shutil.ignore_patterns("__pycache__"))
     rel = src_file.relative_to(ROOT / "web/backend")
     target = d / "backend" / rel
     target.write_text(text.replace(old, new, 1), encoding="utf-8")
@@ -234,7 +234,7 @@ def run_one(idx: int, spec) -> dict:
 
 COPY_ITEMS = ["web/compose.yaml", "web/compose.online.yaml", "web/docker", "web/scripts", "web/frontend/src", "web/frontend/index.html", "web/frontend/package.json", "web/frontend/package-lock.json",
               "web/frontend/tsconfig.build.json", "web/frontend/vite.config.ts", "web/frontend/eslint.config.js", "web/frontend/.gitignore", ".gitignore", ".dockerignore", "requirements.txt",
-              "web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/backend/requirements.in", "automation", "config", "web/backend/ytweb", "src/ytitle/ui.py"]
+              "web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/backend/requirements.in", "automation", "config", "web/backend/ytweb", "src/youtube_title/ui.py"]
 
 
 def run_infra(idx: int, spec) -> dict:

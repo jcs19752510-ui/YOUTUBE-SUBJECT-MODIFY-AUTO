@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from ytitle import cli, db
-from ytitle.commands import report as cmd
-from ytitle.report import CAUSAL_NOTE, LIMIT_NOTE
-from ytitle.timeutil import FixedClock
-from ytitle.ui import footer
+from youtube_title import cli, db
+from youtube_title.commands import report as cmd
+from youtube_title.report import CAUSAL_NOTE, LIMIT_NOTE
+from youtube_title.timeutil import FixedClock
+from youtube_title.ui import footer
 
 VID = "abc123DEF45"
 APPLIED = "2026-09-01T03:00:00Z"
@@ -35,7 +35,7 @@ def out(streams):
 
 
 def dbconn(proj):
-    c = db.connect(proj / "data" / "ytitle.sqlite3")
+    c = db.connect(proj / "data" / "youtube_title.sqlite3")
     db.migrate(c)
     return c
 

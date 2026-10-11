@@ -110,7 +110,7 @@ def test_it_100_full_happy_path_demo_to_report(fresh_demo):
     by = {x["video_id"]: x for x in rep["items"]}
     assert by[c0["video_id"]]["status"] == "insufficient" and by[c0["video_id"]]["reasons"]   # 롤백이 끼면 결론 없음
     r = a.get("/api/v1/reports/export.csv")
-    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv") and 'filename="ytitle-report.csv"' in r.headers["content-disposition"]
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv") and 'filename="youtube-title-report.csv"' in r.headers["content-disposition"]
     assert r.content.startswith(b"\xef\xbb\xbf")
     rows = list(csv.DictReader(io.StringIO(r.content.decode("utf-8-sig"))))
     assert {x["video_id"] for x in rows} >= {c["video_id"] for c in chs}

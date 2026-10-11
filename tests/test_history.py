@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import pytest
 from wu4_support import NOW, SNIPPET, VID, add_candidate, add_change, add_video, clock, make_settings, open_db, ts
 
-from ytitle.errors import DatabaseError, InputError, SafetyGateError
-from ytitle.history import ALLOWED_TRANSITIONS, begin_change, begin_rollback, finish_change, get_change, list_changes, plan_rollback, record_aborted, transition_candidate
-from ytitle.updater import canonical_json, compute_plan_hash, create_plan
+from youtube_title.errors import DatabaseError, InputError, SafetyGateError
+from youtube_title.history import ALLOWED_TRANSITIONS, begin_change, begin_rollback, finish_change, get_change, list_changes, plan_rollback, record_aborted, transition_candidate
+from youtube_title.updater import canonical_json, compute_plan_hash, create_plan
 
 STATUSES = ["candidate", "filtered", "approved", "applied", "evaluated", "rolled_back", "blocked"]
 EDGES = {("candidate", "filtered"), ("candidate", "blocked"), ("filtered", "approved"), ("approved", "applied"), ("applied", "evaluated"), ("applied", "rolled_back"), ("evaluated", "rolled_back")}

@@ -102,7 +102,7 @@ def test_tc_wix_006_api_dockerfile_copies_only_runtime_paths():
     t = read(DOCKER_DIR / "api.Dockerfile")
     copies = [l.split() for l in t.splitlines() if l.startswith("COPY ")]
     srcs = {c[-2] for c in copies if not c[1].startswith("--from")}
-    allowed = {"web/backend/requirements.txt", "web/docker/requirements-ytitle.txt", "src/ytitle", "config",
+    allowed = {"web/backend/requirements.txt", "web/docker/requirements-youtube-title.txt", "src/youtube_title", "config",
                "web/backend/ytweb", "web/backend/alembic", "web/backend/alembic.ini"}
     assert srcs == allowed, srcs ^ allowed
     assert not re.search(r"(?m)^COPY\s+web/backend\s", t) and not re.search(r"(?m)^COPY\s+\.\s", t)
@@ -299,5 +299,5 @@ def test_tc_wix_033_live_api_image_has_no_dev_cache_secret_like_or_test_files():
     out = r.stdout.split()
     for must in ("alembic.ini", "ytweb", "alembic", "0001_initial.py", "0002_revoke_alembic_version_dml.py", "src", "config"):
         assert must in out, must
-    r = sh(["docker", "run", "--rm", "--entrypoint", "python", img, "-c", "import ytweb.app, ytweb.migrate, ytweb.worker, ytitle.config; print('ok')"])
+    r = sh(["docker", "run", "--rm", "--entrypoint", "python", img, "-c", "import ytweb.app, ytweb.migrate, ytweb.worker, youtube_title.config; print('ok')"])
     assert r.stdout.strip() == "ok", r.stderr

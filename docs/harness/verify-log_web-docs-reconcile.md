@@ -5,7 +5,7 @@
 - 작성 에이전트: 11단계 문서화·운영지원 담당(병렬 웨이브 "7단계 ∥ 9단계 ∥ 11단계 대조"의 11단계 대조 호출)
 - 적용 Tier: Standard (규칙 B: 최소 2회, 결함 0건 확인 회차 포함)
 - 버전: v0(2026-10-10 초안) → v1(1차 대조 반영) → v2(2차 검증 반영, 최종)
-- 근거 범위: 7·9단계 결과는 아직 없음. 근거는 6단계 결과서 4건과 현재 코드·스크립트·설정(`web/backend/ytweb`, `web/frontend/src`, `web/scripts/*.ps1`, `web/compose.yaml`, `web/docker/**`, `config/settings.yaml`, `src/ytitle`)과 클라우드 임시 서버 실행.
+- 근거 범위: 7·9단계 결과는 아직 없음. 근거는 6단계 결과서 4건과 현재 코드·스크립트·설정(`web/backend/ytweb`, `web/frontend/src`, `web/scripts/*.ps1`, `web/compose.yaml`, `web/docker/**`, `config/settings.yaml`, `src/youtube_title`)과 클라우드 임시 서버 실행.
 - 제약 준수: 코드 수정 없음, git 변경 명령 없음(※ 아래 "정직한 한계" 참고), 공유 문서(traceability·decisions·STATE) 미수정, 실제 구글·AI 호출 없음, Docker·PostgreSQL 미사용(임시 SQLite 백엔드만 `.harness-tmp/doc_reconcile/`).
 
 ## 대조 방법 (이 표의 "방법" 열)
@@ -31,7 +31,7 @@
 | N-09 | 1건당 52단위 | `limits_quota.units_per_apply = update 50 + 2×read 1`, A: 반영 10건 후 사용량 520 | S,A | 일치 |
 | N-10 | 하루 쿼터 6,000단위, 80% 경고 | `settings.yaml quota`, `HomePage pct>=80`, A: `limit:6000` | S,A | 일치 |
 | N-11 | 데모 영상 200개, 제외 37개 | `seed.DEFAULT_COUNT=200`, A: `counts.videos:200, excluded:37` | S,A | 일치 (매뉴얼에 37 추가) |
-| N-12 | 제외 사유 4종(비공개·아동용·예약 게시·쇼츠) | `ytitle.updater.sequential_exclusions`, A: 실제 사유 문구 4개 확인 | S,A | 일치 (실제 화면 문구로 정확히 기재) |
+| N-12 | 제외 사유 4종(비공개·아동용·예약 게시·쇼츠) | `youtube_title.updater.sequential_exclusions`, A: 실제 사유 문구 4개 확인 | S,A | 일치 (실제 화면 문구로 정확히 기재) |
 | N-13 | "일부 공개"는 제외 아님 | 같은 함수(private 만) | S | 일치(매뉴얼에 명시) |
 | N-14 | 세션 12시간 | `config.session_ttl_hours=12`, 쿠키 max_age | S | 일치 |
 | N-15 | PIN 5회 실패 5분, 반복 시 2배 최대 1시간 | `core/pin.py`, A: 5번째 실패에서 `pin_locked` 300초 | S,A | 일치(10·20·40·60분 단계 명시 추가) |
@@ -83,7 +83,7 @@
 | U-30 | 이력 "결과" 찾기 목록 | `Object.entries(ko.changeResult)` 6개 중 3개를 서버가 422 | S,A | **문서에 없던 결함 → C-4**(A: verified/unverified/rolled_back → 422) |
 | U-31 | 성과 리포트 노란 박스 "읽기 전에 꼭 확인하세요", 상태 3종, [CSV 내보내기] | `ReportsPage`, `ko.reports` | S | 일치 |
 | U-32 | 데모에서 "변경 후" 성과 데이터를 만드는 코드가 확인되지 않음 | `after` 스냅샷 생성 코드 없음(seed 는 before 만), A: 반영 후 리포트 전부 "데이터 부족" | S,A | **[확인 필요] → 확정으로 수정**(C-8) |
-| U-33 | CSV 파일명 `ytitle-report.csv`, UTF-8 | `ReportsPage download`, `reports.export_csv` BOM 포함 | S | 일치(BOM 언급 추가) |
+| U-33 | CSV 파일명 `youtube-title-report.csv`, UTF-8 | `ReportsPage download`, `reports.export_csv` BOM 포함 | S | 일치(BOM 언급 추가) |
 | U-34 | 설정 탭 4개 이름 | `ko.settings.tabs` | S | 일치 |
 | U-35 | PIN 변경·해제 시 현재 PIN 필요 | `PinCard`, `routers/settings.py` | S,A | 일치(문서에 추가) |
 | U-36 | PIN 변경/해제 시 다른 세션 끊김 | `delete_other_sessions` | S | 일치 |

@@ -14,7 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from ytitle.config import load_settings
+from youtube_title.config import load_settings
 
 from ytweb.config import WebSettings, load_web_settings
 from ytweb.core.clock import utcnow

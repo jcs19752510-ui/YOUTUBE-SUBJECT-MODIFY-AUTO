@@ -5,7 +5,7 @@ import dataclasses
 
 import pytest
 from fastapi.testclient import TestClient
-from ytitle.config import load_settings
+from youtube_title.config import load_settings
 
 from ytweb.app import create_app
 from ytweb.core.ratelimit import RateLimits

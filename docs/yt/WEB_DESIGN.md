@@ -25,8 +25,8 @@
 ```
 - 상시 서비스 4개(web, api, worker, db) + 1회성 `migrate`(compose 서비스 5개). 기동 순서 `db healthy → migrate 성공 → api/worker → api healthy → web`. *(v2: 원문 "4서비스"에 migrate 명시)*
 - 호스트 게시 포트는 `127.0.0.1:8080:8080`(web) **하나뿐**. api/worker/db는 호스트 포트 없음. `app` 네트워크는 `internal: true`이고, **web만 게시를 위해 비-internal `edge` 네트워크에 추가로 붙는다**(internal 전용 컨테이너는 호스트 게시가 안 되는 것으로 알려져 분리, internal 단독 게시는 시험하지 않음 — 편차 DV-W02). 구글·AI 통신이 필요한 M2·M3에서는 `compose.online.yaml`로 api/worker에만 외부 네트워크를 연다. *(v2 추가)*
-- 저장소 레이아웃(신규): `web/backend/ytweb/`(백엔드 패키지), `web/frontend/`(Vite React TS), `web/docker/`(Dockerfile·nginx·db 초기화), `web/compose.yaml`, `web/scripts/*.ps1`. 기존 `src/ytitle`은 **패키지로 설치해 재사용(복사 금지)**.
-- 코어 재사용(복사 없이 `PYTHONPATH=/app/backend:/app/src`로 같은 소스, 순수 함수만): `ytitle.validator.validate_file`, `ytitle.candidates.CandidateFile/Candidate`, `ytitle.banned_terms.load_dictionary`, `ytitle.limits.evaluate_limits`(+`LimitFacts`), `ytitle.updater.compute_plan_hash/validate_new_title/snippet_hash`, `ytitle.config.load_settings`(정책 기본값 `config/settings.yaml`). sqlite3 직접 의존 모듈(`db.py`, `history.py`, `quota.py`, `live_guard.py`)은 재사용하지 않고 웹에서 PostgreSQL 기반으로 재구현한다(M3에서 14단계 게이트 포팅).
+- 저장소 레이아웃(신규): `web/backend/ytweb/`(백엔드 패키지), `web/frontend/`(Vite React TS), `web/docker/`(Dockerfile·nginx·db 초기화), `web/compose.yaml`, `web/scripts/*.ps1`. 기존 `src/youtube_title`은 **패키지로 설치해 재사용(복사 금지)**.
+- 코어 재사용(복사 없이 `PYTHONPATH=/app/backend:/app/src`로 같은 소스, 순수 함수만): `youtube_title.validator.validate_file`, `youtube_title.candidates.CandidateFile/Candidate`, `youtube_title.banned_terms.load_dictionary`, `youtube_title.limits.evaluate_limits`(+`LimitFacts`), `youtube_title.updater.compute_plan_hash/validate_new_title/snippet_hash`, `youtube_title.config.load_settings`(정책 기본값 `config/settings.yaml`). sqlite3 직접 의존 모듈(`db.py`, `history.py`, `quota.py`, `live_guard.py`)은 재사용하지 않고 웹에서 PostgreSQL 기반으로 재구현한다(M3에서 14단계 게이트 포팅).
 - 스택(DEC-035, 실제 채택): FastAPI 0.143.0+Pydantic 2.14.0+Uvicorn 0.54.0, SQLAlchemy 2.1.4(동기)+Alembic 1.20.0+psycopg 3.3.6, **PostgreSQL 17**(DEC-041), React **19.3.0**+TypeScript 5.9.3+Vite 8.3.4+TanStack Query 5.104.1+**react-router-dom 7(HashRouter)**, nginx. *(v2: DEC-035의 "React 18, TanStack Router"는 실제와 달라 정정 — 편차 DV-W10)* 라이선스 확인은 `DESIGN.md` W2-1(psycopg는 LGPL-3.0).
 - 시간: DB는 UTC(timestamptz). 일일 반영 건수 기준일은 KST 날짜, API 쿼터 기준일은 태평양 시간(기존 `limits._pt_day_bounds`와 같은 규칙). API 시각 출력은 UTC이며 `Z`/`+00:00` 표기가 섞인다(DV-W06). 상세 `DESIGN.md` W6.
 
@@ -75,7 +75,7 @@
 ## 4. 동작 규칙 (기존 안전장치 이식)
 1. **M1은 데모 모드뿐**: `YTWEB_MODE=demo` 고정. 유튜브 게이트웨이는 `MockYouTubeGateway`(`videos` 테이블이 곧 "유튜브")만 존재, 라이브 게이트웨이는 코드에 없음. AI는 `MockSuggester`(결정적 한국어 템플릿, 일부러 경고·차단 후보 포함)만 존재하며 어댑터 인터페이스(`TitleSuggester`)는 실서비스 교체 가능하게 정의.
 2. **승인**: 승인은 `plan_hash`(영상 ID·후보 ID·이전/새 제목·snippet 해시)와 HMAC 서명에 묶이고 1회용이며 TTL(기본 24시간, `approval.ttl_hours`) 후 만료. 제목 수정·영상 변경 시 무효. **만료 판정 시각은 "배치 실행 확정 시각"**(여러 날에 걸친 배치가 둘째 날부터 전부 건너뛰는 것을 막기 위함, DEC-042 D3 — M3에서 재평가, DV-W11). *(v2: 판정 시각 명시)* 차단(block) 판정은 승인 불가, 경고(warn)는 사유 확인 후 승인 가능(엄격 모드 주제는 경고도 차단 — 기존 검증기 규칙 그대로).
-3. **한도**: 하루 반영 건수 `daily_apply_cap`(기본 10, 최대 20)과 배치당 최대 50건 두 겹. 영상별 재변경 간격 72시간, 영상당 최대 3회, 최소 노출수 1000(`ytitle.limits.evaluate_limits`; **데모 최소 노출수 0 결정은 코드 미반영**, DV-W15). API 쿼터는 호출 전 **3행(재조회+갱신+검증 재조회=52단위) 일괄 예약**(`reserved`→`ok|failed`, 전부/전무), 일일 한도 기본 6,000단위의 80%에서 경고(기존 설정). 제외 영상(Shorts·비공개·아동용·예약)은 제안·승인·배치·반영 4곳에서 차단.
+3. **한도**: 하루 반영 건수 `daily_apply_cap`(기본 10, 최대 20)과 배치당 최대 50건 두 겹. 영상별 재변경 간격 72시간, 영상당 최대 3회, 최소 노출수 1000(`youtube_title.limits.evaluate_limits`; **데모 최소 노출수 0 결정은 코드 미반영**, DV-W15). API 쿼터는 호출 전 **3행(재조회+갱신+검증 재조회=52단위) 일괄 예약**(`reserved`→`ok|failed`, 전부/전무), 일일 한도 기본 6,000단위의 80%에서 경고(기존 설정). 제외 영상(Shorts·비공개·아동용·예약)은 제안·승인·배치·반영 4곳에서 차단.
 4. **배치 실행(워커)**: `execute` → 항목에 `scheduled_date` 배정(오늘 남은 상한만큼 오늘, 이후 날짜는 상한씩). 워커는 `scheduled_date <= 오늘(KST)`인 `pending` 항목을 **오늘 남은 상한 안에서만** 처리한다(PC가 꺼져 있다 켜져도 놓친 예약을 몰아서 실행하지 않음). 항목 처리 = ①승인 유효·해시 일치 ②한도 ③쿼터 예약 ④실행 직전 재조회(이전 제목 변동 시 중단) ⑤(모의) 갱신 ⑥재조회 검증(제목 일치, description·tags·categoryId 등 보존) ⑦changes 기록. 어느 단계든 실패하면 해당 항목만 `failed|skipped`로 기록하고 이중 반영을 막는다. 행 잠금(`FOR UPDATE SKIP LOCKED`)으로 워커 중복 처리 방지, 재시작 후 `running`으로 남은 항목은 재조회로 상태 확정 후 정리.
 5. **롤백**: 대상 영상의 `typed_video_id` 입력 일치 필요, 해당 변경 이후 다른 변경이 있으면 거부(기존 `plan_rollback` 규칙), 백업 snippet **전체** 기준 복원, 결과 재조회 검증. 쿼터는 쓰지만 교체 한도(간격·횟수·하루 상한)는 적용하지 않는다. 사후 검증 불일치는 변경 `success`+`error_code=verify_failed`·항목 `failed`로 알리고 자동 롤백은 하지 않는다(DV-W12). *(v2 보강)*
 6. **감사 로그**: 세션 발급·거부·삭제, 설정 변경, 영상 새로고침, 제안 생성·수정·승인·반려, 배치 생성·실행·취소·항목 실패/복구, 반영, 롤백을 모두 기록(비밀·PIN·본문 전체는 제외).
@@ -114,7 +114,7 @@ class ProblemError(Exception):            # RFC 9457 problem+json 으로 변환�
 # ytweb/core/deps.py  (FastAPI 의존성)
 def get_session() -> Iterator[Session]                 # 요청당 1세션, 정상 종료 시 commit, 예외 시 rollback
 def get_web_settings() -> WebSettings                  # ytweb.config
-def get_policy() -> ytitle.config.Settings             # config/settings.yaml 정책(+웹 settings_kv 덮어쓰기: daily_apply_cap 등은 아래 함수로)
+def get_policy() -> youtube_title.config.Settings             # config/settings.yaml 정책(+웹 settings_kv 덮어쓰기: daily_apply_cap 등은 아래 함수로)
 def get_clock() -> Callable[[], datetime]              # tz-aware UTC now (테스트에서 대체 가능)
 def require_session(...) -> SessionInfo                # 유효 쿠키 세션 필요(GET용)
 def require_csrf(...) -> SessionInfo                   # 세션 + X-CSRF-Token + Origin/Host 검증(상태 변경용)

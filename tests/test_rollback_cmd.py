@@ -5,14 +5,14 @@ from datetime import timedelta
 import pytest
 from wu4_support import NOW, SNIPPET, add_candidate, add_change, add_video, clock, make_settings, open_db, ts
 
-from ytitle import cli
-from ytitle.history import begin_change, finish_change, plan_rollback
-from ytitle.updater import create_plan
+from youtube_title import cli
+from youtube_title.history import begin_change, finish_change, plan_rollback
+from youtube_title.updater import create_plan
 
 
 @pytest.fixture
 def db(project):
-    c = open_db(project / "data" / "ytitle.sqlite3")
+    c = open_db(project / "data" / "youtube_title.sqlite3")
     yield c
     c.close()
 
@@ -22,7 +22,7 @@ def go(proj, streams, argv):
 
 
 def counts(proj):
-    c = sqlite3.connect(proj / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(proj / "data" / "youtube_title.sqlite3")
     out = {t: c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in ("title_changes", "quota_usage", "title_candidates")}
     out["statuses"] = [r[0] for r in c.execute("SELECT status FROM title_candidates ORDER BY id")]
     out["results"] = [r[0] for r in c.execute("SELECT result FROM title_changes ORDER BY id")]

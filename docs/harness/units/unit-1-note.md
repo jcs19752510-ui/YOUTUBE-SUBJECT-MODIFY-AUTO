@@ -1,7 +1,7 @@
 # unit-1 구현 노트 — WU-1 OAuth 인증 (5단계)
 
 - 작업 단위: **WU-1** (feature F-A 인증·조회) / **속도 트랙: L5** / Tier: Standard / 선행: WU-0(완료)
-- 실행: 단독 실행. 파일 범위: `src/ytitle/auth.py`, `src/ytitle/commands/auth.py`, `tests/test_auth.py` (범위 밖 수정 없음, 의존성은 WU-0이 선언)
+- 실행: 단독 실행. 파일 범위: `src/youtube_title/auth.py`, `src/youtube_title/commands/auth.py`, `tests/test_auth.py` (범위 밖 수정 없음, 의존성은 WU-0이 선언)
 
 ## 1. 구현 범위
 설치형 앱 OAuth 로그인(읽기/쓰기 분리), 토큰 로컬 저장(사용자 프로필 폴더, 권한 제한 시도), 만료 시 갱신과 재로그인 안내, 로컬 토큰 삭제(`--revoke`), 로그인 상태 표시(토큰 값은 읽지 않음).

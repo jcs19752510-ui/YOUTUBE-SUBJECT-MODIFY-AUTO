@@ -1,4 +1,4 @@
-"""교체 한도와 API 쿼터(WEB_DESIGN §4-3). 판정은 ytitle.limits.evaluate_limits 를 그대로 쓰고, 여기서는 DB 사실 수집과 쿼터 기록만 한다.
+"""교체 한도와 API 쿼터(WEB_DESIGN §4-3). 판정은 youtube_title.limits.evaluate_limits 를 그대로 쓰고, 여기서는 DB 사실 수집과 쿼터 기록만 한다.
 
 - 영상별 간격(72시간)·횟수(3회)·최소 노출수는 기존 정책(settings.yaml) 값이다.
 - 하루 반영 상한은 웹 설정(daily_apply_cap, KST 하루)이라 evaluate_limits 의 DAILY 검사에는 이 값을 넣어 쓴다.
@@ -12,8 +12,8 @@ from datetime import date, datetime
 
 from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session
-from ytitle.config import Settings
-from ytitle.limits import LimitFacts, LimitReport, evaluate_limits
+from youtube_title.config import Settings
+from youtube_title.limits import LimitFacts, LimitReport, evaluate_limits
 
 from ytweb.core.clock import kst_today, pt_date
 from ytweb.db.models import Change, MetricsSnapshot, QuotaUsage
@@ -42,7 +42,7 @@ def gather_facts(session: Session, video_id: str, now: datetime) -> LimitFacts:
     last_at = session.execute(select(func.max(_change_time())).where(*base)).scalar_one()
     impressions = None
     if last_at is not None:
-        # 변경 시각 날짜보다 뒤에서 시작하는 기간의 지표만 인정한다(변경 이전 시간이 섞인 기간 제외, ytitle.limits 와 같은 보수 규칙).
+        # 변경 시각 날짜보다 뒤에서 시작하는 기간의 지표만 인정한다(변경 이전 시간이 섞인 기간 제외, youtube_title.limits 와 같은 보수 규칙).
         stmt = select(func.max(MetricsSnapshot.impressions)).where(
             MetricsSnapshot.video_id == video_id,
             MetricsSnapshot.phase.in_(("after", "periodic")),

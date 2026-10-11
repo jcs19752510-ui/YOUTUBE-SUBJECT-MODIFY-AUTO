@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from wu4_support import NOW, VID, add_change, add_metric, make_settings, open_db
 
-from ytitle.errors import DatabaseError
-from ytitle.limits import COUNT, DAILY, IMPRESSIONS, INTERVAL, LimitFacts, _pt_day_bounds, check_limits, evaluate_limits, format_kst, gather_facts
+from youtube_title.errors import DatabaseError
+from youtube_title.limits import COUNT, DAILY, IMPRESSIONS, INTERVAL, LimitFacts, _pt_day_bounds, check_limits, evaluate_limits, format_kst, gather_facts
 
 NEXT_DAY = datetime(2026, 10, 11, 7, 0, tzinfo=timezone.utc)
 

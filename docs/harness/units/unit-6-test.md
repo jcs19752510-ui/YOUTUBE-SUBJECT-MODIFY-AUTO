@@ -126,13 +126,13 @@
 - 정상 경로, 경계값(날짜 경계·상한·빈 입력), 예외 입력(잘못된 형식·악성 문자열), 권한 경계를 포함했다.
 
 ## 5. 커버리지
-- 전체 지표: 이 단위 모듈(ytitle.report, ytitle.csv_import, ytitle.commands.report)의 줄+분기 합산 **100%** (pytest-cov, `--cov-branch`)
+- 전체 지표: 이 단위 모듈(youtube_title.report, youtube_title.csv_import, youtube_title.commands.report)의 줄+분기 합산 **100%** (pytest-cov, `--cov-branch`)
 - 회귀(이전 단위 산출물을 깨뜨리지 않음): 전체 테스트 스위트 `1097 passed, 1 skipped` (통과)
 - 호환 실행: 3.11 → 147 passed / 3.13 → 147 passed / 3.12(주) → 147 passed
 - 커버되지 않은 부분과 사유:
-  - src/ytitle/commands/report.py     121      0     52      0   100%
-  - src/ytitle/csv_import.py          225      0     88      0   100%
-  - src/ytitle/report.py              161      0     36      0   100%
+  - src/youtube_title/commands/report.py     121      0     52      0   100%
+  - src/youtube_title/csv_import.py          225      0     88      0   100%
+  - src/youtube_title/report.py              161      0     36      0   100%
   - 이 단위 모듈의 줄·분기 커버리지는 위 수치.
 
 ## 6. 결함(Defect) 목록
@@ -145,7 +145,7 @@
 
 ## 7. 테스트 환경 정리(Teardown) 확인 — 규칙 K
 - 이번 테스트에서 생성한 임시 아티팩트: `.harness-tmp/junit_06.xml`, `.harness-tmp/junit_py311.xml`, `.harness-tmp/junit_py313.xml`, `.harness-tmp/junit_regress.xml`, `.harness-tmp/venv_py311`, `.harness-tmp/venv_py312`, `.harness-tmp/venv_py313` (+ 변이 점검용 임시 사본 `.harness-tmp/mut_06/`, 편집 설치로 생긴 `src/*.egg-info`, 캐시 `__pycache__`/`.coverage`)
-- 위 아티팩트를 전부 `.harness-tmp/` 하위에서만 생성했는가 (규칙 K 1번): [x] 예 [ ] 아니오 — 예외: 편집 설치가 `src/ytitle.egg-info/`를 만들고 파이썬이 `__pycache__`를 만든다(둘 다 `.gitignore` 대상이며 정리 대상에 포함)
+- 위 아티팩트를 전부 `.harness-tmp/` 하위에서만 생성했는가 (규칙 K 1번): [x] 예 [ ] 아니오 — 예외: 편집 설치가 `src/youtube_title.egg-info/`를 만들고 파이썬이 `__pycache__`를 만든다(둘 다 `.gitignore` 대상이며 정리 대상에 포함)
 - 정리(삭제) 완료 여부: 예. 결과서 생성 스크립트가 `.harness-tmp/`, `data/`, `.coverage`, `src/*.egg-info`, `__pycache__`를 삭제했다
 - **정리 후 점검**: 이 스크립트는 git을 실행하지 않는다(커밋·푸시는 오케스트레이터가 DEC-027에 따라 별도 수행). 파일시스템 점검 결과: 잔여물 없음 (점검 목록: .harness-tmp, .venv*, venv, *.egg-info, .pytest_cache, .coverage*, __pycache__, data)
 - 병렬 실행이었다면: 해당 없음(단독 실행)

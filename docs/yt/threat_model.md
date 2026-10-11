@@ -9,7 +9,7 @@
 | 자산 ID | 자산 | 민감도 | 소유 컴포넌트 |
 |---|---|---|---|
 | A-1 | OAuth 클라이언트 비밀 `secrets/client_secret.json` | 민감 | auth.py |
-| A-2 | 읽기 토큰 | 민감 | auth.py (`%LOCALAPPDATA%\ytitle\tokens`) |
+| A-2 | 읽기 토큰 | 민감 | auth.py (`%LOCALAPPDATA%\youtube-title\tokens`) |
 | A-3 | **쓰기 토큰**(제목 수정 가능) | **매우 민감** | auth.py, live_guard.py |
 | A-4 | 채널의 공개 메타데이터(제목·설명·태그) — 변경 대상 | 공개(그러나 훼손 시 영향 큼) | YouTube, updater.py |
 | A-5 | 변경 이력 DB(백업 snippet 포함) | 내부 | db.py, history.py |
@@ -192,7 +192,7 @@ M1은 모의 AI이므로 "입력 쪽 방어"는 실서비스 어댑터가 생기
 | LLM05 부적절한 출력 처리 | AI 문자열이 화면·CSV·SQL·로그로 흘러 XSS/수식/인젝션 | AI 응답 → `sanitize_drafts` → 검증기 → DB → React/CSV | 구현됨: URL·연락처·제어문자 폐기, `<` `>` 검증기 차단, 텍스트 렌더링, `csv_safe`, ORM 바인딩, 로그 마스킹 | SEC-023, 029 |
 | LLM06 과도한 권한 | AI가 도구·API를 호출 | 어댑터 SDK | 구조상 권한 없음(`TitleSuggester`는 텍스트만 반환). SDK 도구 기능 비활성은 M3 확인 | SEC-022 |
 | LLM07 시스템 프롬프트 유출 | 프롬프트 노출 | 어댑터 | 프롬프트에 비밀·내부 로직을 넣지 않는다는 원칙, 원문 미저장(`prompt_hash`). 실서비스는 M3 | SEC-028 |
-| LLM09 허위 정보 | 영상에 없는 내용을 약속하는 제목 | AI 응답 | 영상 일치율 검증(`ytitle.validator`), 엄격 모드, 사람 승인. **AI 지정 `topic` 의존** 주의(SEC-024, Q-W10) | SEC-024, POL-008 |
+| LLM09 허위 정보 | 영상에 없는 내용을 약속하는 제목 | AI 응답 | 영상 일치율 검증(`youtube_title.validator`), 엄격 모드, 사람 승인. **AI 지정 `topic` 의존** 주의(SEC-024, Q-W10) | SEC-024, POL-008 |
 | LLM10 무제한 소비 | 호출·재시도·비용 폭주 | 제안 생성 잡(영상 N개) | **미구현(M3)**: 호출·토큰·비용 상한과 빈도 제한 없음. 현재는 자동 재시도 없음 | SEC-027 |
 | LLM03 공급망 | SDK·이미지 | 어댑터 의존성 | 일반 의존성 점검(TW-13)에 포함 | S-W11 |
 | LLM04·08 | 학습/벡터 오염 | 자체 학습·RAG 없음 | **해당 없음 — 사유**: 자체 모델·임베딩이 없다. 설계가 바뀌면 재평가 | — |

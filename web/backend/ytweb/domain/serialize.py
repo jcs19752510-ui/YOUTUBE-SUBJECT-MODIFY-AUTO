@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ytitle.textsafe import char_count
+from youtube_title.textsafe import char_count
 
 from ytweb.db.models import Batch, BatchItem, Change, Job, Suggestion, Video
 

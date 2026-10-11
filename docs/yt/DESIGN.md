@@ -26,7 +26,7 @@
 ### 1-1. 구성 (텍스트 다이어그램)
 ```
 [사용자 PowerShell]
-      │  python -m ytitle <서브커맨드> [--live]
+      │  python -m youtube_title <서브커맨드> [--live]
       ▼
 ┌─────────────────────────────  CLI 계층 (cli.py + commands/*.py)  ─────────────────────────────┐
 │ auth  fetch  validate  plan  approve  apply  rollback  report  purge   (각 파일이 서브커맨드 1개) │
@@ -42,11 +42,11 @@
         공통 기반(WU-0): config · logging_setup(마스킹) · errors · retry · db · timeutil · platform_utils · textsafe · ui
                                                 ▼
    ┌───────────── 로컬 저장소 ─────────────┐        ┌──────── 외부 ────────┐
-   │ data/ytitle.sqlite3  (DB 7개 테이블)   │        │ YouTube Data API v3  │  ← HTTPS, OAuth 토큰
+   │ data/youtube_title.sqlite3  (DB 7개 테이블)   │        │ YouTube Data API v3  │  ← HTTPS, OAuth 토큰
    │ data/backups/  data/logs/              │        │ YouTube Analytics API│
    │ candidates/  approvals/  config/       │        └──────────────────────┘
    │ secrets/client_secret.json (프로젝트)  │
-   │ %LOCALAPPDATA%\ytitle\tokens\ (토큰)   │
+   │ %LOCALAPPDATA%\youtube-title\tokens\ (토큰)   │
    └────────────────────────────────────────┘
 ```
 
@@ -56,13 +56,13 @@ TB-1 PC ↔ Google API, TB-2 외부 입력 파일(후보 JSON·CSV·YAML) ↔ �
 ### 1-3. 작업 단위 확정표 (02 §9를 설계 경계에 맞춰 확정)
 | 단위 | feature | 소유 파일(수정 범위) | 공유 자원 접촉 | 선행 | 확정 사항 |
 |---|---|---|---|---|---|
-| **WU-0** (공통 선행, unit-0) | F-0 | `pyproject.toml`, `requirements.txt`, `requirements-dev.txt`, `.gitignore`(추가), `config/settings.yaml`, `src/ytitle/{__init__,__main__,config,logging_setup,errors,retry,db,timeutil,platform_utils,textsafe,ui,cli}.py`, `src/ytitle/commands/{__init__,purge}.py`, `tests/conftest.py`, `tests/test_{config,logging,retry,db,timeutil,textsafe,ui,cli,purge}.py` | **모든 공유 자원을 선점**: 의존성 매니페스트(전체 의존성 사전 선언), DB 스키마 전체(7개 테이블), CLI 서브커맨드 자동 탐색부, 설정 로더 | 없음 | 02 대비 변경: `timeutil`·`platform_utils`·`textsafe`·`ui`(터미널 출력 컴포넌트, `04_ux_design.md`) 추가(공통 유틸) |
-| WU-1 | F-A | `src/ytitle/auth.py`, `src/ytitle/commands/auth.py`, `tests/test_auth.py` | 없음(등록부는 자동 탐색, 의존성은 WU-0이 선언) | WU-0 | 불확실이던 칸 확정: **접촉 없음** |
-| WU-2 | F-A | `src/ytitle/{youtube_read,quota}.py`, `src/ytitle/commands/fetch.py`, `tests/test_{read,quota}.py` | DB 읽기·쓰기(스키마는 WU-0 소유) | WU-1 | 변경 없음 |
-| WU-3 | F-B | `src/ytitle/{candidates,validator,banned_terms}.py`, `config/banned_terms.yaml`, `src/ytitle/commands/validate.py`, `tests/test_{candidates,validator}.py` | 없음(PyYAML은 WU-0 선언) | WU-0 | **WU-1과 병렬 가능**(파일·데이터·의존성 독립 확정) |
-| WU-4 | F-C | `src/ytitle/{updater,limits,history}.py`, `src/ytitle/commands/{plan,rollback}.py`, `tests/test_{updater,limits,history}.py` | DB `title_changes` 쓰기, `quota` 모듈 호출 | WU-2, WU-3 | 02 대비 변경: `rollback`의 쓰기 게이트는 WU-5의 `live_guard`를 호출하므로 **롤백 명령의 쓰기 실행부는 WU-5 완료 후 활성화**(WU-4는 롤백 계획·DB 처리까지, 실제 호출은 인터페이스 스텁) |
-| WU-5 | F-C | `src/ytitle/{live_guard,approvals}.py`, `src/ytitle/commands/{approve,apply}.py`, `tests/test_{live_guard,approvals}.py` | 설정 계층(`settings.local.yaml` 읽기) | WU-4 | 02 대비 변경: `approve` 명령 추가(FR-013), 롤백의 실제 호출 활성화 포함 |
-| WU-6 | F-D | `src/ytitle/{report,csv_import}.py`, `src/ytitle/commands/report.py`, `tests/test_{report,csv_import}.py` | DB 읽기 | WU-2, WU-4 | **WU-5와 병렬 가능**(파일 독립, 읽기 전용, 테스트는 임시 DB 별도) |
+| **WU-0** (공통 선행, unit-0) | F-0 | `pyproject.toml`, `requirements.txt`, `requirements-dev.txt`, `.gitignore`(추가), `config/settings.yaml`, `src/youtube_title/{__init__,__main__,config,logging_setup,errors,retry,db,timeutil,platform_utils,textsafe,ui,cli}.py`, `src/youtube_title/commands/{__init__,purge}.py`, `tests/conftest.py`, `tests/test_{config,logging,retry,db,timeutil,textsafe,ui,cli,purge}.py` | **모든 공유 자원을 선점**: 의존성 매니페스트(전체 의존성 사전 선언), DB 스키마 전체(7개 테이블), CLI 서브커맨드 자동 탐색부, 설정 로더 | 없음 | 02 대비 변경: `timeutil`·`platform_utils`·`textsafe`·`ui`(터미널 출력 컴포넌트, `04_ux_design.md`) 추가(공통 유틸) |
+| WU-1 | F-A | `src/youtube_title/auth.py`, `src/youtube_title/commands/auth.py`, `tests/test_auth.py` | 없음(등록부는 자동 탐색, 의존성은 WU-0이 선언) | WU-0 | 불확실이던 칸 확정: **접촉 없음** |
+| WU-2 | F-A | `src/youtube_title/{youtube_read,quota}.py`, `src/youtube_title/commands/fetch.py`, `tests/test_{read,quota}.py` | DB 읽기·쓰기(스키마는 WU-0 소유) | WU-1 | 변경 없음 |
+| WU-3 | F-B | `src/youtube_title/{candidates,validator,banned_terms}.py`, `config/banned_terms.yaml`, `src/youtube_title/commands/validate.py`, `tests/test_{candidates,validator}.py` | 없음(PyYAML은 WU-0 선언) | WU-0 | **WU-1과 병렬 가능**(파일·데이터·의존성 독립 확정) |
+| WU-4 | F-C | `src/youtube_title/{updater,limits,history}.py`, `src/youtube_title/commands/{plan,rollback}.py`, `tests/test_{updater,limits,history}.py` | DB `title_changes` 쓰기, `quota` 모듈 호출 | WU-2, WU-3 | 02 대비 변경: `rollback`의 쓰기 게이트는 WU-5의 `live_guard`를 호출하므로 **롤백 명령의 쓰기 실행부는 WU-5 완료 후 활성화**(WU-4는 롤백 계획·DB 처리까지, 실제 호출은 인터페이스 스텁) |
+| WU-5 | F-C | `src/youtube_title/{live_guard,approvals}.py`, `src/youtube_title/commands/{approve,apply}.py`, `tests/test_{live_guard,approvals}.py` | 설정 계층(`settings.local.yaml` 읽기) | WU-4 | 02 대비 변경: `approve` 명령 추가(FR-013), 롤백의 실제 호출 활성화 포함 |
+| WU-6 | F-D | `src/youtube_title/{report,csv_import}.py`, `src/youtube_title/commands/report.py`, `tests/test_{report,csv_import}.py` | DB 읽기 | WU-2, WU-4 | **WU-5와 병렬 가능**(파일 독립, 읽기 전용, 테스트는 임시 DB 별도) |
 
 **웨이브 초안** (오케스트레이터가 5단계 착수 직전에 판정·통지): 웨이브0 = WU-0 → 웨이브1 = WU-1 ∥ WU-3 → 웨이브2 = WU-2 → 웨이브3 = WU-4 → 웨이브4 = WU-5 ∥ WU-6. 병렬 실행의 근거는 위 표의 "공유 자원 접촉"과 파일 범위이다. 이 환경에서는 하네스 서브에이전트를 쓰지 않으므로(DEC-011) 실제 실행은 순차이다.
 
@@ -125,7 +125,7 @@ candidate ──검증──▶ filtered(pass/warn) ──approve──▶ appro
 
 ## 4. 인터페이스 명세
 
-### 4-1. CLI (`python -m ytitle ...`) — 이벤트/인터페이스 `EVT-xxx`
+### 4-1. CLI (`python -m youtube_title ...`) — 이벤트/인터페이스 `EVT-xxx`
 | ID | 명령 | 쓰기? | 주요 옵션 | 동작 |
 |---|---|---|---|---|
 | EVT-001 | `auth` | 토큰 파일 | `--read` / `--write` / `--revoke` | 설치형 앱 OAuth. 읽기·쓰기 토큰을 **분리 저장**(ADR-004). `--revoke`는 로컬 토큰 삭제와 구글 계정에서의 앱 접근 제거 안내(계정 회수 절차) |
@@ -174,7 +174,7 @@ candidate ──검증──▶ filtered(pass/warn) ──approve──▶ appro
 | NFR-008 | 감사 | 모든 쓰기 시도·결과·승인자 DB 기록, 로그 365일 |
 | NFR-009 | 데이터 최소 보관 | 3-4 |
 | **NFR-010** (신규) | 복구 목표 | **RPO ≤ 24시간, RTO ≤ 30분(가정)**. 쓰기 직전마다 DB 사본(`data/backups/`)을 만들고, 복구는 사본 파일 복사로 한다 |
-| **NFR-011** (신규) | 관측성 | 실행 로그는 사람이 읽는 한국어 한 줄 + `run_id`, `data/logs/ytitle.log`(회전 5MB×10). 토큰·키 마스킹(SEC-008) |
+| **NFR-011** (신규) | 관측성 | 실행 로그는 사람이 읽는 한국어 한 줄 + `run_id`, `data/logs/youtube-title.log`(회전 5MB×10). 토큰·키 마스킹(SEC-008) |
 
 ### 5-2. 안전한 쓰기 흐름 (`apply --live`) — 앞 단계가 하나라도 실패하면 **즉시 중단(fail-closed)**하고 `result=aborted`로 기록. 값싼 로컬 검사를 먼저, 네트워크 호출은 나중에 한다
 ```
@@ -208,7 +208,7 @@ live:             { enable_live: false, live_allowlist: [] }      # local 파일
 approval:         { ttl_hours: 24 }
 exclusions:       { shorts_max_seconds: 180 }      # Shorts 가능성 판별 기준(가정, 순차 교체 모드 제외 근거로만 사용)
 ```
-`.env`: `YT_CLIENT_SECRET_PATH`, `YT_TOKEN_DIR`(기본 `%LOCALAPPDATA%\ytitle\tokens`), `YT_DATA_DIR`(기본 `data`).
+`.env`: `YT_CLIENT_SECRET_PATH`, `YT_TOKEN_DIR`(기본 `%LOCALAPPDATA%\youtube-title\tokens`), `YT_DATA_DIR`(기본 `data`).
 
 ### 5-4. 비용·임계값
 외부 API는 무료 쿼터 안에서 사용(비용 0원). 50개 영상 전체 조회는 약 4 units, 제목 1건 적용은 약 50 + 조회 2 units. 하루 상한 6,000 units이면 이론상 100건 이상 적용 가능하지만 교체 제한(72시간·3회)이 더 먼저 걸린다. **비용이 통제 범위를 벗어났다고 보는 기준**: 일일 사용량이 상한의 80%를 넘는 날이 일주일에 2번 이상이면 사용량 점검.
@@ -267,7 +267,7 @@ exclusions:       { shorts_max_seconds: 180 }      # Shorts 가능성 판별 기
 ## 9. 구현 단위(WU-0~6)별 완료 기준과 검증 방법 (v1 YT-04 요구)
 | 단위 | 완료 기준 | 검증 방법 (실행 명령은 5단계에서 확정) |
 |---|---|---|
-| WU-0 | 설치 후 `python -m ytitle --help`가 **등록된 서브커맨드를 자동 탐색해 표시**(WU-0 시점에는 `purge`, 이후 단위가 끝날 때마다 추가되어 8단계 시점에 9개 전체). 설정 로드·마스킹·재시도·DB 생성·마이그레이션·textsafe·timeutil(PT 날짜 경계)·`purge` 동작. 기본값이 dry-run | `pytest` 전체 통과, `--help` 출력 확인(자동 탐색 동작: 임시 명령 파일을 추가하면 목록에 나타남), 재시도 횟수·백오프 간격 테스트, 로그에 가짜 토큰 문자열이 마스킹됨, PT 날짜 경계(서머타임 전후) 테스트 |
+| WU-0 | 설치 후 `python -m youtube_title --help`가 **등록된 서브커맨드를 자동 탐색해 표시**(WU-0 시점에는 `purge`, 이후 단위가 끝날 때마다 추가되어 8단계 시점에 9개 전체). 설정 로드·마스킹·재시도·DB 생성·마이그레이션·textsafe·timeutil(PT 날짜 경계)·`purge` 동작. 기본값이 dry-run | `pytest` 전체 통과, `--help` 출력 확인(자동 탐색 동작: 임시 명령 파일을 추가하면 목록에 나타남), 재시도 횟수·백오프 간격 테스트, 로그에 가짜 토큰 문자열이 마스킹됨, PT 날짜 경계(서머타임 전후) 테스트 |
 | WU-1 | `auth --read/--write/--revoke` 동작. 읽기·쓰기 토큰 분리 저장. 만료·재인증 감지 시 한국어 안내 | mock 기반 테스트: 정상 로그인, 토큰 만료, 토큰 폐기, 토큰이 로그·예외에 없음. **실제 로그인은 사용자 수행**(절차 문서 `03_manual_setup.md` 8장) |
 | WU-2 | `fetch`가 영상·snippet·지표를 DB에 저장. 쿼터 기록·상한 검사. 쓰기 API 호출 코드 없음 | mock 응답 테스트(50개 배치, 페이지네이션), `quota_usage` 기록 확인, 코드 검색으로 `videos.update` 호출 부재 확인 |
 | WU-3 | 후보 읽기·검증·리포트. 차단 유형 5종, 경고 유형 3종, 엄격 모드, 우회 표기 정규화, 길이(유니코드) 계산, `<` `>` 불가 | 통과·차단 케이스 각 10개 이상(한글 포함), 우회 표기 케이스, 100건 5초 이내, 커버리지 90%+ |
@@ -419,9 +419,9 @@ flowchart LR
 | 어댑터 | `ai/*` `youtube/*` | `TitleSuggester`/`YouTubeGateway` 규약과 M1 모의 구현 | 실서비스 호출(M2·M3) |
 | 라우터 | `routers/*.py` (12개 모듈 → 엔드포인트 31개) | 입력 검증·의존성 조립·응답 변환(얇게) | 업무 규칙 |
 | 저장소 | `db/{models,session}.py` `alembic/` | 14테이블 ORM, 엔진·세션, 마이그레이션 | |
-| 코어 재사용 | `src/ytitle/*`(CLI와 공유, **복사 금지**) | 검증기, 후보 모델, 금칙어 사전, 교체 한도 판정, 계획 해시, 성과 리포트 계산, 설정 로더 | sqlite 의존 모듈(`db/history/quota/live_guard`)은 웹이 PostgreSQL로 재구현 |
+| 코어 재사용 | `src/youtube_title/*`(CLI와 공유, **복사 금지**) | 검증기, 후보 모델, 금칙어 사전, 교체 한도 판정, 계획 해시, 성과 리포트 계산, 설정 로더 | sqlite 의존 모듈(`db/history/quota/live_guard`)은 웹이 PostgreSQL로 재구현 |
 | 프런트 | `web/frontend/src` | 8개 화면, API 클라이언트(CSRF·멱등키 자동), 디자인 토큰, 한국어 문구 한 파일 | 비밀·토큰 영구 저장(메모리만) |
-의존 방향: 라우터 → 도메인 → (core, db, ai, youtube, ytitle). 도메인은 라우터를 모르고, 워커도 같은 도메인 함수를 호출한다(`run_due_items`, 작업 핸들러 3종).
+의존 방향: 라우터 → 도메인 → (core, db, ai, youtube, youtube_title). 도메인은 라우터를 모르고, 워커도 같은 도메인 함수를 호출한다(`run_due_items`, 작업 핸들러 3종).
 
 ### W1-3. 작업 단위 확정표 (as-built — 02/압축설계 §7 대비)
 | 단위 | 소유 범위 | 공유 자원 접촉 | 선행 | 결과 |
@@ -431,7 +431,7 @@ flowchart LR
 | W-BE-B | `domain/` `ai/` `youtube/` `routers/{dashboard,videos,suggestions,batches,changes,reports,jobs,google}.py` `tests/domain` | `core` 공개 인터페이스(읽기 전용 사용), `pyproject` 커버리지 설정(오케스트레이터가 반영) | W-BE-A 인터페이스 | 구현됨(TC-WB 159, 도메인 182) |
 | W-FE | `web/frontend/` 전체 | API 계약 | 계약(압축설계 §3) | 구현됨(TC-WF 95) |
 | W-INF | `web/docker/` `web/compose.yaml` `web/compose.online.yaml` `web/scripts/` `web/README.md` `.dockerignore` | 루트 `.gitignore`(추가만) | 이미지 입력(백엔드 잠금 파일, 프런트 lockfile) | 구현됨(정적 점검 35) |
-**여러 단위가 함께 고치는 공유 파일**: `ytweb/db/models.py` ↔ `alembic/versions/*`(모델을 바꾸면 새 마이그레이션 필요, 0001은 고정 문자열이라 모델 임포트 안 함), `web/backend/requirements*.txt`(해시 잠금 재생성), `web/frontend/package-lock.json`, `web/compose.yaml`(서비스 추가 시), `src/ytitle/*`(CLI 회귀 테스트와 공유). **02와 달라진 점**: ① 압축설계가 말한 unit-0 없이 `models/session/config`를 오케스트레이터가 선행 작성했다 ② `routers/__init__.py`(빈 패키지 표지)가 BE-A 소유로 추가 ③ 커버리지 `omit`로 도메인이 측정 제외된 것을 DEC-042에서 제거 — 모두 병렬을 위한 왜곡이 아니라 구현 중 드러난 사실이다.
+**여러 단위가 함께 고치는 공유 파일**: `ytweb/db/models.py` ↔ `alembic/versions/*`(모델을 바꾸면 새 마이그레이션 필요, 0001은 고정 문자열이라 모델 임포트 안 함), `web/backend/requirements*.txt`(해시 잠금 재생성), `web/frontend/package-lock.json`, `web/compose.yaml`(서비스 추가 시), `src/youtube_title/*`(CLI 회귀 테스트와 공유). **02와 달라진 점**: ① 압축설계가 말한 unit-0 없이 `models/session/config`를 오케스트레이터가 선행 작성했다 ② `routers/__init__.py`(빈 패키지 표지)가 BE-A 소유로 추가 ③ 커버리지 `omit`로 도메인이 측정 제외된 것을 DEC-042에서 제거 — 모두 병렬을 위한 왜곡이 아니라 구현 중 드러난 사실이다.
 **M2·M3 단위 후보(미확정, 사용자 승인 후)**: W-M2-GOOGLE(웹 OAuth 읽기, 신규 `routers/google.py` 확장·토큰 저장 방식) · W-M3-AI(실서비스 어댑터, 비용 상한) · W-M3-LIVE(쓰기 로그인, 라이브 게이트웨이, W5의 이식 목록). 공유 접촉: `models.py`+새 마이그레이션 0002, `compose.online.yaml`, 위협 모델 갱신.
 
 ### W1-4. 신뢰 경계
@@ -556,7 +556,7 @@ erDiagram
 | 2 `enable_live` (local 설정만) | 해당 없음 — `YTWEB_MODE=demo` 고정, 라이브 게이트웨이 코드 없음. 설정 API는 `enable_live`를 **읽기 전용 표시**만 하고 변경 요청은 400 | **M3에서 이식** |
 | 3 영상 ID ∈ 허용 목록 | 해당 없음(`live_allowlist` 읽기 전용 표시) | **M3에서 이식** |
 | 4 쿼터 여유 | `reserve_calls`: **반영 1건당 3행(재조회 1+갱신 50+검증 재조회 1=52단위)을 한꺼번에 선예약**(전부 되거나 전무), PostgreSQL advisory lock으로 직렬화. 부족하면 항목 `skipped(quota_exhausted)`, 워커 틱은 쿼터 0이면 멈춤 | 이식 |
-| 5 교체 제한·미확정 planned | `pending_change_exists` + `check_video_limits`(`ytitle.limits.evaluate_limits` 재사용: 간격 72시간·영상당 3회·최소 노출수 1000·하루 상한=설정값) | 이식(최소 노출수는 데모에서 재변경을 막음 — DEC-042 D1 미반영, DV-W15) |
+| 5 교체 제한·미확정 planned | `pending_change_exists` + `check_video_limits`(`youtube_title.limits.evaluate_limits` 재사용: 간격 72시간·영상당 3회·최소 노출수 1000·하루 상한=설정값) | 이식(최소 노출수는 데모에서 재변경을 막음 — DEC-042 D1 미반영, DV-W15) |
 | 6 호출 직전 재조회 | `gateway.read_snippet` → `title_changed`(제목 변동 시 덮어쓰지 않고 중단), `video_changed`(plan_hash 재계산 불일치) | 이식 |
 | 7 승인(해시·만료·1회용) | `check_approval`: HMAC 변조 탐지 → 1회용(`used_at`) → 만료 → 계획 해시. **만료 판정 기준 시각은 배치 실행 확정 시각**(DEC-042 D3 수용) | 이식(기준 시각 변경, DV-W11) |
 | 8 변경 전 지표 존재 확인 | 게이트로 막지 않음. 기준선이 없으면 리포트가 "기준선 없음/데이터 부족"으로 표시 | 변경(데모) — M3에서 확인 절차 재검토 |
@@ -754,7 +754,7 @@ erDiagram
 | ADR-021 | DEC-020 계승 | 쿼터 3행 일괄 선예약(전부/전무), 실패 호출 차감 유지 | 쓰기 뒤 검증할 쿼터가 없는 상황 방지 | 호출 시점 차감(상한 초과 위험) | 쉬움 |
 | ADR-022 | DEC-018 계승 | KST 하루 상한, PT 쿼터 날짜, DB는 UTC | W6 | 서버 로컬 시간(컨테이너 UTC와 어긋남) | 쉬움 |
 | ADR-023 | (DEC 없음 → 기록 요청) | 네트워크: `app`(internal) + `edge`(web만 게시), 외부 통신은 `compose.online.yaml` 덧씌우기 | internal 전용 컨테이너는 호스트 게시 불가로 알려져 있어 분리. profiles는 네트워크에 적용되지 않음 | 모든 서비스를 기본 네트워크에(외부 통신 가능 → 기각) | 쉬움 |
-| ADR-024 | (DEC 없음 → 기록 요청) | 코어는 복사 없이 `PYTHONPATH=/app/backend:/app/src`로 공유, 유튜브 제목 코어 런타임 의존성은 별도 해시 잠금(`requirements-ytitle.txt`) | 코어 사본 분기 방지, 빌드 격리(미잠금 setuptools 다운로드 회피) | `pip install -e`(빌드 단계 네트워크), 코어 복사(분기) | 쉬움 |
+| ADR-024 | (DEC 없음 → 기록 요청) | 코어는 복사 없이 `PYTHONPATH=/app/backend:/app/src`로 공유, 유튜브 제목 코어 런타임 의존성은 별도 해시 잠금(`requirements-youtube-title.txt`) | 코어 사본 분기 방지, 빌드 격리(미잠금 setuptools 다운로드 회피) | `pip install -e`(빌드 단계 네트워크), 코어 복사(분기) | 쉬움 |
 | ADR-025 | (DEC 없음 → 기록 요청) | DB 마이그레이션은 owner 계정의 1회성 `migrate` 서비스, 앱은 DDL 불가 | 최소 권한, 마이그레이션 실패 시 앱 미기동 | 앱 기동 시 자동 마이그레이션(앱이 DDL 권한 필요) | 쉬움 |
 | ADR-026 | (DEC 없음 → 기록 요청) | 린트·타입: ESLint 9 고정, vitest-axe 대신 axe-core 직접, 백엔드 ruff(임시 점검) | jsx-a11y peer 범위, 유지 상태 | ESLint 10(접근성 린트 상실) | 쉬움 |
 참고: ADR-011~022의 DEC 근거는 `decisions.md` DEC-035/040/041/042에 흩어져 있어 **번호 매핑을 traceability에 등록**해야 한다. ADR-023~026과 BE-B 해석 D2·D5~D9, FE의 HashRouter·ESLint 9·axe-core는 아직 decisions.md에 기록이 없다(공유 문서 갱신 요청 참고).

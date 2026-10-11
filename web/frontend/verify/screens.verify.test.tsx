@@ -732,7 +732,7 @@ describe('성과 리포트 CSV 내보내기', () => {
     await user.click(await screen.findByRole('button', { name: ko.reports.export }));
     await waitFor(() => expect(s.clicks).toHaveLength(1));
     expect(s.clicks[0]!.getAttribute('href')).toBe('blob:test/1');
-    expect(s.clicks[0]!.getAttribute('download')).toBe('ytitle-report.csv');
+    expect(s.clicks[0]!.getAttribute('download')).toBe('youtube-title-report.csv');
     expect(s.created).toHaveLength(1);
     expect(await s.created[0]!.text()).toContain('vid1');
     const get = c.calls.find((x) => x.path === '/api/v1/reports/export.csv')!;

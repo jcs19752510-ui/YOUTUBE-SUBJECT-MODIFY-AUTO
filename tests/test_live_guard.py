@@ -9,14 +9,14 @@ import pytest
 from wu4_support import add_candidate, add_change, add_video
 from wu5_support import (FAKE_ACCESS, FAKE_REFRESH, NEW_TITLE, NOW, SNIPPET, VID, AppliedThenRaise, World, block_network, fill_quota, http_error, timedelta, ts)
 
-from ytitle import approvals, live_guard
-from ytitle import auth as authmod
-from ytitle.errors import AuthError, DatabaseError, InputError, QuotaError, SafetyGateError
-from ytitle.live_guard import LiveGateError, WriteApiError, apply_live, classify_write_error, compare_after, preview_apply, rollback_live
-from ytitle.logging_setup import setup_logging
-from ytitle.quota import QuotaManager
+from youtube_title import approvals, live_guard
+from youtube_title import auth as authmod
+from youtube_title.errors import AuthError, DatabaseError, InputError, QuotaError, SafetyGateError
+from youtube_title.live_guard import LiveGateError, WriteApiError, apply_live, classify_write_error, compare_after, preview_apply, rollback_live
+from youtube_title.logging_setup import setup_logging
+from youtube_title.quota import QuotaManager
 
-SRC = Path(__file__).resolve().parent.parent / "src" / "ytitle"
+SRC = Path(__file__).resolve().parent.parent / "src" / "youtube_title"
 
 
 @pytest.fixture
@@ -238,7 +238,7 @@ def test_enable_live_in_settings_yaml_is_ignored(project, tmp_path, monkeypatch)
     (project / "config" / "settings.yaml").write_text(f'live:\n  enable_live: true\n  live_allowlist: ["{VID}"]\n', encoding="utf-8")
     w = World(project, tmp_path, enable_live=False, allowlist=())
     (project / "config" / "settings.local.yaml").unlink()
-    from ytitle.config import load_settings
+    from youtube_title.config import load_settings
     w.settings = load_settings(project, env={"YT_TOKEN_DIR": str(w.tokens)})
     assert w.settings.enable_live is False and w.settings.live_allowlist == () and w.settings.warnings
     with pytest.raises(LiveGateError) as exc:
@@ -491,7 +491,7 @@ def test_unexpected_exception_is_unknown_and_secrets_stay_out(w, tmp_path):
         apply_live(env, w.cid)
     for h in list(logger.handlers):
         h.flush()
-    blob = "\n".join([exc.value.message, exc.value.next_step, exc.value.cause, w.output(), "\n".join(w.conn.iterdump()), (w.settings.data_dir / "logs" / "ytitle.log").read_text(encoding="utf-8"), repr(exc.value.__cause__)])
+    blob = "\n".join([exc.value.message, exc.value.next_step, exc.value.cause, w.output(), "\n".join(w.conn.iterdump()), (w.settings.data_dir / "logs" / "youtube-title.log").read_text(encoding="utf-8"), repr(exc.value.__cause__)])
     assert FAKE_ACCESS not in blob and FAKE_REFRESH not in blob and "RuntimeError" in exc.value.cause
     assert [r["result"] for r in w.changes()] == ["planned"] and len(w.server.update_calls) == 1
 
@@ -517,7 +517,7 @@ def test_keyboard_interrupt_at_confirmation_records_abort(w):
 
 def test_write_token_failure_aborts_without_consuming_approval(w):
     """TC-599: 쓰기 로그인이 없거나 만료돼 쓰기 토큰을 못 읽으면 11단계에서 중단하고, 승인은 소진하지 않으며 DB에는 aborted만 남는다. [SEC-015, SEC-001]"""
-    w.write_auth_error = AuthError("로그인 정보가 없습니다.", "먼저 `python -m ytitle auth --write`를 실행하세요.")
+    w.write_auth_error = AuthError("로그인 정보가 없습니다.", "먼저 `python -m youtube_title auth --write`를 실행하세요.")
     with pytest.raises(LiveGateError) as exc:
         go(w)
     assert exc.value.step == 11 and "auth --write" in exc.value.next_step
@@ -538,7 +538,7 @@ def test_backup_failure_aborts_before_consuming_approval(w):
 def test_backup_copy_is_made_before_the_write(w):
     """TC-901: 쓰기 전 DB 사본이 data/backups에 만들어지고, 그 사본에는 아직 이번 변경의 planned 행이 없다. [NFR-010]"""
     go(w)
-    copies = list((w.settings.data_dir / "backups").glob("ytitle_*.sqlite3"))
+    copies = list((w.settings.data_dir / "backups").glob("youtube_title_*.sqlite3"))
     assert len(copies) == 1
     import sqlite3
     c = sqlite3.connect(copies[0])
@@ -1008,8 +1008,8 @@ def test_classify_does_not_leak_response_body():
 
 def test_gate_line_formats_all_statuses():
     """TC-936: 게이트 표시는 상태를 기호+글자로 보여 주고(색 비의존) 외부 문자열의 제어 문자를 제거한다. [SEC-019, UX 3장]"""
-    from ytitle.live_guard import GateOutcome, gate_line
-    from ytitle.ui import UiOptions
+    from youtube_title.live_guard import GateOutcome, gate_line
+    from youtube_title.ui import UiOptions
     for status, mark in (("pass", "[통과]"), ("block", "[차단]"), ("warn", "[주의]"), ("pending", "[ 대기 ]"), ("skip", "[해당 없음]")):
         assert mark in gate_line(GateOutcome(7, status, "내용"), UiOptions())
     assert "\x1b" not in gate_line(GateOutcome(7, "pass", "\x1b[31m빨강"), UiOptions())

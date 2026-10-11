@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from ytitle.banned_terms import load_dictionary
-from ytitle.errors import ConfigError
+from youtube_title.banned_terms import load_dictionary
+from youtube_title.errors import ConfigError
 
 REAL = Path(__file__).resolve().parent.parent / "config" / "banned_terms.yaml"
 

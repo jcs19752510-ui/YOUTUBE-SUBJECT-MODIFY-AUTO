@@ -92,7 +92,7 @@ def copy_repo(dst: Path):
     if dst.exists():
         shutil.rmtree(dst)
     ign = shutil.ignore_patterns("node_modules", "__pycache__", "*.pyc", "tests_integration", "tests_infra", "dist")
-    for rel in ("web", "src/ytitle", "config"):
+    for rel in ("web", "src/youtube_title", "config"):
         shutil.copytree(REPO / rel, dst / rel, ignore=ign)
     shutil.copy2(REPO / ".dockerignore", dst / ".dockerignore") if (REPO / ".dockerignore").exists() else None
 

@@ -1,8 +1,8 @@
 """제외 사유(Q-7 기존 제외 정책 유지): 비공개·아동용·예약 라이브/프리미어·Shorts. 모르는 값은 제외 쪽으로 본다."""
 from __future__ import annotations
 
-from ytitle.config import Settings
-from ytitle.updater import sequential_exclusions
+from youtube_title.config import Settings
+from youtube_title.updater import sequential_exclusions
 
 from ytweb.db.models import Video
 

@@ -1,6 +1,6 @@
 """AI 응답 검증(SEC-C03, LLM05)과 전송 전 마스킹(SEC-C06). 모두 순수 함수라 실서비스 어댑터에서도 그대로 쓴다.
 
-검증기(ytitle.validator)가 내용 규칙을 판정하기 전에, 이 단계에서 형식 문제(비어 있음·너무 김·제어/방향 문자·링크/연락처·중복·개수)만 걸러낸다.
+검증기(youtube_title.validator)가 내용 규칙을 판정하기 전에, 이 단계에서 형식 문제(비어 있음·너무 김·제어/방향 문자·링크/연락처·중복·개수)만 걸러낸다.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from ytweb.ai.base import SuggestionDraft
 
-MAX_TITLE_CHARS = 300      # ytitle.candidates 의 제목 길이 상한과 같다(100자 초과는 검증기가 차단 판정)
+MAX_TITLE_CHARS = 300      # youtube_title.candidates 의 제목 길이 상한과 같다(100자 초과는 검증기가 차단 판정)
 MAX_EVIDENCE_CHARS = 500
 MAX_SUMMARY_CHARS = 500    # AI 로 보내는 설명 요약 상한
 TOPICS = ("life", "health", "finance")

@@ -35,7 +35,7 @@ def world(api, csrf, factory, env, clock, monkeypatch):
 
 def test_tc_vfb_070_disclaimer_text_equals_planning_cli_and_frontend_sources():
     assert DISCLAIMER == SPEC
-    ui = (ROOT / "src/ytitle/ui.py").read_text(encoding="utf-8")
+    ui = (ROOT / "src/youtube_title/ui.py").read_text(encoding="utf-8")
     ko = (ROOT / "web/frontend/src/i18n/ko.ts").read_text(encoding="utf-8")
     assert SPEC in ui and SPEC in ko                       # 서버·CLI·화면 세 곳이 같은 문장(분기 시 사용자에게 다른 고지가 나감)
 

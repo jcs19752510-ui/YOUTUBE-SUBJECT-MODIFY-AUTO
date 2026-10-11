@@ -7,9 +7,9 @@ import pytest
 from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
 
-from ytitle import auth, cli
-from ytitle.config import load_settings
-from ytitle.errors import AuthError
+from youtube_title import auth, cli
+from youtube_title.config import load_settings
+from youtube_title.errors import AuthError
 
 FAKE_ACCESS = "ya29.FAKEACCESSTOKENVALUE0123456789"
 FAKE_REFRESH = "1//0FAKEREFRESHTOKENVALUE0123456789abcdef"
@@ -210,7 +210,7 @@ def test_cli_read_login_end_to_end_no_token_in_output_or_log(project, streams, t
     (project / "secrets" / "client_secret.json").write_text("{}", encoding="utf-8")
     monkeypatch.setattr(auth, "new_flow", lambda s, sc: FakeFlow(make_creds(auth.READ_SCOPES)))
     assert run_cli(project, ["auth", "--read"], streams, tmp_path / "t") == 0
-    log = (project / "data" / "logs" / "ytitle.log").read_text(encoding="utf-8")
+    log = (project / "data" / "logs" / "youtube-title.log").read_text(encoding="utf-8")
     for text in (streams.out.getvalue(), streams.err.getvalue(), log):
         assert FAKE_ACCESS not in text and FAKE_REFRESH not in text and "GOCSPX-fake" not in text
     assert "읽기 권한 로그인을 저장했습니다" in streams.out.getvalue()

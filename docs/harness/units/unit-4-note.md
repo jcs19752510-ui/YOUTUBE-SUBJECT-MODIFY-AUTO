@@ -1,7 +1,7 @@
 # unit-4 구현 노트 — WU-4 변경 계획·교체 제한·이력·롤백 (5단계)
 
 - 작업 단위: **WU-4** (feature F-C 수정·이력·롤백) / **속도 트랙: L5(안전 핵심)** / Tier: Standard / 선행: WU-2, WU-3(완료)
-- 파일 범위: `src/ytitle/{updater,limits,history}.py`, `src/ytitle/commands/{plan,rollback}.py`, `tests/test_{updater,limits,history,plan_cmd,rollback_cmd}.py`, `tests/wu4_support.py`(테스트 공용 도우미, 테스트 파일 아님), 이 노트. 범위 밖 수정 없음, 신규 의존성 없음.
+- 파일 범위: `src/youtube_title/{updater,limits,history}.py`, `src/youtube_title/commands/{plan,rollback}.py`, `tests/test_{updater,limits,history,plan_cmd,rollback_cmd}.py`, `tests/wu4_support.py`(테스트 공용 도우미, 테스트 파일 아님), 이 노트. 범위 밖 수정 없음, 신규 의존성 없음.
 - **이 단위에는 YouTube 쓰기 호출도, 구글/네트워크 import도 없다.** 쓰기 자리는 `UpdateGateway`(Protocol, 구현 없음)와 항상 거부하는 `execute_update`뿐이다(SEC-001).
 
 ## 1. 구현 범위

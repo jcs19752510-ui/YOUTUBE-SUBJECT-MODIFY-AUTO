@@ -1,6 +1,6 @@
 """9단계 보안 점검 공용 픽스처(공격자 관점 시험). 운영 코드를 고치지 않고 임시 SQLite 로 앱을 띄운다.
 
-재실행:  <venv>/bin/python -m pytest web/tests_security -q    (venv = web/backend/requirements-dev.txt + web/docker/requirements-ytitle.txt)
+재실행:  <venv>/bin/python -m pytest web/tests_security -q    (venv = web/backend/requirements-dev.txt + web/docker/requirements-youtube-title.txt)
 실스택(컨테이너) 시험은 YTWEB_SEC_LIVE_PORT 가 있을 때만 돈다(test_sec_04_live_stack.py 머리말 참고).
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ for p in (_SRC, _BACKEND):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
-from ytitle.config import load_settings  # noqa: E402
+from youtube_title.config import load_settings  # noqa: E402
 
 from ytweb.app import create_app  # noqa: E402
 from ytweb.config import WebSettings  # noqa: E402

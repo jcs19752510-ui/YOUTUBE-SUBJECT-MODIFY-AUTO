@@ -1,7 +1,7 @@
 # unit-5 구현 노트 — WU-5 승인·안전 게이트·실제 쓰기·롤백 활성화 (5단계)
 
 - 작업 단위: **WU-5** (feature F-C) / **속도 트랙: L5(프로젝트에서 가장 위험한 부분: 실제 쓰기 경로)** / Tier: Standard / 선행: WU-4(완료)
-- 파일 범위: `src/ytitle/{approvals,live_guard}.py`, `src/ytitle/commands/{apply,approve}.py`, `src/ytitle/commands/rollback.py`(`--live` 스텁 교체), `tests/test_{approvals,live_guard,apply_cmd,approve_cmd}.py`, `tests/wu5_support.py`(공용 도우미), `tests/test_rollback_cmd.py`(TC-521·TC-526 변경, TC-983~985 추가), 이 노트. 신규 의존성 없음. cli.py·config.py·db.py·updater.py 등은 수정하지 않았다.
+- 파일 범위: `src/youtube_title/{approvals,live_guard}.py`, `src/youtube_title/commands/{apply,approve}.py`, `src/youtube_title/commands/rollback.py`(`--live` 스텁 교체), `tests/test_{approvals,live_guard,apply_cmd,approve_cmd}.py`, `tests/wu5_support.py`(공용 도우미), `tests/test_rollback_cmd.py`(TC-521·TC-526 변경, TC-983~985 추가), 이 노트. 신규 의존성 없음. cli.py·config.py·db.py·updater.py 등은 수정하지 않았다.
 - **실제 구글 호출 없음**: 모든 테스트는 가짜 서비스 객체만 쓰고, 소켓 `connect`와 `googleapiclient.discovery.build`를 막은 채 실행한다.
 
 ## 1. 구현 범위

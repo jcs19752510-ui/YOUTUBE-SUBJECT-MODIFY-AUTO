@@ -1,4 +1,4 @@
-"""7단계 통합 테스트: F-A(WU-1 auth, WU-2 fetch/quota) + F-B(WU-3 validate). CLI 진입점(ytitle.cli.main)으로 단위를 엮는다.
+"""7단계 통합 테스트: F-A(WU-1 auth, WU-2 fetch/quota) + F-B(WU-3 validate). CLI 진입점(youtube_title.cli.main)으로 단위를 엮는다.
 
 IT-A: F-A 내부 접점 / IT-B: F-B 내부·설정·입력 접점 / IT-X: F-A→F-B 교차 접점.
 실제 구글·네트워크 호출 없음(소켓 차단 + 읽기 전용 가짜 서비스).
@@ -11,11 +11,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from google.oauth2.credentials import Credentials
 
-from ytitle import auth
-from ytitle.errors import AuthError
-from ytitle.quota import QuotaManager
-from ytitle.timeutil import FixedClock
-from ytitle.ui import DISCLAIMER
+from youtube_title import auth
+from youtube_title.errors import AuthError
+from youtube_title.quota import QuotaManager
+from youtube_title.timeutil import FixedClock
+from youtube_title.ui import DISCLAIMER
 
 from it_fab_support import (DESCRIPTION, FAKE_ACCESS, FAKE_REFRESH, GOOD_TITLE, SECRETS, SUMMARY, FakeApi, FakeFlow,
                             Lab, http_error, make_creds, video_item, vid)
@@ -103,7 +103,7 @@ def test_quota_ledger_accumulates_across_runs(lab):
     import sqlite3
     conn = sqlite3.connect(lab.db_path)
     conn.row_factory = sqlite3.Row
-    from ytitle.config import load_settings
+    from youtube_title.config import load_settings
     q = QuotaManager(conn, load_settings(lab.project, lab.env), lab.clock)
     assert q.used_today() == 5 and q.remaining() == 5995
     conn.close()
@@ -255,7 +255,7 @@ def test_reversed_order_gives_korean_guidance_and_no_side_effects(lab):
     """TC-714: 순서가 뒤바뀐 실행(로그인 전 fetch, 영상 없이 지표, 옵션 없음, 동시 옵션)은 종류별 종료 코드와 한국어 안내를 내고 쿼터·영상을 건드리지 않는다. [IT-A14, NFR-007, EVT-002]"""
     lab.channel(2)
     r = lab.run("fetch", "--all")
-    assert r.code == 1 and "[오류 YT-400]" in r.err and "먼저 `python -m ytitle auth --read`" in r.err
+    assert r.code == 1 and "[오류 YT-400]" in r.err and "먼저 `python -m youtube_title auth --read`" in r.err
     assert lab.built_with == [] and lab.quota_rows() == [] and lab.q("SELECT COUNT(*) c FROM videos")[0]["c"] == 0
     assert lab.q("SELECT exit_code, summary FROM run_logs")[0][:] == (1, "YT-400")
     lab.login_read()
@@ -319,8 +319,8 @@ def test_config_layers_reach_quota_ledger_and_paths(lab):
     (lab.project / ".env").write_text("YT_DATA_DIR=altdata\n", encoding="utf-8")
     lab.login_read()
     assert lab.run("fetch", "--all").code == 0
-    db = lab.project / "altdata" / "ytitle.sqlite3"
-    assert db.exists() and not (lab.project / "data").exists() and (lab.project / "altdata" / "logs" / "ytitle.log").exists()
+    db = lab.project / "altdata" / "youtube_title.sqlite3"
+    assert db.exists() and not (lab.project / "data").exists() and (lab.project / "altdata" / "logs" / "youtube-title.log").exists()
     import sqlite3
     c = sqlite3.connect(db)
     assert [r[0] for r in c.execute("SELECT units FROM quota_usage")] == [2, 2, 2]

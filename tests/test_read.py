@@ -9,14 +9,14 @@ import httplib2
 import pytest
 from googleapiclient.errors import HttpError
 
-import ytitle
-from ytitle import cli, db
-from ytitle import youtube_read as yr
-from ytitle.commands import fetch as fetch_cmd
-from ytitle.config import load_settings
-from ytitle.errors import ApiError, AuthError, InputError, QuotaError
-from ytitle.quota import QuotaManager
-from ytitle.youtube_read import YouTubeReader, parse_duration
+import youtube_title
+from youtube_title import cli, db
+from youtube_title import youtube_read as yr
+from youtube_title.commands import fetch as fetch_cmd
+from youtube_title.config import load_settings
+from youtube_title.errors import ApiError, AuthError, InputError, QuotaError
+from youtube_title.quota import QuotaManager
+from youtube_title.youtube_read import YouTubeReader, parse_duration
 
 SECRET = "ya29.FAKE-TOKEN-123"
 READ_METHODS = {("channels", "list"), ("playlistItems", "list"), ("videos", "list"), ("reports", "query")}
@@ -605,7 +605,7 @@ def test_fetch_metrics_accepts_date_objects(project, clock):
 
 def test_database_write_failure_becomes_database_error(project, clock):
     """TC-268: 영상·지표 저장 중 DB 오류는 한국어 DatabaseError(YT-200)로 바뀐다. [FR-006, FR-007, NFR-007]"""
-    from ytitle.errors import DatabaseError
+    from youtube_title.errors import DatabaseError
 
     e = build(project, clock, an=Api().on("reports.query", lambda kw: metrics_response([[vid(1), 1, 1.0, 1, 1.0]])))
     e.conn.execute("DROP TABLE videos")
@@ -620,7 +620,7 @@ def test_database_write_failure_becomes_database_error(project, clock):
 # ---------------------------------------------------------------- 읽기 전용 보장
 
 
-SRC = Path(ytitle.__file__).parent
+SRC = Path(youtube_title.__file__).parent
 WRITE_CALL = re.compile(r"\.(update|insert|delete|patch|rate|setThumbnail|upload|batchUpdate)\s*\(")
 
 
@@ -687,7 +687,7 @@ def forbid_reader(monkeypatch):
 
 
 def open_db(project):
-    return db.connect(project / "data" / "ytitle.sqlite3")
+    return db.connect(project / "data" / "youtube_title.sqlite3")
 
 
 def channel_api(n_videos=3, kids=()):

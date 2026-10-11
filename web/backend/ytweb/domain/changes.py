@@ -1,4 +1,4 @@
-"""변경 이력 조회와 롤백(WEB_DESIGN §4-5). 규칙은 ytitle.history.plan_rollback 과 같다.
+"""변경 이력 조회와 롤백(WEB_DESIGN §4-5). 규칙은 youtube_title.history.plan_rollback 과 같다.
 
 - 성공한 적용(apply)만 되돌릴 수 있다. 대상 영상 ID 를 직접 입력해야 한다(typed_video_id).
 - 그 변경 이후 같은 영상에 다른 변경(success/planned)이 있으면 거부한다(오래된 제목으로 최신 제목을 덮는 사고·이중 롤백 방지).
@@ -13,8 +13,8 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from ytitle.errors import YtError
-from ytitle.updater import compute_plan_hash, validate_new_title
+from youtube_title.errors import YtError
+from youtube_title.updater import compute_plan_hash, validate_new_title
 
 from ytweb.core import audit
 from ytweb.core.errors import ProblemError

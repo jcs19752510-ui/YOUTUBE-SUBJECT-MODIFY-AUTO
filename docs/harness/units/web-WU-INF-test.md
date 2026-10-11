@@ -1,7 +1,7 @@
 # 테스트 결과서 — W-INF Docker 인프라(이미지 3종·compose·nginx·DB 초기화·PowerShell 스크립트) (6단계 독립 검증)
 
 ## 1. 개요
-- 테스트 대상: 작업 단위 **W-INF** — `web/compose.yaml`, `web/compose.online.yaml`, `web/docker/{api,web,db}.Dockerfile`, `web/docker/nginx/*`, `web/docker/db/*`, `web/docker/requirements-ytitle.txt`, `web/scripts/*.ps1`(9개), `web/README.md`, 루트 `.dockerignore`·`.gitignore`(추가분)
+- 테스트 대상: 작업 단위 **W-INF** — `web/compose.yaml`, `web/compose.online.yaml`, `web/docker/{api,web,db}.Dockerfile`, `web/docker/nginx/*`, `web/docker/db/*`, `web/docker/requirements-youtube-title.txt`, `web/scripts/*.ps1`(9개), `web/README.md`, 루트 `.dockerignore`·`.gitignore`(추가분)
 - 테스트 유형: 단위(독립 심사자 재검증, 구현자 시험을 믿지 않고 설계서·요구사항에서 새로 작성)
 - 적용 Tier: 속도 트랙 표기 없음 → L3(일반), 위험도 등급은 Standard 로 간주(규칙 B 원문: 최소 2회). 06·07 병합 조건 미적용(병렬 호출)
 - 적용 속도 트랙: L3
@@ -81,7 +81,7 @@
 | TC-VI-014 | Dockerfile 최종 USER 가 비루트, ADD URL/curl|sh/--insecure/ENV 비밀 등 위험 지시문 없음 | 정적 | pytest `-k tc_vi_014` (3건) | 충족 | Pass 3건 | Pass | D-03, D-04 |
 | TC-VI-015 | api 이미지: 멀티 스테이지, pip --require-hashes --only-binary --no-deps, 컨텍스트 통복사·비밀 복사 없음, HEALTHCHECK | 정적 | pytest `-k tc_vi_015` (1건) | 충족 | Pass 1건 | Pass | D-04 |
 | TC-VI-016 | web 이미지: npm ci --ignore-scripts, 소스맵 삭제, 런타임 단계에 node 없음, USER 101 | 정적 | pytest `-k tc_vi_016` (1건) | 충족 | Pass 1건 | Pass | D-04, D-05 |
-| TC-VI-017 | requirements-ytitle.txt 와 backend/requirements.txt 의 모든 항목이 ==핀 + 중복 없는 sha256 해시 | 정적 | pytest `-k tc_vi_017` (2건) | 충족 | Pass 2건 | Pass | D-11(잠금 부분) |
+| TC-VI-017 | requirements-youtube-title.txt 와 backend/requirements.txt 의 모든 항목이 ==핀 + 중복 없는 sha256 해시 | 정적 | pytest `-k tc_vi_017` (2건) | 충족 | Pass 2건 | Pass | D-11(잠금 부분) |
 | TC-VI-018 | .dockerignore 20개 필수 항목과 .gitignore 의 secrets/backups/*.dump | 정적 | pytest `-k tc_vi_018` (1건) | 충족 | Pass 1건 | Pass | D-05, D-06 |
 | TC-VI-019 | nginx 기준선: server_tokens, 본문 1m, 타임아웃, 헤더 버퍼, 속도 제한 구역·429, listen 1개, Host 허용 map(정확 2개)·444, 로그에 query/cookie 변수 없음, error_log 수준 | 정적 | pytest `-k tc_vi_019` (1건) | 충족 | Pass 1건 | Pass | S-W01, S-W04 |
 | TC-VI-020 | 모든 proxy location 이 보안 헤더 include·limit_req·proxy.conf·no-store 를 갖고(healthz/readyz 제외 limit_except), 헤더 7종 always, CSP 핵심 지시자, XFF 덮어쓰기, 백엔드 헤더 숨김 | 정적 | pytest `-k tc_vi_020` (1건) | 충족 | Pass 1건 | Pass | S-W04 |
@@ -268,7 +268,7 @@
 | M39 | `docker/db.Dockerfile` | db 이미지 root | 잡음 (static, TC-VI-014) | (해당 없음: 행동 시험 대상 아님) |
 | M40 | `docker/web.Dockerfile` | nginx 이미지 latest | 잡음 (static, TC-VI-013) | (해당 없음: 행동 시험 대상 아님) |
 | M41 | `docker/web.Dockerfile` | Dockerfile ADD URL | 잡음 (static, TC-VI-014) | (해당 없음: 행동 시험 대상 아님) |
-| M42 | `docker/requirements-ytitle.txt` | 해시 잠금 제거(dotenv) | 잡음 (static, TC-VI-017) | (해당 없음: 행동 시험 대상 아님) |
+| M42 | `docker/requirements-youtube-title.txt` | 해시 잠금 제거(dotenv) | 잡음 (static, TC-VI-017) | (해당 없음: 행동 시험 대상 아님) |
 | M43 | `docker/api.Dockerfile` | 잠금 없는 pip install 추가 | 잡음 (static, TC-VI-015) | (해당 없음: 행동 시험 대상 아님) |
 | M44 | `docker/db.Dockerfile` | ytweb-db 777 | 잡음 (static, TC-VI-024) | (해당 없음: 행동 시험 대상 아님) |
 | M45 | `.dockerignore` | .dockerignore secrets/ 제거 | 잡음 (static, TC-VI-018) | (해당 없음: 행동 시험 대상 아님) |

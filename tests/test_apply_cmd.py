@@ -4,7 +4,7 @@ import pytest
 from wu4_support import add_change
 from wu5_support import NEW_TITLE, NOW, SNIPPET, VID, World, block_network, cli_run, fill_quota, http_error, patch_services, timedelta, ts
 
-from ytitle import approvals
+from youtube_title import approvals
 
 
 @pytest.fixture

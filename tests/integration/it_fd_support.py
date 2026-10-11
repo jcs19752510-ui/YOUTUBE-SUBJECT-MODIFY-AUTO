@@ -1,6 +1,6 @@
 """F-D 통합 테스트(test_it_fd.py) 공용 도우미(테스트 파일이 아니다).
 
-CLI 진입점(ytitle.cli.main)으로 fetch(WU-2) -> WU-4 이력 -> report(WU-6)를 엮는다.
+CLI 진입점(youtube_title.cli.main)으로 fetch(WU-2) -> WU-4 이력 -> report(WU-6)를 엮는다.
 실제 구글/네트워크 호출은 없다: 가짜 YouTube/Analytics 서비스(읽기 메서드 4개만 존재)와 임시 DB만 쓴다.
 """
 from __future__ import annotations
@@ -16,11 +16,11 @@ from googleapiclient.errors import HttpError
 
 from wu4_support import add_candidate, make_settings
 
-from ytitle import cli, db
-from ytitle.commands import fetch as fetch_cmd
-from ytitle.history import begin_change, begin_rollback, finish_change, plan_rollback
-from ytitle.timeutil import FixedClock, utc_iso
-from ytitle.updater import create_plan
+from youtube_title import cli, db
+from youtube_title.commands import fetch as fetch_cmd
+from youtube_title.history import begin_change, begin_rollback, finish_change, plan_rollback
+from youtube_title.timeutil import FixedClock, utc_iso
+from youtube_title.updater import create_plan
 
 VID = "abc123DEF45"
 VID2 = "xyz789GHI01"
@@ -142,7 +142,7 @@ class World:
         return f"exports/{name}"
 
     def conn(self):
-        c = db.connect(self.project / "data" / "ytitle.sqlite3")
+        c = db.connect(self.project / "data" / "youtube_title.sqlite3")
         db.migrate(c)
         return c
 
@@ -150,7 +150,7 @@ class World:
         return make_settings(self.project)
 
     def log_text(self) -> str:
-        p = self.project / "data" / "logs" / "ytitle.log"
+        p = self.project / "data" / "logs" / "youtube-title.log"
         return p.read_text(encoding="utf-8") if p.exists() else ""
 
     # ---- WU-4 실제 이력 API로 변경/롤백 성공 행 만들기 (DB 계약)

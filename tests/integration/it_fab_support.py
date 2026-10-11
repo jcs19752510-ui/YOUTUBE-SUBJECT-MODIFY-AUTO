@@ -1,7 +1,7 @@
 """F-A(인증·조회)+F-B(후보·필터) 통합 테스트용 지원 코드(7단계, 테스트 전용).
 
 실제 구글/네트워크는 쓰지 않는다. 가짜 OAuth 흐름과 읽기 전용 가짜 YouTube 서비스를 CLI 진입점
-(`ytitle.cli.main`) 뒤에 꽂아, 단위 사이의 접점(DB 계약, 쿼터 장부, 설정 계층, 오류/종료 코드, 로그 마스킹)을 본다.
+(`youtube_title.cli.main`) 뒤에 꽂아, 단위 사이의 접점(DB 계약, 쿼터 장부, 설정 계층, 오류/종료 코드, 로그 마스킹)을 본다.
 """
 from __future__ import annotations
 
@@ -16,10 +16,10 @@ import httplib2
 from google.oauth2.credentials import Credentials
 from googleapiclient.errors import HttpError
 
-from ytitle import auth, cli
-from ytitle.commands import fetch as fetch_cmd
-from ytitle.timeutil import FixedClock
-from ytitle.youtube_read import YouTubeReader
+from youtube_title import auth, cli
+from youtube_title.commands import fetch as fetch_cmd
+from youtube_title.timeutil import FixedClock
+from youtube_title.youtube_read import YouTubeReader
 
 REPO = Path(__file__).resolve().parents[2]
 REAL_DICT = REPO / "config" / "banned_terms.yaml"
@@ -245,7 +245,7 @@ class Lab:
     # -- 관찰
     @property
     def db_path(self) -> Path:
-        return self.project / "data" / "ytitle.sqlite3"
+        return self.project / "data" / "youtube_title.sqlite3"
 
     def q(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
         conn = sqlite3.connect(self.db_path)
@@ -256,7 +256,7 @@ class Lab:
             conn.close()
 
     def log_text(self) -> str:
-        p = self.project / "data" / "logs" / "ytitle.log"
+        p = self.project / "data" / "logs" / "youtube-title.log"
         return p.read_text(encoding="utf-8") if p.exists() else ""
 
     def data_bytes(self) -> bytes:

@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from ytitle.errors import ConfigError
-from ytitle.timeutil import FixedClock, parse_date, parse_iso, pt_date, utc_iso
+from youtube_title.errors import ConfigError
+from youtube_title.timeutil import FixedClock, parse_date, parse_iso, pt_date, utc_iso
 
 
 def utc(*a):

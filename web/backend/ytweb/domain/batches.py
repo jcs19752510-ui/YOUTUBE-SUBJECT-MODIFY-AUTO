@@ -21,8 +21,8 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
-from ytitle.errors import YtError
-from ytitle.updater import build_update_body, validate_new_title
+from youtube_title.errors import YtError
+from youtube_title.updater import build_update_body, validate_new_title
 
 from ytweb.core import audit, jobs
 from ytweb.core.clock import kst_today

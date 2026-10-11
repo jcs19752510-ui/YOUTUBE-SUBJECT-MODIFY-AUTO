@@ -51,8 +51,8 @@ MUTATIONS = [
     ("M27", "쿼터 경계: 사용+필요==상한도 거부", S + "domain/limits_quota.py", "if used + need > policy.daily_limit_units:", "if used + need >= policy.daily_limit_units:", "test_it_02_scenarios.py", "106"),
     ("M28", "재동기화가 앱이 바꾼 제목을 되돌림", S + "domain/seed.py", "if vid not in touched:", "if True:", "test_it_02_scenarios.py", "100 or 114"),
     ("M29", "PIN 잠금 시작 횟수 5 -> 6", S + "core/pin.py", 'if st["count"] >= MAX_FAILURES:', 'if st["count"] > MAX_FAILURES:', "test_it_03_state.py", "305"),
-    ("M30", "교체 한도 72시간 간격 -> 69시간", "src/ytitle/limits.py", "if now >= ready:", "if now >= ready - timedelta(hours=3):", "test_it_02_scenarios.py", "111"),
-    ("M31", "교체 한도 횟수 경계(<= 로 완화)", "src/ytitle/limits.py", "if facts.change_count < cap:", "if facts.change_count <= cap:", "test_it_02_scenarios.py", "111"),
+    ("M30", "교체 한도 72시간 간격 -> 69시간", "src/youtube_title/limits.py", "if now >= ready:", "if now >= ready - timedelta(hours=3):", "test_it_02_scenarios.py", "111"),
+    ("M31", "교체 한도 횟수 경계(<= 로 완화)", "src/youtube_title/limits.py", "if facts.change_count < cap:", "if facts.change_count <= cap:", "test_it_02_scenarios.py", "111"),
     ("M32", "승인 만료 정리(expire_stale) 기준 완화", S + "domain/suggestions.py", "Approval.expires_at <= now", "Approval.expires_at <= now - timedelta(days=30)", "test_it_02_scenarios.py", "102"),
     ("M33", "CSV 수식 무력화 접두 범위 축소", S + "domain/reports.py", '_FORMULA_START = ("=", "+", "-", "@", "\\t", "\\r")', '_FORMULA_START = ("=",)', "test_it_02_scenarios.py", "107"),
     ("M34", "영상 불러오기 연타 방지 제거", S + "routers/videos.py", "if active is not None:", "if False:", "test_it_03_state.py", "317"),
@@ -111,7 +111,7 @@ def run(round_no: int, only: list[str]) -> None:
         for f in ("alembic.ini", "pyproject.toml"):
             shutil.copy2(REPO / "web/backend" / f, d / "backend" / f)
         (d / "src").mkdir()
-        shutil.copytree(REPO / "src/ytitle", d / "src" / "ytitle", ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(REPO / "src/youtube_title", d / "src" / "youtube_title", ignore=shutil.ignore_patterns("__pycache__"))
         target = d / rel.replace("web/backend/", "backend/") if rel.startswith("web/backend/") else d / rel
         target.write_text(text.replace(old, new), encoding="utf-8")
         assert (d / rel.replace("web/backend/", "backend/")).read_text(encoding="utf-8").count(new) >= 1

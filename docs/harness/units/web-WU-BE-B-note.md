@@ -17,7 +17,7 @@
 - `ytweb.domain.batches.run_due_items(factory, now, env=None, *, batch_id=None, gateway_factory=..., on_progress=None, job_id=None) -> TickResult` — 워커 틱(`worker.py`가 `(factory, now)`로 그대로 호출, 동작 확인함: TC-WB-090).
 - `ytweb.domain.batches.recover_running_items(factory, now, env=None, *, stale_after=10분)` — 재시작 복구. **워커 기동 직후 `stale_after=timedelta(0)`으로 한 번 호출해 주길 요청**(기본 틱은 10분 이상 된 running만 정리).
 - 작업 핸들러 3종(`videos.sync`, `suggestions.generate`, `batch.execute`)은 `import ytweb.domain` 시점에 `register_handler`로 등록된다(`domain/handlers.py`; 워커가 하위 모듈을 어느 것만 불러와도 패키지 `__init__`이 등록).
-- `Env`(`domain/common.py`): 정책(`ytitle.config.Settings`)·금칙어 사전·비밀 폴더 묶음. 요청 경로는 `Depends(get_env)`, 워커 경로는 환경변수에서 만든 `default_env()`.
+- `Env`(`domain/common.py`): 정책(`youtube_title.config.Settings`)·금칙어 사전·비밀 폴더 묶음. 요청 경로는 `Depends(get_env)`, 워커 경로는 환경변수에서 만든 `default_env()`.
 - 라우터 의존성 `get_gateway`/`get_title_suggester`/`get_env`(`domain/deps.py`)는 `dependency_overrides`로 교체 가능.
 
 ## 3. 설계 결정
@@ -87,7 +87,7 @@
 | W-012 이력 | `changes.list_changes`, audit | 093, 136 |
 | W-013 리포트·CSV | `reports.py` | 104~112, 133 |
 | POL-001 엄격 모드 | 검증기 + `is_blocking` | 013, 026 |
-| POL-002 데이터 부족·원인 단정 금지 | `ytitle.report.build_report` 재사용 | 104~109, 133 |
+| POL-002 데이터 부족·원인 단정 금지 | `youtube_title.report.build_report` 재사용 | 104~109, 133 |
 | POL-003 제외 영상 | `exclusions.py` | 004, 020, 028, 055 |
 | S-W03 CSRF/상태 변경 | 라우터 `require_csrf` | 123 |
 | S-W06 / SEC-C03·C04·C05 (AI 응답 검증·검증기 필수·사람 승인) | `ai/guard.py`, 승인 게이트 | 008~011, 023~024, 070 |
@@ -167,10 +167,10 @@ YTWEB_TEST_PG_URL='postgresql+psycopg://…' ../../.harness-tmp/venv_be_b/bin/py
 | DEF-7B-002 | `_recover_one` 의 "재조회로 success/failed 확정" 분기에서 `change.apply` 감사(`actor=worker`, `target=change`, `detail`: `batch_id, video_id, suggestion_id, verify_ok, recovered:true, reason:"restart_recovery"`)를 기록. `batch.item.recovered.detail` 에 `batch_id·video_id·change_id` 추가. 해시 체인은 `audit.record` 그대로 | 008~010, 038 |
 | DEF-9-007 | `notices.DISCLAIMER`; `reports/changes.notes[0]`; CSV 는 기존처럼 notes 가 빈 줄 뒤 일반 행(`csv_safe` 적용)으로 나가므로 자동 포함(`#` 주석 줄 아님); 사전 점검 응답에 `notice` | 011~013 |
 | DEF-9-001 | 경로·쿼리 ID `le=2**63-1`, `page le=1_000_000`, 본문 `suggestion_ids[]` 항목 `1..2**63-1` → 422 `validation_error` | 014~015 |
-| DEF-9-004 | `common.clean_approver` 가 유니코드 범주 Cf(제로폭·방향·소프트 하이픈·BOM)·Zl·Zp 를 거부(422 `approver_invalid`). **`ytitle.approvals.clean_approver`(CLI)는 재사용하지 않았다** — 예외 형식이 달라 웹용(`ProblemError`)이 따로 있고, CLI 쪽 같은 갭은 `src/ytitle` 소유 범위 밖이라 건드리지 않음(알려진 제한) | 016~018 |
+| DEF-9-004 | `common.clean_approver` 가 유니코드 범주 Cf(제로폭·방향·소프트 하이픈·BOM)·Zl·Zp 를 거부(422 `approver_invalid`). **`youtube_title.approvals.clean_approver`(CLI)는 재사용하지 않았다** — 예외 형식이 달라 웹용(`ProblemError`)이 따로 있고, CLI 쪽 같은 갭은 `src/youtube_title` 소유 범위 밖이라 건드리지 않음(알려진 제한) | 016~018 |
 
 ### 면책 문구 원문(프런트가 같은 문장 사용)
-`이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.` (끝 마침표 포함, CLI `ytitle.ui.DISCLAIMER` 와 동일)
+`이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.` (끝 마침표 포함, CLI `youtube_title.ui.DISCLAIMER` 와 동일)
 
 ### 계약 변경(프런트가 알아야 할 것)
 1. `POST /batches/{id}/cancel` : 초안에서도 200 `Batch(status:"cancelled")`, 항목 전부 `cancelled`, 제안은 `approved` 로 남아 바로 새 배치에 담긴다. 두 번째 취소는 409 `batch_not_cancellable`(상태·감사 변화 없음), 취소된 초안의 실행은 409 `batch_not_draft`. 멱등성 키는 받지 않는다(기존과 동일).
@@ -195,4 +195,4 @@ YTWEB_TEST_PG_URL='postgresql+psycopg://…' ../../.harness-tmp/venv_be_b/bin/py
 ### 공유 문서 갱신 요청 (오케스트레이터가 반영)
 - traceability: DEF-7-009(C-2)·7B-001·7B-002·9-001·9-003①·9-004·9-007(서버 쪽)·7-003~005(openapi/API.md 문서) → 작업 단위 `W-FIX-BE`, 구현 상태 `구현됨(6단계 재검증 대기)`; POL-002 웹 행의 서버 쪽 근거 = `ytweb/domain/notices.py`.
 - decisions: (a) 세션 유휴 만료 기본 30분(`YTWEB_SESSION_IDLE_MINUTES`, 0=끔) — Q-S9-7 추천안 적용, (b) stale 작업 규칙(기동 시 전부 재큐 + `batch.execute` 5분/그 외 10분, 시도 3회 상한), (c) 승인자 이름 Cf/Zl/Zp 거부, (d) "취소 멱등"은 효과 멱등(두 번째 취소 409) 해석.
-- 질문(규칙 A): Q1 두 번째 취소를 409 대신 200(재생)으로 바꿀까요? Q2 유휴 30분 기본값이 선생님 사용 패턴에 너무 짧지 않은가요(탭 방치 후 재로그인 필요, PIN 없으면 새로고침만으로 복구)? Q3 CLI `ytitle.approvals.clean_approver` 의 같은 제로폭 갭도 고칠까요(src/ytitle 범위)?
+- 질문(규칙 A): Q1 두 번째 취소를 409 대신 200(재생)으로 바꿀까요? Q2 유휴 30분 기본값이 선생님 사용 패턴에 너무 짧지 않은가요(탭 방치 후 재로그인 필요, PIN 없으면 새로고침만으로 복구)? Q3 CLI `youtube_title.approvals.clean_approver` 의 같은 제로폭 갭도 고칠까요(src/youtube_title 범위)?

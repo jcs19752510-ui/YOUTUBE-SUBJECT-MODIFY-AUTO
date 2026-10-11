@@ -312,7 +312,7 @@ def test_tc_vfi_020_gitignore_blocks_secret_like_names(gitrepo, path):
 
 @pytest.mark.parametrize("path", [
     "web/backend/ytweb/app.py", "web/docker/nginx/nginx.conf", "docs/yt/API.md", "config/limits.yaml", "web/frontend/package-lock.json",
-    "web/frontend/src/main.tsx", "src/ytitle/config.py", "README.md", "web/backend/alembic/versions/0002_revoke_alembic_version_dml.py", "web/docker/db/audit-guard.sql",
+    "web/frontend/src/main.tsx", "src/youtube_title/config.py", "README.md", "web/backend/alembic/versions/0002_revoke_alembic_version_dml.py", "web/docker/db/audit-guard.sql",
     "keyboard.md", "monkey.json", "client.json", "secret_santa.txt",
 ])
 def test_tc_vfi_021_gitignore_does_not_swallow_ordinary_files(gitrepo, path):
@@ -345,7 +345,7 @@ def test_tc_vfi_030_dockerignore_has_no_negation_that_reopens_secrets_and_keeps_
 def test_tc_vfi_031_dockerfile_copy_sources_exist_and_are_not_ignored_by_new_patterns():
     """새 .dockerignore 패턴이 이미지에 필요한 추적 파일을 지워 버리는 회귀를 막는다(근사: 접미사·이름 패턴 대조; 실제 빌드는 시험 C 가 확인)."""
     tracked = _git("ls-files").stdout.splitlines()
-    needed = [f for f in tracked if f.startswith(("src/ytitle/", "config/", "web/backend/ytweb/", "web/backend/alembic", "web/frontend/src/", "web/docker/"))]
+    needed = [f for f in tracked if f.startswith(("src/youtube_title/", "config/", "web/backend/ytweb/", "web/backend/alembic", "web/frontend/src/", "web/docker/"))]
     assert len(needed) > 100
     bad = [f for f in needed if re.search(r"\.(pem|key|p12)$", f) or re.search(r"(^|/)(credentials[^/]*\.json|client_secret[^/]*\.json|id_rsa[^/]*|\.ruff_cache|\.mypy_cache|\.coverage[^/]*)$", f)]
     assert bad == [], bad
@@ -615,13 +615,13 @@ def test_tc_vfi_055_rate_limited_api_response_has_api_headers(ngx):
 
 CTX_FILES = {
     "web/backend/ytweb/app.py": "keep", "web/backend/ytweb/core/x.py": "keep", "web/backend/alembic.ini": "keep", "web/backend/alembic/versions/0002.py": "keep",
-    "src/ytitle/config.py": "keep", "config/limits.yaml": "keep", "web/docker/api.Dockerfile": "keep", "web/frontend/src/main.tsx": "keep",
+    "src/youtube_title/config.py": "keep", "config/limits.yaml": "keep", "web/docker/api.Dockerfile": "keep", "web/frontend/src/main.tsx": "keep",
     "web/frontend/package.json": "keep", "web/backend/requirements.txt": "keep",
     # 걸러져야 하는 것
     "client_secret_1.json": "drop", "web/client_secret_google.json": "drop", "a/b/client_secret_x.json": "drop", "credentials.json": "drop", "a/b/credentials.json": "drop",
     "credentials_prod.json": "drop", "server.pem": "drop", "a/b/c/server.pem": "drop", "id.key": "drop", "a/b/c/id.key": "drop", "a/b/cert.p12": "drop",
     "a/id_rsa": "drop", "a/id_rsa.pub": "drop", "web/backend/.ruff_cache/0.1/x": "drop", "web/backend/.mypy_cache/y": "drop", "web/backend/.coverage": "drop",
-    "web/backend/.coverage.host.123": "drop", "src/ytitle/.ruff_cache/z": "drop", ".env": "drop", "web/.env.local": "drop", "web/secrets/db_owner_password": "drop",
+    "web/backend/.coverage.host.123": "drop", "src/youtube_title/.ruff_cache/z": "drop", ".env": "drop", "web/.env.local": "drop", "web/secrets/db_owner_password": "drop",
     "web/backups/x.dump": "drop", "data/state.json": "drop", "token.json": "drop", "a/token_x.json": "drop", "docs/x.md": "drop", ".git/config": "drop",
     "web/backend/tests/test_x.py": "drop", "web/frontend/node_modules/m/i.js": "drop", "x/__pycache__/m.pyc": "drop", "README.md": "drop",
 }
@@ -653,8 +653,8 @@ def test_tc_vfi_060_real_dockerignore_filters_a_fixture_context():
 DECOYS = ["web/backend/.ruff_cache/0.5/decoy", "web/backend/.coverage", "web/backend/.coverage.host.1", "web/backend/ytweb/.mypy_cache/decoy", "web/backend/key.pem",
           "web/backend/ytweb/server.key", "web/backend/credentials_prod.json", "web/backend/client_secret_x.json", "web/backend/pyproject.toml",
           "web/backend/requirements-dev.txt", "web/backend/tests/test_decoy.py", "web/backend/ytweb.egg-info/PKG-INFO"]
-REAL = ["web/backend/ytweb/app.py", "web/backend/alembic/versions/0002.py", "web/backend/alembic.ini", "src/ytitle/config.py", "config/limits.yaml",
-        "web/backend/requirements.txt", "web/docker/requirements-ytitle.txt"]
+REAL = ["web/backend/ytweb/app.py", "web/backend/alembic/versions/0002.py", "web/backend/alembic.ini", "src/youtube_title/config.py", "config/limits.yaml",
+        "web/backend/requirements.txt", "web/docker/requirements-youtube-title.txt"]
 
 
 def _probe_build(dockerfile_text: str, dockerignore_text: str) -> set[str]:
@@ -682,7 +682,7 @@ def test_tc_vfi_061_current_api_copy_lines_and_dockerignore_keep_decoys_out_of_i
     got = _probe_build(_runtime_copy_lines(read(DOCKER_DIR / "api.Dockerfile")), read(ROOT / ".dockerignore"))
     leaked = [x for x in got if any(x.endswith(d.split("/")[-1]) or d.split("/")[-1] in x for d in DECOYS)]
     assert leaked == [], leaked
-    assert "app/backend/ytweb/app.py" in got and "app/backend/alembic.ini" in got and "app/backend/alembic/versions/0002.py" in got and "app/src/ytitle/config.py" in got
+    assert "app/backend/ytweb/app.py" in got and "app/backend/alembic.ini" in got and "app/backend/alembic/versions/0002.py" in got and "app/src/youtube_title/config.py" in got
 
 
 @needs_docker
@@ -1128,7 +1128,7 @@ def test_tc_vfi_100_api_image_contains_only_git_tracked_runtime_files():
     files = [f for f in r.stdout.splitlines() if f.strip()]
     assert len(files) > 100
     tracked = set(_git("ls-files").stdout.splitlines())
-    mapping = (("/app/src/ytitle/", "src/ytitle/"), ("/app/config/", "config/"), ("/app/backend/ytweb/", "web/backend/ytweb/"),
+    mapping = (("/app/src/youtube_title/", "src/youtube_title/"), ("/app/config/", "config/"), ("/app/backend/ytweb/", "web/backend/ytweb/"),
                ("/app/backend/alembic/", "web/backend/alembic/"), ("/app/backend/alembic.ini", "web/backend/alembic.ini"))
     extra = []
     for f in files:
@@ -1144,7 +1144,7 @@ def test_tc_vfi_100_api_image_contains_only_git_tracked_runtime_files():
     assert not [f for f in files if not f.endswith(".example") and re.search(r"(\.pem|\.key|\.p12|credentials|client_secret|token|\.env|settings\.local|\.sqlite3|\.coverage|_cache|\.dump)", f)]
     # 필요한 것은 모두 들어 있다
     for must in ("/app/backend/alembic.ini", "/app/backend/alembic/versions/0001_initial.py", "/app/backend/alembic/versions/0002_revoke_alembic_version_dml.py",
-                 "/app/backend/ytweb/app.py", "/app/src/ytitle/config.py"):
+                 "/app/backend/ytweb/app.py", "/app/src/youtube_title/config.py"):
         assert must in files, must
 
 

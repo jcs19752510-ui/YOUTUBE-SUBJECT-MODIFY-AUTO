@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from ytitle.banned_terms import load_dictionary
-from ytitle.candidates import Candidate, CandidateFile
-from ytitle.config import load_settings
-from ytitle.validator import count_emoji, detect_strict, key_terms, match_ratio, tokens, validate_file
+from youtube_title.banned_terms import load_dictionary
+from youtube_title.candidates import Candidate, CandidateFile
+from youtube_title.config import load_settings
+from youtube_title.validator import count_emoji, detect_strict, key_terms, match_ratio, tokens, validate_file
 
 REAL_DICT = Path(__file__).resolve().parent.parent / "config" / "banned_terms.yaml"
 GENERIC_SUMMARY = "겨울철 난방비와 전기요금을 줄이는 생활 습관을 설명하는 영상입니다"

@@ -83,7 +83,7 @@
 python3 -m venv .harness-tmp/venv_be_a
 . .harness-tmp/venv_be_a/bin/activate
 pip install --require-hashes -r web/backend/requirements-dev.txt
-pip install -e .                      # 저장소 루트의 기존 코어 src/ytitle (복사 금지, 재사용)
+pip install -e .                      # 저장소 루트의 기존 코어 src/youtube_title (복사 금지, 재사용)
 cd web/backend
 pytest tests/core -o addopts="" -rs                                   # SQLite 만(PG 테스트는 건너뜀)
 YTWEB_TEST_PG_URL=postgresql+psycopg://<일회용 DB> pytest tests/core -o addopts="" -rs   # PG 포함

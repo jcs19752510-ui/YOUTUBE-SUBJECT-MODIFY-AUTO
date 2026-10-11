@@ -13,7 +13,7 @@
 |---|---|
 | compose | `web/compose.yaml`, `web/compose.online.yaml`(M2·M3용 egress 덧씌우기, 기본 미사용) |
 | 이미지 | `web/docker/api.Dockerfile`(api·worker·migrate 공용), `web/docker/web.Dockerfile`, `web/docker/db.Dockerfile` |
-| 해시 잠금 | `web/docker/requirements-ytitle.txt` (PyYAML 6.0.3, python-dotenv 1.2.4, tzdata 2026.5; PyPI JSON의 sha256) |
+| 해시 잠금 | `web/docker/requirements-youtube-title.txt` (PyYAML 6.0.3, python-dotenv 1.2.4, tzdata 2026.5; PyPI JSON의 sha256) |
 | nginx | `web/docker/nginx/{nginx.conf,security-headers.conf,proxy.conf}` |
 | DB | `web/docker/db/{init/01-roles.sh,schema-grants.sql,audit-guard.sql,pg_hba.conf,bin/ytweb-db}`, `web/docker/.gitattributes`(LF 강제) |
 | 스크립트 | `web/scripts/{_common,start,stop,status,logs,backup,restore,reset-demo,pin-digests}.ps1` (UTF-8 BOM) |
@@ -40,7 +40,7 @@
 |---|---|---|
 | 1 | `web`만 `edge`(비 internal) 네트워크에 추가로 붙음 | internal 전용 컨테이너는 호스트 포트 게시가 되지 않는 것으로 알려져 있어(조사 1-14는 추정, **이번에 internal 단독 게시는 시험하지 않음**) 안전하게 분리. 게시 전용이며 다른 서비스는 붙지 않음. 실측: edge 구성원 = web뿐. 다만 web(nginx)은 이 네트워크로 외부에 나갈 수 있는 경로가 이론상 존재(nginx는 외부 요청을 하지 않음) |
 | 2 | egress를 `profiles: ["online"]`이 아니라 `compose.online.yaml` 덧씌우기 파일로 준비 | compose의 profiles는 서비스에만 적용되고 네트워크에는 적용되지 않음. 기본 실행에서는 egress 네트워크가 아예 만들어지지 않음 |
-| 3 | `pip install` ytitle/backend 대신 `PYTHONPATH=/app/backend:/app/src` | 코어 사본 없이 같은 소스를 쓰고, 빌드 격리(미잠금 setuptools 내려받기)를 피함. `web/backend/requirements.txt`에 ytitle 의존성(PyYAML 등)이 없어 `requirements-ytitle.txt` 해시 잠금을 별도로 둠 |
+| 3 | `pip install` youtube_title/backend 대신 `PYTHONPATH=/app/backend:/app/src` | 코어 사본 없이 같은 소스를 쓰고, 빌드 격리(미잠금 setuptools 내려받기)를 피함. `web/backend/requirements.txt`에 youtube_title 의존성(PyYAML 등)이 없어 `requirements-youtube-title.txt` 해시 잠금을 별도로 둠 |
 | 4 | 컨테이너 안 임시 백업용 `backups` 명명 볼륨 추가 | PowerShell 리디렉션 바이너리 손상 회피(`docker compose cp` 사용). tmpfs는 cp 불가 |
 | 5 | 헬스체크가 `pg_isready` + 초기화 성공 표식 파일(`.ytweb-init-ok`) | 실측: init 스크립트가 실패해도 재시작 시 엔트리포인트가 "이미 초기화됨"으로 보고 정상 기동함(반쯤 초기화된 볼륨). 표식이 없으면 unhealthy 로 남겨 migrate가 돌지 않게 함 |
 | 6 | api 명령에 `--no-server-header --no-access-log` 추가, nginx에서 백엔드 보안 헤더 중복 제거(`proxy_hide_header`) | `--no-access-log`는 조정자 요청(쿼리 문자열 로깅 방지). 헤더는 백엔드도 붙이므로 브라우저에 한 벌만 보이게 함 |

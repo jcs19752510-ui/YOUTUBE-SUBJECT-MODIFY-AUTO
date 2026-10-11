@@ -2,7 +2,7 @@
 
 - 작업 단위: **WU-6** (feature F-D 성과 리포트) / **속도 트랙: L3** / Tier: Standard / 선행: WU-2, WU-4(스키마·`title_changes` 기록 형식만 참조, 코드 의존 없음)
 - 실행: WU-4(updater/limits/history/plan/rollback)와 **병렬**로 서브에이전트가 수행. 파일 범위 겹침 없음(아래), 다른 에이전트 파일은 읽기만 했고 수정하지 않음.
-- 파일 범위: `src/ytitle/{report,csv_import}.py`, `src/ytitle/commands/report.py`, `tests/test_{report,csv_import,report_cmd}.py`, 이 노트. 신규 의존성 없음(표준 `csv`·`sqlite3`·`zoneinfo`만). 네트워크·YouTube 호출 없음.
+- 파일 범위: `src/youtube_title/{report,csv_import}.py`, `src/youtube_title/commands/report.py`, `tests/test_{report,csv_import,report_cmd}.py`, 이 노트. 신규 의존성 없음(표준 `csv`·`sqlite3`·`zoneinfo`만). 네트워크·YouTube 호출 없음.
 
 ## 1. 구현 범위
 - `csv_import.py`: Studio 내보내기 CSV를 **신뢰할 수 없는 외부 입력**으로 읽는다. 크기 5MB·데이터 행 10,000 상한, UTF-8(BOM 허용)·UTF-16(BOM)·CP949 해석, 바이너리(NUL) 거부, 구분자(쉼표·탭·세미콜론) 자동 판별, 한글/영문 머리글 별칭 인식(표기 차이 무시), 숫자·퍼센트 파싱(쉼표 천단위, `3.2%`), 수식 시작 문자(`= + - @`)·지수 표기·NaN·무한대 거부, 영상 ID 형식 검증, 불량 행 건너뛰기(줄 번호·이유 수집), 같은 영상 중복 줄 무시(첫 줄 사용), 합계 행 건너뜀, 머리글 오류는 한 번에 모아 보고. 저장은 `metrics_snapshots`(`source='csv'`)에 **한 번의 트랜잭션**(전부 또는 전무), 같은 내용 재가져오기는 중복 저장하지 않음.

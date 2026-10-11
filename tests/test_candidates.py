@@ -3,8 +3,8 @@ import os
 
 import pytest
 
-from ytitle.candidates import MAX_BYTES, load_candidate_file, list_candidate_files
-from ytitle.errors import InputError
+from youtube_title.candidates import MAX_BYTES, load_candidate_file, list_candidate_files
+from youtube_title.errors import InputError
 
 VID = "abc123DEF45"
 

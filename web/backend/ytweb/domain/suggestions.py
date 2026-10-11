@@ -10,10 +10,10 @@ from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from ytitle.candidates import Candidate, CandidateFile
-from ytitle.timeutil import utc_iso
-from ytitle.updater import canonical_json, compute_plan_hash
-from ytitle.validator import CandidateResult, FileResult, validate_file
+from youtube_title.candidates import Candidate, CandidateFile
+from youtube_title.timeutil import utc_iso
+from youtube_title.updater import canonical_json, compute_plan_hash
+from youtube_title.validator import CandidateResult, FileResult, validate_file
 
 from ytweb.ai.base import SuggestionDraft, TitleSuggester, TitleSuggestionError, VideoBrief
 from ytweb.ai.guard import MAX_TITLE_CHARS, build_summary, clean_text, sanitize_drafts

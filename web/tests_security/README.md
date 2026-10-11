@@ -16,7 +16,7 @@
 # 1) 파이썬 환경 (저장소 해시 잠금 파일로 설치)
 python3 -m venv .harness-tmp/sec/venv_be
 .harness-tmp/sec/venv_be/bin/pip install --require-hashes --no-deps -r web/backend/requirements-dev.txt
-.harness-tmp/sec/venv_be/bin/pip install --require-hashes --no-deps -r web/docker/requirements-ytitle.txt
+.harness-tmp/sec/venv_be/bin/pip install --require-hashes --no-deps -r web/docker/requirements-youtube-title.txt
 
 # 2) 오프라인·정적 시험 (약 2분)
 .harness-tmp/sec/venv_be/bin/python -m pytest web/tests_security -q -p no:cacheprovider

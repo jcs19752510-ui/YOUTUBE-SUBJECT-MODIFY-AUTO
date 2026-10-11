@@ -1,7 +1,7 @@
 import pytest
 
-from ytitle.config import load_settings
-from ytitle.errors import ConfigError
+from youtube_title.config import load_settings
+from youtube_title.errors import ConfigError
 
 
 def write(path, text):

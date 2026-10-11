@@ -114,7 +114,7 @@ approvals/
 ```
 # YouTube 제목 도구 설정 (이 파일은 절대 공유하지 마세요)
 YT_CLIENT_SECRET_PATH=secrets\client_secret.json
-YT_TOKEN_DIR=%LOCALAPPDATA%\ytitle\tokens
+YT_TOKEN_DIR=%LOCALAPPDATA%\youtube-title\tokens
 YT_DATA_DIR=data
 ```
 - 로그인 토큰은 프로젝트 폴더가 아니라 **내 사용자 폴더**(`YT_TOKEN_DIR`)에 저장됩니다. 실수로 깃허브에 올라갈 일이 없게 하기 위함입니다.
@@ -130,7 +130,7 @@ git status
 `client_secret.json`을 저장해 두면 이 가이드의 준비는 끝입니다. 실제 로그인(인증)은 **WU-1(OAuth 모듈)을 만든 뒤** 아래처럼 합니다. 지금은 실행하지 마세요(프로그램이 아직 없습니다).
 ```powershell
 # (WU-1 완료 후 안내 예정) 읽기 권한 인증
-python -m ytitle auth --read
+python -m youtube_title auth --read
 ```
 브라우저 창이 열리면 채널 소유 계정으로 로그인하고 "허용"을 누릅니다. "확인되지 않은 앱" 경고가 나오면 본인이 만든 앱이므로 **고급 → 계속**으로 진행할 수 있습니다 [확인 필요].
 

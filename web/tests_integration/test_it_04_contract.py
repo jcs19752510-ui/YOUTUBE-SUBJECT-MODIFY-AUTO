@@ -692,7 +692,7 @@ def test_it_428_csv_export_columns_and_filter_match_documented_contract(fresh_de
     ch = apply_via_batch(a, ap[0]["id"])
     r = a.get("/api/v1/reports/export.csv")
     assert r.status_code == 200 and r.headers["content-type"].replace(" ", "").lower() == "text/csv;charset=utf-8"
-    assert r.headers["content-disposition"] == 'attachment; filename="ytitle-report.csv"' and "no-store" in r.headers["cache-control"]
+    assert r.headers["content-disposition"] == 'attachment; filename="youtube-title-report.csv"' and "no-store" in r.headers["cache-control"]
     assert r.content.startswith(b"\xef\xbb\xbf")
     doc_cols = re.search(r"열: `([^`]+)`", API_MD).group(1).split(",")
     rows = list(csv.reader(io.StringIO(r.content.decode("utf-8-sig"))))

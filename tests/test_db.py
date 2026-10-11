@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-from ytitle import db
-from ytitle.errors import DatabaseError
+from youtube_title import db
+from youtube_title.errors import DatabaseError
 
 NOW = datetime(2026, 10, 10, 12, 0, 0, tzinfo=timezone.utc)
 TABLES = {"schema_meta", "videos", "title_candidates", "title_changes", "metrics_snapshots", "run_logs", "quota_usage"}

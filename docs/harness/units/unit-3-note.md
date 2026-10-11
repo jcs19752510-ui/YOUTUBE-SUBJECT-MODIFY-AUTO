@@ -2,7 +2,7 @@
 
 - 작업 단위: **WU-3** (feature F-B 후보·필터) / **속도 트랙: L3** / Tier: Standard / 선행: WU-0(완료)
 - 실행: **병렬 웨이브A**에서 WU-2와 동시에 진행(WU-2는 서브에이전트, WU-3은 오케스트레이터). 파일 범위 겹침 없음 확인.
-- 파일 범위: `src/ytitle/{candidates,validator,banned_terms}.py`, `src/ytitle/commands/validate.py`, `config/banned_terms.yaml`, `tests/test_{candidates,banned_terms,validator,validate_cmd}.py`
+- 파일 범위: `src/youtube_title/{candidates,validator,banned_terms}.py`, `src/youtube_title/commands/validate.py`, `config/banned_terms.yaml`, `tests/test_{candidates,banned_terms,validator,validate_cmd}.py`
 
 ## 1. 구현 범위
 후보 파일 읽기·입력 검증(경로 조작 방지 포함), 금칙어 사전 읽기·검증·해시, 제목 검증기(길이·규격·금칙어·경고 유형·영상 일치율·근거 문장·핵심어 위치·엄격 모드), 검증 결과 DB 기록, `validate` 명령(SCR-002).

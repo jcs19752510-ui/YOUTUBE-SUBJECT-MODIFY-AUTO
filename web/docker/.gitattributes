@@ -3,4 +3,4 @@
 *.conf text eol=lf
 ytweb-db text eol=lf
 *.Dockerfile text eol=lf
-requirements-ytitle.txt text eol=lf
+requirements-youtube-title.txt text eol=lf

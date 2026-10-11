@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from ytitle import csv_import as ci
-from ytitle import db
-from ytitle.errors import DatabaseError, InputError
+from youtube_title import csv_import as ci
+from youtube_title import db
+from youtube_title.errors import DatabaseError, InputError
 
 NOW = datetime(2026, 10, 10, 12, 0, tzinfo=timezone.utc)
 V1, V2, V3 = "abc123DEF45", "bbbbbbbbbbb", "ccccccccccc"

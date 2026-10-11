@@ -87,7 +87,7 @@ describe('A. 문구 단일 출처 (POL-002·006·008·013)', () => {
     const py = (p: string) => readFileSync(resolve(REPO, p), 'utf8');
     const fromPy = (s: string) => /DISCLAIMER\s*=\s*"([^"]+)"/.exec(s)?.[1];
     expect(fromPy(py('web/backend/ytweb/domain/notices.py'))).toBe(ko.legal.disclaimer);
-    expect(fromPy(py('src/ytitle/ui.py'))).toBe(ko.legal.disclaimer);
+    expect(fromPy(py('src/youtube_title/ui.py'))).toBe(ko.legal.disclaimer);
     expect(readFileSync(resolve(REPO, 'web/frontend/dev/mock-server.mjs'), 'utf8')).toContain(
       ko.legal.disclaimer,
     );

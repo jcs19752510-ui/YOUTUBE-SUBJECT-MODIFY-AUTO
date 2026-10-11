@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from ytitle import cli, commands, db, timeutil
-from ytitle.config import load_settings
-from ytitle.errors import ConfigError, DatabaseError
-from ytitle.logging_setup import setup_logging
+from youtube_title import cli, commands, db, timeutil
+from youtube_title.config import load_settings
+from youtube_title.errors import ConfigError, DatabaseError
+from youtube_title.logging_setup import setup_logging
 
 
 def test_keyboard_interrupt_exit_130(project, streams, tmp_path, monkeypatch):
@@ -28,18 +28,18 @@ def test_keyboard_interrupt_exit_130(project, streams, tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "__path__", list(commands.__path__) + [str(extra)])
     importlib.invalidate_caches()
     code = cli.main(["--base-dir", str(project), "kb"], out=streams.out, err=streams.err, env={})
-    sys.modules.pop("ytitle.commands.kb", None)
+    sys.modules.pop("youtube_title.commands.kb", None)
     assert code == 130 and "중단" in streams.err.getvalue()
     import sqlite3
 
-    row = sqlite3.connect(project / "data" / "ytitle.sqlite3").execute("SELECT exit_code, summary FROM run_logs").fetchone()
+    row = sqlite3.connect(project / "data" / "youtube_title.sqlite3").execute("SELECT exit_code, summary FROM run_logs").fetchone()
     assert row == (130, "interrupted")
 
 
 def test_python_dash_m_entrypoint_works():
-    """TC-074: `python -m ytitle --version`이 실제로 실행되어 버전을 출력한다. [FR-017]"""
+    """TC-074: `python -m youtube_title --version`이 실제로 실행되어 버전을 출력한다. [FR-017]"""
     src = str(Path(__file__).resolve().parent.parent / "src")
-    r = subprocess.run([sys.executable, "-m", "ytitle", "--version"], capture_output=True, text=True, encoding="utf-8", env=dict(os.environ, PYTHONPATH=src))
+    r = subprocess.run([sys.executable, "-m", "youtube_title", "--version"], capture_output=True, text=True, encoding="utf-8", env=dict(os.environ, PYTHONPATH=src))
     assert r.returncode == 0 and r.stdout.startswith("유튜브 제목 ")
 
 
@@ -84,7 +84,7 @@ def test_console_logging_handler_masks_secrets(tmp_path, capsys):
     assert "GOCSPX-abc" not in err and "r9" in err
     logger.info("정보는 콘솔에 안 나온다")
     assert "정보는" not in capsys.readouterr().err
-    assert logging.getLogger("ytitle").propagate is False
+    assert logging.getLogger("youtube_title").propagate is False
 
 
 def test_finish_run_failure_is_database_error():

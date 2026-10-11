@@ -155,13 +155,13 @@
 ## 9. 작업 단위(Work Unit) 후보 목록
 | 단위 ID | 소속 feature | 커버 ID | 선행 단위 | 예상 수정 모듈/파일 범위 | 공유 자원 접촉 | 병렬 가능 초안 |
 |---|---|---|---|---|---|---|
-| WU-0 | F-0 기반(공통 선행) | FR-017, FR-020, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008, NFR-009, SEC-001(기본 dry-run), SEC-003, SEC-008(마스킹·`.env`), SEC-013 | 없음 | `pyproject.toml`, `requirements*.txt`, `src/ytitle/{config,logging_setup,errors,retry,db,cli}.py`, `commands/purge.py`, DB 스키마(6개 테이블), `tests/conftest.py`, `.gitignore` 추가 | 의존성 매니페스트, DB 스키마, CLI 서브커맨드 등록부 — **전부 이 단위가 선점** | 불가(다른 단위의 공통 선행) |
-| WU-1 | F-A 인증·조회 | FR-016, SEC-008(토큰 저장 권한) | WU-0 | `src/ytitle/auth.py`, `tests/test_auth.py`, `src/ytitle/commands/auth.py` | CLI 등록부는 WU-0이 자동 탐색 구조로 만들어 두면 접촉 없음(불확실, 3단계 확정) | WU-3과 가능(파일·데이터 독립, 둘 다 WU-0 이후) |
-| WU-2 | F-A 인증·조회 | FR-006, FR-007(API 경로), FR-015, SEC-002, NFR-003 | WU-1 | `src/ytitle/youtube_read.py`, `src/ytitle/quota.py`, `tests/test_read.py`, `commands/fetch.py` | DB(`quota_usage`, `metrics_snapshots`, `videos`) 쓰기 — 스키마는 WU-0 소유이므로 읽기 접촉 | 불가(WU-1 산출물 입력) |
-| WU-3 | F-B 후보·필터 | FR-001~FR-005, SEC-011, POL-001, POL-002, POL-004, NFR-005, NFR-006 | WU-0 | `src/ytitle/{candidates,validator,banned_terms}.py`, `config/banned_terms.yaml`, `tests/test_validator.py`, `commands/validate.py` | 의존성 매니페스트(PyYAML 등) — WU-0이 사전 선언하면 접촉 없음. DB `videos` 읽기는 선택 경로이며 `description_excerpt`가 없으면 `summary`만 사용하므로 WU-2에 의존하지 않음 | WU-1과 가능 |
-| WU-4 | F-C 수정·이력·롤백 | FR-008~FR-011, FR-014, FR-019, SEC-004, SEC-005, SEC-006, SEC-009, POL-003, POL-002, NFR-006 | WU-2, WU-3 | `src/ytitle/{updater,limits,history}.py`, `tests/test_updater.py`, `commands/{plan,rollback}.py` | DB `title_changes` 쓰기, 쿼터 모듈 호출 | 불가(WU-2·3 산출물 입력) |
-| WU-5 | F-C 수정·이력·롤백 | FR-012, FR-013, SEC-001(3중 조건), SEC-010, SEC-012 | WU-4 | `src/ytitle/live_guard.py`, `src/ytitle/approvals.py`, `tests/test_live_guard.py`, `commands/apply.py` | 승인 파일 디렉터리 형식(설정 레지스트리) | 불가(WU-4 입력) |
-| WU-6 | F-D 성과 리포트 | FR-007(CSV), FR-018, POL-002 | WU-2, WU-4 | `src/ytitle/{report,csv_import}.py`, `tests/test_report.py`, `commands/report.py` | DB 읽기 | WU-5와 가능(파일·데이터 독립, 둘 다 WU-4 이후) — 3단계 확정 |
+| WU-0 | F-0 기반(공통 선행) | FR-017, FR-020, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008, NFR-009, SEC-001(기본 dry-run), SEC-003, SEC-008(마스킹·`.env`), SEC-013 | 없음 | `pyproject.toml`, `requirements*.txt`, `src/youtube_title/{config,logging_setup,errors,retry,db,cli}.py`, `commands/purge.py`, DB 스키마(6개 테이블), `tests/conftest.py`, `.gitignore` 추가 | 의존성 매니페스트, DB 스키마, CLI 서브커맨드 등록부 — **전부 이 단위가 선점** | 불가(다른 단위의 공통 선행) |
+| WU-1 | F-A 인증·조회 | FR-016, SEC-008(토큰 저장 권한) | WU-0 | `src/youtube_title/auth.py`, `tests/test_auth.py`, `src/youtube_title/commands/auth.py` | CLI 등록부는 WU-0이 자동 탐색 구조로 만들어 두면 접촉 없음(불확실, 3단계 확정) | WU-3과 가능(파일·데이터 독립, 둘 다 WU-0 이후) |
+| WU-2 | F-A 인증·조회 | FR-006, FR-007(API 경로), FR-015, SEC-002, NFR-003 | WU-1 | `src/youtube_title/youtube_read.py`, `src/youtube_title/quota.py`, `tests/test_read.py`, `commands/fetch.py` | DB(`quota_usage`, `metrics_snapshots`, `videos`) 쓰기 — 스키마는 WU-0 소유이므로 읽기 접촉 | 불가(WU-1 산출물 입력) |
+| WU-3 | F-B 후보·필터 | FR-001~FR-005, SEC-011, POL-001, POL-002, POL-004, NFR-005, NFR-006 | WU-0 | `src/youtube_title/{candidates,validator,banned_terms}.py`, `config/banned_terms.yaml`, `tests/test_validator.py`, `commands/validate.py` | 의존성 매니페스트(PyYAML 등) — WU-0이 사전 선언하면 접촉 없음. DB `videos` 읽기는 선택 경로이며 `description_excerpt`가 없으면 `summary`만 사용하므로 WU-2에 의존하지 않음 | WU-1과 가능 |
+| WU-4 | F-C 수정·이력·롤백 | FR-008~FR-011, FR-014, FR-019, SEC-004, SEC-005, SEC-006, SEC-009, POL-003, POL-002, NFR-006 | WU-2, WU-3 | `src/youtube_title/{updater,limits,history}.py`, `tests/test_updater.py`, `commands/{plan,rollback}.py` | DB `title_changes` 쓰기, 쿼터 모듈 호출 | 불가(WU-2·3 산출물 입력) |
+| WU-5 | F-C 수정·이력·롤백 | FR-012, FR-013, SEC-001(3중 조건), SEC-010, SEC-012 | WU-4 | `src/youtube_title/live_guard.py`, `src/youtube_title/approvals.py`, `tests/test_live_guard.py`, `commands/apply.py` | 승인 파일 디렉터리 형식(설정 레지스트리) | 불가(WU-4 입력) |
+| WU-6 | F-D 성과 리포트 | FR-007(CSV), FR-018, POL-002 | WU-2, WU-4 | `src/youtube_title/{report,csv_import}.py`, `tests/test_report.py`, `commands/report.py` | DB 읽기 | WU-5와 가능(파일·데이터 독립, 둘 다 WU-4 이후) — 3단계 확정 |
 
 - 이 표는 후보이며 3단계가 모듈 경계와 병렬 판정을 확정한다. "불확실"은 3단계 확정 사항이다.
 - 속도 트랙 권고: WU-1·4·5는 **L5**, 나머지는 **L3**. L1·L2는 사용하지 않는다(채널 쓰기는 되돌리기 어려운 공개 변경).
@@ -199,7 +199,7 @@
 
 - **왜**(요청서 §2-1): CLI는 후보 1건씩 반영·하루 3건·72시간 간격이라 200개 일괄 처리에 맞지 않고, 후보를 사람이 파일로 써야 하며 AI 제안이 없다.
 - **현재 구현 범위 = M1 데모 모드**(DEC-038): 가짜 영상 200개, 모의 AI(`web/backend/ytweb/ai/mock.py`), 모의 유튜브 게이트웨이(`youtube/mock.py`). **구글·AI 실호출 코드는 저장소에 없다**(`ytweb/config.py`의 `MODES = ("demo",)`, `ai/factory.py`는 demo일 때 `MockSuggester`만 반환, 라이브 게이트웨이 클래스 부재). 실서비스 연동은 M2(구글 읽기)·M3(실제 AI·라이브 반영, 사용자 승인 후).
-- **as-built 구성**(compose 5서비스, `web/compose.yaml`): `web`(nginx-unprivileged, 호스트 `127.0.0.1:8080` 단독 게시) · `api`(FastAPI) · `worker`(같은 이미지) · `migrate`(1회, 소유자 계정) · `db`(PostgreSQL 17, internal 네트워크, 호스트 포트 없음). 코어 `src/ytitle`는 복사 없이 `PYTHONPATH`로 재사용(`web/docker/api.Dockerfile`).
+- **as-built 구성**(compose 5서비스, `web/compose.yaml`): `web`(nginx-unprivileged, 호스트 `127.0.0.1:8080` 단독 게시) · `api`(FastAPI) · `worker`(같은 이미지) · `migrate`(1회, 소유자 계정) · `db`(PostgreSQL 17, internal 네트워크, 호스트 포트 없음). 코어 `src/youtube_title`는 복사 없이 `PYTHONPATH`로 재사용(`web/docker/api.Dockerfile`).
 - **as-built 스택**(보고값, 노트): FastAPI 0.143.0 · Pydantic 2.14.0 · SQLAlchemy 2.1.4 · Alembic 1.20.0 · psycopg 3.3.6 · React 19.3.0 · Vite 8.3.4 · TypeScript 5.9.3 · Vitest 5.0.3 · Python 3.12-slim · Node 22 · PostgreSQL 17. (DEC-035의 "React 18+"에 19가 포함됨.)
 - **보고된 테스트 수치(독립 검증 전)**: 백엔드 605 통과·8 xfail(PG 포함, W-BE-B 노트), 프런트 95 통과, 인프라 정적 점검 35 통과·1 건너뜀.
 
@@ -245,7 +245,7 @@ MoSCoW 구분은 에이전트 판단(가정 A-W8). 상태 열의 "근거"는 읽
 | W-002 | 구글 로그인(읽기→쓰기 분리)을 웹에서 시작·확인·해제 | Must | M2 | **M2 예정**: 현재 `routers/google.py`가 고정 응답(`mode:"demo", connected:false`)만 돌려줌 |
 | W-003 | 영상 200개 목록, 검색·정렬·필터 | Must | M1 | 구현됨(데모 영상): `routers/videos.py`, `domain/videos.py`, FE `VideosPage`. 가상 스크롤 대신 페이지네이션(25/50/100/200)·선택 유지 |
 | W-004 | 영상별 AI 제목 후보 생성(후보 수·말투 설정, 근거 저장) | Must | M1(모의)/M3(실) | 부분: 모의 AI만(`ai/mock.py`), 어댑터 규약 `ai/base.py`. 설정은 후보 수 1~5, 말투 최대 5개(`routers/settings.py`). 실서비스는 Q-1 확정 후 |
-| W-005 | 기존 검증기로 통과/경고/차단 판정, 차단은 반영 불가 | Must | M1 | 구현됨: `domain/suggestions.py` `validate_title`→`ytitle.validator`, 승인·반영 단계에서 재검증 |
+| W-005 | 기존 검증기로 통과/경고/차단 판정, 차단은 반영 불가 | Must | M1 | 구현됨: `domain/suggestions.py` `validate_title`→`youtube_title.validator`, 승인·반영 단계에서 재검증 |
 | W-006 | 변경 전/후 제목·유지 항목 비교(diff) | Must | M1 | 구현됨: FE `TitleDiff`, `VideoDetail.preserved`(BE-B 노트 D6) |
 | W-007 | 후보 선택·수정·승인/반려, 일괄 선택 | Must | M1 | 구현됨: `routers/suggestions.py`, FE `SuggestionCard`, 승인은 plan_hash+HMAC(`domain/suggestions.py`) |
 | W-008 | 승인 항목을 배치로 묶어 하루 한도 안에서 반영, 초과분 자동 예약, 놓친 예약 몰아서 실행 금지 | Must | M1 | 구현됨(데모): `domain/batches.py`. **비고**: 같은 영상 재변경 시연은 최소 노출수 1000 조건에 막힘 — DEC-042 D1의 "데모에서 0" 미반영(V-4) |
@@ -255,7 +255,7 @@ MoSCoW 구분은 에이전트 판단(가정 A-W8). 상태 열의 "근거"는 읽
 | W-012 | 변경 이력·감사 로그 조회 | Must | M1 | 구현됨: `routers/changes.py`, `routers/audit.py`(+`chain_ok`) |
 | W-013 | 전후 성과 비교 리포트(화면·CSV), 데이터 부족 명시, 원인 단정 금지 | Should | M1 | 구현됨(데모 지표): `domain/reports.py`, CSV 수식 주입 방지 `csv_safe` |
 | W-014 | 설정 화면(상한, 재변경 간격, 금칙어, AI 설정, 라이브 허용은 별도 절차) | Must | M1 | **부분**: 변경 가능 키는 `daily_apply_cap`(1~20)·`suggestions_per_video`·`tone`·`pin` 4개뿐(`routers/settings.py`). 재변경 간격·금칙어 사전은 `config/*.yaml` 파일에서만, AI 서비스/전송 범위 설정 화면은 없음(Q-1 미정). 라이브 허용은 읽기 전용 표시 + 변경 불가(의도) |
-| W-015 | 기존 CLI 유지(회귀·비상용, DEC-034 Q-4) | Should | M1 | 구현됨(구조): 웹이 `src/ytitle`를 복사 없이 임포트. CLI 회귀 시험은 7단계 대기 |
+| W-015 | 기존 CLI 유지(회귀·비상용, DEC-034 Q-4) | Should | M1 | 구현됨(구조): 웹이 `src/youtube_title`를 복사 없이 임포트. CLI 회귀 시험은 7단계 대기 |
 | W-016 | 백업·복원(pg_dump), 복원 후 건수 검증 | Must | M1 | 구현됨: `web/scripts/{backup,restore}.ps1`, `web/docker/db/bin/ytweb-db`. 실측은 클라우드 Linux(보고값). **백업 암호화·보관 기간 미정(POL-016, Q-W4)** |
 | W-017 | `/healthz`·`/readyz`와 화면 상태 요약 | Should | M1 | 구현됨(부분): `routers/health.py`(`/readyz`는 DB만 확인, 구글·AI 연결 상태는 M2·M3) |
 
@@ -375,7 +375,7 @@ MoSCoW 구분은 에이전트 판단(가정 A-W8). 상태 열의 "근거"는 읽
 기존 POL-001~004는 웹에서도 유효하다(웹 구현 상태: POL-001 구현됨, POL-003 구현됨, POL-004 **부분**(AI 생성 시 `suggestions.source='ai:<이름>'` 기록은 구현됨, 그러나 사람이 제목을 고쳐도 `source`가 바뀌지 않아 사람 수정본과 AI 원문을 구분하지 못함 — `domain/suggestions.py edit_title`), **POL-002 면책 문구는 웹 화면·API에 없음 = 미구현**).
 | ID | 정책 | 구현 상태(웹) | 화면 반영(4단계) |
 |---|---|---|---|
-| POL-002(보강) | 검증 결과·미리보기·성과 리포트 화면에 "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다" 상시 표기 | **미구현**: `src/ytitle/ui.py`의 `DISCLAIMER`는 CLI용이고 `ytweb`·`web/frontend`에서 사용·검색되지 않음 | 영상 상세(검증 결과), 배치 사전 점검, 리포트 |
+| POL-002(보강) | 검증 결과·미리보기·성과 리포트 화면에 "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다" 상시 표기 | **미구현**: `src/youtube_title/ui.py`의 `DISCLAIMER`는 CLI용이고 `ytweb`·`web/frontend`에서 사용·검색되지 않음 | 영상 상세(검증 결과), 배치 사전 점검, 리포트 |
 | POL-005 | 데모 모드 상시 표시: "데모 모드 — 유튜브에 아무것도 전송되지 않습니다" | 구현됨(`ko.ts` demoBadge, 상단 상시) | 상단 배지 |
 | POL-006 | AI 제안 표시: "AI가 생성한 제안입니다. 사람이 검토·승인한 제목만 반영됩니다."를 후보 목록·승인 화면·이력에 상시 노출 | **부분**: "AI 제안" 라벨(`ko.ts suggestion.ai`)만 있고 고지 문장은 없음 | 제안 카드, 승인 대화상자, 이력 |
 | POL-007 | 외부 전송 고지: 제목+설명 요약이 외부 AI(서비스명·서버 위치)로 전송됨, 자막·성과 제외, 설명의 이름·연락처 삭제 권고 | **M3 예정**(전송 자체가 없음). 마스킹은 구현됨(`ai/guard.py`) | 설정 화면, 최초 사용 시 |
@@ -395,7 +395,7 @@ MoSCoW 구분은 에이전트 판단(가정 A-W8). 상태 열의 "근거"는 읽
 | SEC-021 | 영상 제목·설명은 비신뢰 입력: 정제(제어·방향·보이지 않는 문자 제거), 길이 상한, 지시/데이터 구획은 **보조일 뿐 보안 경계가 아님**을 설계서에 명시 | 부분: 정제·길이 상한 구현(`ai/guard.py` `clean_text`, `MAX_SUMMARY_CHARS=500`, `domain/suggestions.py`). 지시/데이터 구획은 실서비스 어댑터가 없어 M3 |
 | SEC-022 | AI에 도구·함수·네트워크·파일·DB·YouTube API 권한 부여 금지(텍스트 생성만) | 구현됨(구조): `ai/base.py` `TitleSuggester.suggest()`는 `VideoBrief`를 받아 초안 목록만 반환, 세션·게이트웨이를 받지 않음. 실서비스 SDK의 도구 기능 비활성은 M3 |
 | SEC-023 | AI 응답은 스키마 검증 후 사용, 후보 수·길이 상한, `<` `>`·제어문자·줄바꿈·URL·연락처 후보 폐기 | 구현됨: `sanitize_drafts`(`invalid_item/empty/too_long/contact_or_url/duplicate/over_limit`). **`<` `>`는 검증기(유튜브 제목)가 차단 판정**하는 구조 |
-| SEC-024 | AI 후보도 기존 검증기 통과 필수(길이 100자, 금칙어, 영상 일치, 건강·금융 엄격 모드). 차단 후보는 반영 불가 | 구현됨: `_new_suggestion`→`validate_title`, 승인 시 재검증, `is_blocking`. **주의**: 검증기에 넘기는 `topic`이 AI 초안 값이다(`draft.topic`). 건강·금융 낱말 사전 감지는 topic과 무관하게 작동(`ytitle/validator.py detect_strict`)하나 사전에 없는 표현을 AI가 `life`로 표기하면 엄격 모드가 풀릴 수 있음 → 6단계 검증 대상, 해결책은 사용자·설계 판단(Q-W10) |
+| SEC-024 | AI 후보도 기존 검증기 통과 필수(길이 100자, 금칙어, 영상 일치, 건강·금융 엄격 모드). 차단 후보는 반영 불가 | 구현됨: `_new_suggestion`→`validate_title`, 승인 시 재검증, `is_blocking`. **주의**: 검증기에 넘기는 `topic`이 AI 초안 값이다(`draft.topic`). 건강·금융 낱말 사전 감지는 topic과 무관하게 작동(`youtube_title/validator.py detect_strict`)하나 사전에 없는 표현을 AI가 `life`로 표기하면 엄격 모드가 풀릴 수 있음 → 6단계 검증 대상, 해결책은 사용자·설계 판단(Q-W10) |
 | SEC-025 | AI 후보는 사람 승인 없이 반영 불가(승인=plan_hash 묶음), 자동 반영 경로 금지 | 구현됨: 배치 실행·승인 게이트(`check_approval`, 확인 문구) |
 | SEC-026 | 외부 전송 최소화: 제목+설명 요약만, 연락처·링크·주민번호 모양 마스킹, 토큰·키·자막·성과 제외 | 구현됨(구조): `VideoBrief`, `build_summary`, `mask_pii`. **전송 미리보기·영상 단위 AI 제외 옵션은 미구현**(FR-C04) |
 | SEC-027 | AI 호출 일/배치당 호출·토큰·비용 상한, 빈도 제한, 재시도 상한, 타임아웃 | **미구현(M3)**. 모의 AI는 호출 비용이 없어 상한 코드 없음. `ai_runs`에 실행 기록·`input_chars`만 있음 |

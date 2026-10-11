@@ -5,9 +5,9 @@ import pytest
 from wu4_support import SNIPPET, add_change, add_video
 from wu5_support import NEW_TITLE, NOW, VID, World, block_network, cli_run, patch_services, timedelta, ts
 
-from ytitle import approvals
-from ytitle.commands import approve as approve_cmd
-from ytitle.errors import SafetyGateError
+from youtube_title import approvals
+from youtube_title.commands import approve as approve_cmd
+from youtube_title.errors import SafetyGateError
 
 
 @pytest.fixture

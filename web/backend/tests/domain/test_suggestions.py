@@ -14,7 +14,7 @@ from ytweb.db.models import AiRun, Approval, AuditLog, Suggestion, Video
 from ytweb.domain.suggestions import (
     ApprovalInvalid, approve, check_approval, edit_title, expire_stale_approvals, generate_for_video, list_suggestions, plan_hash_for, reject,
 )
-from ytitle.updater import compute_plan_hash
+from youtube_title.updater import compute_plan_hash
 
 from tests.domain.helpers import SUGGESTER, eligible_video_ids, suggest
 

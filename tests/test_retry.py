@@ -1,7 +1,7 @@
 import pytest
 
-from ytitle.errors import ApiError
-from ytitle.retry import MAX_RETRIES, call_with_retry
+from youtube_title.errors import ApiError
+from youtube_title.retry import MAX_RETRIES, call_with_retry
 
 
 class Flaky:

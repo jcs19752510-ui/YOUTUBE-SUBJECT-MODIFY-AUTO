@@ -16,7 +16,7 @@
   },
   "component": {
    "type": "application",
-   "name": "ytitle-web-frontend",
+   "name": "youtube-title-web-frontend",
    "version": "0.1.0",
    "bom-ref": "root"
   },

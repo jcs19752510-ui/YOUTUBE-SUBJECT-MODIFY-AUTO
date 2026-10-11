@@ -1,4 +1,4 @@
-"""성과 비교 리포트와 CSV(W-013). 계산은 ytitle.report.build_report 를 그대로 쓴다(데이터 부족 판정·원인 단정 금지 규칙 포함)."""
+"""성과 비교 리포트와 CSV(W-013). 계산은 youtube_title.report.build_report 를 그대로 쓴다(데이터 부족 판정·원인 단정 금지 규칙 포함)."""
 from __future__ import annotations
 
 import csv
@@ -8,9 +8,9 @@ from datetime import date
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from ytitle.report import CAUSAL_NOTE, INSUFFICIENT_LABEL, LIMIT_NOTE, Rules, Snapshot, VideoReport, build_report
-from ytitle.report import Change as ReportChange
-from ytitle.timeutil import utc_iso
+from youtube_title.report import CAUSAL_NOTE, INSUFFICIENT_LABEL, LIMIT_NOTE, Rules, Snapshot, VideoReport, build_report
+from youtube_title.report import Change as ReportChange
+from youtube_title.timeutil import utc_iso
 
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import Change, MetricsSnapshot, Video

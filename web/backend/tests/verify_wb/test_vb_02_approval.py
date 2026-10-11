@@ -16,7 +16,7 @@ from ytweb.domain.batches import apply_one, create_draft, execute_batch
 from ytweb.domain.suggestions import (
     ApprovalInvalid, KEY_FILE, approve, check_approval, compute_mac, expire_stale_approvals, plan_hash_for,
 )
-from ytitle.updater import compute_plan_hash
+from youtube_title.updater import compute_plan_hash
 
 from tests.verify_wb.vbh import Faulty, changes, life_ids, make_sug, queued
 

@@ -1,7 +1,7 @@
 # unit-2 구현 노트 — WU-2 YouTube 조회·쿼터 모듈 (5단계)
 
 - 작업 단위: **WU-2** (feature F-A 인증·조회) / Tier: Standard / 선행: WU-0, WU-1(완료)
-- 파일 범위: `src/ytitle/quota.py`, `src/ytitle/youtube_read.py`, `src/ytitle/commands/fetch.py`, `tests/test_quota.py`, `tests/test_read.py`, 이 노트 (범위 밖 수정 없음, 신규 의존성 없음)
+- 파일 범위: `src/youtube_title/quota.py`, `src/youtube_title/youtube_read.py`, `src/youtube_title/commands/fetch.py`, `tests/test_quota.py`, `tests/test_read.py`, 이 노트 (범위 밖 수정 없음, 신규 의존성 없음)
 
 ## 1. 구현 범위
 - `quota.py`: 쿼터 선예약(`reserve`)·결과 표시(`mark`)·오늘 사용량/남은 양/경고 판정. 하루 경계는 태평양 시간. 상한 초과 시 DB에 아무것도 남기지 않고 `QuotaError`(초기화 시각 안내 포함).

@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ytitle.config import Settings
+from youtube_title.config import Settings
 
 from ytweb.db.models import Change, MetricsSnapshot, Video
 from ytweb.domain.exclusions import exclusion_reasons

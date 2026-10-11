@@ -5,7 +5,7 @@
 - 입력: `docs/yt/DESIGN.md` §1-3·§3·§4·§5·§6, `04_ux_design.md`, `02_planning.md` §9
 
 ## 1. 구현 범위
-`pyproject.toml`, `requirements*.txt`, `.gitignore`(비밀 항목 추가), `config/settings.yaml`, `src/ytitle/` 아래 `config`, `logging_setup`, `errors`, `retry`, `db`, `timeutil`, `platform_utils`, `textsafe`, `ui`, `cli`, `__main__`, `commands/purge.py`, 그리고 `tests/` (conftest 포함 11개 파일).
+`pyproject.toml`, `requirements*.txt`, `.gitignore`(비밀 항목 추가), `config/settings.yaml`, `src/youtube_title/` 아래 `config`, `logging_setup`, `errors`, `retry`, `db`, `timeutil`, `platform_utils`, `textsafe`, `ui`, `cli`, `__main__`, `commands/purge.py`, 그리고 `tests/` (conftest 포함 11개 파일).
 
 ## 2. 설계서 대비 편차와 사유
 | # | 편차 | 사유 |
@@ -21,7 +21,7 @@
 ## 3. 인수 조건 (Acceptance Criteria) — 6단계 테스터가 쓰는 기준
 | AC | 인수 조건 | 연결 요구 |
 |---|---|---|
-| AC-01 | `python -m ytitle --help`가 `commands/` 아래 모듈을 자동 탐색해 표시한다(WU-0 시점에는 `purge`, 파일 추가 시 목록에 나타남) | FR-017, ADR-003 |
+| AC-01 | `python -m youtube_title --help`가 `commands/` 아래 모듈을 자동 탐색해 표시한다(WU-0 시점에는 `purge`, 파일 추가 시 목록에 나타남) | FR-017, ADR-003 |
 | AC-02 | 기본은 dry-run이다: 쓰기 명령이 아닌 명령에는 `--live`가 없고 실행 기록의 모드는 `dry_run` | SEC-001 |
 | AC-03 | 설정 로드: 기본값, 파일 우선순위, 범위·형식 검증(한국어 오류), `enable_live`/`live_allowlist`는 `settings.local.yaml`에서만 적용, 위험한 YAML 거부 | NFR-003, SEC-001, SEC-012, SEC-016 |
 | AC-04 | 로그·예외·콘솔에서 토큰·키 형식이 가려지고 정상 한글·영상 ID는 가리지 않는다 | SEC-008, NFR-011 |

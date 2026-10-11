@@ -268,7 +268,7 @@ def test_db_configs_have_no_trust_and_no_literal_passwords():
 # ───────────── 의존성 잠금 / 공급망 ─────────────
 
 def test_python_lock_files_are_pinned_hashed_registry_only():
-    for rel in ("web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/docker/requirements-ytitle.txt"):
+    for rel in ("web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/docker/requirements-youtube-title.txt"):
         raw = (ROOT / rel).read_text(encoding="utf-8")
         txt = "\n".join(re.sub(r"\s+#.*$", "", l) for l in raw.splitlines()).replace("\\\n", " ")  # 주석 처리된 해시는 해시가 아니다
         reqs = [l for l in txt.splitlines() if re.match(r"^[A-Za-z0-9_.\-]+(\[.*\])?==", l)]
@@ -280,7 +280,7 @@ def test_python_lock_files_are_pinned_hashed_registry_only():
 
 
 def test_core_requirements_are_direct_pins_only_known_gap():
-    """[정보] 루트 requirements.txt(CLI 코어)는 해시 잠금이 아니다 - 웹 이미지는 web/docker/requirements-ytitle.txt(해시)를 쓰므로 웹 경로에는 영향 없음."""
+    """[정보] 루트 requirements.txt(CLI 코어)는 해시 잠금이 아니다 - 웹 이미지는 web/docker/requirements-youtube-title.txt(해시)를 쓰므로 웹 경로에는 영향 없음."""
     txt = (ROOT / "requirements.txt").read_text(encoding="utf-8")
     assert all("==" in l for l in txt.splitlines() if l.strip() and not l.startswith("#"))
     assert "--hash" not in txt

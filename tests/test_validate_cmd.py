@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from ytitle import cli
-from ytitle.timeutil import FixedClock
+from youtube_title import cli
+from youtube_title.timeutil import FixedClock
 
 REAL_DICT = Path(__file__).resolve().parent.parent / "config" / "banned_terms.yaml"
 SUMMARY = "겨울철 난방 습관을 바꿔 전기요금을 줄이는 방법을 소개합니다"
@@ -35,7 +35,7 @@ def go(proj, streams, argv):
 
 
 def rows(proj, sql="SELECT * FROM title_candidates ORDER BY id"):
-    c = sqlite3.connect(proj / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(proj / "data" / "youtube_title.sqlite3")
     c.row_factory = sqlite3.Row
     r = c.execute(sql).fetchall()
     c.close()
@@ -83,7 +83,7 @@ def test_approved_rows_are_not_reset_by_revalidation(proj, streams):
     """TC-348: 이미 승인(approved) 이후 단계인 후보는 재검증해도 상태·결과가 바뀌지 않는다(상태 머신 보호). [설계 3-2, SEC-006]"""
     cfile(proj)
     go(proj, streams, ["validate", "--all"])
-    c = sqlite3.connect(proj / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(proj / "data" / "youtube_title.sqlite3")
     c.execute("UPDATE title_candidates SET status='approved'")
     c.commit()
     c.close()
@@ -142,7 +142,7 @@ def test_description_from_videos_table_is_used(proj, streams):
     cfile(proj, titles=("보일러 온도 낮추는 습관",))
     go(proj, streams, ["validate", "--all"])
     assert "설명 미사용" in streams.out.getvalue()
-    c = sqlite3.connect(proj / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(proj / "data" / "youtube_title.sqlite3")
     c.execute("INSERT INTO videos (video_id,title,snippet_json,fetched_at,description_excerpt) VALUES ('abc123DEF45','x','{}','t','보일러 온도를 낮추는 습관을 보여줍니다')")
     c.commit()
     c.close()
@@ -175,7 +175,7 @@ def test_external_strings_are_sanitized_in_report(proj, streams):
 
 def test_no_write_api_or_network_in_modules():
     """TC-359: 후보 입력·검증 모듈에는 네트워크·YouTube 쓰기 호출 코드가 없다. [SEC-001, SEC-007]"""
-    src = Path(__file__).resolve().parent.parent / "src" / "ytitle"
+    src = Path(__file__).resolve().parent.parent / "src" / "youtube_title"
     for name in ("candidates.py", "banned_terms.py", "validator.py", "commands/validate.py"):
         text = (src / name).read_text(encoding="utf-8")
         for bad in ("googleapiclient", "requests", "urllib", "socket", "videos().update", ".update(body"):

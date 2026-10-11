@@ -11,7 +11,7 @@
 
 ## 2. 테스트 범위 및 제외 범위
 - 범위: 제안 생성·검증(금칙어·엄격 모드·글자수), 승인(계획 해시·HMAC·24시간·1회용·재승인), 배치 만들기(50건 상한·영상당 1건·사전 점검 수치·KST/PT 경계·`daily_apply_cap`), 배치 실행(확인 문구 `실행 N건`, 실행 시점 재확인, 멱등성, 이중 실행·동시성), 워커 처리(재시도 없음, 놓친 예약 몰아서 실행 금지, 중지·취소 복귀), 롤백(영상 ID 직접 입력·`later_change_exists`·`backup_invalid`·쿼터), 교체 제한 4종, 리포트·CSV(수식 무력화), 대시보드, 데모 모드 외부 호출 0건(런타임 소켓 차단), 오류·사유 코드 대조, 영상 제외 규칙, 보안 코드 읽기
-- 제외(PASS로 세지 않음): 실서비스 AI·라이브 유튜브·구글 OAuth(M2/M3 미구현), 프런트·브라우저(W-FE), 컨테이너 실기동(Docker 없음), 코어 `ytweb/core/`·CLI `src/ytitle/` 자체(읽기만)
+- 제외(PASS로 세지 않음): 실서비스 AI·라이브 유튜브·구글 OAuth(M2/M3 미구현), 프런트·브라우저(W-FE), 컨테이너 실기동(Docker 없음), 코어 `ytweb/core/`·CLI `src/youtube_title/` 자체(읽기만)
 
 ## 3. 테스트 환경
 - 실행 환경: Linux 컨테이너, Python 3.13.16(요구 ≥3.12), pytest 9.1.1, coverage 7.16.2, ruff 0.17.0, SQLAlchemy 2.1.4, FastAPI 0.143.0, psycopg 3.3.6. 가상환경 `.harness-tmp/vb/venv`(백엔드 `requirements-dev.txt` 해시 잠금 설치)
@@ -124,7 +124,7 @@ YTWEB_TEST_PG_URL=postgresql+psycopg://postgres@127.0.0.1:54332/ytvb ../../.harn
 - 무변이 기준선: 303 passed(PG 전용 18 skip) — 이 기준선 없이는 "잡음"이 무의미함(DEF-VB-05)
 - 수치: **1회전 72곳: 잡음 57 / 놓침 15**, **2회전 91곳(신규 19 포함): 잡음 84 / 놓침 7**, **3회전 91곳: 잡음 90 / 놓침 1(동치)**
 - 놓침 처리: 1회전 15곳 → TC-VB-310~323으로 보강. 2회전 7곳 중 m08 제외 6곳 → TC-VB-251b, 324~328로 보강. m08은 동치(아래)
-- 동치 변이 m08: 승인 경로 `is_blocking(sug)` → `validation_result == "block"`. 승인 직전 `_apply_validation`이 검증기를 다시 돌리고, 검증기는 엄격 모드의 경고를 항상 차단으로 바꾸므로(`ytitle/validator.py:156`) (엄격, 경고) 조합이 존재하지 않는다 → 두 식이 같은 결과. 전제를 TC-VB-341이 전수 확인. 반영 경로의 같은 식은 저장 상태가 이상할 때를 대비한 방어이며 TC-VB-312가 직접 잡음(m09)
+- 동치 변이 m08: 승인 경로 `is_blocking(sug)` → `validation_result == "block"`. 승인 직전 `_apply_validation`이 검증기를 다시 돌리고, 검증기는 엄격 모드의 경고를 항상 차단으로 바꾸므로(`youtube_title/validator.py:156`) (엄격, 경고) 조합이 존재하지 않는다 → 두 식이 같은 결과. 전제를 TC-VB-341이 전수 확인. 반영 경로의 같은 식은 저장 상태가 이상할 때를 대비한 방어이며 TC-VB-312가 직접 잡음(m09)
 | ID | 파일 | 변이(원본 → 변이) | 1회 | 2회 | 3회 |
 |---|---|---|---|---|---|
 | m01 | `domain/suggestions.py` | `if ref_time >= ap.expires_at:` → `if ref_time > ap.expires_at:` | 잡음 | 잡음 | 잡음 |

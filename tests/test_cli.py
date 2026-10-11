@@ -2,8 +2,8 @@ import importlib
 import sys
 import textwrap
 
-from ytitle import cli, commands
-from ytitle.errors import SafetyGateError
+from youtube_title import cli, commands
+from youtube_title.errors import SafetyGateError
 
 
 def run(project, argv, streams, **kw):
@@ -45,7 +45,7 @@ def test_commands_are_auto_discovered(project, streams, tmp_path, monkeypatch):
     monkeypatch.setattr(commands, "__path__", list(commands.__path__) + [str(extra)])
     importlib.invalidate_caches()
     code = run(project, ["--help"], streams)
-    sys.modules.pop("ytitle.commands.hello", None)
+    sys.modules.pop("youtube_title.commands.hello", None)
     assert code == 0 and "hello" in streams.out.getvalue()
 
 
@@ -54,7 +54,7 @@ def test_ytierror_is_shown_in_korean_and_exit_code_mapped(project, streams, tmp_
     extra = tmp_path / "gate_cmds"
     extra.mkdir()
     (extra / "gate.py").write_text(textwrap.dedent('''
-        from ytitle.errors import SafetyGateError
+        from youtube_title.errors import SafetyGateError
         def _run(args, ctx):
             raise SafetyGateError("조건이 부족해 중단했습니다.", "settings.local.yaml을 확인하세요.")
         def register(sub, parent):
@@ -64,7 +64,7 @@ def test_ytierror_is_shown_in_korean_and_exit_code_mapped(project, streams, tmp_
     monkeypatch.setattr(commands, "__path__", list(commands.__path__) + [str(extra)])
     importlib.invalidate_caches()
     code = run(project, ["gate"], streams)
-    sys.modules.pop("ytitle.commands.gate", None)
+    sys.modules.pop("youtube_title.commands.gate", None)
     err = streams.err.getvalue()
     assert code == 3 and "YT-600" in err and "다음에 할 일" in err
     assert SafetyGateError.exit_code == 3
@@ -83,10 +83,10 @@ def test_unexpected_exception_is_masked_and_logged(project, streams, tmp_path, m
     monkeypatch.setattr(commands, "__path__", list(commands.__path__) + [str(extra)])
     importlib.invalidate_caches()
     code = run(project, ["boom"], streams)
-    sys.modules.pop("ytitle.commands.boom", None)
+    sys.modules.pop("youtube_title.commands.boom", None)
     assert code == 1 and "예상하지 못한 오류" in streams.err.getvalue()
     assert "supersecret" not in streams.err.getvalue()
-    log = (project / "data" / "logs" / "ytitle.log").read_text(encoding="utf-8")
+    log = (project / "data" / "logs" / "youtube-title.log").read_text(encoding="utf-8")
     assert "supersecret" not in log and "예상하지 못한 오류" in log
 
 
@@ -95,7 +95,7 @@ def test_run_is_recorded_in_run_logs(project, streams):
     import sqlite3
 
     run(project, ["purge", "--before", "2026-01-01"], streams)
-    c = sqlite3.connect(project / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(project / "data" / "youtube_title.sqlite3")
     row = c.execute("SELECT command, mode, exit_code, ended_at FROM run_logs").fetchone()
     c.close()
     assert row[0] == "purge" and row[1] == "dry_run" and row[2] == 0 and row[3]
@@ -128,7 +128,7 @@ def test_global_options_honored_before_and_after_subcommand(project, streams, tm
     (other / "config").mkdir(parents=True)
     for argv in (["--base-dir", str(other), "purge", "--before", "2026-01-01"], ["purge", "--before", "2026-01-01", "--base-dir", str(other)]):
         assert cli.main(argv, out=streams.out, err=streams.err, env={}) == 0
-    assert (other / "data" / "ytitle.sqlite3").exists()
+    assert (other / "data" / "youtube_title.sqlite3").exists()
     assert not os.path.exists("data")
     streams.out.truncate(0), streams.out.seek(0)
     assert cli.main(["--plain", "purge", "--before", "2026-01-01", "--base-dir", str(other)], out=streams.out, err=streams.err, env={}) == 0
@@ -138,7 +138,7 @@ def test_global_options_honored_before_and_after_subcommand(project, streams, tm
 def test_default_base_dir_is_project_root_regardless_of_cwd(tmp_path, monkeypatch):
     """TC-103: --base-dir이 없으면 소스 폴더의 프로젝트 루트를 기준으로 삼는다(실행한 폴더와 무관). [FR-017, NFR-007]"""
     root = cli.project_root()
-    assert (root / "pyproject.toml").is_file() and (root / "src" / "ytitle" / "cli.py").is_file()
+    assert (root / "pyproject.toml").is_file() and (root / "src" / "youtube_title" / "cli.py").is_file()
     monkeypatch.chdir(tmp_path)
     assert cli.project_root() == root and cli.project_root() != tmp_path
 
@@ -146,18 +146,18 @@ def test_default_base_dir_is_project_root_regardless_of_cwd(tmp_path, monkeypatc
 def test_project_root_falls_back_to_cwd_outside_source_tree(tmp_path, monkeypatch):
     """TC-104: 소스 트리 밖(설치형)에서는 현재 폴더를 기준으로 삼는다. pyproject.toml만 있고 src가 없는 폴더도 소스 트리로 보지 않는다. [FR-017]"""
     monkeypatch.chdir(tmp_path)
-    fake = tmp_path / "site-packages" / "ytitle" / "cli.py"
+    fake = tmp_path / "site-packages" / "youtube_title" / "cli.py"
     fake.parent.mkdir(parents=True)
     fake.write_text("", encoding="utf-8")
     assert cli.project_root(str(fake)) == tmp_path
     half = tmp_path / "half"
-    (half / "src" / "ytitle").mkdir(parents=True)
+    (half / "src" / "youtube_title").mkdir(parents=True)
     (half / "pyproject.toml").write_text("", encoding="utf-8")
-    (half / "src" / "ytitle" / "cli.py").write_text("", encoding="utf-8")
-    assert cli.project_root(str(half / "src" / "ytitle" / "cli.py")) == half.resolve()
+    (half / "src" / "youtube_title" / "cli.py").write_text("", encoding="utf-8")
+    assert cli.project_root(str(half / "src" / "youtube_title" / "cli.py")) == half.resolve()
     (half / "pyproject.toml").unlink()
-    assert cli.project_root(str(half / "src" / "ytitle" / "cli.py")) == tmp_path
-    only = tmp_path / "only"   # pyproject.toml만 있고 src/ytitle/cli.py는 없는 폴더
+    assert cli.project_root(str(half / "src" / "youtube_title" / "cli.py")) == tmp_path
+    only = tmp_path / "only"   # pyproject.toml만 있고 src/youtube_title/cli.py는 없는 폴더
     (only / "x" / "y").mkdir(parents=True)
     (only / "pyproject.toml").write_text("", encoding="utf-8")
     (only / "x" / "y" / "cli.py").write_text("", encoding="utf-8")

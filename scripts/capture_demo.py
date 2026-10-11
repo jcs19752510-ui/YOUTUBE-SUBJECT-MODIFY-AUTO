@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""실제 `ytitle` CLI를 가짜 데이터로 돌려 실제 출력(stdout/stderr/종료 코드)을 `docs/demo/screens.json`에 저장한다.
+"""실제 `youtube_title` CLI를 가짜 데이터로 돌려 실제 출력(stdout/stderr/종료 코드)을 `docs/demo/screens.json`에 저장한다.
 
 실행(저장소 루트에서):
     PYTHONPATH=src python scripts/capture_demo.py [--out docs/demo/screens.json]
 
 원칙
-- 출력은 지어내지 않는다: `ytitle.cli.main()`이 실제로 낸 글자와 종료 코드만 기록한다. 이 스크립트가 하는 일은
+- 출력은 지어내지 않는다: `youtube_title.cli.main()`이 실제로 낸 글자와 종료 코드만 기록한다. 이 스크립트가 하는 일은
   임시 프로젝트 폴더 준비, 가짜 구글 서비스 주입, ANSI 색 제거, 임시 경로를 `<프로젝트>`로 바꾸기뿐이다.
 - 실제 네트워크/구글 호출 금지: 소켓 연결을 막고(시도하면 즉시 실패, 시도 횟수는 마지막에 보고), `make_reader`/`make_write_service`를
   가짜 서비스로 교체한다. 토큰·키·영상·채널은 모두 가짜 값이다.
@@ -37,11 +37,11 @@ os.environ.pop("NO_COLOR", None)
 import httplib2  # noqa: E402
 from googleapiclient.errors import HttpError  # noqa: E402
 
-from ytitle import cli, db as dbmod, live_guard  # noqa: E402
-from ytitle.commands import fetch as fetch_cmd  # noqa: E402
-from ytitle.quota import QuotaManager  # noqa: E402
-from ytitle.timeutil import FixedClock  # noqa: E402
-from ytitle.youtube_read import YouTubeReader  # noqa: E402
+from youtube_title import cli, db as dbmod, live_guard  # noqa: E402
+from youtube_title.commands import fetch as fetch_cmd  # noqa: E402
+from youtube_title.quota import QuotaManager  # noqa: E402
+from youtube_title.timeutil import FixedClock  # noqa: E402
+from youtube_title.youtube_read import YouTubeReader  # noqa: E402
 
 NOW = datetime(2026, 10, 10, 12, 0, 0, tzinfo=timezone.utc)
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
@@ -233,7 +233,7 @@ class World:
 
     # --- DB 시드(테스트용으로 직접 삽입) ---
     def db(self):
-        conn = dbmod.connect(self.dir / "data" / "ytitle.sqlite3")
+        conn = dbmod.connect(self.dir / "data" / "youtube_title.sqlite3")
         dbmod.migrate(conn)
         return conn
 
@@ -331,7 +331,7 @@ def capture(world: World, sid: str, title: str, argv: list[str], note: str, *, s
             plain: bool = True, group: str = "", requires: str | None = None, quiet: bool = False) -> dict | None:
     """argv를 실제로 실행해 기록한다. plain=True면 같은 상태의 복사본에서 `--plain` 변형도 실행한다(상태는 기본 실행 쪽만 이어진다)."""
     need = requires or (argv[0] if not argv[0].startswith("-") else None)
-    command = "ytitle " + shlex.join(argv)
+    command = "youtube_title " + shlex.join(argv)
     if need and need not in available_commands():
         SCREENS.append({"id": sid, "title": title, "command": command, "exit_code": None, "stdout": "", "stderr": "",
                         "note": f"미구현: `{need}` 명령이 아직 없습니다. {note}", "status": "unimplemented", "variant": "default", "group": group, "world": world.name})

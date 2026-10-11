@@ -103,7 +103,7 @@ def test_tc_vb_005_exclusion_boundary_and_unknown_values_fail_closed(db, env, cl
     assert exclusion_reasons(mk(privacy_status="unlisted"), env.policy) == []  # 일부 공개는 제외 대상이 아님(CLI 정책과 동일)
     for unknown in ({"privacy_status": None}, {"made_for_kids": None}, {"duration_sec": None}):
         assert exclusion_reasons(mk(**unknown), env.policy), unknown
-    # 관찰(OBS-VB-1): live_broadcast_content 가 None 이면 제외하지 않는다 — 공유 코어(ytitle.updater.sequential_exclusions) 규칙 그대로이며
+    # 관찰(OBS-VB-1): live_broadcast_content 가 None 이면 제외하지 않는다 — 공유 코어(youtube_title.updater.sequential_exclusions) 규칙 그대로이며
     # 이 단위 코드의 결함이 아님. 현재 동작을 고정해 코어가 바뀌면 알 수 있게 한다.
     assert exclusion_reasons(mk(live_broadcast_content=None), env.policy) == []
 

@@ -9,11 +9,11 @@ from pathlib import Path
 import pytest
 from wu4_support import NOW, SNIPPET, VID, add_candidate, add_change, add_video, clock, make_settings, open_db, ts
 
-from ytitle import updater
-from ytitle.errors import InputError, SafetyGateError
-from ytitle.updater import build_update_body, canonical_json, compute_plan_hash, create_plan, execute_update, is_stale, parse_snippet, sequential_exclusions, validate_new_title
+from youtube_title import updater
+from youtube_title.errors import InputError, SafetyGateError
+from youtube_title.updater import build_update_body, canonical_json, compute_plan_hash, create_plan, execute_update, is_stale, parse_snippet, sequential_exclusions, validate_new_title
 
-SRC = Path(__file__).resolve().parent.parent / "src" / "ytitle"
+SRC = Path(__file__).resolve().parent.parent / "src" / "youtube_title"
 
 
 @pytest.fixture
@@ -329,7 +329,7 @@ def test_no_youtube_write_or_network_code_in_sources(name):
     """TC-451: 이 단위의 모듈에는 구글/네트워크 import, 서비스 객체 접근(.videos), 업데이트 호출(.update), 쓰기 호출 문자열이 없다. [SEC-001, SEC-007, K-2]"""
     text = (SRC / name).read_text(encoding="utf-8")
     tree = ast.parse(text)
-    banned_roots = {"googleapiclient", "google", "google_auth_oauthlib", "requests", "urllib", "urllib3", "http", "httplib2", "socket", "ssl", "selenium", "playwright", "ytitle.auth", "ytitle.youtube_read", "ytitle.retry"}
+    banned_roots = {"googleapiclient", "google", "google_auth_oauthlib", "requests", "urllib", "urllib3", "http", "httplib2", "socket", "ssl", "selenium", "playwright", "youtube_title.auth", "youtube_title.youtube_read", "youtube_title.retry"}
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             assert not {a.name.split(".")[0] for a in node.names} & banned_roots, (name, ast.dump(node))
@@ -356,7 +356,7 @@ def test_module_has_gateway_protocol_only():
 
 def test_db_read_failures_become_database_error(conn, s):
     """TC-454: 후보·영상 테이블을 읽지 못하면 DatabaseError(한국어 안내)로 변환한다. [NFR-007]"""
-    from ytitle.errors import DatabaseError
+    from youtube_title.errors import DatabaseError
     add_video(conn)
     cid = add_candidate(conn)
     conn.execute("ALTER TABLE videos RENAME TO videos_gone")

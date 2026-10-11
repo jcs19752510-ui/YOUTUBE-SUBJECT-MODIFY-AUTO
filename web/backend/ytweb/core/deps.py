@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi import Depends, Header, Request
 from sqlalchemy.orm import Session
-from ytitle.config import Settings
+from youtube_title.config import Settings
 
 from ytweb.config import WebSettings
 from ytweb.core.errors import ProblemError

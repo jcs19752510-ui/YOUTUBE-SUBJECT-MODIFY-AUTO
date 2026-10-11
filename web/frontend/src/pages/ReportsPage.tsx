@@ -132,7 +132,7 @@ export function ReportsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'ytitle-report.csv';
+      a.download = 'youtube-title-report.csv';
       document.body.appendChild(a);
       a.click();
       a.remove();

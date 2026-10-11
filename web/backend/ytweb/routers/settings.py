@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy.orm import Session
-from ytitle.config import Settings
+from youtube_title.config import Settings
 
 from ytweb.config import WebSettings
 from ytweb.core import audit

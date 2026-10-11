@@ -107,7 +107,7 @@ def test_settings_change_audited_without_pin(client, csrf, db):
 def test_effective_daily_cap_default_and_corrupt_value(db, web_settings):
     """TC-WA-072 저장값이 없거나 범위 밖(손상)이면 기본 10 으로 돌아간다."""
     from datetime import datetime, timezone
-    from ytitle.config import load_settings
+    from youtube_title.config import load_settings
     policy = load_settings(web_settings.base_dir, env={})
     assert effective_daily_cap(db, policy) == 10
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)

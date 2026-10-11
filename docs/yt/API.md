@@ -287,7 +287,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 | 실패(`failed`, 시도했으나 실패) | `read_failed` `video_not_found` `snippet_invalid` `body_invalid` `update_failed` `result_unknown`(반영됐을 수도 있음 — 유튜브에서 확인) `internal_error` `verify_failed`(제목은 바뀌었으나 보존 항목 검증 불일치 — 변경은 `success`로 남고 롤백 가능) `interrupted`(재시작 복구에서 제목이 바뀌지 않았음을 확인) |
 - **이월(`deferred`)**: 오늘 몫(하루 상한)을 다 쓴 뒤 도달한 항목은 영구 건너뜀이 아니라 `pending`으로 되돌아가 예정일이 다음 KST 날로 옮겨지고, 감사 로그에 `batch.item.deferred`가 남는다(6단계 DEF-VB-01). `limit_daily`로 건너뛰는 경우는 하루 상한 외 다른 한도가 함께 걸린 때뿐이다.
 - 데모 모드의 교체 한도 판정은 '재변경 최소 노출수'를 0으로 완화한다(DEC-042 D1, 72시간 간격·횟수 한도는 그대로). 리포트의 '데이터 부족' 기준(노출 1,000)은 바뀌지 않는다.
-(`limit_*` 코드는 `ytitle.limits`의 판정 코드 `INTERVAL/COUNT/IMPRESSIONS/DAILY`를 소문자로 붙인 것. 정확한 집합은 코어 규칙을 따른다.)
+(`limit_*` 코드는 `youtube_title.limits`의 판정 코드 `INTERVAL/COUNT/IMPRESSIONS/DAILY`를 소문자로 붙인 것. 정확한 집합은 코어 규칙을 따른다.)
 
 ---
 
@@ -319,7 +319,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 쿼리 `video_id`(선택). 응답 `{items: VideoReport[], notes: string[]}`(최대 200영상). `VideoReport.status`: `no_change`(변경 없음) · `insufficient`(**"데이터 부족" + `reasons[]`**) · `ok`(`before/after` 스냅샷과 `metrics[]` 비교). `notes`의 **첫 줄은 면책 고지** `이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.` 이고, 이어서 "원인을 단정할 수 없다", "데이터 부족이면 결론을 내지 않는다", "데모 성과는 가상 데이터" 문구가 항상 들어간다. 롤백이 끼어 있거나 변경 후 지표가 없으면 `insufficient`. 404 `video_not_found`.
 
 ### EVT-W27 `GET /api/v1/reports/export.csv`
-쿼리 `video_id`(선택). 응답 200 `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="ytitle-report.csv"`, UTF-8 BOM. 열: `video_id,title,status,label,changed_at,previous_title,new_title,before_period,before_impressions,before_ctr,before_views,before_watch_minutes,after_period,after_impressions,after_ctr,after_views,after_watch_minutes,reasons,note`. 셀이 `= + - @` 탭·CR로 시작하면 앞에 `'`를 붙여 엑셀 수식 주입을 막는다(숫자는 그대로). 표 아래 빈 줄 뒤에 `notes`(면책 고지 포함)가 한 줄에 한 문장씩 같은 방식으로 들어간다 — `#` 주석 줄이 아니라 일반 행이다.
+쿼리 `video_id`(선택). 응답 200 `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="youtube-title-report.csv"`, UTF-8 BOM. 열: `video_id,title,status,label,changed_at,previous_title,new_title,before_period,before_impressions,before_ctr,before_views,before_watch_minutes,after_period,after_impressions,after_ctr,after_views,after_watch_minutes,reasons,note`. 셀이 `= + - @` 탭·CR로 시작하면 앞에 `'`를 붙여 엑셀 수식 주입을 막는다(숫자는 그대로). 표 아래 빈 줄 뒤에 `notes`(면책 고지 포함)가 한 줄에 한 문장씩 같은 방식으로 들어간다 — `#` 주석 줄이 아니라 일반 행이다.
 
 ### EVT-W28 `GET /api/v1/audit`
 읽기 전용. 쿼리는 페이지만. 응답 `Page<AuditEntry>` + `chain_ok`:

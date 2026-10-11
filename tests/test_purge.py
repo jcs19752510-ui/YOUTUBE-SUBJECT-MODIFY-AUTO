@@ -1,12 +1,12 @@
 import sqlite3
 from datetime import datetime, timezone
 
-from ytitle import cli, db
-from ytitle.timeutil import FixedClock
+from youtube_title import cli, db
+from youtube_title.timeutil import FixedClock
 
 
 def seed(project):
-    conn = db.connect(project / "data" / "ytitle.sqlite3")
+    conn = db.connect(project / "data" / "youtube_title.sqlite3")
     db.migrate(conn)
     old, new = "2025-01-01T00:00:00Z", "2026-10-01T00:00:00Z"
     conn.execute("INSERT INTO title_candidates (id,video_id,candidate_title,source,strict_mode,status,created_at,updated_at) VALUES (1,'v1','옛 후보','human',0,'applied',?,?)", (old, old))
@@ -28,7 +28,7 @@ def go(project, streams, argv, answers=()):
 
 
 def counts(project):
-    c = sqlite3.connect(project / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(project / "data" / "youtube_title.sqlite3")
     r = {t: c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in ("title_changes", "title_candidates", "metrics_snapshots", "quota_usage")}
     c.close()
     return r
@@ -56,7 +56,7 @@ def test_execute_deletes_old_rows_but_protects_latest_success_and_backs_up(proje
     """TC-068: 실행하면 DB 사본을 먼저 만들고, 영상별 가장 최근 성공 변경(롤백용)과 그 후보는 보존한다. [NFR-009, SEC-006]"""
     seed(project)
     assert go(project, streams, ["purge", "--before", "2026-06-01", "--execute"], answers=["삭제"]) == 0
-    c = sqlite3.connect(project / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(project / "data" / "youtube_title.sqlite3")
     kept_changes = {r[0] for r in c.execute("SELECT id FROM title_changes")}
     kept_cands = {r[0] for r in c.execute("SELECT id FROM title_candidates")}
     new_metrics = c.execute("SELECT COUNT(*) FROM metrics_snapshots").fetchone()[0]
@@ -64,7 +64,7 @@ def test_execute_deletes_old_rows_but_protects_latest_success_and_backs_up(proje
     assert kept_changes == {1, 2}      # v1, v2 각각의 마지막 성공 변경 보존, 실패(3)만 삭제
     assert kept_cands == {1}           # 보존된 변경이 가리키는 후보 1은 유지, 후보 2는 삭제
     assert new_metrics == 1            # 기준일 이후(after) 지표는 유지
-    assert len(list((project / "data" / "backups").glob("ytitle_*.sqlite3"))) == 1
+    assert len(list((project / "data" / "backups").glob("youtube_title_*.sqlite3"))) == 1
     assert "삭제 전 DB 사본" in streams.out.getvalue()
 
 
@@ -93,7 +93,7 @@ def test_run_log_of_current_run_survives_purge(project, streams):
     """TC-071: 지금 실행 중인 명령의 run_logs 행은 삭제 대상에서 제외된다. [FR-020]"""
     seed(project)
     go(project, streams, ["purge", "--before", "2026-10-10", "--execute"], answers=["삭제"])
-    c = sqlite3.connect(project / "data" / "ytitle.sqlite3")
+    c = sqlite3.connect(project / "data" / "youtube_title.sqlite3")
     n = c.execute("SELECT COUNT(*) FROM run_logs WHERE command='purge'").fetchone()[0]
     c.close()
     assert n >= 1

@@ -221,8 +221,8 @@
 | C-2 | 초안 배치를 버리는 버튼이 없고, 초안에 담긴 제안은 `다른 배치에 이미 담겨 있습니다`로 새 배치에 못 담김 | `batches.py` `_active_item` 이 초안(draft) 배치의 항목도 "사용 중"으로 셈. 클라우드 임시 서버에서 재현. 서버에는 `POST /api/v1/batches/{번호}/cancel` 이 있어 초안도 취소됨 | 높음: `precheck_stale` 이후 복구 경로가 화면에 없음 |
 | C-3 | 이력 결과 `aborted`, 제안 상태 `rolled_back` 이 영어로 보임 | `ko.changeResult`, `ko.suggestionStatus` 에 키 없음 | 낮음 |
 | C-4 | 이력 "결과" 찾기 목록의 "검증 완료"·"검증 필요"·"되돌려짐"을 고르면 오류(422) | 서버가 허용하는 값은 planned/success/failed/aborted 뿐. 클라우드 임시 서버에서 재현 | 중간 |
-| C-5 | 영상 상세 한도 문구가 "하루 상한 … 태평양 시간 기준"이라고 하지만 웹은 한국 시간 하루로 셈 | `ytitle.limits` 문구 재사용, 웹은 `applied_today`(KST). 영상 상세 API로 재현 | 낮음(혼란) |
-| C-6 | 한도 3회 도달 사유에 CLI 전용 문구 "설정 cadence.max_changes_per_video를 바꿔야 합니다" | `ytitle.limits` 문구 재사용 | 낮음 |
+| C-5 | 영상 상세 한도 문구가 "하루 상한 … 태평양 시간 기준"이라고 하지만 웹은 한국 시간 하루로 셈 | `youtube_title.limits` 문구 재사용, 웹은 `applied_today`(KST). 영상 상세 API로 재현 | 낮음(혼란) |
+| C-6 | 한도 3회 도달 사유에 CLI 전용 문구 "설정 cadence.max_changes_per_video를 바꿔야 합니다" | `youtube_title.limits` 문구 재사용 | 낮음 |
 | C-7 | 화면에 면책("법률 자문이 아님")·AI 생성 고지·건강/금융 표현 주의 문구가 없음(기획서 약속) | `ko.ts` 전체에 해당 문구 없음. `WEB_LEGAL_NOTICE.md` 3-2 | 중간(법적 안내와 연결) |
 | C-8 | 성과 리포트가 데모에서 "비교 가능"이 될 수 없음(변경 후 지표 생성 코드 없음) | 코드에 `after` 지표 생성 없음, 반영 뒤 리포트로 재현 | 낮음(데모 한계) |
 | C-9 | `web/backend/ytweb/config.py` 주석과 일부 문서가 "승인·감사 HMAC 키"라고 적음(감사는 키 없음) | `core/audit.py` | 낮음(주석) |

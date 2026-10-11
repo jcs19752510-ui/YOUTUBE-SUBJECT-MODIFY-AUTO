@@ -28,7 +28,7 @@
   - 가상 스크롤·OpenAPI 타입 생성(노트가 미적용으로 명시, 설계서 §6 완화) → 대상 아님
 
 ## 3. 테스트 환경
-- 실행 환경: Linux 6.18, Node 22.22.0 / npm 10.9.4, Vitest 5.0.3 + jsdom 30.1.2 + Testing Library, axe-core 4.14.0. 실브라우저는 Chromium 1194(`/opt/pw-browsers`, 저장소 밖 `playwright-core` 로 구동). 실서버: 호스트 PostgreSQL 16(`/usr/lib/postgresql/16/bin`, 포트 54333, 127.0.0.1 전용), Python 3.13.16 임시 venv(`web/backend/requirements.txt` 해시 잠금 설치, FastAPI 0.143.0, uvicorn 0.54.0) + 워커. 운영 이미지는 PostgreSQL 17·Python 3.12 이므로 **버전 차이**가 있다(해시 잠금 파일 `requirements-ytitle.txt` 의 pyyaml 은 cp312 휠 해시라 3.13 에서 불일치 → 임시 venv 에서만 같은 버전을 해시 없이 설치).
+- 실행 환경: Linux 6.18, Node 22.22.0 / npm 10.9.4, Vitest 5.0.3 + jsdom 30.1.2 + Testing Library, axe-core 4.14.0. 실브라우저는 Chromium 1194(`/opt/pw-browsers`, 저장소 밖 `playwright-core` 로 구동). 실서버: 호스트 PostgreSQL 16(`/usr/lib/postgresql/16/bin`, 포트 54333, 127.0.0.1 전용), Python 3.13.16 임시 venv(`web/backend/requirements.txt` 해시 잠금 설치, FastAPI 0.143.0, uvicorn 0.54.0) + 워커. 운영 이미지는 PostgreSQL 17·Python 3.12 이므로 **버전 차이**가 있다(해시 잠금 파일 `requirements-youtube-title.txt` 의 pyyaml 은 cp312 휠 해시라 3.13 에서 불일치 → 임시 venv 에서만 같은 버전을 해시 없이 설치).
 - 테스트 데이터: 시험 안의 가짜 응답(모의 fetch), 서버의 데모 영상 200개(모의 AI 제안). 실제 구글·유튜브·AI 호출 없음, 외부 전송 없음. 토큰·비밀 값은 출력·기록하지 않았다(시험용 PIN `4321` 등은 임시 DB 안의 가짜 값).
 - 전제 조건: `npm ci --ignore-scripts` 는 `.harness-tmp/vf/work/` 에서만 수행(저장소 `web/frontend/node_modules` 없음). 소스는 `.harness-tmp/vf/sync.sh` 로 저장소→작업 복사본에 동기화하여 시험.
 - **재실행 방법**
@@ -472,7 +472,7 @@
   $ ls .harness-tmp/vf           -> No such file or directory
   ```
   이 단위가 소유한 변경 파일(`web/frontend/src/**` 16개 파일(신규 `ErrorBoundary.tsx` 포함), `web/frontend/verify/**` 10개 파일, 결과서 2개)은 **의도한 산출물**이며 오케스트레이터가 `git status`/`harness-janitor.sh --check` 로 최종 확인·커밋해야 한다.
-- 병렬 실행이었다면: 다른 단위 소유분 — `src/ytitle.egg-info/`(17:15 생성, 내가 만들지 않음: 나는 편집 설치를 하지 않고 `PYTHONPATH` 로만 사용), `web/backend/**/__pycache__`(백엔드 시험·서버 기동 부산물, `.gitignore` 대상 추정), `docs/harness/_parallel/web-verify-brief.md`(오케스트레이터 소유). **이 실행이 만든 임시 아티팩트·미추적 잔여물은 없음**(위 점검 기준). 웨이브 종료 후 전체 트리 점검은 오케스트레이터가 수행.
+- 병렬 실행이었다면: 다른 단위 소유분 — `src/youtube_title.egg-info/`(17:15 생성, 내가 만들지 않음: 나는 편집 설치를 하지 않고 `PYTHONPATH` 로만 사용), `web/backend/**/__pycache__`(백엔드 시험·서버 기동 부산물, `.gitignore` 대상 추정), `docs/harness/_parallel/web-verify-brief.md`(오케스트레이터 소유). **이 실행이 만든 임시 아티팩트·미추적 잔여물은 없음**(위 점검 기준). 웨이브 종료 후 전체 트리 점검은 오케스트레이터가 수행.
 - 이번 테스트 도중 강제 중단(TaskStop 등)이 있었는가: [ ] 없음 / [x] 있음 — 세션 사용 한도로 한 번 중단됨. 재개 시 `.harness-tmp/vf/` 잔여물(작업 복사본, 이전 진행분)을 먼저 확인해 재사용했고, 진행 상황을 `PROGRESS.md`(정리 시 삭제)에 남기며 진행했다. 중단 시점에 실행 중이던 서버·DB 프로세스는 없었다.
 - 이 절은 완성되었고 임시 아티팩트 정리를 확인했다(규칙 K 2번 충족: 단 `git status` 원문은 지시상 첨부 불가 → 오케스트레이터 확인 필요).
 
