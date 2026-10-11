@@ -200,19 +200,25 @@ def test_tc_vm_121_interleaved_flows_each_land_in_their_own_store(gapp, csrf, fg
 
 
 def test_tc_vm_122_many_unfinished_write_logins_do_not_misroute_the_latest_write_token(gapp, csrf, fg, web_settings):
-    """connect-write 를 한도(20)보다 많이 눌러도, 가장 마지막 쓰기 로그인은 쓰기 저장소에 저장돼야 한다(읽기 토큰 파일에 쓰기 토큰이 섞이면 안 됨)."""
+    """connect-write 를 한도(20)보다 많이 눌러도, 가장 마지막 쓰기 로그인은 쓰기 저장소에 저장돼야 한다(읽기 토큰 파일에 쓰기 토큰이 섞이면 안 됨).
+    한도에 닿은 뒤 400번 더 눌러, 방금 시작한 state 가 '쓰기 state 집합'에서 사라진(=읽기로 처리될) 경우를 센다."""
     sd = secrets_dir(web_settings)
-    misrouted = 0
-    for _ in range(150):
-        for f in sd.glob("google*"):
-            f.unlink()
-        for _ in range(21):
-            last = start_flow(gapp, csrf, "connect-write")
-        finish_flow(gapp, fg, last)
-        if (sd / "google_token.json").exists():
-            misrouted += 1
-            assert json.loads((sd / "google_token.json").read_text())["scope"].endswith("force-ssl")   # 쓰기 토큰이 읽기 파일로 샌 증거
-    assert misrouted == 0, f"150회 중 {misrouted}회 쓰기 토큰이 읽기 저장소로 저장됨"
+    ctx = gapp.app.state.google_ctx if getattr(gapp.app.state, "google_ctx", None) else None
+    for _ in range(20):
+        start_flow(gapp, csrf, "connect-write")
+    ctx = gapp.app.state.google_ctx
+    lost, landed = 0, 0
+    for _ in range(400):
+        url = start_flow(gapp, csrf, "connect-write")
+        st = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
+        if st not in ctx.write_states:                                                      # 이 로그인은 '읽기'로 처리될 운명
+            lost += 1
+            finish_flow(gapp, fg, url)                                                       # 실제 영향 확인: 사용자가 바로 로그인을 마친 경우
+            f = sd / "google_token.json"
+            if f.exists() and json.loads(f.read_text())["scope"].endswith("force-ssl"):
+                landed += 1
+                f.unlink()
+    assert landed == 0, f"400회 중 {lost}회 새 쓰기 state 소실, 그중 {landed}회 쓰기 토큰이 읽기 저장소(google_token.json)에 저장됨"
 
 
 def test_tc_vm_123_oversized_callback_params_rejected(gapp):

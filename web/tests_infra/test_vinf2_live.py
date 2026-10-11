@@ -149,9 +149,15 @@ STATE: dict = {}
 
 def test_vif_100_all_containers_up_and_healthy():
     """TC-VIF-100 db/api/worker/web 은 running+healthy, migrate 는 exited(0)."""
-    for svc in ("db", "api", "worker", "web"):
-        st = inspect(svc)["State"]
+    t0 = time.time()                                                  # up -d 는 의존 서비스만 기다리므로(worker 는 start_period 20s) 상태를 폴링한다(1회차 경합 실패 후 수정)
+    while time.time() - t0 < 120:
+        sts = {s: inspect(s)["State"] for s in ("db", "api", "worker", "web")}
+        if all(v["Status"] == "running" and v["Health"]["Status"] == "healthy" for v in sts.values()):
+            break
+        time.sleep(2)
+    for svc, st in sts.items():
         assert st["Status"] == "running" and st["Health"]["Status"] == "healthy", (svc, st["Status"], st["Health"]["Status"])
+    STATE["healthy_wait_s"] = round(time.time() - t0, 1)
     st = inspect("migrate")["State"]
     assert st["Status"] == "exited" and st["ExitCode"] == 0
 
@@ -230,7 +236,9 @@ def test_vif_104_networks_internal_and_membership():
     for svc, nets in exp.items():
         have = {k.removeprefix(f"{PROJECT}_") for k in inspect(svc)["NetworkSettings"]["Networks"]}
         assert have == nets, (svc, have)
-    assert sh(["docker", "network", "ls", "-q", "--filter", f"name=^{PROJECT}_egress$"]).stdout.strip() == ""   # 기본 실행에 egress 망 없음
+    # 기본 실행에서 egress 망에 붙은 컨테이너가 없다(오버레이를 썼다 걷은 뒤에는 compose 가 빈 망을 남길 수 있어 '망 부재'가 아니라 '붙은 컨테이너 부재'로 본다 — 1회차 실패 후 수정)
+    n = sh(["docker", "network", "inspect", f"{PROJECT}_egress"])
+    assert n.returncode != 0 or json.loads(n.stdout)[0]["Containers"] == {}
 
 
 # ------------------------------------------------------------------ 경로·헤더
@@ -609,8 +617,55 @@ def test_vif_140_online_overlay_live_adds_only_google_secret_and_egress():
         nets = {k.removeprefix(f"{PROJECT}_") for k in inspect(svc)["NetworkSettings"]["Networks"]}
         assert "egress" not in nets, (svc, nets)
         assert not any(m["Destination"].endswith("google_client") for m in inspect(svc)["Mounts"])
-    assert sh(["docker", "network", "ls", "-q", "--filter", f"name=^{PROJECT}_egress$"]).stdout.strip() == ""
+    # 오버레이를 걷은 뒤 compose 는 빈 egress 망을 지우지 않는다(compose 동작) → 남아 있어도 붙은 컨테이너가 없으면 통과
+    n = sh(["docker", "network", "inspect", f"{PROJECT}_egress"])
+    if n.returncode == 0:
+        STATE["egress_network_left_behind_empty"] = True
+        assert json.loads(n.stdout)[0]["Containers"] == {}
     assert not gc.exists()
+
+
+def test_vif_150_live_sensitivity_header_dup_detected_on_mutated_proxy_conf(tmp_path):
+    """TC-VIF-150 시험의 민감도: proxy.conf 에서 `proxy_hide_header Cache-Control` 을 뺀 변이 nginx 를 일회용 컨테이너(harness-tmp-v2-mutweb, 포트 18082)로 띄우면
+    같은 헤더 검사가 Cache-Control 중복을 실제로 잡아낸다(= DEF-7-001 재현). 원본 설정은 건드리지 않는다."""
+    d = tmp_path / "ngx"
+    d.mkdir()
+    src = WEB / "docker" / "nginx"
+    for f in src.iterdir():
+        (d / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+    pc = d / "proxy.conf"
+    txt = pc.read_text(encoding="utf-8")
+    assert "proxy_hide_header Cache-Control;" in txt
+    pc.write_text(txt.replace("proxy_hide_header Cache-Control;", ""), encoding="utf-8")
+    for f in d.iterdir():
+        f.chmod(0o644)
+    d.chmod(0o755)
+    name = f"{PROJECT}-mutweb"
+    sh(["docker", "rm", "-f", name])
+    args = ["docker", "run", "-d", "--name", name, "--read-only", "--cap-drop", "ALL", "--user", "101:101",
+            "--tmpfs", "/tmp:rw,noexec,nosuid,size=16m,uid=101,gid=101", "--network", f"{PROJECT}_front", "-p", "127.0.0.1:18082:8080",
+            "-v", f"{d / 'nginx.conf'}:/etc/nginx/nginx.conf:ro", "-v", f"{d / 'proxy.conf'}:/etc/nginx/snippets/proxy.conf:ro",
+            "-v", f"{d / 'security-headers.conf'}:/etc/nginx/snippets/security-headers.conf:ro",
+            "-v", f"{d / 'security-headers-api.conf'}:/etc/nginx/snippets/security-headers-api.conf:ro", f"{PROJECT}-web:local"]
+    try:
+        r = sh(args)
+        assert r.returncode == 0, r.stderr
+        sh(["docker", "network", "connect", f"{PROJECT}_edge", name])
+        t0 = time.time()
+        while time.time() - t0 < 20:
+            try:
+                c = http.client.HTTPConnection("127.0.0.1", 18082, timeout=3)
+                c.request("GET", "/api/healthz", headers={"Host": HOSTOK})
+                resp = c.getresponse(); resp.read(); hs = resp.getheaders(); c.close()
+                break
+            except Exception:
+                time.sleep(0.5)
+        else:
+            raise AssertionError("변이 nginx 가 응답하지 않음: " + sh(["docker", "logs", name]).stderr[-300:])
+        cc = hdr(hs, "Cache-Control")
+        assert len(cc) == 2, cc                      # 변이에서는 중복이 생긴다 → 정상 스택에서 1줄이었다는 112 의 판정이 의미를 가진다
+    finally:
+        sh(["docker", "rm", "-f", name])
 
 
 def test_vif_199_dump_observations():

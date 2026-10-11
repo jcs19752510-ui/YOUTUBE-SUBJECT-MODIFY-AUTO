@@ -191,6 +191,23 @@ describe('M2 단위4: 연결 후(읽기)', () => {
     expect(screen.getByText(ko.google.disconnectAsk)).toBeInTheDocument();
   });
 
+  it('TC-VMF-014b 해제 확정 버튼을 연타해도 해제 요청은 1번(응답이 느릴 때)', async () => {
+    const user = userEvent.setup();
+    const { calls } = await card(connected, [
+      route('POST', '/api/v1/google/disconnect', async () => {
+        await new Promise((r) => setTimeout(r, 300));
+        return json(200, { connected: false });
+      }),
+    ]);
+    await user.click(btn(ko.google.disconnect)!);
+    const yes = btn(ko.google.disconnectYes)!;
+    await user.click(yes);
+    await user.click(yes);
+    await user.click(yes);
+    await screen.findByText(ko.google.disconnected);
+    expect(calls.filter((c) => c.path.endsWith('/disconnect'))).toHaveLength(1);
+  });
+
   it('TC-VMF-015 마지막 오류가 있으면 경고 안내(role=alert)로 보이고, "데모" 단어가 있을 때만 초기화 힌트가 붙는다', async () => {
     const a = await card(st({ last_error: '구글 로그인이 취소되었습니다.' }));
     const alert = screen.getAllByRole('alert')[0]!;

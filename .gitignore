@@ -52,3 +52,4 @@ credentials*.json
 *.key
 *.p12
 web/e2e-results/
+web/frontend/.vitest/

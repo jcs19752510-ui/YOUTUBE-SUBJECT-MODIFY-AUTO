@@ -97,6 +97,30 @@ describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
     expect(within(box as HTMLElement).queryByText('참고 정보 문장')).toBeNull();
   });
 
+  it.each(['pass', 'none', 'warn'] as const)(
+    'TC-VMF-100b 서버 상태가 blocked 이면 검증 결과가 %s 여도 승인은 막힌다(상태 단독 판정)',
+    async (vr) => {
+      await openVideo([suggestion(1, { status: 'blocked', validation_result: vr, strict: false })]);
+      const c = within(cardOf(1));
+      expect(c.getByRole('button', { name: ko.suggestion.approve })).toBeDisabled();
+      expect(c.getByText(ko.suggestion.cannotApproveTitle)).toBeInTheDocument();
+    },
+  );
+
+  it('TC-VMF-102b 심각도가 block 인 사유(error 가 아님)도 차단 이유로 보인다', async () => {
+    await openVideo([
+      suggestion(1, {
+        validation_result: 'block',
+        reasons: [{ code: 'b', severity: 'block', message: '차단 심각도 사유' }],
+      }),
+    ]);
+    const box = within(cardOf(1))
+      .getByText(ko.suggestion.cannotApproveTitle)
+      .closest('div') as HTMLElement;
+    expect(within(box).getByText('차단 심각도 사유')).toBeInTheDocument();
+    expect(within(box).queryByText(ko.suggestion.cannotApproveNoReason)).toBeNull();
+  });
+
   it('TC-VMF-103 통과 제안과 엄격 모드 통과 제안에는 차단 안내가 없고 승인 버튼이 켜져 있다', async () => {
     await openVideo([suggestion(1), suggestion(2, { strict: true, validation_result: 'pass' })]);
     for (const id of [1, 2]) {

@@ -53,7 +53,7 @@ export function GoogleCard() {
             </Callout>
           )}
           <p>{g.message}</p>
-          {g.client_ready && !g.write_connected && (
+          {g.client_ready && !g.write_connected && !g.live_write_ready && (
             <p className="muted">{ko.google.readOnly}</p>
           )}
           {!g.client_ready && <p className="muted">{ko.google.needFile}</p>}
