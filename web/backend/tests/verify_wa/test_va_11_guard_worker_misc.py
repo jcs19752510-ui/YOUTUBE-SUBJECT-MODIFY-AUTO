@@ -349,3 +349,12 @@ def test_docs_enabled_exposes_only_docs_and_openapi(web_settings, engine, clock)
     assert asgi_call(app, "GET", "/openapi.json", h)["status"] == 200
     assert asgi_call(app, "GET", "/redoc", h)["status"] == 404
     assert asgi_call(app, "GET", "/docs", [("host", "evil.com")])["status"] == 403
+
+
+def test_alembic_offline_render_revokes_version_table_privileges():
+    """TC-VA-196 [S-W16] 실제 CLI 오프라인 렌더: 0002 가 alembic_version 의 INSERT/UPDATE/DELETE/TRUNCATE 를 앱 역할에서 회수하고 SELECT 는 건드리지 않으며, 헤드는 0002 하나다."""
+    up = _alembic_cli("upgrade", "head", "--sql")
+    assert "REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON alembic_version FROM ytweb_app" in up
+    assert "REVOKE SELECT" not in up and "ON alembic_version FROM PUBLIC" not in up
+    assert up.count("INSERT INTO alembic_version") == 1 and "UPDATE alembic_version SET version_num='0002'" in up
+    assert _alembic_cli("heads").split()[0] == "0002"

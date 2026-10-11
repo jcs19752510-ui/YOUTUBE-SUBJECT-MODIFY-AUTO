@@ -38,8 +38,8 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 ```
 
 ## 4. 테스트 케이스 및 결과
-시험 파일: `web/backend/tests/verify_wa/test_va_01~12*.py`, 보조 `helpers.py`·`conftest.py`·`probe_routes.py`(소스를 고치지 않고 core 를 HTTP 로 두드리는 시험 전용 라우터). ID `TC-VA-001~192`(연속, 중복 없음, 생성 스크립트로 확인). 한 ID 가 파라미터화되어 여러 건을 가진다.
-최종 전체 실행(구현자 `tests/core` 212건 + 독립 `tests/verify_wa` 477건 = **689건, 통과 689, 실패 0**, PostgreSQL 포함). 아래 표의 "실제 결과" 건수는 그 실행의 junit 결과다. 표의 "예상 결과"는 각 시험 docstring 이며 설계·요구 문장에 근거한다. 정상 경로·경계값·예외 입력·권한 경계·악의적 입력·동시성이 모두 들어 있다.
+시험 파일: `web/backend/tests/verify_wa/test_va_01~12*.py`, 보조 `helpers.py`·`conftest.py`·`probe_routes.py`(소스를 고치지 않고 core 를 HTTP 로 두드리는 시험 전용 라우터). ID `TC-VA-001~196`(연속, 중복 없음, 생성 스크립트로 확인). 한 ID 가 파라미터화되어 여러 건을 가진다.
+최종 전체 실행(구현자 `tests/core` 212건 + 독립 `tests/verify_wa` 481건 = **693건, 통과 693, 실패 0**, PostgreSQL 포함; DEF-VA-012 수정 후 재실행). 아래 표의 "실제 결과" 건수는 그 실행의 junit 결과다. 표의 "예상 결과"는 각 시험 docstring 이며 설계·요구 문장에 근거한다. 정상 경로·경계값·예외 입력·권한 경계·악의적 입력·동시성이 모두 들어 있다.
 
 | ID | 시나리오·예상 결과(명세 근거) | 사전조건 | 실행 절차 | 실제 결과 | Pass/Fail | 비고(보안 요구 ID) |
 |---|---|---|---|---|---|---|
@@ -235,7 +235,10 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 | TC-VA-190 | 실서버: 세션 발급 직후 첫 요청이 401 이 되지 않고, PIN 설정 직후 current_pin 없는 PIN 변경이 단 한 번도 통과하지 않는다(요청마다 새 연결; 세션 발급 8회 + PIN 변경 시도 4회, 발급 한도 때문에 반복 수는 제한). 한계: 수정 전 코드에서도 이 환경에서는 6회 모두 통과해 경쟁을 재현하지 못했다 -> 결정적 증명은 TC-VA-182/183, 이 시험은 실서버 스모크. | 실서버 기동 | `pytest tests/verify_wa/test_va_08_static_and_live.py::test_live_read_after_write_sees_committed_state_pin_cannot_be_bypassed` | 1건 통과 | PASS | S-W08, DEF-VA-010 회귀 |
 | TC-VA-191 | 쓰기 뒤 409 로 실패한 요청의 변경은 확정되지 않고(롤백), 성공(200) 요청의 변경은 확정된다(성공 응답에만 조기 commit). | SQLite 임시 DB+가짜 시계 | `pytest tests/verify_wa/test_va_12_commit_before_response.py::test_error_response_after_write_is_rolled_back_but_success_is_committed` | 1건 통과 | PASS | S-W12 |
 | TC-VA-192 | 예외 없이 '반환'된 4xx(예: 저장된 오류 응답 재생)의 쓰기도 응답이 나가기 전에 확정된다(상태 코드 때문에 경합이 남지 않는다). | SQLite 임시 DB+가짜 시계 | `pytest tests/verify_wa/test_va_12_commit_before_response.py::test_returned_4xx_response_commits_before_it_is_sent` | 1건 통과 | PASS | S-W12 |
-
+| TC-VA-193 | 새 DB(0001->0002 한 번에 적용, 인프라와 같은 기본 권한): 앱 계정은 alembic_version 을 읽기만 하고 INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER·구조 변경이 모두 거부, 다른 테이블 DML·audit_log 제한은 그대로 | 임시 PG16 | `pytest tests/verify_wa/test_va_07_postgres.py::test_app_role_cannot_modify_alembic_version_on_new_database` | 1건 통과 | PASS | S-W16, S-W13a (DEF-VA-012) |
+| TC-VA-194 | 이미 0001 로 배포된 DB(앱 계정이 버전표 DML 보유)에 0002 적용 시 권한 회수, 재실행 안전, 데이터 보존, 0002->0001 되돌리기는 권한 복원 | 임시 PG16 | `pytest tests/verify_wa/test_va_07_postgres.py::test_upgrade_existing_0001_database_revokes_version_table_dml` | 1건 통과 | PASS | S-W16, S-W13a (DEF-VA-012) |
+| TC-VA-195 | 역할 없는 환경에서도 0002 가 성공(건너뜀)하고 downgrade base 까지 순환 가능 | 임시 PG16 | `pytest tests/verify_wa/test_va_07_postgres.py::test_upgrade_without_app_role_still_works_and_offline_render_has_revoke` | 1건 통과 | PASS | S-W13a |
+| TC-VA-196 | 실제 CLI 오프라인 렌더: 0002 가 alembic_version 의 INSERT/UPDATE/DELETE/TRUNCATE 를 앱 역할에서 회수하고 SELECT 는 건드리지 않으며 헤드는 0002 하나 | SQLite 임시 DB+가짜 시계 | `pytest tests/verify_wa/test_va_11_guard_worker_misc.py::test_alembic_offline_render_revokes_version_table_privileges` | 1건 통과 | PASS | S-W16 |
 
 ### 4-1. 인수 조건 <-> 시험 추적 (연결 없는 AC 없음)
 | AC | 내용 | 시험 ID | 결과 |
@@ -247,7 +250,7 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 | AC-5 | 감사 로그 변조·삭제·타임스탬프 변경 탐지, 해시 체인 독립 재구현 일치, 동시 기록 | TC-VA-080~087, 121, 122, 143, 174, 175, 180 | 충족(꼬리 절단은 알려진 제한, TC-VA-084 특성화, 방어선은 DELETE 권한 회수 TC-VA-118) |
 | AC-6 | 같은 키 재전송 부작용 1회, 다른 요청 422, 키 없음 400, 처리 중 409, 24시간 TTL | TC-VA-066~079, 123 | 충족 |
 | AC-7 | 잡 중복 처리 없음(SKIP LOCKED·CAS), 재시도 없음, stale 재큐, SIGTERM 완료 후 종료 | TC-VA-100~113, 124, 137, 142, 167, 172, 189 | 충족 |
-| AC-8 | 마이그레이션 오프라인 렌더 + 실제 PG 적용, 앱 계정이 감사 로그 수정·삭제·TRUNCATE 불가 | TC-VA-114~120, 173 | 충족(PG 16 한정) |
+| AC-8 | 마이그레이션 오프라인 렌더 + 실제 PG 적용, 앱 계정이 감사 로그 수정·삭제·TRUNCATE 불가, **버전표 alembic_version 은 SELECT 만(DEF-VA-012)** | TC-VA-114~120, 173, 193~196 | 충족(PG 16 한정) |
 | AC-9 | (조정자 추가) 변경은 응답이 나가기 전에 확정, PIN 우회 불가(DEF-VF-B01) | TC-VA-182~186, 190~192 | 충족 |
 | AC-10 | (조정자 추가) 이 단위의 오류 코드는 한국어 hint 를 채움(DEF-VF-B02) | TC-VA-187~189 | 충족 |
 | AC-11 | PIN 잠금(5회 -> 5분, 2배, 최대 1시간), PIN 해시·형식 | TC-VA-043~055, 125, 126, 177~179 | 충족 |
@@ -283,11 +286,12 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 
 - 직접 고친 파일(전부 이 단위 소유): `ytweb/core/{guard,ratelimit,pin,idempotency,logsetup,audit,deps,jobs}.py`, `ytweb/routers/{audit,settings}.py`, `ytweb/app.py`, `ytweb/migrate.py`(import 정렬만), 정적 검사 자동 수정(import 정렬·`datetime.UTC`·불필요 noqa·미사용 import, 동작 불변) — 소유 범위 안의 `ytweb/core/*`, `app.py`, `worker.py`, `routers/{auth,settings,audit,health}.py`.
 - **작업 중 실수 기록**: 정적 검사 자동 수정(`ruff --fix`)을 `ytweb` 전체에 돌려 W-BE-B 소유 파일 10개(`routers/{videos,suggestions,changes,batches}.py`, `domain/{schemas,videos,suggestions,changes,reports,batches}.py`)의 import 줄 정렬이 바뀌었다. 수정 직후 발견해, 변경 전 사본(`.harness-tmp/va/pre_fix`)과 비교해 "ruff 정렬만 바뀜"을 확인한 뒤 **바이트 단위로 원상 복구**했다(복구 후 비교 일치, `tests/domain` 175건 통과). 다른 단위 파일의 최종 내용은 바뀌지 않았다.
+- DEF-VA-012 (= W-INF 독립 검증 DEF-VI-002, Low, **Fixed**): 앱 DB 계정 `ytweb_app` 이 `alembic_version` 을 수정·삭제할 수 있었다(Alembic 이 소유자 계정으로 만든 표라 인프라의 기본 권한 `GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES` 가 적용됨). 설계상 앱 계정은 구조 변경 불가이고, 버전 행이 바뀌면 다음 업그레이드가 오동작한다. 재현: 앱 역할로 `UPDATE alembic_version SET version_num='0000'`(TC-VA-193). 조치: **새 마이그레이션 `alembic/versions/0002_revoke_alembic_version_dml.py`**(0001 불변) — 역할이 있으면 `REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON alembic_version FROM ytweb_app`(SELECT 유지), downgrade 는 INSERT/UPDATE/DELETE 복원, 역할 없는 환경은 건너뜀. 새 DB(0001->0002 연속 적용)와 이미 0001 인 기존 DB 양쪽에서 실제 PG 16 으로 확인. 수정 전 FAIL: REVOKE 를 무력화한 사본에서 TC-VA-193·194 실패. 변이 5곳(UPDATE/TRUNCATE/TRIGGER 누락, 복원 GRANT 누락, down_revision 변경) 전부 잡힘. 기존 시험의 헤드 기대(0001->0002) 3곳 갱신(`tests/core/test_postgres.py`, `tests/core/test_migration.py`, TC-VA-116). **한계/제안(W-INF 소유, 코드 미수정)**: 복원 후 인프라가 `GRANT ... ON ALL TABLES` 를 다시 주면 0001 의 audit_log 회수처럼 이 회수도 무효가 된다 -> `web/docker/db/audit-guard.sql` 에 `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE public.alembic_version FROM ytweb_app;` 추가를 제안한다.
 - 열린 결함: **없음(Open 0건)**.
 
 ### 결함 0건이 아니므로 추가로 남기는 확인 근거
 - 구현자 시험 `tests/core` 212건은 DEF-VA-001~011 을 하나도 잡지 못했다(수정 전에도 전부 통과). 이 결함들은 독립 시험·변이·소스 읽기로 발견했다.
-- 수정 후: 구현자 212 + 독립 477 = 689건 전부 통과, W-BE-B `tests/domain` 175건 통과(회귀 없음, 건너뜀 7은 PostgreSQL 전용).
+- 수정 후: 구현자 212 + 독립 481 = 693건 전부 통과, W-BE-B `tests/domain` 175건 통과(회귀 없음, 건너뜀 7은 PostgreSQL 전용).
 
 ## 7. 테스트 환경 정리(Teardown) 확인 — 규칙 K
 - 이번 테스트에서 생성한 임시 아티팩트 목록: `.harness-tmp/va/venv/`(가상환경), `.harness-tmp/va/pg/`(임시 PostgreSQL 16 데이터·소켓·로그, 포트 54331), DB `ytweb_va`, `ytweb_va_m0~3`, `.harness-tmp/va/mut/`(변이 사본 w0~3 + 로그), `.harness-tmp/va/pre_fix/`(수정 전 사본), `.harness-tmp/va/gen/`(junit·표 생성), `.harness-tmp/va/.coverage`, `PROGRESS.md`. 저장소 안의 캐시(`web/backend/.ruff_cache`, `.pytest_cache`, `__pycache__`, `.coverage`)도 정리.
@@ -295,6 +299,7 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 - 정리(삭제) 완료 여부: 완료. PostgreSQL 은 `pg_ctl stop` 으로 중지("server stopped") 후 `.harness-tmp/va` 전체 삭제. `pgrep` 으로 `va/pg`·`ytweb_va`·`run_mut`·`uvicorn` 프로세스 잔존 없음 확인. 다른 에이전트의 폴더(`.harness-tmp/vb` 등)·프로세스는 건드리지 않음. 남은 `.harness-tmp/` 내용: `vb`(다른 단위 소유)만.
 - 정리 후 `git status` 실행 결과: **실행하지 않음** — 공통 지시서 3절이 git 명령을 금지하므로 `git status` 원문을 첨부할 수 없다(오케스트레이터가 웨이브 종료 후 전체 트리 점검). 대신 파일시스템으로 확인: 이 단위가 의도해 남긴 변경은 (a) `web/backend/ytweb/core/*`, `ytweb/app.py`, `ytweb/migrate.py`, `ytweb/routers/{audit,settings}.py` 결함 수정, (b) `web/backend/tests/verify_wa/` 시험 파일 16개 + `mutation/`(변이 목록·실행기·회전별 결과 JSON·표 생성기), (c) `docs/harness/units/web-WU-BE-A-test.md`, `docs/harness/verify-log_web-WU-BE-A-test.md` 뿐이다. 미추적 잔여 임시 파일 없음. 참고: `src/ytitle.egg-info/` 는 `pip install -e` 가 만드는 저장소 루트 산출물로 다른 단위의 가상환경과 공유되어 삭제하지 않았다(`.gitignore` 대상 여부는 오케스트레이터 확인).
 - 병렬 실행이었다면: 동시 작업 중인 다른 단위(W-BE-B, W-FE, W-INF)의 변경분(`web/frontend/**`, `web/backend/tests/verify_wb/`, `.harness-tmp/vb|vf|vi` 등)은 그 단위 소유이고 이 실행의 소유가 아니다. "이 실행이 만든 임시 아티팩트·미추적 잔여물이 없음"을 위 정리 확인으로 판정. 웨이브 종료 후 전체 점검은 오케스트레이터 몫.
+- DEF-VA-012 추가 검증(2026-10-11, 규칙 K 재수행): `.harness-tmp/va/` 에 가상환경·임시 PG(54331)를 새로 만들어 시험하고 끝나면 PG 중지·`.harness-tmp/va` 삭제·저장소 안 캐시 삭제. 다른 에이전트 폴더(`.harness-tmp/int`, `vb` 등)·프로세스는 건드리지 않음.
 - 이번 테스트 도중 강제 중단(TaskStop 등)이 있었는가: [x] 있음 — 세션 한도와 컨테이너 재시작으로 두 번 중단. 재개 시 `.harness-tmp/va` 의 가상환경·데이터 폴더를 재사용하고 죽은 PostgreSQL 만 다시 띄웠으며, 중단 전 남은 변이 점검 부산물(PG 역할 `ytweb_app` 등)을 확인해 정리 직전에 임시 클러스터째 삭제.
 - 7절 확인 완료.
 
@@ -305,7 +310,7 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 
 ## 9. 결론 및 판정
 - [x] PASS (수용된 알려진 제한 포함) — 다음 단계 진행 가능 (7절 Teardown 확인 완료가 전제조건)
-  - 근거: 인수 조건 14/14 시험 연결·통과(689/689), 변이 점검 마지막 회전에서 놓침 0(동치 1건 근거 기록), 커버리지 98%(미실행 줄 사유 기록), 정적 검사(F·E9) 통과, Open 결함 0건(11건 전부 Fixed + 회귀 시험), 정리 완료. 단, 2절·8절의 미수행 항목(실브라우저, PG 17, Docker/nginx, Python 3.12)은 PASS로 세지 않았고 후속 단계로 넘긴다.
+  - 근거: 인수 조건 14/14 시험 연결·통과(693/693), 변이 점검 마지막 회전에서 놓침 0(동치 1건 근거 기록), 커버리지 98%(미실행 줄 사유 기록), 정적 검사(F·E9) 통과, Open 결함 0건(12건 전부 Fixed + 회귀 시험), 정리 완료. 단, 2절·8절의 미수행 항목(실브라우저, PG 17, Docker/nginx, Python 3.12)은 PASS로 세지 않았고 후속 단계로 넘긴다.
 - [ ] CONDITIONAL PASS
 - [ ] FAIL
 
@@ -333,7 +338,8 @@ python tests/verify_wa/mutation/run_mut.py <회전이름> [M01,M02,...]   # 변�
 ### 부록 B. 공유 문서 갱신 요청 (오케스트레이터, 규칙 H·G)
 | 문서 | 항목 | 컬럼 | 값 |
 |---|---|---|---|
-| `traceability.md` | 웹 보안 요구 S-W02·S-W03·S-W04·S-W08·S-W09·S-W12·S-W13·S-W13a·S-W16 의 W-BE-A 행 | 단위테스트 | TC-VA-001~192 + 구현자 TC-WA-001~157, 판정 PASS(수용된 알려진 제한 포함), 결함 DEF-VA-001~011 전부 Fixed |
+| `traceability.md` | 웹 보안 요구 S-W02·S-W03·S-W04·S-W08·S-W09·S-W12·S-W13·S-W13a·S-W16 의 W-BE-A 행 | 단위테스트 | TC-VA-001~196 + 구현자 TC-WA-001~157, 판정 PASS(수용된 알려진 제한 포함), 결함 DEF-VA-001~012 전부 Fixed |
 | `decisions.md` | ① 응답 전 commit(guard) 방식 채택: `Depends(scope="function")` 대신 미들웨어 훅(다른 단위 라우터 수정 불필요) ② 외부 출처 요청은 속도 제한 별도 창 ③ PIN 직렬화 advisory lock ④ 감사 detail 에서 지수 표기 큰 float·-0.0 금지 ⑤ Host 헤더는 정확히 1개 | — | 기록 요청 |
-| `DESIGN.md` 검증 대기 V-01 | 상태 | — | W-BE-A 독립 검증 완료(PASS, 수용된 제한 포함). W4·W9·부록 A-1 에 DEF-VA-001~011 반영 필요(출처 검사 선행 순서에 "속도 제한은 소유자/외부 분리", "응답 전 commit" 추가) |
+| `DESIGN.md` 검증 대기 V-01 | 상태 | — | W-BE-A 독립 검증 완료(PASS, 수용된 제한 포함). W4·W9·부록 A-1 에 DEF-VA-001~012 반영 필요(출처 검사 선행 순서에 "속도 제한은 소유자/외부 분리", "응답 전 commit" 추가) |
+| `web/docker/db/audit-guard.sql`(W-INF 소유) | 복원 후 재회수 | — | 제안: `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE public.alembic_version FROM ytweb_app;` 추가(DEF-VA-012) |
 | `API.md` 1·3장 | 오류 응답 | — | 400 `bad_content_length`, 422 감사 `page` 상한 1,000,000, 429 외부 출처 별도 창 |

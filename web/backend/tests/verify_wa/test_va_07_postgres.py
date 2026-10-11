@@ -493,3 +493,84 @@ def test_concurrent_audit_writers_keep_one_linear_chain(pg):
         assert len(rows) == 80
         assert len({r.prev_hash for r in rows}) == 80, "체인이 갈라짐(같은 prev_hash 를 가진 행이 둘 이상)"
         assert audit.verify_chain(s) is True
+
+
+# ---------------------------------------------------------------- DEF-VA-012: alembic_version 권한
+
+VERSION_DENIED = ["UPDATE alembic_version SET version_num='0000'", "DELETE FROM alembic_version", "TRUNCATE alembic_version",
+                  "INSERT INTO alembic_version(version_num) VALUES ('x')", "DROP TABLE alembic_version",
+                  "ALTER TABLE alembic_version ADD COLUMN z int"]
+
+
+def test_app_role_cannot_modify_alembic_version_on_new_database(app_role):
+    """TC-VA-193 [S-W16, S-W13a] 새 DB(0001->0002 한 번에 적용, 인프라와 같은 기본 권한): 앱 계정은 alembic_version 을 읽기만 하고 수정·삭제·삽입·TRUNCATE·구조 변경이 모두 거부된다. 다른 테이블 DML·audit_log 제한은 그대로다."""
+    su = app_role
+    with su.connect() as c:
+        c.execute(text(f"SET ROLE {APP_ROLE}"))
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"  # SELECT 는 허용
+        c.execute(text("RESET ROLE"))
+        for priv in ("INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"):
+            assert not c.execute(text("select has_table_privilege(:r,'alembic_version',:p)"), {"r": APP_ROLE, "p": priv}).scalar_one(), priv
+        assert c.execute(text("select has_table_privilege(:r,'alembic_version','SELECT')"), {"r": APP_ROLE}).scalar_one()
+        c.execute(text("select 1"))
+    assert all(ok for _, ok in _as_app(su, stmts_denied=VERSION_DENIED)), _as_app(su, stmts_denied=VERSION_DENIED)
+    with su.connect() as c:
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"  # 거부된 문장은 아무것도 바꾸지 못했다
+    assert all(ok for _, ok in _as_app(su, stmts_denied=["UPDATE audit_log SET actor='x'", "DELETE FROM audit_log", "TRUNCATE audit_log"]))
+    _as_app(su, stmts_ok=["insert into settings_kv(key,value,updated_at) values ('k','1',now())", "update settings_kv set value='2'"])
+
+
+def test_upgrade_existing_0001_database_revokes_version_table_dml(pg_url):
+    """TC-VA-194 [S-W16, S-W13a] 이미 0001 로 배포된 DB(앱 계정이 버전표 DML 을 갖고 있음)에 0002 를 적용하면 권한이 회수된다(기존 DB 경로). 데이터·다른 권한은 보존된다."""
+    from alembic import command
+    _reset(pg_url)
+    su = create_engine(pg_url, isolation_level="AUTOCOMMIT")
+    created = False
+    try:
+        with su.connect() as c:
+            if not c.execute(text("select 1 from pg_roles where rolname=:r"), {"r": APP_ROLE}).first():
+                c.execute(text(f"CREATE ROLE {APP_ROLE} NOLOGIN"))
+                created = True
+            c.execute(text(f"GRANT USAGE ON SCHEMA public TO {APP_ROLE}"))
+            c.execute(text(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {APP_ROLE}"))
+        command.upgrade(migrate.alembic_config(pg_url), "0001")
+        with su.connect() as c:
+            c.execute(text("insert into settings_kv(key,value,updated_at) values ('keep','1',now())"))
+            assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0001"
+            assert c.execute(text("select has_table_privilege(:r,'alembic_version','UPDATE') and has_table_privilege(:r,'alembic_version','DELETE')"), {"r": APP_ROLE}).scalar_one()  # 결함 상태 재현
+        migrate.upgrade(pg_url)
+        migrate.upgrade(pg_url)  # 다시 실행해도 안전
+        with su.connect() as c:
+            assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"
+            assert c.execute(text("select count(*) from settings_kv where key='keep'")).scalar_one() == 1
+            assert not c.execute(text("select has_table_privilege(:r,'alembic_version','UPDATE') or has_table_privilege(:r,'alembic_version','DELETE') or has_table_privilege(:r,'alembic_version','INSERT')"), {"r": APP_ROLE}).scalar_one()
+        assert all(ok for _, ok in _as_app(su, stmts_denied=VERSION_DENIED))
+        # 0002 -> 0001 되돌리기는 이전 권한을 복원하고, 다시 올리면 회수된다
+        command.downgrade(migrate.alembic_config(pg_url), "0001")
+        with su.connect() as c:
+            assert c.execute(text("select has_table_privilege(:r,'alembic_version','UPDATE')"), {"r": APP_ROLE}).scalar_one()
+        migrate.upgrade(pg_url)
+    finally:
+        su.dispose()
+        _reset(pg_url)  # 접속을 모두 끊으므로 정리는 새 연결로 한다
+        cl = create_engine(pg_url, isolation_level="AUTOCOMMIT")
+        with cl.connect() as c:
+            c.execute(text(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM {APP_ROLE}"))
+            if created:
+                c.execute(text(f"DROP OWNED BY {APP_ROLE}"))
+                c.execute(text(f"DROP ROLE {APP_ROLE}"))
+        cl.dispose()
+
+
+def test_upgrade_without_app_role_still_works_and_offline_render_has_revoke(pg_url):
+    """TC-VA-195 역할 없는 환경(개발·테스트)에서도 0002 가 성공하고(건너뜀), 오프라인 SQL 렌더에 alembic_version 회수 문장이 들어 있다."""
+    from alembic import command
+    cl = create_engine(pg_url, isolation_level="AUTOCOMMIT")
+    with cl.connect() as c:
+        if c.execute(text("select 1 from pg_roles where rolname=:r"), {"r": APP_ROLE}).first():
+            pytest.skip("ytweb_app 역할이 이미 있어 '역할 없음' 경로를 검증할 수 없음")
+    cl.dispose()
+    _reset(pg_url)
+    migrate.upgrade(pg_url)
+    command.downgrade(migrate.alembic_config(pg_url), "base")
+    _reset(pg_url)
