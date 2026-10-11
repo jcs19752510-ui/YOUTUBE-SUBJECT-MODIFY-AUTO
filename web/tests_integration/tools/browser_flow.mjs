@@ -1,4 +1,4 @@
-// 실제 Chromium(헤드리스)으로 nginx 경유 핵심 흐름을 화면 단위로 확인한다(7단계 통합 시험, TC-IT-060).
+// 실제 Chromium(헤드리스)으로 nginx 경유 핵심 흐름을 화면 단위로 확인한다(7단계 통합 시험, IT-060).
 // 사용: node browser_flow.mjs <포트=18080> <결과 JSON 경로> [스크린샷 폴더]
 // Host/Origin 이 허용 목록(localhost:8080)과 맞도록 Chromium 의 --host-resolver-rules 로 localhost:8080 -> 127.0.0.1:<포트> 로 매핑한다(중계 프로세스 불필요).
 // 수집: 콘솔 오류/경고, 페이지 오류, CSP 위반(securitypolicyviolation + 콘솔 메시지), 4xx/5xx 응답(의도한 것은 제외 목록), 단계별 결과.

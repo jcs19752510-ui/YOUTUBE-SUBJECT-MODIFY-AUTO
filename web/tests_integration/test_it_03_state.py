@@ -1,4 +1,4 @@
-"""IT 그룹 S — 단위 간 경합·상태(TC-IT-300~): 응답 후 commit 수정(DEF-VF-B01/VA-010), 같은 키 재전송·다른 본문 재사용, 배치 이중·동시 실행, 승인 1회용·동시 승인,
+"""IT 그룹 S — 단위 간 경합·상태(IT-300~): 응답 후 commit 수정(DEF-VF-B01/VA-010), 같은 키 재전송·다른 본문 재사용, 배치 이중·동시 실행, 승인 1회용·동시 승인,
 PIN 잠금 동시 시도(DEF-VA-009), 워커·DB 재시작 중 중복 반영 방지, 오래된 running 복구, 재시작 뒤 데이터 보존.
 
 네이티브 스택(IT_B_NATIVE=1)과 도커 스택에서 같은 코드가 돈다. 프로세스를 직접 죽이는 일부(native_only)는 도커 스택에서 건너뛴다(A 트랙이 컨테이너 단위로 본다).
@@ -28,9 +28,9 @@ native_only = pytest.mark.skipif(not NATIVE, reason="프로세스·DB 를 직접
 # ─────────────────────────── 응답 후 commit(DEF-VF-B01 / DEF-VA-010) ───────────────────────────
 
 @pytest.mark.slow
-def test_tc_it_300_session_then_immediate_requests_30_times(fresh_demo):
-    """TC-IT-300: '세션 발급 직후 조회·변경·작업 생성·작업 조회'를 30회 반복해 401/403/404 가 한 번도 없다(수정 전에는 첫 요청이 401 이 되는 경우가 있었음).
-    속도 제한을 거는 스택에서는 세션 발급 분당 10회 때문에 시간이 걸린다. 많은 횟수의 반복은 TC-IT-301/316. 검증: DEF-VF-B01, S-W02"""
+def test_it_300_session_then_immediate_requests_30_times(fresh_demo):
+    """IT-300: '세션 발급 직후 조회·변경·작업 생성·작업 조회'를 30회 반복해 401/403/404 가 한 번도 없다(수정 전에는 첫 요청이 401 이 되는 경우가 있었음).
+    속도 제한을 거는 스택에서는 세션 발급 분당 10회 때문에 시간이 걸린다. 많은 횟수의 반복은 IT-301/316. 검증: DEF-VF-B01, S-W02"""
     bad = []
     for i in range(30):
         a = Api(throttle=0)
@@ -46,8 +46,8 @@ def test_tc_it_300_session_then_immediate_requests_30_times(fresh_demo):
 
 
 @pytest.mark.slow
-def test_tc_it_301_race_second_server_many_iterations(fresh_demo):
-    """TC-IT-301: 속도 제한만 풀어 둔 제2 서버(같은 코드·같은 DB)에서 (a) 세션 발급 직후 조회·변경 (b) 작업 생성 직후 조회 (c) PIN 설정 직후 '현재 PIN 없는' 변경을
+def test_it_301_race_second_server_many_iterations(fresh_demo):
+    """IT-301: 속도 제한만 풀어 둔 제2 서버(같은 코드·같은 DB)에서 (a) 세션 발급 직후 조회·변경 (b) 작업 생성 직후 조회 (c) PIN 설정 직후 '현재 PIN 없는' 변경을
     각 300회 반복해 실패 0건. (c) 는 PIN 우회 보안 영향이 있는 경합이다. A 트랙의 inside_race.py 를 그대로 실행한다. 검증: DEF-VF-B01/DEF-VA-010, S-W02, SEC-W19"""
     p = inside_python((HERE / "inside_race.py").read_text(encoding="utf-8"), timeout=900)
     assert p.returncode == 0, (p.stdout[-800:], p.stderr[-800:])
@@ -62,8 +62,8 @@ def test_tc_it_301_race_second_server_many_iterations(fresh_demo):
 
 @pytest.mark.skipif(not RELAXED, reason="속도 제한이 없는 스택에서만 수백 회 반복 가능")
 @pytest.mark.slow
-def test_tc_it_316_http_burst_after_commit_400_iterations(fresh_demo):
-    """TC-IT-316: 실제 HTTP(별도 연결)로 '응답을 받자마자 다음 요청'을 400회: (a) 설정 변경 직후 읽기 (b) 승인 직후 목록 (c) 배치 생성 직후 단건 조회 (d) 작업 생성 직후 조회.
+def test_it_316_http_burst_after_commit_400_iterations(fresh_demo):
+    """IT-316: 실제 HTTP(별도 연결)로 '응답을 받자마자 다음 요청'을 400회: (a) 설정 변경 직후 읽기 (b) 승인 직후 목록 (c) 배치 생성 직후 단건 조회 (d) 작업 생성 직후 조회.
     응답 후 commit 수정(DEF-VA-010)이 되돌아가면 한 번이라도 옛 값이 읽힌다. 검증: DEF-VA-010, NFR-W03"""
     a = fresh_demo
     set_cap(a, 20)
@@ -98,8 +98,8 @@ def test_tc_it_316_http_burst_after_commit_400_iterations(fresh_demo):
 
 # ─────────────────────────── 멱등성 키 ───────────────────────────
 
-def test_tc_it_302_same_key_concurrent_create_batch_yields_one_batch(fresh_demo):
-    """TC-IT-302: 같은 Idempotency-Key 로 배치 생성을 10개 스레드가 동시에 보내도 배치는 1개이며 응답은 201(첫 응답 또는 재생) 또는 409
+def test_it_302_same_key_concurrent_create_batch_yields_one_batch(fresh_demo):
+    """IT-302: 같은 Idempotency-Key 로 배치 생성을 10개 스레드가 동시에 보내도 배치는 1개이며 응답은 201(첫 응답 또는 재생) 또는 409
     idempotency_in_progress 뿐이다. 이후 같은 키 재전송은 같은 배치 id 를 재생한다. 검증: S-W12, API.md 1-6"""
     a = fresh_demo
     ap = approve_many(a, usable_videos(a, 3))
@@ -122,8 +122,8 @@ def test_tc_it_302_same_key_concurrent_create_batch_yields_one_batch(fresh_demo)
     assert psql_app("select count(*) from batch_items") == "3"
 
 
-def test_tc_it_304_idempotency_key_reuse_with_other_body_ttl_and_worker_purge(fresh_demo):
-    """TC-IT-304: 같은 키에 다른 본문(배치 생성·실행·롤백 각각)은 422 idempotency_key_reuse 이고 첫 요청의 효과는 그대로. 키 보관 24시간이 지나면(행을 옛날로 옮겨 시늉)
+def test_it_304_idempotency_key_reuse_with_other_body_ttl_and_worker_purge(fresh_demo):
+    """IT-304: 같은 키에 다른 본문(배치 생성·실행·롤백 각각)은 422 idempotency_key_reuse 이고 첫 요청의 효과는 그대로. 키 보관 24시간이 지나면(행을 옛날로 옮겨 시늉)
     같은 키로 새 요청이 처리되고, 48시간이 지난 키는 워커가 시작될 때 정리된다(멱등성 ↔ 워커 유지보수 경계). 동시 8건(같은 키·다른 본문)은 정확히 1건만 처리.
     검증: S-W12, API.md 1-6"""
     a = fresh_demo
@@ -171,8 +171,8 @@ def test_tc_it_304_idempotency_key_reuse_with_other_body_ttl_and_worker_purge(fr
     assert psql_app(f"select count(*) from idempotency_keys where key='{k}'") == "1"      # 25시간 된 키는 (새 요청의 행으로) 남아 있다
 
 
-def test_tc_it_303_concurrent_jobs_each_processed_exactly_once(fresh_demo):
-    """TC-IT-303: 제안 생성 작업 12개를 동시에 만들면 각 작업이 정확히 한 번(attempts=1)만 처리되고 모두 성공한다(작업 큐 SKIP LOCKED ↔ 도메인 핸들러). 검증: S-W12, NFR-W03, W-004"""
+def test_it_303_concurrent_jobs_each_processed_exactly_once(fresh_demo):
+    """IT-303: 제안 생성 작업 12개를 동시에 만들면 각 작업이 정확히 한 번(attempts=1)만 처리되고 모두 성공한다(작업 큐 SKIP LOCKED ↔ 도메인 핸들러). 검증: S-W12, NFR-W03, W-004"""
     a = fresh_demo
     vids = usable_videos(a, 12)
 
@@ -190,8 +190,8 @@ def test_tc_it_303_concurrent_jobs_each_processed_exactly_once(fresh_demo):
     assert psql_app("select count(*) from (select video_id, title from suggestions group by 1,2 having count(*)>1) t") == "0"
 
 
-def test_tc_it_317_sync_taps_are_deduplicated_into_one_job(fresh_demo):
-    """TC-IT-317: 영상 불러오기를 연타(워커가 아직 처리 전)하면 새 작업을 만들지 않고 진행 중인 같은 작업을 돌려준다(API.md EVT-W11). 동시 6건도 작업은 1개이며,
+def test_it_317_sync_taps_are_deduplicated_into_one_job(fresh_demo):
+    """IT-317: 영상 불러오기를 연타(워커가 아직 처리 전)하면 새 작업을 만들지 않고 진행 중인 같은 작업을 돌려준다(API.md EVT-W11). 동시 6건도 작업은 1개이며,
     끝난 뒤의 새 요청은 새 작업. 검증: W-001, S-W12"""
     a = fresh_demo
     worker_stop()
@@ -211,8 +211,8 @@ def test_tc_it_317_sync_taps_are_deduplicated_into_one_job(fresh_demo):
 
 
 @pytest.mark.skipif(not RELAXED, reason="세션을 20개 넘게 만들려면 세션 발급 속도 제한(분당 10)을 푼 스택이 필요")
-def test_tc_it_350_session_cap_ttl_and_worker_purge(fresh_demo):
-    """TC-IT-350: 세션은 최대 20개(22번째 로그인이 오래된 것부터 밀어냄 — 밀려난 쿠키는 즉시 401), 쿠키 Max-Age=12시간, 만료된 세션은 다음 요청에서 401 이 되고
+def test_it_350_session_cap_ttl_and_worker_purge(fresh_demo):
+    """IT-350: 세션은 최대 20개(22번째 로그인이 오래된 것부터 밀어냄 — 밀려난 쿠키는 즉시 401), 쿠키 Max-Age=12시간, 만료된 세션은 다음 요청에서 401 이 되고
     행이 지워지며, 만료 행이 남아 있으면 워커 유지보수가 정리한다(세션 ↔ 워커 경계). 검증: S-W02, API.md 1-1, 3장"""
     a = fresh_demo
     clients = [a]
@@ -241,8 +241,8 @@ def test_tc_it_350_session_cap_ttl_and_worker_purge(fresh_demo):
 
 # ─────────────────────────── 승인 1회용·동시성 ───────────────────────────
 
-def test_tc_it_306_approval_is_single_use_and_concurrent_approve_reject_is_consistent(fresh_demo):
-    """TC-IT-306: (a) 같은 제안을 8개 스레드가 동시에 승인해도 승인은 1개(나머지 409 suggestion_state), 감사 기록도 1건. (b) 승인과 반려를 동시에 보내도
+def test_it_306_approval_is_single_use_and_concurrent_approve_reject_is_consistent(fresh_demo):
+    """IT-306: (a) 같은 제안을 8개 스레드가 동시에 승인해도 승인은 1개(나머지 409 suggestion_state), 감사 기록도 1건. (b) 승인과 반려를 동시에 보내도
     최종 상태는 '승인(approvals 행 있음)' 또는 '반려(approvals 행 없음)' 중 하나로 일관(12쌍 반복). (c) 반영이 끝난 제안은 다시 승인·수정·반려할 수 없고,
     DB 에서 상태만 approved 로 되돌려도 사용된 승인(used_at)은 배치에 담기지 않는다(approval_used). 검증: SEC-W17, W-007, S-W12"""
     a = fresh_demo
@@ -287,8 +287,8 @@ def test_tc_it_306_approval_is_single_use_and_concurrent_approve_reject_is_consi
     assert psql_app(f"select count(*) from changes where video_id='{ch['video_id']}' and change_type='apply' and result='success'") == "1"
 
 
-def test_tc_it_307_same_suggestion_in_concurrent_batches_and_same_video_concurrent_execute(fresh_demo):
-    """TC-IT-307: (a) 같은 제안을 8개 스레드가 서로 다른 키로 동시에 배치에 담으면 항목은 1개만 생긴다(부분 유일 인덱스 ↔ 사전 점검). (b) 같은 영상의 서로 다른 제안을
+def test_it_307_same_suggestion_in_concurrent_batches_and_same_video_concurrent_execute(fresh_demo):
+    """IT-307: (a) 같은 제안을 8개 스레드가 서로 다른 키로 동시에 배치에 담으면 항목은 1개만 생긴다(부분 유일 인덱스 ↔ 사전 점검). (b) 같은 영상의 서로 다른 제안을
     각각 담은 두 배치를 동시에 실행 확정해도(워커 정지 중) 영상은 한 번만 바뀐다. 검증: W-008, W-010, S-W12, NFR-W03"""
     a = fresh_demo
     set_cap(a, 20)
@@ -335,8 +335,8 @@ def test_tc_it_307_same_suggestion_in_concurrent_batches_and_same_video_concurre
     assert psql_app("select count(*) from changes where result='planned'") == "0"
 
 
-def test_tc_it_309_concurrent_rollback_applies_once(fresh_demo):
-    """TC-IT-309: 같은 변경을 8개 스레드가 서로 다른 키로 동시에 롤백하면 롤백은 1건만 만들어지고 영상 제목은 원래 제목, 쿼터는 롤백 1회분(52)만 더 쓰며,
+def test_it_309_concurrent_rollback_applies_once(fresh_demo):
+    """IT-309: 같은 변경을 8개 스레드가 서로 다른 키로 동시에 롤백하면 롤백은 1건만 만들어지고 영상 제목은 원래 제목, 쿼터는 롤백 1회분(52)만 더 쓰며,
     나머지는 409(later_change_exists·pending_change_exists·already_restored 등)이다. 검증: W-011, S-W12, NFR-W03"""
     a = fresh_demo
     set_cap(a, 20)
@@ -362,8 +362,8 @@ def test_tc_it_309_concurrent_rollback_applies_once(fresh_demo):
 
 # ─────────────────────────── PIN 잠금 동시 시도(DEF-VA-009) ───────────────────────────
 
-def test_tc_it_305_pin_lock_concurrent_guesses_cannot_exceed_five(fresh_demo):
-    """TC-IT-305: PIN 을 설정한 뒤 틀린 PIN 을 동시에 10번 보내면 실패 카운터 갱신이 서로 덮어쓰이지 않아 정확히 4번만 pin_invalid(401)이고 5번째부터 pin_locked(429)다
+def test_it_305_pin_lock_concurrent_guesses_cannot_exceed_five(fresh_demo):
+    """IT-305: PIN 을 설정한 뒤 틀린 PIN 을 동시에 10번 보내면 실패 카운터 갱신이 서로 덮어쓰이지 않아 정확히 4번만 pin_invalid(401)이고 5번째부터 pin_locked(429)다
     (DEF-VA-009: 동시 추측으로 잠금 무력화). 잠금 중에는 맞는 PIN 도 거부, 감사 로그에 session.denied 가 남고 PIN 값은 없다. 검증: SEC-W19, SEC-W20, S-W09"""
     a = fresh_demo
     assert a.patch("/api/v1/settings", json={"pin": {"action": "set", "new_pin": "615243"}}).status_code == 200
@@ -428,8 +428,8 @@ def _consistency(a: Api, n_items: int, bid: int) -> dict:
 
 
 @pytest.mark.slow
-def test_tc_it_310_worker_sigkill_loop_during_batch_no_duplicate_apply(fresh_demo):
-    """TC-IT-310: 20건 배치를 처리하는 동안 워커를 SIGKILL 로 6번 죽였다 살린다. 끝나면 모든 항목이 확정이고, 영상당 반영 1건 이하, 제목은 항목 결과와 일치,
+def test_it_310_worker_sigkill_loop_during_batch_no_duplicate_apply(fresh_demo):
+    """IT-310: 20건 배치를 처리하는 동안 워커를 SIGKILL 로 6번 죽였다 살린다. 끝나면 모든 항목이 확정이고, 영상당 반영 1건 이하, 제목은 항목 결과와 일치,
     planned/running 잔여 없음, 쿼터는 성공 건수×52 이상(끊긴 항목 선예약 허용), 감사 체인 정상(재시작 복구 ↔ 이중 반영 방지). 검증: W-010, NFR-W05, S-W12"""
     a = fresh_demo
     set_cap(a, 20)
@@ -456,8 +456,8 @@ def test_tc_it_310_worker_sigkill_loop_during_batch_no_duplicate_apply(fresh_dem
 
 @native_only
 @pytest.mark.slow
-def test_tc_it_312_db_sigkill_during_batch_recovers_without_duplicate_apply(fresh_demo):
-    """TC-IT-312: 배치 처리 중 PostgreSQL 을 SIGKILL(전원 차단 시늉)했다가 충돌 복구로 다시 띄운다. API 는 그동안 5xx problem+json, DB 가 돌아오면 사람 손 없이 이어서
+def test_it_312_db_sigkill_during_batch_recovers_without_duplicate_apply(fresh_demo):
+    """IT-312: 배치 처리 중 PostgreSQL 을 SIGKILL(전원 차단 시늉)했다가 충돌 복구로 다시 띄운다. API 는 그동안 5xx problem+json, DB 가 돌아오면 사람 손 없이 이어서
     끝나고(죽은 워커는 재시작 정책으로 되살림) 영상당 반영 1건 이하·승인 소진·감사 체인 정상. 검증: NFR-W04/05, S-W09, W-010"""
     a = fresh_demo
     set_cap(a, 20)
@@ -482,8 +482,8 @@ def test_tc_it_312_db_sigkill_during_batch_recovers_without_duplicate_apply(fres
 
 
 @pytest.mark.slow
-def test_tc_it_311_db_restart_during_batch_and_api_degrades_cleanly(fresh_demo):
-    """TC-IT-311: 배치 처리 중 DB 를 중지했다가 시작한다. 그동안 /api/readyz 는 503(degraded), 일반 API 는 스택트레이스 없는 5xx problem+json 이고,
+def test_it_311_db_restart_during_batch_and_api_degrades_cleanly(fresh_demo):
+    """IT-311: 배치 처리 중 DB 를 중지했다가 시작한다. 그동안 /api/readyz 는 503(degraded), 일반 API 는 스택트레이스 없는 5xx problem+json 이고,
     DB 가 돌아오면 api·worker 가 사람 손 없이 복구되어 배치가 끝나고 영상당 반영은 1건 이하. 검증: NFR-W04/05, S-W09, W-010"""
     a = fresh_demo
     set_cap(a, 20)
@@ -514,8 +514,8 @@ def test_tc_it_311_db_restart_during_batch_and_api_degrades_cleanly(fresh_demo):
     print("worker_died_during_db_outage", died)
 
 
-def test_tc_it_313_api_restart_keeps_session_and_idempotent_replay(fresh_demo):
-    """TC-IT-313: API 서버를 재시작해도 (a) 같은 쿠키·CSRF 가 그대로 유효(세션은 DB) (b) 재시작 전에 쓴 Idempotency-Key 의 재전송이 첫 응답을 그대로 재생(키는 DB)
+def test_it_313_api_restart_keeps_session_and_idempotent_replay(fresh_demo):
+    """IT-313: API 서버를 재시작해도 (a) 같은 쿠키·CSRF 가 그대로 유효(세션은 DB) (b) 재시작 전에 쓴 Idempotency-Key 의 재전송이 첫 응답을 그대로 재생(키는 DB)
     (c) 진행 중이던 배치 작업은 워커가 계속 처리. 검증: NFR-W04, S-W12, API.md 1-6"""
     a = fresh_demo
     set_cap(a, 20)
@@ -541,8 +541,8 @@ def test_tc_it_313_api_restart_keeps_session_and_idempotent_replay(fresh_demo):
 
 
 @native_only
-def test_tc_it_314_worker_sigterm_finishes_current_item_and_leaves_nothing_running(fresh_demo):
-    """TC-IT-314: 배치 처리 중 워커에 SIGTERM(정상 종료 요청)을 보내면 현재 항목은 마치고 멈춘다 — running 항목·planned 변경이 남지 않고, 워커를 다시 띄우면 남은 항목만
+def test_it_314_worker_sigterm_finishes_current_item_and_leaves_nothing_running(fresh_demo):
+    """IT-314: 배치 처리 중 워커에 SIGTERM(정상 종료 요청)을 보내면 현재 항목은 마치고 멈춘다 — running 항목·planned 변경이 남지 않고, 워커를 다시 띄우면 남은 항목만
     이어서 처리하며 영상당 반영 1건. 검증: NFR-W05, W-010, S-W12"""
     a = fresh_demo
     set_cap(a, 20)
@@ -563,8 +563,8 @@ def test_tc_it_314_worker_sigterm_finishes_current_item_and_leaves_nothing_runni
 
 @native_only
 @pytest.mark.xfail(strict=True, reason="DEF-7B-001: 워커가 배치 처리 도중 비정상 종료하면 batch.execute 작업이 running(진행 3/20)으로 최대 10분 이상 남아 대시보드 active_job 이 계속 '진행 중'으로 보인다(항목은 스케줄러 틱이 끝내므로 배치는 done) — 워커 기동 시 이전 워커가 잡은 작업을 즉시 재큐하지 않음")
-def test_tc_it_318_job_row_is_closed_after_worker_crash_when_batch_finishes(fresh_demo):
-    """TC-IT-318(결함 고정, DEF-7B-001): 배치 처리 도중 워커를 SIGKILL 하고 다시 띄워 배치가 done 이 된 뒤 30초 안에 그 batch.execute 작업이 종료 상태가 되고
+def test_it_318_job_row_is_closed_after_worker_crash_when_batch_finishes(fresh_demo):
+    """IT-318(결함 고정, DEF-7B-001): 배치 처리 도중 워커를 SIGKILL 하고 다시 띄워 배치가 done 이 된 뒤 30초 안에 그 batch.execute 작업이 종료 상태가 되고
     대시보드 active_job 이 비는가. 현재는 작업이 running 으로 남는다(10분 뒤 stale 재큐). 검증: NFR-W05, W-010, 대시보드 진행 표시"""
     a = fresh_demo
     set_cap(a, 20)
@@ -580,8 +580,8 @@ def test_tc_it_318_job_row_is_closed_after_worker_crash_when_batch_finishes(fres
 
 # ─────────────────────────── 오래된 running 복구 ───────────────────────────
 
-def test_tc_it_320_stale_running_job_requeued_on_worker_start(fresh_demo):
-    """TC-IT-320: 워커가 죽어 'running' 으로 남은 오래된 작업(11분 전)은 워커가 다시 뜨면 재큐되어 끝까지 처리된다(시도 2회). 시도 3회를 넘긴 오래된
+def test_it_320_stale_running_job_requeued_on_worker_start(fresh_demo):
+    """IT-320: 워커가 죽어 'running' 으로 남은 오래된 작업(11분 전)은 워커가 다시 뜨면 재큐되어 끝까지 처리된다(시도 2회). 시도 3회를 넘긴 오래된
     작업은 worker_lost 로 실패 처리된다. 검증: NFR-W05, W-010"""
     a = fresh_demo
     worker_stop()
@@ -604,8 +604,8 @@ def test_tc_it_320_stale_running_job_requeued_on_worker_start(fresh_demo):
     assert any(r.startswith("failed|") and "worker_lost" in r for r in rows), rows
 
 
-def test_tc_it_321_stale_running_batch_item_and_planned_change_recovered_on_worker_start(fresh_demo):
-    """TC-IT-321: 워커가 반영 도중 죽은 상태를 DB 에 만들어 두고(항목 running) 워커를 시작한다. (a) planned 기록 전에 끊김 → 항목이 pending 으로 돌아가 정상
+def test_it_321_stale_running_batch_item_and_planned_change_recovered_on_worker_start(fresh_demo):
+    """IT-321: 워커가 반영 도중 죽은 상태를 DB 에 만들어 두고(항목 running) 워커를 시작한다. (a) planned 기록 전에 끊김 → 항목이 pending 으로 돌아가 정상
     반영 (b) planned 기록 후 제목이 이미 바뀜 → 재조회로 success 확정 (c) planned 기록 후 제목이 안 바뀜 → failed[interrupted]·aborted, 제목 불변, 제안은 승인 대기로 복귀.
     어느 경우에도 영상당 반영은 1건 이하. 검증: W-010, NFR-W05, S-W12"""
     a = fresh_demo
@@ -651,8 +651,8 @@ def test_tc_it_321_stale_running_batch_item_and_planned_change_recovered_on_work
     assert acts.count("batch.item.recovered") >= 2
 
 
-def test_tc_it_322_recovery_is_not_triggered_for_fresh_running_items_and_unknown_result_is_reported(fresh_demo):
-    """TC-IT-322: (a) 방금(10분 안) running 이 된 항목은 워커 틱이 복구하지 않는다(다른 워커가 처리 중일 수 있으므로) — 단 워커 기동 직후에는 즉시 복구 대상.
+def test_it_322_recovery_is_not_triggered_for_fresh_running_items_and_unknown_result_is_reported(fresh_demo):
+    """IT-322: (a) 방금(10분 안) running 이 된 항목은 워커 틱이 복구하지 않는다(다른 워커가 처리 중일 수 있으므로) — 단 워커 기동 직후에는 즉시 복구 대상.
     (b) planned 기록이 있고 영상 제목이 이전도 새 제목도 아닌(다른 사람이 바꿈) 항목은 failed[result_unknown] 으로 남고 영상 제목을 건드리지 않는다.
     검증: NFR-W05, W-010, SEC-W17"""
     a = fresh_demo
@@ -683,8 +683,8 @@ def test_tc_it_322_recovery_is_not_triggered_for_fresh_running_items_and_unknown
 
 
 @pytest.mark.xfail(strict=True, reason="DEF-7B-002: 재시작 복구로 success 확정된 반영은 감사 로그에 batch.item.recovered(항목 번호·상태만)만 남고 change.apply(변경 ID·영상 ID·제안 ID)가 없다 — 추가 전용 감사 기록만으로는 어느 영상이 어떻게 바뀌었는지 복원할 수 없다(changes 표는 앱 계정이 수정 가능)")
-def test_tc_it_323_recovered_apply_is_traceable_in_append_only_audit(fresh_demo):
-    """TC-IT-323(결함 고정, DEF-7B-002): 워커가 갱신 직후(planned 기록 후, 검증 전) 죽어 재시작 복구가 success 로 확정한 반영도 정상 반영처럼 감사 로그에 변경 ID 와 영상 ID 가
+def test_it_323_recovered_apply_is_traceable_in_append_only_audit(fresh_demo):
+    """IT-323(결함 고정, DEF-7B-002): 워커가 갱신 직후(planned 기록 후, 검증 전) 죽어 재시작 복구가 success 로 확정한 반영도 정상 반영처럼 감사 로그에 변경 ID 와 영상 ID 가
     남는가. 현재는 batch.item.recovered 에 {status: success} 만 남는다. 검증: W-016, SEC-W06(감사 추적), NFR-W05"""
     a = fresh_demo
     set_cap(a, 20)
@@ -715,8 +715,8 @@ def test_tc_it_323_recovered_apply_is_traceable_in_append_only_audit(fresh_demo)
 # ─────────────────────────── 여러 워커 ───────────────────────────
 
 @pytest.mark.slow
-def test_tc_it_330_three_workers_respect_daily_cap(fresh_demo):
-    """TC-IT-330: 워커 3개(정식 1 + 추가 2)가 동시에 같은 배치를 처리해도 하루 상한(3)을 넘기지 않고 영상당 반영 1건, 쿼터 이중 차감 없음.
+def test_it_330_three_workers_respect_daily_cap(fresh_demo):
+    """IT-330: 워커 3개(정식 1 + 추가 2)가 동시에 같은 배치를 처리해도 하루 상한(3)을 넘기지 않고 영상당 반영 1건, 쿼터 이중 차감 없음.
     경합으로 오늘 몫을 넘긴 항목은 건너뛰지 않고 다음 날로 이월된다(DEF-VB-01). 검증: NFR-W03(동시 틱에서도 하루 상한 유지), S-W12"""
     a = fresh_demo
     set_cap(a, 3)
@@ -747,8 +747,8 @@ def test_tc_it_330_three_workers_respect_daily_cap(fresh_demo):
 
 
 @pytest.mark.slow
-def test_tc_it_331_overdue_items_beyond_cap_with_many_workers_are_deferred_not_skipped(fresh_demo):
-    """TC-IT-331: 하루 상한 3, 10건 배치에서 예약이 이틀 밀려(워커가 꺼져 있던 시늉) 오늘 도래분이 9건이 된 상태로 워커 7개가 동시에 시작해도 오늘은 3건만 반영되고
+def test_it_331_overdue_items_beyond_cap_with_many_workers_are_deferred_not_skipped(fresh_demo):
+    """IT-331: 하루 상한 3, 10건 배치에서 예약이 이틀 밀려(워커가 꺼져 있던 시늉) 오늘 도래분이 9건이 된 상태로 워커 7개가 동시에 시작해도 오늘은 3건만 반영되고
     (놓친 예약을 몰아서 실행하지 않음), 오늘 몫을 넘긴 시도는 건너뜀·실패가 아니라 다음 날로 이월(감사 batch.item.deferred, 예정일=내일)된다. 이후 날마다 3건씩 이어서 모두 한 번씩만 반영.
     검증: W-008(초과분 다음 날), NFR-W03, DEF-VB-01, DEC-042"""
     a = fresh_demo
@@ -791,8 +791,8 @@ def test_tc_it_331_overdue_items_beyond_cap_with_many_workers_are_deferred_not_s
 # ─────────────────────────── 재시작 뒤 보존 ───────────────────────────
 
 @pytest.mark.slow
-def test_tc_it_340_data_session_and_approval_key_survive_restarts(fresh_demo):
-    """TC-IT-340: 반영 이력·승인 대기·세션·감사 체인·승인 서명 키가 여러 재시작 방식(네이티브: 정상 정지/시작, 전체 SIGKILL; 도커: restart, down→up, 재생성) 뒤에도
+def test_it_340_data_session_and_approval_key_survive_restarts(fresh_demo):
+    """IT-340: 반영 이력·승인 대기·세션·감사 체인·승인 서명 키가 여러 재시작 방식(네이티브: 정상 정지/시작, 전체 SIGKILL; 도커: restart, down→up, 재생성) 뒤에도
     그대로이고, 재시작 전에 받은 승인이 재시작 뒤에도 유효해 반영된다. 검증: NFR-W04, W-016, SEC-W17, D-07"""
     a = fresh_demo
     set_cap(a, 20)

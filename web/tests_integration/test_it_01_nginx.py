@@ -46,8 +46,8 @@ def _asset_paths() -> list[str]:
 
 # ─────────────────────────── 보안 헤더 한 벌 ───────────────────────────
 
-def test_tc_it_001_security_headers_exactly_one_set_everywhere():
-    """TC-IT-001: 정적·SPA 대체·API(정상/401/404)·nginx 자체 오류(403/404/405)에서 7종 헤더가 정확히 한 벌이고 nginx 값이다(백엔드의 다른 값이 섞이지 않는다).
+def test_it_001_security_headers_exactly_one_set_everywhere():
+    """IT-001: 정적·SPA 대체·API(정상/401/404)·nginx 자체 오류(403/404/405)에서 7종 헤더가 정확히 한 벌이고 nginx 값이다(백엔드의 다른 값이 섞이지 않는다).
     검증: S-W04, NFR-W06(보안 헤더), TB-W3"""
     assets = _asset_paths()
     assert assets, "index.html 에 /assets 참조가 없음"
@@ -72,8 +72,8 @@ def test_tc_it_001_security_headers_exactly_one_set_everywhere():
             assert leak not in r.headers
 
 
-def test_tc_it_002_cache_and_compression_policy():
-    """TC-IT-002: 정적(해시 파일 immutable, index no-cache)·API(no-store) 캐시 정책과 gzip 이 실제로 적용된다. 검증: NFR-W06, W-003 화면 로딩"""
+def test_it_002_cache_and_compression_policy():
+    """IT-002: 정적(해시 파일 immutable, index no-cache)·API(no-store) 캐시 정책과 gzip 이 실제로 적용된다. 검증: NFR-W06, W-003 화면 로딩"""
     assets = _asset_paths()
     js = next(a for a in assets if a.endswith(".js"))
     r = _get(js, headers={"Accept-Encoding": "gzip"})
@@ -89,8 +89,8 @@ def test_tc_it_002_cache_and_compression_policy():
     assert _get(js + ".map").status_code == 404
 
 
-def test_tc_it_003_no_docs_no_openapi_no_dotfiles():
-    """TC-IT-003: /docs·/openapi.json 은 API 문서가 노출되지 않고(꺼짐), 점 파일·상위 경로 탈출·디렉터리 목록이 열리지 않는다. 검증: S-W04/W13, 정보 노출"""
+def test_it_003_no_docs_no_openapi_no_dotfiles():
+    """IT-003: /docs·/openapi.json 은 API 문서가 노출되지 않고(꺼짐), 점 파일·상위 경로 탈출·디렉터리 목록이 열리지 않는다. 검증: S-W04/W13, 정보 노출"""
     for p in ("/api/openapi.json", "/api/docs", "/api/redoc", "/openapi.json"):
         r = _get(p)
         assert r.status_code in (404, 200)
@@ -132,8 +132,8 @@ def raw_parse(data: bytes):
 
 @pytest.mark.parametrize("host", ["evil.example", "127.0.0.1", "127.0.0.1:8081", "localhost", "127.0.0.1.:8080", "0.0.0.0:8080",
                                   "[::1]:8080", "127.0.0.1:8080.evil.example", "evil.example:8080", " 127.0.0.1:8080x", ""])
-def test_tc_it_010_host_not_allowed_gets_no_response(host):
-    """TC-IT-010: 허용 목록 밖 Host 는 응답 없이 연결이 닫힌다(444). 정적·API·헬스 경로 모두. 검증: S-W02, TB-W1(DNS 리바인딩)"""
+def test_it_010_host_not_allowed_gets_no_response(host):
+    """IT-010: 허용 목록 밖 Host 는 응답 없이 연결이 닫힌다(444). 정적·API·헬스 경로 모두. 검증: S-W02, TB-W1(DNS 리바인딩)"""
     for path in ("/", "/api/v1/auth/me", "/api/healthz", "/nginx-health"):
         data = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n".encode()
         resp = raw_request(data)
@@ -141,8 +141,8 @@ def test_tc_it_010_host_not_allowed_gets_no_response(host):
         assert resp == b"" or (parse_raw(resp)[0] == 400 and b"nginx" in resp.lower()), (host, path, resp[:80])
 
 
-def test_tc_it_011_host_duplicate_and_smuggling_forms():
-    """TC-IT-011: Host 중복·절대 URI·HTTP/1.0 무 Host·개행 삽입이 허용 목록을 우회하지 못한다. 검증: S-W02"""
+def test_it_011_host_duplicate_and_smuggling_forms():
+    """IT-011: Host 중복·절대 URI·HTTP/1.0 무 Host·개행 삽입이 허용 목록을 우회하지 못한다. 검증: S-W02"""
     ok = b"Host: 127.0.0.1:8080\r\n"
     bad = b"Host: evil.example\r\n"
     for req in (
@@ -161,8 +161,8 @@ def test_tc_it_011_host_duplicate_and_smuggling_forms():
     assert st in (0, 200)
 
 
-def test_tc_it_012_both_allowed_hosts_work_and_origin_must_match_host_family():
-    """TC-IT-012: localhost:8080 도 끝까지(세션 발급 → 조회) 동작하고, Origin 이 다른 가족(127.0.0.1 ↔ localhost)이어도 허용 목록 안이면 통과한다. 검증: S-W02, API.md 1-1"""
+def test_it_012_both_allowed_hosts_work_and_origin_must_match_host_family():
+    """IT-012: localhost:8080 도 끝까지(세션 발급 → 조회) 동작하고, Origin 이 다른 가족(127.0.0.1 ↔ localhost)이어도 허용 목록 안이면 통과한다. 검증: S-W02, API.md 1-1"""
     a = Api(host="localhost:8080", origin="http://localhost:8080")
     r = a.login()
     assert r.status_code == 200, r.text
@@ -175,8 +175,8 @@ def test_tc_it_012_both_allowed_hosts_work_and_origin_must_match_host_family():
 
 # ─────────────────────────── 쿠키·출처 ───────────────────────────
 
-def test_tc_it_020_cookie_attributes_and_scope_over_plain_http(owner):
-    """TC-IT-020: 쿠키 속성(HttpOnly·SameSite=Strict·Path=/api·Max-Age, Secure/Domain 없음)과, Secure 가 없어 평문 HTTP 로 그대로 오가는 실제 영향 범위.
+def test_it_020_cookie_attributes_and_scope_over_plain_http(owner):
+    """IT-020: 쿠키 속성(HttpOnly·SameSite=Strict·Path=/api·Max-Age, Secure/Domain 없음)과, Secure 가 없어 평문 HTTP 로 그대로 오가는 실제 영향 범위.
     검증: S-W04, SEC-W20. 쿠키는 /api 경로에만 붙고 정적 경로 요청에는 붙지 않는다."""
     with httpx.Client(base_url=BASE, headers={"Host": HOST_OK}, timeout=10) as c:
         r = c.post("/api/v1/auth/session", json={}, headers={"Origin": ORIGIN_OK})
@@ -209,8 +209,8 @@ def test_tc_it_020_cookie_attributes_and_scope_over_plain_http(owner):
     ({"Origin": ORIGIN_OK, "Sec-Fetch-Site": "same-site"}, 403),
     ({"Origin": ORIGIN_OK, "Sec-Fetch-Site": "same-origin"}, 200),
 ])
-def test_tc_it_021_origin_and_fetch_site_through_nginx(owner, extra, want):
-    """TC-IT-021: 상태 변경의 Origin·Sec-Fetch-Site 판정이 nginx 프록시 뒤에서도 그대로 동작한다(헤더가 잘리거나 덮이지 않는다). 검증: S-W02, S-W03"""
+def test_it_021_origin_and_fetch_site_through_nginx(owner, extra, want):
+    """IT-021: 상태 변경의 Origin·Sec-Fetch-Site 판정이 nginx 프록시 뒤에서도 그대로 동작한다(헤더가 잘리거나 덮이지 않는다). 검증: S-W02, S-W03"""
     h = {"X-CSRF-Token": owner.csrf, **extra}
     r = owner.c.patch("/api/v1/settings", json={"daily_apply_cap": 10}, headers=h)
     assert r.status_code == want, (extra, r.status_code, r.text[:200])
@@ -219,8 +219,8 @@ def test_tc_it_021_origin_and_fetch_site_through_nginx(owner, extra, want):
         assert r.json()["code"] in ("origin_not_allowed", "cross_site_request")
 
 
-def test_tc_it_022_csrf_and_missing_origin_and_get_cannot_mutate(owner):
-    """TC-IT-022: CSRF 토큰 누락·오류, Origin 없음, GET 으로 상태 변경 시도는 모두 거부된다. 검증: S-W02, S-W03"""
+def test_it_022_csrf_and_missing_origin_and_get_cannot_mutate(owner):
+    """IT-022: CSRF 토큰 누락·오류, Origin 없음, GET 으로 상태 변경 시도는 모두 거부된다. 검증: S-W02, S-W03"""
     r = owner.c.patch("/api/v1/settings", json={"daily_apply_cap": 10}, headers={"Origin": ORIGIN_OK})
     assert r.status_code == 403 and r.json()["code"] == "csrf_invalid"
     r = owner.c.patch("/api/v1/settings", json={"daily_apply_cap": 10}, headers={"Origin": ORIGIN_OK, "X-CSRF-Token": "x" * 40})
@@ -234,8 +234,8 @@ def test_tc_it_022_csrf_and_missing_origin_and_get_cannot_mutate(owner):
     assert owner.get("/api/v1/dashboard").json()["counts"] == before
 
 
-def test_tc_it_023_logout_invalidates_server_side_even_if_cookie_replayed():
-    """TC-IT-023: 로그아웃하면 서버의 세션 행이 지워져, 훔친(복제한) 쿠키를 재사용해도 401 이다. 검증: SEC-W20, S-W02"""
+def test_it_023_logout_invalidates_server_side_even_if_cookie_replayed():
+    """IT-023: 로그아웃하면 서버의 세션 행이 지워져, 훔친(복제한) 쿠키를 재사용해도 401 이다. 검증: SEC-W20, S-W02"""
     a = Api()
     assert a.login().status_code == 200
     stolen = a.c.cookies.get("ytw_session")
@@ -250,8 +250,8 @@ def test_tc_it_023_logout_invalidates_server_side_even_if_cookie_replayed():
 
 # ─────────────────────────── 프록시 경로·메서드 ───────────────────────────
 
-def test_tc_it_030_proxy_paths_and_error_format_reach_browser_intact(owner):
-    """TC-IT-030: /api 프록시가 응답 본문(problem+json)·상태·Retry-After·X-Request-Id 를 보존하고, 알 수 없는 /api 경로는 SPA 가 아니라 JSON 404 를 준다.
+def test_it_030_proxy_paths_and_error_format_reach_browser_intact(owner):
+    """IT-030: /api 프록시가 응답 본문(problem+json)·상태·Retry-After·X-Request-Id 를 보존하고, 알 수 없는 /api 경로는 SPA 가 아니라 JSON 404 를 준다.
     검증: API.md 1-2·1-7, W-017"""
     r = owner.get("/api/v1/nothing-here")
     assert r.status_code == 404 and r.headers["content-type"].startswith("application/problem+json")
@@ -270,8 +270,8 @@ def test_tc_it_030_proxy_paths_and_error_format_reach_browser_intact(owner):
     assert all("냉장고" in v["title"] or "냉장고" in v["video_id"] for v in vs.json()["items"])
 
 
-def test_tc_it_031_methods_allowed_by_location():
-    """TC-IT-031: nginx 메서드 제한이 실제로 적용된다(정적은 GET/HEAD 만, /api 는 5종, TRACE/OPTIONS/CONNECT 차단). 검증: TB-W3(메서드 제한·TRACE 차단)"""
+def test_it_031_methods_allowed_by_location():
+    """IT-031: nginx 메서드 제한이 실제로 적용된다(정적은 GET/HEAD 만, /api 는 5종, TRACE/OPTIONS/CONNECT 차단). 검증: TB-W3(메서드 제한·TRACE 차단)"""
     assert _get("/", "HEAD").status_code == 200
     for m in ("POST", "PUT", "DELETE", "PATCH", "OPTIONS"):
         assert _get("/", m).status_code == 403, m
@@ -299,8 +299,8 @@ def _post_session_body(n: int, chunked: bool = False) -> int:
     return r.status_code
 
 
-def test_tc_it_040_body_limits_nginx_layer_and_backend_layer():
-    """TC-IT-040: 본문 1MB 제한이 nginx(Content-Length·chunked)와 백엔드(컨테이너 안에서 nginx 우회) 양쪽에서 독립적으로 적용된다.
+def test_it_040_body_limits_nginx_layer_and_backend_layer():
+    """IT-040: 본문 1MB 제한이 nginx(Content-Length·chunked)와 백엔드(컨테이너 안에서 nginx 우회) 양쪽에서 독립적으로 적용된다.
     경계: 정확히 1 MiB 는 두 계층 모두 통과(백엔드가 내용을 본다), 1 MiB+1 은 거부. 검증: S-W13, NFR-W06"""
     MB = 1024 * 1024
     # 세션 발급 경로는 속도 제한이 빡빡하므로 크기 시험은 설정 PATCH(쓰기 120/분)로 한다 — 로그인 한 번만
@@ -370,8 +370,8 @@ print(json.dumps(out))
     a.close()
 
 
-def test_tc_it_041_malformed_content_length_and_slow_request_closed():
-    """TC-IT-041: 음수·중복 Content-Length 는 두 계층 어디에서든 거부되고(200 불가), 헤더를 천천히 보내는 연결은 nginx 가 10초 안에 끊는다(slowloris 완화). 검증: S-W13, NFR-W05"""
+def test_it_041_malformed_content_length_and_slow_request_closed():
+    """IT-041: 음수·중복 Content-Length 는 두 계층 어디에서든 거부되고(200 불가), 헤더를 천천히 보내는 연결은 nginx 가 10초 안에 끊는다(slowloris 완화). 검증: S-W13, NFR-W05"""
     base = b"POST /api/v1/auth/session HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nOrigin: http://127.0.0.1:8080\r\nContent-Type: application/json\r\n"
     for cl in (b"Content-Length: -1\r\n", b"Content-Length: 2\r\nContent-Length: 2\r\n", b"Content-Length: 1_0\r\n", b"Content-Length: +2\r\n"):
         st, _, _ = parse_raw(raw_request(base + cl + b"Connection: close\r\n\r\n{}"))
@@ -394,8 +394,8 @@ def test_tc_it_041_malformed_content_length_and_slow_request_closed():
 # ─────────────────────────── 속도 제한 이중 계층 ───────────────────────────
 
 @pytest.mark.destructive
-def test_tc_it_050_rate_limits_two_layers_session_issue():
-    """TC-IT-050: 세션 발급 제한이 두 계층에서 순서대로 걸린다. 깨끗한 상태(api·web 재시작)에서 연속 14회 발급: 처음 10회 200, 11번째는 백엔드(problem+json
+def test_it_050_rate_limits_two_layers_session_issue():
+    """IT-050: 세션 발급 제한이 두 계층에서 순서대로 걸린다. 깨끗한 상태(api·web 재시작)에서 연속 14회 발급: 처음 10회 200, 11번째는 백엔드(problem+json
     rate_limited + Retry-After), 12번째부터는 nginx(text/html 429). 제한이 풀린 뒤(약 60초) 다시 발급된다. 검증: S-W13, NFR-W06, API.md 1-3"""
     dc("restart", "api", "web", timeout=240)
     wait_healthy(120)
@@ -425,8 +425,8 @@ def test_tc_it_050_rate_limits_two_layers_session_issue():
 
 
 @pytest.mark.destructive
-def test_tc_it_051_rate_limit_api_general_and_write_limit():
-    """TC-IT-051: /api/ 일반 제한(초당 30·버스트 60: nginx HTML 429)과 백엔드 쓰기 제한(분당 120: problem+json 429)이 각각 걸리고, 429 가 서버 상태를 바꾸지 않는다.
+def test_it_051_rate_limit_api_general_and_write_limit():
+    """IT-051: /api/ 일반 제한(초당 30·버스트 60: nginx HTML 429)과 백엔드 쓰기 제한(분당 120: problem+json 429)이 각각 걸리고, 429 가 서버 상태를 바꾸지 않는다.
     검증: S-W13, NFR-W06"""
     dc("restart", "api", "web", timeout=240)
     wait_healthy(120)
@@ -469,8 +469,8 @@ def test_tc_it_051_rate_limit_api_general_and_write_limit():
     a.close()
 
 
-def test_tc_it_052_health_checks_all_healthy_and_migrate_exited_zero():
-    """TC-IT-052: 컨테이너 헬스체크가 실제로 healthy 이고 migrate 는 종료 코드 0 이다(기동 순서 체인의 결과). 검증: W-017, D-01, D-08"""
+def test_it_052_health_checks_all_healthy_and_migrate_exited_zero():
+    """IT-052: 컨테이너 헬스체크가 실제로 healthy 이고 migrate 는 종료 코드 0 이다(기동 순서 체인의 결과). 검증: W-017, D-01, D-08"""
     import subprocess
     out = subprocess.run(["docker", "ps", "-a", "--filter", f"label=com.docker.compose.project={PROJECT}", "--format", "{{.Label \"com.docker.compose.service\"}}|{{.Status}}"],
                          capture_output=True, text=True).stdout.splitlines()
@@ -482,16 +482,16 @@ def test_tc_it_052_health_checks_all_healthy_and_migrate_exited_zero():
 
 
 @pytest.mark.xfail(strict=True, reason="DEF-7-001: /api 응답에 Cache-Control: no-store 가 두 번 나간다(백엔드 것을 nginx proxy_hide_header 로 숨기지 않음)")
-def test_tc_it_053_api_responses_have_single_cache_control():
-    """TC-IT-053(결함 고정): /api 응답의 Cache-Control 은 한 줄이어야 한다. 현재는 백엔드와 nginx 가 각각 붙여 두 줄이다(값은 같아 동작 영향 없음, 보안 헤더 '한 벌' 원칙과 불일치)."""
+def test_it_053_api_responses_have_single_cache_control():
+    """IT-053(결함 고정): /api 응답의 Cache-Control 은 한 줄이어야 한다. 현재는 백엔드와 nginx 가 각각 붙여 두 줄이다(값은 같아 동작 영향 없음, 보안 헤더 '한 벌' 원칙과 불일치)."""
     r = _get("/api/healthz")
     assert len(r.headers.get_list("cache-control")) == 1
 
 
 # ─────────────────────────── 백엔드 계층의 Host 방어(nginx 우회) ───────────────────────────
 
-def test_tc_it_013_backend_host_guard_independent_of_nginx():
-    """TC-IT-013: nginx 를 거치지 않고 api 컨테이너 안에서 127.0.0.1:8000 으로 직접 보내도 비허용·중복 Host 는 백엔드가 403 으로 거부한다(이중 방어의 두 번째 층).
+def test_it_013_backend_host_guard_independent_of_nginx():
+    """IT-013: nginx 를 거치지 않고 api 컨테이너 안에서 127.0.0.1:8000 으로 직접 보내도 비허용·중복 Host 는 백엔드가 403 으로 거부한다(이중 방어의 두 번째 층).
     허용 Host 는 통과하고, 헬스 경로는 Host 와 무관하다(컨테이너 헬스체크용). 검증: S-W02, TB-W1"""
     script = """
 import http.client, json
@@ -534,8 +534,8 @@ def _browser_available() -> bool:
 
 @pytest.mark.slow
 @pytest.mark.destructive
-def test_tc_it_060_real_browser_core_flow_no_console_csp_or_http_errors():
-    """TC-IT-060: 헤드리스 Chromium 으로 nginx 경유 핵심 흐름(PIN 없는 첫 화면 → 영상 불러오기 → 제안 생성 → 승인 → 배치 사전 점검 → 확인 문구 → 실행 → 이력)을
+def test_it_060_real_browser_core_flow_no_console_csp_or_http_errors():
+    """IT-060: 헤드리스 Chromium 으로 nginx 경유 핵심 흐름(PIN 없는 첫 화면 → 영상 불러오기 → 제안 생성 → 승인 → 배치 사전 점검 → 확인 문구 → 실행 → 이력)을
     화면 조작만으로 끝까지 수행한다. 콘솔 오류·경고, 페이지 오류, CSP 위반, 4xx/5xx 응답, 외부 도메인 요청이 0건이고, 쿠키는 HttpOnly·SameSite=Strict 이며,
     CSP 가 실제로 인라인 스크립트·외부 연결·프레임 삽입을 막는다. 화면 조작의 결과는 API·감사 체인으로 다시 확인한다.
     검증: W-001~W-017 핵심 흐름, S-W04, NFR-W06, DEF-VF-B01/B05(브라우저에서의 경합)"""
@@ -570,8 +570,8 @@ def test_tc_it_060_real_browser_core_flow_no_console_csp_or_http_errors():
 
 @pytest.mark.slow
 @pytest.mark.destructive
-def test_tc_it_061_frontend_live_contract_suite_through_nginx_three_runs_zero_settle():
-    """TC-IT-061: W-FE 의 실서버 계약 시험(verify/live.verify.test.ts, 21건)을 nginx 주소(Host/Origin 이 127.0.0.1:8080 이 되도록 호스트 8080 → 게시 포트 바이트 중계)로,
+def test_it_061_frontend_live_contract_suite_through_nginx_three_runs_zero_settle():
+    """IT-061: W-FE 의 실서버 계약 시험(verify/live.verify.test.ts, 21건)을 nginx 주소(Host/Origin 이 127.0.0.1:8080 이 되도록 호스트 8080 → 게시 포트 바이트 중계)로,
     변경 직후 대기 0ms(VF_LIVE_SETTLE_MS=0: DEF-VF-B01 경합 재현 조건)로 3회 연속 돌려 매번 21건 전부 통과한다(조건부 PASS 조건 ① 해소 유지 확인).
     검증: W-FE 계약, DEF-VF-B01/005, S-W03. IT_FE_DIR 은 `npm ci --ignore-scripts` 를 마친 프런트 사본."""
     import os

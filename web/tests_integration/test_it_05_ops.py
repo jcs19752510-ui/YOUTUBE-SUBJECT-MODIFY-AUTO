@@ -50,8 +50,8 @@ def _state_with_changes(n_apply: int = 3) -> Api:
 
 @needs_pwsh
 @pytest.mark.destructive
-def test_tc_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard():
-    """TC-IT-500: backup.ps1 → (데이터 변경) → restore.ps1 -Latest 로 행 수가 백업 시점과 정확히 일치하고, 복원 직전 상태가 pre-restore-*.dump 로 자동 보관되며,
+def test_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard():
+    """IT-500: backup.ps1 → (데이터 변경) → restore.ps1 -Latest 로 행 수가 백업 시점과 정확히 일치하고, 복원 직전 상태가 pre-restore-*.dump 로 자동 보관되며,
     복원 뒤에도 감사 해시 체인이 정상이고 앱 계정은 audit_log 를 UPDATE/DELETE/TRUNCATE 할 수 없고, 복원 전에 받은 승인이 그대로 유효해 반영된다.
     잘못된 확인 문구·손상된 파일은 아무것도 바꾸지 않는다. 검증: W-016, D-07b, SEC-W22, S-W16, NFR-W08"""
     _clear_backups()
@@ -107,7 +107,7 @@ def test_tc_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard()
     for sql in ("update audit_log set actor='x' where id=1", "delete from audit_log where id=1", "truncate audit_log"):
         with pytest.raises(RuntimeError, match="permission denied"):
             psql_app(sql)
-    assert psql_app("select version_num from alembic_version") == "0002"      # (버전표 쓰기 권한은 TC-IT-504 가 따로 본다: DEF-7-002)
+    assert psql_app("select version_num from alembic_version") == "0002"      # (버전표 쓰기 권한은 IT-504 가 따로 본다: DEF-7-002)
     # 복원 전에 받은 승인(서명 키 볼륨은 그대로)이 지금도 유효 → 반영 가능
     ap = pending_ap[0]
     st = {s["id"]: s for s in b.get("/api/v1/suggestions", params={"page_size": 100}).json()["items"]}
@@ -131,8 +131,8 @@ def test_tc_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard()
 
 @needs_pwsh
 @pytest.mark.destructive
-def test_tc_it_501_reset_demo_confirmation_phrases_and_auto_backup_and_delete_volumes():
-    """TC-IT-501: reset-demo.ps1 — 틀린 확인 문구(다른 모드의 문구 포함)는 종료코드 2 로 아무것도 안 바꾸고, 맞는 문구는 pre-reset-*.dump 를 먼저 만든 뒤 DB 를
+def test_it_501_reset_demo_confirmation_phrases_and_auto_backup_and_delete_volumes():
+    """IT-501: reset-demo.ps1 — 틀린 확인 문구(다른 모드의 문구 포함)는 종료코드 2 로 아무것도 안 바꾸고, 맞는 문구는 pre-reset-*.dump 를 먼저 만든 뒤 DB 를
     비우고 마이그레이션을 다시 적용해 서비스가 정상으로 돌아온다. -DeleteVolumes 는 '모든 데이터 삭제' 문구가 있어야만 볼륨을 지운다. 검증: W-016, D-07, AC6"""
     _clear_backups()
     a = _state_with_changes(2)
@@ -189,8 +189,8 @@ def test_tc_it_501_reset_demo_confirmation_phrases_and_auto_backup_and_delete_vo
 
 # ─────────────────────────── 비밀 비노출 ───────────────────────────
 
-def test_tc_it_510_secrets_not_in_logs_inspect_env_config_images_or_responses(owner):
-    """TC-IT-510: 비밀 파일 3개의 값이 (1) 모든 컨테이너 로그 (2) docker inspect(환경·명령·마운트 정의) (3) 프로세스 환경(/proc/1/environ) (4) compose config 출력
+def test_it_510_secrets_not_in_logs_inspect_env_config_images_or_responses(owner):
+    """IT-510: 비밀 파일 3개의 값이 (1) 모든 컨테이너 로그 (2) docker inspect(환경·명령·마운트 정의) (3) 프로세스 환경(/proc/1/environ) (4) compose config 출력
     (5) 이미지 3종의 tar (6) API 응답·오류 본문 어디에도 없고, 각 컨테이너는 자기에게 필요한 비밀 파일만 마운트한다(최소 권한). 검증: D-06, S-W13a, S-W09"""
     sec = secret_values()
     vals = list(sec.values())
@@ -255,8 +255,8 @@ def _try_connect(service: str, host: str, port: int, timeout: int = 4) -> bool:
     return "OK" in p.stdout and "FAIL" not in p.stdout
 
 
-def test_tc_it_520_demo_mode_api_worker_db_have_no_outbound_and_host_exposure_is_loopback_only():
-    """TC-IT-520: 데모 모드에서 api·worker·db 는 인터넷(IP 직접·DNS)에 나가지 못하고, 호스트에는 127.0.0.1:18080(web) 하나만 게시되며 api·db 포트는 호스트에서
+def test_it_520_demo_mode_api_worker_db_have_no_outbound_and_host_exposure_is_loopback_only():
+    """IT-520: 데모 모드에서 api·worker·db 는 인터넷(IP 직접·DNS)에 나가지 못하고, 호스트에는 127.0.0.1:18080(web) 하나만 게시되며 api·db 포트는 호스트에서
     닿지 않고 호스트의 다른 주소로도 18080 이 열리지 않는다. 검증: D-02, D-10, S-W01, W-001"""
     for s in ("api", "worker", "db"):
         assert not _try_connect(s, "1.1.1.1", 443), f"{s} 가 외부 IP 에 접속함"
@@ -283,8 +283,8 @@ def test_tc_it_520_demo_mode_api_worker_db_have_no_outbound_and_host_exposure_is
         sck.close()
 
 
-def test_tc_it_521_def_vi_001_network_split_effect_and_accepted_web_egress():
-    """TC-IT-521(DEF-VI-001 재평가, DEC-045 네트워크 3분리의 실제 효과): web(nginx) 은 db 에 도달할 수 없고(DNS 이름조차 풀리지 않음, IP 직접 접속도 불가),
+def test_it_521_def_vi_001_network_split_effect_and_accepted_web_egress():
+    """IT-521(DEF-VI-001 재평가, DEC-045 네트워크 3분리의 실제 효과): web(nginx) 은 db 에 도달할 수 없고(DNS 이름조차 풀리지 않음, IP 직접 접속도 불가),
     api 에는 도달하며, worker 는 web 에 도달할 수 없다. web 의 외부 egress 는 수용된 잔여 위험(DEC-045)이므로 '현재 상태'를 측정해 기록한다.
     검증: D-02, D-10, S-W01, DEC-045"""
     reach_db = _try_connect("web", "db", 5432)
@@ -315,8 +315,8 @@ def test_tc_it_521_def_vi_001_network_split_effect_and_accepted_web_egress():
         assert info["Internal"] is internal, (n, info["Internal"])
 
 
-def test_tc_it_522_def_vi_002_app_role_cannot_modify_alembic_version():
-    """TC-IT-522(DEF-VI-002 조치 확인, 마이그레이션 0002): 앱 계정은 alembic_version 을 읽기만 할 수 있고(INSERT·UPDATE·DELETE·TRUNCATE 거부), 버전은 0002 다."""
+def test_it_522_def_vi_002_app_role_cannot_modify_alembic_version():
+    """IT-522(DEF-VI-002 조치 확인, 마이그레이션 0002): 앱 계정은 alembic_version 을 읽기만 할 수 있고(INSERT·UPDATE·DELETE·TRUNCATE 거부), 버전은 0002 다."""
     assert psql_app("select version_num from alembic_version") == "0002"
     for sql in ("update alembic_version set version_num = version_num", "delete from alembic_version", "insert into alembic_version values ('x')",
                 "truncate alembic_version"):
@@ -325,8 +325,8 @@ def test_tc_it_522_def_vi_002_app_role_cannot_modify_alembic_version():
 
 
 @pytest.mark.parametrize("svc", ["db", "api", "worker", "web", "migrate"])
-def test_tc_it_530_container_hardening_as_deployed(svc):
-    """TC-IT-530: 실제로 떠 있는(또는 끝난) 5개 컨테이너의 보안 설정이 docker inspect 로 확인된다: 비루트 숫자 uid, 읽기 전용 루트, cap 전부 제거,
+def test_it_530_container_hardening_as_deployed(svc):
+    """IT-530: 실제로 떠 있는(또는 끝난) 5개 컨테이너의 보안 설정이 docker inspect 로 확인된다: 비루트 숫자 uid, 읽기 전용 루트, cap 전부 제거,
     no-new-privileges, 특권·호스트 네임스페이스·소켓 마운트 없음, 마운트는 명명 볼륨·tmpfs·비밀뿐, 메모리·CPU·pids 상한, 로그 회전. 검증: D-03, D-14, S-W14, NFR-W06"""
     ids = sh(["docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={PROJECT}", "--filter", f"label=com.docker.compose.service={svc}"]).stdout.split()
     assert len(ids) == 1, ids
@@ -359,8 +359,8 @@ def test_tc_it_530_container_hardening_as_deployed(svc):
         assert svc == "migrate" and i["State"]["ExitCode"] == 0
 
 
-def test_tc_it_531_db_roles_and_grants_as_deployed():
-    """TC-IT-531: 배포된 DB 의 권한 행렬: 앱 계정은 DML 만(DDL 불가, 슈퍼유저 아님), audit_log 는 INSERT/SELECT 만, 소유자 계정은 비슈퍼, 외부 접속 규칙은 scram.
+def test_it_531_db_roles_and_grants_as_deployed():
+    """IT-531: 배포된 DB 의 권한 행렬: 앱 계정은 DML 만(DDL 불가, 슈퍼유저 아님), audit_log 는 INSERT/SELECT 만, 소유자 계정은 비슈퍼, 외부 접속 규칙은 scram.
     검증: S-W13a, S-W16, D-07a (단위 INF 시험의 '실제 스택' 재확인)"""
     sup = psql_owner("select rolsuper from pg_roles where rolname in ('ytweb_app','ytweb_owner') order by rolname")
     assert sup.split() == ["f", "f"]
@@ -377,8 +377,8 @@ def test_tc_it_531_db_roles_and_grants_as_deployed():
     assert "pg_hba.conf rejects" in r.stdout, r.stdout     # app 계정은 postgres DB 에 접속 자체가 거부(루프백 평문 포함)
 
 
-def test_tc_it_540_log_hygiene_query_strings_cookies_and_known_def_vi_003(owner):
-    """TC-IT-540: 쿼리 문자열의 비밀 값·쿠키가 nginx 접근 로그·api 로그에 남지 않는다. 참고(알려진 결함 DEF-VI-003): nginx 오류 로그(속도 제한 429)는 요청 줄 전체(쿼리 포함)를
+def test_it_540_log_hygiene_query_strings_cookies_and_known_def_vi_003(owner):
+    """IT-540: 쿼리 문자열의 비밀 값·쿠키가 nginx 접근 로그·api 로그에 남지 않는다. 참고(알려진 결함 DEF-VI-003): nginx 오류 로그(속도 제한 429)는 요청 줄 전체(쿼리 포함)를
     남기므로 실측해 기록한다(M1 API 에는 비밀 쿼리가 없음). 검증: S-W09, W7-3"""
     marker = "ITQUERYSECRET" + str(int(time.time()))
     cookie = owner.c.cookies.get("ytw_session")
@@ -417,8 +417,8 @@ def test_tc_it_540_log_hygiene_query_strings_cookies_and_known_def_vi_003(owner)
     time.sleep(5)
 
 
-def test_tc_it_541_def_vi_003_residual_upstream_error_line_records_query_string():
-    """TC-IT-541(DEF-VI-003 잔여, DEC-045 가 수용한 부분의 실측): api 가 죽어 있을 때 nginx 의 업스트림 오류(error) 줄에 요청 줄(쿼리 문자열)이 남는가.
+def test_it_541_def_vi_003_residual_upstream_error_line_records_query_string():
+    """IT-541(DEF-VI-003 잔여, DEC-045 가 수용한 부분의 실측): api 가 죽어 있을 때 nginx 의 업스트림 오류(error) 줄에 요청 줄(쿼리 문자열)이 남는가.
     남으면 '수용된 잔여'가 실제로 남아 있다는 뜻이며 M2 OAuth 콜백(?code=) 설계 전에 해결해야 한다(결함으로 고정하지 않고 기록 + 기대 반전 대비)."""
     marker = "ITUPSTREAMSECRET" + str(int(time.time()))
     dc("stop", "-t", "20", "api")
@@ -448,8 +448,8 @@ def _audit_head(api: Api) -> dict:
 @needs_pwsh
 @pytest.mark.destructive
 @pytest.mark.xfail(strict=True, reason="DEF-7-002: restore.ps1(pg_restore --clean + audit-guard.sql)이 alembic_version 의 앱 계정 쓰기 권한을 되돌려 놓는다(마이그레이션 0002 의 회수가 복원 뒤 사라짐)")
-def test_tc_it_504_restore_keeps_alembic_version_protected_from_app_role():
-    """TC-IT-504(결함 고정, DEF-7-002): 백업 → 복원(restore.ps1) 뒤에도 앱 계정은 alembic_version 을 UPDATE/DELETE 할 수 없어야 한다(0002 가 보장하는 상태).
+def test_it_504_restore_keeps_alembic_version_protected_from_app_role():
+    """IT-504(결함 고정, DEF-7-002): 백업 → 복원(restore.ps1) 뒤에도 앱 계정은 alembic_version 을 UPDATE/DELETE 할 수 없어야 한다(0002 가 보장하는 상태).
     현재는 복원이 audit_log 만 다시 회수하고(audit-guard.sql) alembic_version 은 회수하지 않아 앱 계정이 버전표를 바꿀 수 있다. 검증: S-W16, S-W13a, D-07a, D-07b"""
     _clear_backups()
     a = _state_with_changes(1)
@@ -467,8 +467,8 @@ def test_tc_it_504_restore_keeps_alembic_version_protected_from_app_role():
 
 
 @pytest.mark.destructive
-def test_tc_it_502_audit_chain_and_data_survive_restart_all_and_db_crash(fresh_demo):
-    """TC-IT-502: 전체 서비스 재시작과 DB 컨테이너 강제 종료(SIGKILL, 충돌 복구) 뒤에도 행 수가 그대로이고, 세션이 유지되며, 감사 해시 체인이 끊기지 않고
+def test_it_502_audit_chain_and_data_survive_restart_all_and_db_crash(fresh_demo):
+    """IT-502: 전체 서비스 재시작과 DB 컨테이너 강제 종료(SIGKILL, 충돌 복구) 뒤에도 행 수가 그대로이고, 세션이 유지되며, 감사 해시 체인이 끊기지 않고
     이어진다(재시작 직후 첫 새 기록의 prev_hash 가 직전 기록의 hash). 검증: W-016, SEC-W22, S-W16, NFR-W08"""
     a = fresh_demo
     set_cap(a, 20)
@@ -514,8 +514,8 @@ def test_tc_it_502_audit_chain_and_data_survive_restart_all_and_db_crash(fresh_d
 
 
 @pytest.mark.destructive
-def test_tc_it_503_migration_0001_to_0002_on_deployed_db_revokes_app_dml_and_is_reversible():
-    """TC-IT-503: 배포 이미지·실제 소유자 계정으로 0001 까지만 적용한 DB 에서는 앱 계정이 alembic_version 을 바꿀 수 있고(대조군), 0002 적용 뒤에는 바꿀 수 없다.
+def test_it_503_migration_0001_to_0002_on_deployed_db_revokes_app_dml_and_is_reversible():
+    """IT-503: 배포 이미지·실제 소유자 계정으로 0001 까지만 적용한 DB 에서는 앱 계정이 alembic_version 을 바꿀 수 있고(대조군), 0002 적용 뒤에는 바꿀 수 없다.
     audit_log 는 0001 부터 UPDATE/DELETE 불가. 재실행은 멱등이고, 0002 → 0001 → 0002 왕복이 권한을 되돌렸다가 다시 회수한다. 검증: S-W16, S-W13a, D-07a, DEF-VI-002"""
     dc("stop", "web", "api", "worker")
     assert dexec("db", "ytweb-db", "reset-schema").returncode == 0

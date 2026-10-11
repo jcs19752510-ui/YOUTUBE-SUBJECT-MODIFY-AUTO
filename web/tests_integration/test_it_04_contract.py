@@ -1,4 +1,4 @@
-"""IT 그룹 C — 계약(TC-IT-400~): openapi.json·API.md 와 실제 응답의 차이(필드·상태 코드·오류 코드·사유 코드), 모든 오류의 한국어 hint, 시각·날짜 표기,
+"""IT 그룹 C — 계약(IT-400~): openapi.json·API.md 와 실제 응답의 차이(필드·상태 코드·오류 코드·사유 코드), 모든 오류의 한국어 hint, 시각·날짜 표기,
 페이지네이션·정렬, 감사 로그 해시 체인(변조 탐지), 마이그레이션 0001→0002 업그레이드 후 데이터 보존, 검사 순서.
 
 네이티브 스택과 도커 스택에서 같은 코드가 돈다(마이그레이션 시험은 native_only).
@@ -73,8 +73,8 @@ def _diff(a, b, path=""):
 
 
 @pytest.mark.xfail(strict=True, reason="DEF-7-002(알려진 결함, 이전 세션 발견): docs/yt/openapi.json 이 DEF-VA-005 수정(audit page/page_size 상한)을 반영하지 않아 오래됨 — 재생성하면 이 표시를 지운다")
-def test_tc_it_400_openapi_json_in_repo_matches_running_app_schema():
-    """TC-IT-400: 저장소의 docs/yt/openapi.json 이 실제 앱 객체가 만드는 스키마와 같다(경로·메서드·컴포넌트·모든 필드). 검증: EVT-W01~W31, API.md 9장
+def test_it_400_openapi_json_in_repo_matches_running_app_schema():
+    """IT-400: 저장소의 docs/yt/openapi.json 이 실제 앱 객체가 만드는 스키마와 같다(경로·메서드·컴포넌트·모든 필드). 검증: EVT-W01~W31, API.md 9장
     (알려진 결함 DEF-7-002: 현재 audit 의 page/page_size 상한 두 줄만 다르다. 파일을 재생성하면 XPASS(strict 실패)로 알려 주므로 그때 표시를 지운다.)"""
     script = "import json\nfrom ytweb.app import create_app\nprint('OPENAPI ' + json.dumps(create_app().openapi(), sort_keys=True))\n"
     p = inside_python(script)
@@ -91,8 +91,8 @@ def test_tc_it_400_openapi_json_in_repo_matches_running_app_schema():
 
 # ─────────────────────────── 응답이 스키마에 맞는가 ───────────────────────────
 
-def test_tc_it_401_live_responses_conform_to_openapi_schemas(fresh_demo):
-    """TC-IT-401: 데모 전체 흐름에서 받은 실제 응답 본문이 openapi.json 의 응답 스키마를 만족한다(필수 필드·형식). 스키마 없는 응답(API.md 9장 3번)은
+def test_it_401_live_responses_conform_to_openapi_schemas(fresh_demo):
+    """IT-401: 데모 전체 흐름에서 받은 실제 응답 본문이 openapi.json 의 응답 스키마를 만족한다(필수 필드·형식). 스키마 없는 응답(API.md 9장 3번)은
     제외하고 '검사하지 못한 엔드포인트'를 목록으로 남긴다. 검증: W4-3 계약 검증, EVT-W08~W28"""
     a = fresh_demo
     errs: list[str] = []
@@ -160,8 +160,8 @@ def _enums(schema: dict) -> list:
     return out
 
 
-def test_tc_it_420_every_operation_is_served_with_documented_success_status_and_enum_params(fresh_demo):
-    """TC-IT-420: openapi.json 의 31개 동작을 전부 실제로 호출해 문서의 성공 상태 코드가 나오는지 본다(동작 목록이 바뀌면 이 시험이 실패한다). 그리고 쿼리 파라미터의
+def test_it_420_every_operation_is_served_with_documented_success_status_and_enum_params(fresh_demo):
+    """IT-420: openapi.json 의 31개 동작을 전부 실제로 호출해 문서의 성공 상태 코드가 나오는지 본다(동작 목록이 바뀌면 이 시험이 실패한다). 그리고 쿼리 파라미터의
     열거값(sort·order·status·result)은 전부 200 이고 열거 밖 값은 422 validation_error. 검증: EVT-W01~W31, API.md 5~8장"""
     a = fresh_demo
     set_cap(a, 20)
@@ -242,8 +242,8 @@ def test_tc_it_420_every_operation_is_served_with_documented_success_status_and_
 
 # ─────────────────────────── 오류 코드 표(API.md 5~8장) ───────────────────────────
 
-def test_tc_it_402_documented_error_codes_status_hint_and_format(fresh_demo):
-    """TC-IT-402: API.md 에 적힌 오류 코드를 실제로 일으켜 상태 코드·`code` 가 문서와 같고, 모든 오류가 problem+json(type=urn:ytweb:problem:<code>, 한국어 title,
+def test_it_402_documented_error_codes_status_hint_and_format(fresh_demo):
+    """IT-402: API.md 에 적힌 오류 코드를 실제로 일으켜 상태 코드·`code` 가 문서와 같고, 모든 오류가 problem+json(type=urn:ytweb:problem:<code>, 한국어 title,
     비어 있지 않은 hint, 스택·내부 경로 없음)임을 확인한다. 검증: API.md 1-7, S-W09, DEF-VA-011"""
     a = fresh_demo
     vs = usable_videos(a, 6)
@@ -324,8 +324,8 @@ def test_tc_it_402_documented_error_codes_status_hint_and_format(fresh_demo):
     assert not bad, "\n".join(map(str, bad))
 
 
-def test_tc_it_403_malformed_inputs_never_5xx_and_never_leak(fresh_demo):
-    """TC-IT-403: 깨진 JSON·잘못된 타입·거대한 정수·널 문자·제어/방향 문자·중첩 폭탄을 변경 엔드포인트에 보내도 5xx 가 나지 않고 problem+json 4xx 만 돌려준다
+def test_it_403_malformed_inputs_never_5xx_and_never_leak(fresh_demo):
+    """IT-403: 깨진 JSON·잘못된 타입·거대한 정수·널 문자·제어/방향 문자·중첩 폭탄을 변경 엔드포인트에 보내도 5xx 가 나지 않고 problem+json 4xx 만 돌려준다
     (프록시 → 백엔드 → DB 전체 경로). 검증: S-W13, S-W09, S-W05"""
     a = fresh_demo
     vid = usable_videos(a, 1)[0]["video_id"]
@@ -361,8 +361,8 @@ def test_tc_it_403_malformed_inputs_never_5xx_and_never_leak(fresh_demo):
 
 
 @pytest.mark.xfail(strict=True, reason="DEF-7-003: API.md 5장·부록은 count 범위 위반을 422 count_invalid 로 적었으나 실제는 스키마 단계의 validation_error(count_invalid 는 HTTP 로 도달 불가)")
-def test_tc_it_404_documented_count_invalid_code_is_reachable(fresh_demo):
-    """TC-IT-404(결함 고정): 문서화된 `count_invalid`(1~5 아님) 가 실제로 나오는가. 현재는 `validation_error`."""
+def test_it_404_documented_count_invalid_code_is_reachable(fresh_demo):
+    """IT-404(결함 고정): 문서화된 `count_invalid`(1~5 아님) 가 실제로 나오는가. 현재는 `validation_error`."""
     a = fresh_demo
     v = usable_videos(a, 1)[0]["video_id"]
     r = a.post(f"/api/v1/videos/{v}/suggestions", json={"count": 6})
@@ -371,8 +371,8 @@ def test_tc_it_404_documented_count_invalid_code_is_reachable(fresh_demo):
 
 # ─────────────────────────── 검사 순서(API.md 1-1) ───────────────────────────
 
-def test_tc_it_430_documented_check_order_origin_session_csrf_validation_idempotency_business(fresh_demo):
-    """TC-IT-430: API.md 1-1 의 검사 순서(Host → 크기 → 속도 → 출처 → 세션 → CSRF → 본문 검증 → 멱등성 → 업무 규칙)를 서로 겹치는 오류 두 개씩으로 확인한다.
+def test_it_430_documented_check_order_origin_session_csrf_validation_idempotency_business(fresh_demo):
+    """IT-430: API.md 1-1 의 검사 순서(Host → 크기 → 속도 → 출처 → 세션 → CSRF → 본문 검증 → 멱등성 → 업무 규칙)를 서로 겹치는 오류 두 개씩으로 확인한다.
     출처가 세션보다 먼저라 허용되지 않은 출처에는 세션 유무를 알리지 않는다. 검증: API.md 1-1, SEC-W03/04"""
     a = fresh_demo
     anon = Api()                                             # 세션 없음
@@ -408,8 +408,8 @@ def test_tc_it_430_documented_check_order_origin_session_csrf_validation_idempot
 
 # ─────────────────────────── 응답 필드 집합(스키마가 없는 응답, API.md 9장 3번) ───────────────────────────
 
-def test_tc_it_433_unschemaed_responses_have_documented_fields(fresh_demo):
-    """TC-IT-433: openapi.json 에 응답 스키마가 없는 응답(auth/me·auth/session·settings·audit·healthz·readyz·google/status·dashboard)의 필드가 API.md 4·8장과 같다.
+def test_it_433_unschemaed_responses_have_documented_fields(fresh_demo):
+    """IT-433: openapi.json 에 응답 스키마가 없는 응답(auth/me·auth/session·settings·audit·healthz·readyz·google/status·dashboard)의 필드가 API.md 4·8장과 같다.
     필드 추가는 v1 에서 허용되므로 '문서에 있는 필드가 모두 있고 타입이 맞는가'를 본다. 검증: API.md 3·4·7·8장"""
     a = fresh_demo
     me = a.get("/api/v1/auth/me").json()
@@ -466,8 +466,8 @@ def _walk_ts(obj, path, out):
             _walk_ts(v, path, out)
 
 
-def test_tc_it_424_timestamps_are_utc_dates_are_kst_or_pt_and_consistent(fresh_demo):
-    """TC-IT-424: (a) 모든 시각 필드는 UTC(`Z` 또는 `+00:00`)이고 +09:00·시간대 없는 값이 없다 (b) 같은 엔드포인트 안에서는 표기가 하나로 일관 (c) 날짜 필드는
+def test_it_424_timestamps_are_utc_dates_are_kst_or_pt_and_consistent(fresh_demo):
+    """IT-424: (a) 모든 시각 필드는 UTC(`Z` 또는 `+00:00`)이고 +09:00·시간대 없는 값이 없다 (b) 같은 엔드포인트 안에서는 표기가 하나로 일관 (c) 날짜 필드는
     scheduled_date/schedule[].date/next_run_date = KST 날짜, quota.pt_date = 태평양 날짜 (d) 승인 유효 시간은 정확히 24시간. 검증: API.md 1-4, W6장"""
     a = fresh_demo
     set_cap(a, 2)
@@ -535,8 +535,8 @@ def test_tc_it_424_timestamps_are_utc_dates_are_kst_or_pt_and_consistent(fresh_d
 
 # ─────────────────────────── 페이지네이션·정렬 ───────────────────────────
 
-def test_tc_it_425_pagination_and_sorting_are_complete_stable_and_documented(fresh_demo):
-    """TC-IT-425: 영상 목록의 모든 정렬 키 x 방향에서 작은 페이지(13)로 끝까지 넘겨도 항목이 빠지거나 겹치지 않고(동률 안정성), 값이 있는 행은 정렬 방향대로,
+def test_it_425_pagination_and_sorting_are_complete_stable_and_documented(fresh_demo):
+    """IT-425: 영상 목록의 모든 정렬 키 x 방향에서 작은 페이지(13)로 끝까지 넘겨도 항목이 빠지거나 겹치지 않고(동률 안정성), 값이 있는 행은 정렬 방향대로,
     null 은 방향과 무관하게 맨 뒤. 목록 전반의 규약: 마지막 페이지 너머는 200+빈 목록, page=0·page_size=0·201 은 422, 최신순(id 내림차순), total 일정, audit page 상한.
     검증: API.md 1-5, EVT-W09/14/19/24/28"""
     a = fresh_demo
@@ -603,8 +603,8 @@ def test_tc_it_425_pagination_and_sorting_are_complete_stable_and_documented(fre
 
 # ─────────────────────────── 감사 로그 해시 체인 ───────────────────────────
 
-def test_tc_it_426_audit_chain_detects_tampering_and_app_cannot_modify(fresh_demo):
-    """TC-IT-426: 감사 로그를 DB 에서 직접 바꾸면(내용 수정·중간 행 삭제·prev_hash 수정) chain_ok 가 false 가 되고 복원하면 true. 꼬리 삭제는 탐지되지 않는다(문서화된 한계).
+def test_it_426_audit_chain_detects_tampering_and_app_cannot_modify(fresh_demo):
+    """IT-426: 감사 로그를 DB 에서 직접 바꾸면(내용 수정·중간 행 삭제·prev_hash 수정) chain_ok 가 false 가 되고 복원하면 true. 꼬리 삭제는 탐지되지 않는다(문서화된 한계).
     앱 계정은 audit_log 를 UPDATE/DELETE 할 수 없다(권한). 20개 동시 기록 후에도 체인이 갈라지지 않는다. 검증: SEC-W06, API.md 7장, D-07"""
     a = fresh_demo
     ap = approve_many(a, usable_videos(a, 2))
@@ -681,8 +681,8 @@ def test_tc_it_426_audit_chain_detects_tampering_and_app_cannot_modify(fresh_dem
 
 # ─────────────────────────── CSV ───────────────────────────
 
-def test_tc_it_428_csv_export_columns_and_filter_match_documented_contract(fresh_demo):
-    """TC-IT-428: CSV 내보내기가 API.md 7장의 열 목록·인코딩(UTF-8 BOM)·파일 이름·캐시 금지와 같고, video_id 필터는 그 영상만 담으며, 변경이 없는 영상도 행이 있다(변경 없음).
+def test_it_428_csv_export_columns_and_filter_match_documented_contract(fresh_demo):
+    """IT-428: CSV 내보내기가 API.md 7장의 열 목록·인코딩(UTF-8 BOM)·파일 이름·캐시 금지와 같고, video_id 필터는 그 영상만 담으며, 변경이 없는 영상도 행이 있다(변경 없음).
     검증: API.md EVT-W27, W-013"""
     a = fresh_demo
     set_cap(a, 20)
@@ -710,8 +710,8 @@ def test_tc_it_428_csv_export_columns_and_filter_match_documented_contract(fresh
 
 # ─────────────────────────── 응답 헤더 규약 ───────────────────────────
 
-def test_tc_it_432_response_headers_request_id_no_store_and_unique(fresh_demo):
-    """TC-IT-432: 모든 응답(성공·오류·CSV)에 X-Request-Id(32자 16진수, 요청마다 다름), /api 응답에 Cache-Control: no-store 와 CSP default-src 'none'. 중복 헤더 없음.
+def test_it_432_response_headers_request_id_no_store_and_unique(fresh_demo):
+    """IT-432: 모든 응답(성공·오류·CSV)에 X-Request-Id(32자 16진수, 요청마다 다름), /api 응답에 Cache-Control: no-store 와 CSP default-src 'none'. 중복 헤더 없음.
     (nginx 단계의 보안 헤더 한 벌은 A 트랙이 본다.) 검증: API.md 1-2"""
     a = fresh_demo
     seen = set()
@@ -737,8 +737,8 @@ def _table_digest() -> dict[str, str]:
 
 @native_only
 @pytest.mark.destructive
-def test_tc_it_427_migration_0001_to_0002_keeps_data_and_tightens_app_role():
-    """TC-IT-427: 0001 스키마에서 실제 업무(동기화·제안·승인·배치·반영·롤백·PIN·감사)를 쌓은 뒤 0002 로 올려도 모든 표의 내용(행 수·내용 해시)과 감사 체인이 그대로이고,
+def test_it_427_migration_0001_to_0002_keeps_data_and_tightens_app_role():
+    """IT-427: 0001 스키마에서 실제 업무(동기화·제안·승인·배치·반영·롤백·PIN·감사)를 쌓은 뒤 0002 로 올려도 모든 표의 내용(행 수·내용 해시)과 감사 체인이 그대로이고,
     앱 계정은 alembic_version 을 읽기만 할 수 있게 된다(업그레이드 전에는 변경 가능). 올린 뒤에도 같은 DB 로 업무가 계속 된다. 같은 리비전 재실행은 아무 일도 하지 않는다.
     0002 → 0001 내리기도 되고 권한이 복원된다. 검증: DEF-VA-012/VI-002, NFR-W04, D-07"""
     nat = ib.nat
@@ -798,7 +798,7 @@ def test_tc_it_427_migration_0001_to_0002_keeps_data_and_tightens_app_role():
 # ─────────────────────────── 사유 코드·감사 action 표 ───────────────────────────
 
 _SKIP_REACHABLE = {"approval_missing", "approval_tampered", "approval_used", "approval_expired", "plan_mismatch", "suggestion_state", "suggestion_blocked", "video_excluded",
-                   "pending_change_exists", "limit_interval", "limit_count"}                       # TC-IT-112(IT-062) 가 실제로 일으킨다
+                   "pending_change_exists", "limit_interval", "limit_count"}                       # IT-112(IT-062) 가 실제로 일으킨다
 _SKIP_UNREACHABLE = {
     "title_invalid": "새 제목은 plan_hash 에 묶여 있어 DB 를 바꾸면 plan_mismatch 가 먼저 나온다(설정 파일의 제목 규격을 승인 뒤에 바꿔야만 도달)",
     "same_as_current": "영상 제목을 바꾸면 plan_hash 가 달라져 plan_mismatch 가 먼저 나온다",
@@ -809,13 +809,13 @@ _SKIP_UNREACHABLE = {
     "video_changed": "같은 이유(재조회 snippet 과 저장 snippet 이 항상 같음)",
     "batch_not_active": "스케줄러가 활성 배치의 항목만 집으므로 취소 경합에서만",
     "suggestion_missing": "제안 행은 외래키로 보호되어 삭제되지 않음",
-    "cancelled": "취소는 항목 상태(cancelled)로 기록되고 건너뜀 사유 코드로는 skip_reason 에 '[cancelled]' 로 남음 — TC-IT-105 가 확인",
+    "cancelled": "취소는 항목 상태(cancelled)로 기록되고 건너뜀 사유 코드로는 skip_reason 에 '[cancelled]' 로 남음 — IT-105 가 확인",
 }
 
 
-def test_tc_it_422_skip_reason_codes_documented_vs_reachable():
-    """TC-IT-422: API.md 6장 '건너뜀' 사유 코드 21종이 (a) 이 시험이 일으키는 11종 (b) 도달 불가 사유가 있는 10종으로 빠짐없이 나뉜다 — 문서에 코드가 더해지거나 빠지면
-    실패한다. 도달 불가 판단은 코드 읽기와 TC-IT-112 시도에 근거. 검증: API.md 6장, W-010"""
+def test_it_422_skip_reason_codes_documented_vs_reachable():
+    """IT-422: API.md 6장 '건너뜀' 사유 코드 21종이 (a) 이 시험이 일으키는 11종 (b) 도달 불가 사유가 있는 10종으로 빠짐없이 나뉜다 — 문서에 코드가 더해지거나 빠지면
+    실패한다. 도달 불가 판단은 코드 읽기와 IT-112 시도에 근거. 검증: API.md 6장, W-010"""
     m = re.search(r"\| 건너뜀\(`skipped`, 아무것도 바꾸지 않음\) \| (.+?) \|", API_MD)
     doc = set(re.findall(r"`([a-z_]+)`", m.group(1)))
     assert len(doc) == 21, doc
@@ -827,8 +827,8 @@ def test_tc_it_422_skip_reason_codes_documented_vs_reachable():
 # ─────────────────────────── 변조가 있어야 나오는 오류 코드 ───────────────────────────
 
 @native_only
-def test_tc_it_434_tamper_only_error_codes_and_approval_key_handling(fresh_demo):
-    """TC-IT-434: API.md 에 적힌 오류 가운데 DB·비밀 파일 변조가 있어야 나오는 것을 직접 일으킨다: video_inconsistent(저장된 영상 정보 불일치), same_as_current(현재 제목과 같음),
+def test_it_434_tamper_only_error_codes_and_approval_key_handling(fresh_demo):
+    """IT-434: API.md 에 적힌 오류 가운데 DB·비밀 파일 변조가 있어야 나오는 것을 직접 일으킨다: video_inconsistent(저장된 영상 정보 불일치), same_as_current(현재 제목과 같음),
     approval_key_unreadable(승인 서명 키 파일이 깨짐 — 500, 키를 덮어쓰지 않음, 기존 승인은 변조로 판정). 키 파일이 없어지면 새 키가 만들어지고 이전 승인은 모두 무효가 된다
     (안전 방향). 승인 ↔ 배치 ↔ 비밀 폴더 경계. 검증: EVT-W16, DEF-VB-03, SEC-W17"""
     nat = ib.nat
@@ -883,8 +883,8 @@ def test_tc_it_434_tamper_only_error_codes_and_approval_key_handling(fresh_demo)
 # ─────────────────────────── 백엔드 자체의 속도 제한·진입 검사 ───────────────────────────
 
 @native_only
-def test_tc_it_431_backend_rate_limits_and_foreign_origin_budget_and_entry_checks():
-    """TC-IT-431: (nginx 없이 백엔드만 — 제품 기본 속도 제한으로 띄운 별도 서버) 세션 발급 분당 10회 초과 → 429 rate_limited + Retry-After, 쓰기 분당 120회 초과 → 429,
+def test_it_431_backend_rate_limits_and_foreign_origin_budget_and_entry_checks():
+    """IT-431: (nginx 없이 백엔드만 — 제품 기본 속도 제한으로 띄운 별도 서버) 세션 발급 분당 10회 초과 → 429 rate_limited + Retry-After, 쓰기 분당 120회 초과 → 429,
     허용되지 않은 출처의 요청은 별도 한도로 세어 소유자의 한도를 소모하지 않는다(소유자는 계속 200). Host 가 허용 목록 밖이면 403 host_not_allowed(헬스 경로는 면제),
     본문 1MB 초과 413 payload_too_large, 잘못된 Content-Length 400. 검증: API.md 1-1, 1-3, SEC-W07"""
     import httpx
@@ -945,9 +945,9 @@ _UNREACHABLE_DOC_CODES = {
     "title_invalid": "본문 스키마가 문자열을 강제해 서비스 단계의 형식 오류에 도달하지 않음",
     "gateway_error": "모의 유튜브 게이트웨이는 오류를 내지 않음(M2 이후)",
     "schedule_overflow": "예약 범위 400일 초과는 50건 x 9배치 이상이 필요(하루 상한 1 기준) — 이 시험 규모 밖",
-    "already_in_batch": "동시 경합에서만 나오는 보조 코드(순차 요청은 사전 점검이 batch_empty 로 막음) — TC-IT-307 이 경합을 일으키지만 매번 나오지는 않음",
+    "already_in_batch": "동시 경합에서만 나오는 보조 코드(순차 요청은 사전 점검이 batch_empty 로 막음) — IT-307 이 경합을 일으키지만 매번 나오지는 않음",
     "pending_change_exists": "롤백 중 진행 중 변경 충돌은 동시 경합에서만(순차에서는 later_change_exists 가 먼저)",
-    "idempotency_in_progress": "TC-IT-302/304 가 동시 전송으로 일으키지만 경합 결과라 매번 나오지는 않음",
+    "idempotency_in_progress": "IT-302/304 가 동시 전송으로 일으키지만 경합 결과라 매번 나오지는 않음",
 }
 _DOCUMENTED_ERROR_CODES = [
     "origin_not_allowed", "cross_site_request", "pin_invalid", "pin_locked", "rate_limited", "host_not_allowed", "payload_too_large", "csrf_invalid", "session_required",
@@ -960,8 +960,8 @@ _DOCUMENTED_ERROR_CODES = [
 ]
 
 
-def test_tc_it_421_zz_documented_error_codes_vs_observed_session_wide_and_hints_are_korean():
-    """TC-IT-421: (B 트랙 시험 전체를 한 번에 돌린 세션에서만 의미가 있다) (a) API.md 에 적힌 오류 코드(51개)가 모두 문서에 실제로 있다 (b) 서버가 낸 모든 오류 코드는
+def test_it_421_zz_documented_error_codes_vs_observed_session_wide_and_hints_are_korean():
+    """IT-421: (B 트랙 시험 전체를 한 번에 돌린 세션에서만 의미가 있다) (a) API.md 에 적힌 오류 코드(51개)가 모두 문서에 실제로 있다 (b) 서버가 낸 모든 오류 코드는
     API.md 에 적혀 있다(문서에 없는 코드를 내보내면 실패) (c) 문서화된 코드는 이 세션에서 관찰됐거나 도달 불가 사유가 있다 (d) 관찰된 모든 오류 응답에 한국어 title·hint 가 있다
     (e) 오류 본문에 내부 경로·스택이 없다. 검증: API.md 1-7, 5~8장, S-W09"""
     if len(OBSERVED) < 3000:
@@ -997,8 +997,8 @@ _ACTION_UNREACHABLE = {"suggestion.generate_failed": "모의 제안기는 실패
                        "batch.item.failed": "데모에서는 재조회·갱신·검증이 실패하지 않아 failed 항목이 만들어지지 않음(복구 경로는 recovered 로 기록)"}
 
 
-def test_tc_it_423_zz_audit_actions_observed_match_api_md_list():
-    """TC-IT-423: (전체 세션에서만) 감사 로그에서 실제로 본 action 이 모두 API.md 7장의 목록에 있고(예외: 6장에 따로 적힌 batch.item.deferred), 문서의 action 은 관찰됐거나
+def test_it_423_zz_audit_actions_observed_match_api_md_list():
+    """IT-423: (전체 세션에서만) 감사 로그에서 실제로 본 action 이 모두 API.md 7장의 목록에 있고(예외: 6장에 따로 적힌 batch.item.deferred), 문서의 action 은 관찰됐거나
     도달 불가 사유가 있다. 검증: API.md 7장, S-W16"""
     if len(OBSERVED) < 3000:
         pytest.skip("B 트랙 전체 세션에서만 판정 — 관찰 기록 부족: %d" % len(OBSERVED))

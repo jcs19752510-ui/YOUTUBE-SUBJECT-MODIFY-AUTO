@@ -32,10 +32,10 @@ if NATIVE:
 
 # ───────────── HTTP 클라이언트 ─────────────
 
-OBSERVED: list[tuple[str, str, int, str, dict | None]] = []   # (method, path, status, code, body) — 세션 전체 기록(TC-IT-421 이 문서와 대조)
+OBSERVED: list[tuple[str, str, int, str, dict | None]] = []   # (method, path, status, code, body) — 세션 전체 기록(IT-421 이 문서와 대조)
 
 
-ACTIONS_SEEN: dict[str, int] = {}                              # 세션 동안 감사 로그 조회에서 본 action 별 횟수(TC-IT-421 이 문서와 대조)
+ACTIONS_SEEN: dict[str, int] = {}                              # 세션 동안 감사 로그 조회에서 본 action 별 횟수(IT-421 이 문서와 대조)
 
 
 def _record(method: str, path: str, r) -> None:

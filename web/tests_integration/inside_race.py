@@ -1,7 +1,7 @@
-# api 컨테이너 안에서 stdin 으로 실행하는 경합 시험기(IT 그룹 S, TC-IT-301).
+# api 컨테이너 안에서 stdin 으로 실행하는 경합 시험기(IT 그룹 S, IT-301).
 # 같은 이미지·같은 PostgreSQL 17 에 연결된 '속도 제한만 풀어 둔' 제2의 uvicorn(127.0.0.1:8001)을 띄우고,
 # 응답을 다 받자마자 다음 요청을 곧바로 보내는 연속 호출을 수백 번 반복한다(DEF-VF-B01/VA-010: 응답 후 commit 경합).
-# nginx 는 거치지 않는다(속도 제한 때문에 불가능한 반복 횟수이므로). nginx 경유 소량 반복은 TC-IT-300.
+# nginx 는 거치지 않는다(속도 제한 때문에 불가능한 반복 횟수이므로). nginx 경유 소량 반복은 IT-300.
 import http.client
 import json
 import os
