@@ -19,6 +19,7 @@ from youtube_title.updater import compute_plan_hash, validate_new_title
 from ytweb.core import audit
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import Change, Suggestion, Video
+from ytweb.domain import live_gateway
 from ytweb.domain.batches import verify_snippet
 from ytweb.domain.common import Env, StepFailure, clamp_page, clean_approver, lock_rows
 from ytweb.domain.limits_quota import COUNTED_RESULTS, mark_call, release_unused, reserve_calls
@@ -84,6 +85,9 @@ def rollback_change(session: Session, change_id: int, typed_video_id: str, appro
         validate_new_title(restore_title, env.policy, check_length=False)
     except YtError as exc:
         raise ProblemError(409, "backup_invalid", f"복원할 제목이 규격에 맞지 않습니다: {exc.message}", hint="유튜브 Studio에서 직접 되돌리세요.") from None
+    not_allowed = live_gateway.not_allowed_reason(video.video_id, env.secrets_dir)
+    if not_allowed:
+        raise ProblemError(409, "live_not_allowed", "실제 수정 허용 영상이 아니어서 되돌리지 않았습니다.", detail=not_allowed, hint="유튜브 Studio에서 직접 되돌리거나 허용 목록에 영상 ID를 추가하세요.")
     policy = env.policy
     try:
         r_read, r_update, r_verify = reserve_calls(session, now, policy, [("videos.list", policy.read_cost), ("videos.update", policy.update_cost), ("videos.list", policy.read_cost)])
@@ -110,7 +114,7 @@ def rollback_change(session: Session, change_id: int, typed_video_id: str, appro
     plan_hash = compute_plan_hash(video.video_id, target.suggestion_id, current["title"], restore_title, current, kind="rollback", change_id=target.id)
     rb = Change(
         video_id=video.video_id, suggestion_id=target.suggestion_id, batch_id=None, change_type="rollback", previous_title=current["title"], new_title=restore_title,
-        backup_snippet=copy.deepcopy(current), reason=f"롤백 대상 변경 #{target.id}", approver=name, approved_at=now, plan_hash=plan_hash, result="planned", mode="demo", created_at=now,
+        backup_snippet=copy.deepcopy(current), reason=f"롤백 대상 변경 #{target.id}", approver=name, approved_at=now, plan_hash=plan_hash, result="planned", mode="live" if live_gateway.is_live(gateway) else "demo", created_at=now,
     )
     try:
         with session.begin_nested():

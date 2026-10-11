@@ -69,3 +69,29 @@ def select_gateway(session: Session, now: datetime, secrets_dir: Path | None = N
     if live_write_ready(sd, env):
         return SyncedLiveGateway(session, LiveYouTubeGateway(write_access(sd, env), allowed_videos(env)), now)
     return MockYouTubeGateway(session, clock=lambda: now)
+
+
+# ───────────── 실제 모드 안전장치(M3 단위 4) ─────────────
+
+LIVE_CONFIRM_PREFIX = "실제 실행"
+
+
+def live_mode(secrets_dir: Path, env: dict[str, str] | None = None) -> bool:
+    """실제 수정이 가능한 상태(3조건)인지. 이 상태에서만 아래 추가 안전장치가 적용된다."""
+    return live_write_ready(secrets_dir, env)
+
+
+def is_live(gateway: object) -> bool:
+    return isinstance(gateway, SyncedLiveGateway)
+
+
+def confirm_text(n: int, live: bool) -> str:
+    """배치 실행 확인 문구. 실제 모드는 데모와 문구가 달라 헷갈려서 실제로 바꾸는 사고를 막는다."""
+    return f"{LIVE_CONFIRM_PREFIX} {n}건" if live else f"실행 {n}건"
+
+
+def not_allowed_reason(video_id: str, secrets_dir: Path, env: dict[str, str] | None = None) -> str | None:
+    """실제 모드에서 허용 목록에 없는 영상이면 사유(한국어), 아니면 None."""
+    if live_mode(secrets_dir, env) and video_id not in allowed_videos(env):
+        return "실제 수정 허용 영상이 아닙니다. 서버 설정 YTWEB_LIVE_ALLOWED_VIDEOS 에 영상 ID를 추가하기 전에는 실제로 바꾸지 않습니다."
+    return None

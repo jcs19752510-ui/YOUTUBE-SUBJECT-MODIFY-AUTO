@@ -38,6 +38,7 @@ from ytweb.domain.limits_quota import (
 from ytweb.domain.suggestions import ApprovalInvalid, check_approval, expire_stale_approvals, is_blocking, plan_hash_for, release_after_item
 from ytweb.youtube.base import GatewayError, YouTubeGateway
 from ytweb.youtube.mock import MockYouTubeGateway
+from ytweb.domain import live_gateway
 
 log = logging.getLogger("ytweb.batches")
 
@@ -74,6 +75,9 @@ def _eligibility(session: Session, sug: Suggestion | None, video: Video | None, 
         return "video_excluded", "제외 대상 영상입니다: " + ", ".join(reasons)
     if is_blocking(sug):
         return "suggestion_blocked", "검증에서 차단된 제안입니다."
+    not_allowed = live_gateway.not_allowed_reason(video.video_id, env.secrets_dir)  # 실제 모드: 허용 영상만(쿼터·기록 전에 먼저 막는다)
+    if not_allowed:
+        return "live_not_allowed", not_allowed
     report = check_video_limits(session, video.video_id, now, env.limits_policy, cap)
     failures = [c for c in report.failures if c.code != "DAILY"]
     if failures:
@@ -195,6 +199,9 @@ def build_precheck(session: Session, batch: Batch, eligible: list[tuple[Suggesti
     if warn_count:
         warnings.append(f"경고 판정 제안이 {warn_count}건 포함되어 있습니다. 승인 전에 사유를 확인했는지 다시 보세요.")
     warnings.append("Studio에서 해당 영상의 제목 A/B 테스트가 진행 중이 아닌지 확인하세요.")
+    live = live_gateway.live_mode(env.secrets_dir)
+    if live:
+        warnings.insert(0, f"실제 모드입니다. 실행하면 허용된 영상 {n}개의 제목이 실제 유튜브에서 바뀝니다. 확인 문구도 \"{live_gateway.confirm_text(n, True)}\" 로 다릅니다.")
     return {
         "item_count": n,
         "estimated_units": n * per,
@@ -203,7 +210,7 @@ def build_precheck(session: Session, batch: Batch, eligible: list[tuple[Suggesti
         "schedule": _schedule_summary(dates),
         "warnings": warnings,
         "blocked": blocked,
-        "confirm_text": f"실행 {n}건",
+        "confirm_text": live_gateway.confirm_text(n, live),
         "notice": DISCLAIMER,
     }
 
@@ -253,7 +260,7 @@ def execute_batch(session: Session, batch_id: int, confirm_text: str, *, now: da
     if batch.status != "draft":
         raise ProblemError(409, "batch_not_draft", f"이미 실행했거나 취소된 배치입니다(상태: {batch.status}).", hint="새 배치를 만들어 실행하세요.")
     items = [it for it in batch.items if it.status == "pending"]
-    expected = f"실행 {len(items)}건"
+    expected = live_gateway.confirm_text(len(items), live_gateway.live_mode(env.secrets_dir))
     if confirm_text != expected:
         raise ProblemError(422, "confirm_text_mismatch", "확인 문구가 일치하지 않습니다.", detail=f"정확히 '{expected}' 라고 입력해야 합니다.", hint="사전 점검 화면에 표시된 확인 문구를 그대로 입력하세요.")
     expire_stale_approvals(session, now)
@@ -394,6 +401,9 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
     reasons = exclusion_reasons(video, policy)
     if reasons:
         raise StepFailure("video_excluded", "제외 대상 영상입니다: " + ", ".join(reasons))
+    not_allowed = live_gateway.not_allowed_reason(video.video_id, env.secrets_dir)  # 방어: 기록·쿼터 전에 한 번 더
+    if not_allowed:
+        raise StepFailure("live_not_allowed", not_allowed)
     stale = session.execute(select(Change.id).where(Change.video_id == video.video_id, Change.result == "planned").limit(1)).first()
     if stale is not None:
         raise StepFailure("pending_change_exists", f"이 영상에 결과가 확정되지 않은 변경 기록(#{stale[0]})이 있어 중단했습니다.")
@@ -434,7 +444,7 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
     change = Change(
         video_id=video.video_id, suggestion_id=sug.id, batch_id=batch.id, change_type="apply", previous_title=video.title, new_title=sug.title,
         backup_snippet=copy.deepcopy(fresh), reason=f"제안 #{sug.id} 적용", approver=ap.approver, approved_at=ap.approved_at, plan_hash=ap.plan_hash,
-        result="planned", mode="demo", created_at=now,
+        result="planned", mode="live" if live_gateway.is_live(gateway) else "demo", created_at=now,
     )
     try:
         with session.begin_nested():
