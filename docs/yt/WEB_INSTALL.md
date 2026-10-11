@@ -1,9 +1,9 @@
-> 초안 — 6단계 검증·7~10단계 후 대조 필요
+> 초안 — 2026-10-11 스크립트 대조 반영본. 7~10단계 결과와 선생님 PC 확인 후 다시 대조해야 합니다.
 
 # 유튜브 제목 웹 설치 안내 (Windows 10/11 + Docker Desktop, 데모 모드)
 
 > **지금은 데모 모드입니다.** 설치하면 가짜 영상 200개와 가짜(모의) AI로 연습하는 화면이 열립니다. 유튜브·AI 서비스에는 **아무것도 전송되지 않고**, 실제 영상 제목은 바뀌지 않습니다. 실제 구글·AI 연결은 이후 단계에서 별도 승인 후에만 추가됩니다.
-> **이 안내의 한계**: 명령과 순서는 `web/README.md` 와 `web/scripts/*.ps1` 을 읽고 정리했습니다. 이 안내를 쓴 환경(클라우드 Linux)에는 PowerShell과 Windows Docker Desktop이 없어 **Windows에서 직접 실행해 보지 못했습니다** [확인 필요]. 그래서 각 단계마다 "이렇게 보이면 성공"을 적었으니, 다르게 보이면 멈추고 `WEB_FAQ.md` 를 확인하세요.
+> **이 안내의 한계**: 명령과 순서, 화면에 나오는 `[안내]`·`[오류]` 문구는 `web/README.md` 와 `web/scripts/*.ps1` 소스를 한 줄씩 대조해 적었습니다. 이 안내를 쓴 환경(클라우드 Linux)에는 PowerShell과 Windows Docker Desktop이 없어 **Windows에서 직접 실행해 보지 못했습니다 — 내 PC에서 확인 필요**. `서버구동-계정정보.md` 3-3에 "Windows 11에서 실제 기동 확인" 기록이 있으나 출처를 확인하지 못해 근거로 쓰지 않았습니다. 그래서 각 단계마다 "이렇게 보이면 성공"을 적었으니, 다르게 보이면 멈추고 `WEB_FAQ.md` 를 확인하세요.
 
 기준 문서: `web/README.md`(모순이 있으면 `web/README.md` 와 스크립트가 우선이며, 불일치는 알려 주세요). 쓰는 법은 `WEB_USER_MANUAL.md`.
 
@@ -101,14 +101,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 |---|---|
 | "Docker 가 설치되어 있지 않거나 PATH 에 없습니다" | Docker Desktop 설치 후 PowerShell을 **새로** 열고 다시 실행 |
 | "Docker 엔진에 연결할 수 없습니다" | Docker Desktop을 먼저 실행하고 고래 아이콘이 안정될 때까지 1~2분 기다린 뒤 다시 |
-| "Docker 가 Windows 컨테이너 모드입니다" | 고래 아이콘 오른쪽 클릭 > Switch to Linux containers... |
+| "Docker 가 Windows 컨테이너 모드입니다." | 고래 아이콘 오른쪽 클릭 > Switch to Linux containers... |
 | "Docker Compose 버전이 너무 낮습니다" | 2.20 이상이 필요합니다. Docker Desktop을 최신으로 업데이트 |
-| "포트 8080 사용 중" | 다른 프로그램이 8080을 씁니다. `Get-NetTCPConnection -LocalPort 8080 -State Listen` 으로 `OwningProcess`(번호) 확인 → `Get-Process -Id 번호` 로 프로그램 이름 확인 → 그 프로그램 종료 후 다시 시작. (이 프로그램이 이미 켜져 있어서 나오는 경우는 없습니다) |
+| "포트 8080 를 다른 프로그램이 이미 사용 중입니다." | 다른 프로그램이 8080을 씁니다. `Get-NetTCPConnection -LocalPort 8080 -State Listen` 으로 `OwningProcess`(번호) 확인 → `Get-Process -Id 번호` 로 프로그램 이름 확인 → 그 프로그램 종료 후 다시 시작. (이 프로그램이 이미 켜져 있어서 나오는 경우는 없습니다) |
 | WSL 관련 오류 | `wsl --update`, `wsl --shutdown` 후 Docker Desktop 재시작. 그래도 안 되면 PC 재시작. Windows 기능 "가상 머신 플랫폼"과 BIOS 가상화가 켜져 있어야 함 |
 | "스크립트를 실행할 수 없습니다" | 단계 3의 `Set-ExecutionPolicy -Scope Process ...` 를 **같은 창**에서 먼저 실행 |
 | 빌드 중 다운로드 실패 | 인터넷/사내 프록시 확인. 회사 네트워크가 암호화 통신을 가로채면 Docker Desktop에 인증서 설정이 필요할 수 있습니다 |
 | 처음인데 오래 걸림 | 5~15분은 정상. 제한 시간(기본 300초) 안에 준비되지 않았다는 경고가 나오면 `.\web\scripts\logs.ps1` 로 확인하고 `start.ps1 -NoBuild -TimeoutSec 600` 처럼 대기 시간을 늘려 보세요 |
-| "비밀 파일이 없는데 데이터베이스 볼륨은 이미 있습니다" | `web\secrets` 를 지웠기 때문입니다. 새 비밀번호를 만들면 기존 DB에 접속할 수 없으니, 백업해 둔 `web\secrets` 폴더를 되돌려 놓으세요. 데이터를 버리고 처음부터 시작하려면 `reset-demo.ps1 -DeleteVolumes` (**모든 데이터 삭제**, 확인 문구 `모든 데이터 삭제`) |
+| "비밀 파일(db_…_password)이 없는데 데이터베이스 볼륨은 이미 있습니다." | `web\secrets` 를 지웠기 때문입니다. 새 비밀번호를 만들면 기존 DB에 접속할 수 없으니, 백업해 둔 `web\secrets` 폴더를 되돌려 놓으세요. 데이터를 버리고 처음부터 시작하려면 `reset-demo.ps1 -DeleteVolumes` (**모든 데이터 삭제**, 확인 문구 `모든 데이터 삭제`) |
 | 컨테이너가 계속 재시작 | `.\web\scripts\logs.ps1 -Service api` (또는 db / worker / migrate) 로 원인 확인 |
 | 화면이 하얗게 나옴 | F12 콘솔의 "Content Security Policy" 오류 문구를 운영 담당에게 전달 |
 | 브라우저에서 "연결할 수 없음" | 주소를 정확히 `http://127.0.0.1:8080` 로. 다른 주소·다른 포트는 열리지 않습니다 |
@@ -120,7 +120,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 - 설치 과정에서 `docker compose down -v`, `docker system prune --volumes`, Docker Desktop의 "Clean / Purge data" 는 **데이터가 영구 삭제**되니 사용하지 마세요.
 - `web\secrets` 폴더는 지우거나 남에게 보내지 마세요.
 - 베이스 이미지 갱신(`pin-digests.ps1`)은 설치 때가 아니라 정기 점검 때 합니다 (`WEB_RUNBOOK.md`).
-- 개발자용 정보(구성, PostgreSQL 17 선택 이유, 테스트용 환경변수, 정적 점검 `python -m pytest web/tests_infra`)는 `web/README.md` 7장에 있습니다. 정적 점검 명령은 이 문서 작성 환경에 pytest가 없어 **실행해 보지 못했습니다** [확인 필요].
+- 개발자용 정보(구성, PostgreSQL 17 선택 이유, 테스트용 환경변수, 정적 점검 `python -m pytest web/tests_infra`)는 `web/README.md` 7장에 있습니다. 정적 점검 명령은 클라우드 Linux에서 임시 가상환경으로 실행해 244건 중 76 통과·168 건너뜀(Windows PowerShell·실제 컨테이너 기동이 필요한 시험)·실패 0을 확인했습니다. Windows PC에서는 실행하지 않았고, 일반 사용자는 실행하지 않아도 됩니다.
 
 ---
 
@@ -128,9 +128,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 
 | 항목 | 상태 |
 |---|---|
-| Windows 10/11에서 `start.ps1` 실제 실행 | 미확인 (PowerShell 없음) |
+| Windows 10/11에서 `start.ps1` 실제 실행 | 미확인 (PowerShell 없음) — 내 PC에서 확인 필요 |
 | Docker Desktop(WSL2) 포트 바인딩·파일 권한 | 미확인 |
 | Docker Desktop 화면 문구("Engine running" 등) | 미확인 |
-| 첫 실행 소요 시간 5~15분 | `web/README.md` 기재값, 직접 측정 안 함 |
+| 첫 실행 소요 시간 5~15분 | `web/README.md` 기재값, 직접 측정 안 함 — 내 PC에서 확인 필요 |
 | Windows PowerShell 5.1 호환 | 스크립트는 5.1·7 모두를 목표로 작성되었으나 실행 확인 안 됨 |
 | 방화벽/보안 프로그램과의 충돌 | 미확인 |

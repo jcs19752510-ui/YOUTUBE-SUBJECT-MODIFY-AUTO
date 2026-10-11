@@ -571,12 +571,11 @@ def test_it_060_real_browser_core_flow_no_console_csp_or_http_errors():
 @pytest.mark.slow
 @pytest.mark.destructive
 def test_it_061_frontend_live_contract_suite_through_nginx_three_runs_zero_settle():
-    """IT-061: W-FE 의 실서버 계약 시험(verify/live.verify.test.ts, 21건)을 nginx 주소(Host/Origin 이 127.0.0.1:8080 이 되도록 호스트 8080 → 게시 포트 바이트 중계)로,
+    """IT-061: W-FE 의 실서버 계약 시험(verify/live.verify.test.ts, 21건)을 nginx 주소(Host/Origin 이 127.0.0.1:8080 이 되도록 Node 연결만 게시 포트로 돌림 — 호스트 8080 은 열지 않는다)로,
     변경 직후 대기 0ms(VF_LIVE_SETTLE_MS=0: DEF-VF-B01 경합 재현 조건)로 3회 연속 돌려 매번 21건 전부 통과한다(조건부 PASS 조건 ① 해소 유지 확인).
     검증: W-FE 계약, DEF-VF-B01/005, S-W03. IT_FE_DIR 은 `npm ci --ignore-scripts` 를 마친 프런트 사본."""
     import os
     import subprocess
-    import sys
     from pathlib import Path
     from itlib import reset_demo_db
     fe = os.environ.get("IT_FE_DIR")
@@ -584,20 +583,49 @@ def test_it_061_frontend_live_contract_suite_through_nginx_three_runs_zero_settl
         pytest.skip("IT_FE_DIR(npm ci 한 프런트 사본)가 없음 — 미수행으로 센다")
     here = Path(__file__).resolve().parent
     reset_demo_db()
-    relay = subprocess.Popen([sys.executable, str(here / "tools" / "relay.py"), "8080", str(PORT)])
-    try:
-        time.sleep(1.0)
-        assert relay.poll() is None, "호스트 8080 중계를 띄울 수 없음(포트 사용 중)"
-        outs = []
-        for i in range(3):
-            if i:
-                reset_demo_db()      # 이 시험은 빈 DB 에서 시작한다고 가정한다(재실행하면 상태가 남아 실패 — 시험의 전제이지 결함 아님)
-            env = {**os.environ, "VF_LIVE_API": "http://127.0.0.1:8080", "VF_LIVE_SETTLE_MS": "0"}
-            p = subprocess.run(["npx", "vitest", "run", "verify/live.verify.test.ts"], cwd=fe, env=env, capture_output=True, text=True, timeout=300)
-            out = p.stdout + p.stderr
-            outs.append(out)
-            m = re.search(r"Tests\s+(\d+) passed \((\d+)\)", out)
-            assert p.returncode == 0 and m and m.group(1) == "21" and m.group(2) == "21", (i, out[-1500:])
-    finally:
-        relay.terminate()
-        relay.wait(timeout=10)
+    # 호스트에 8080 을 열지 않는다: Node 의 TCP 연결만 8080 -> 게시 포트로 돌리는 전처리(tools/redirect8080.cjs)를 쓴다(Host/Origin 은 127.0.0.1:8080 그대로).
+    outs = []
+    for i in range(3):
+        if i:
+            reset_demo_db()      # 이 시험은 빈 DB 에서 시작한다고 가정한다(재실행하면 상태가 남아 실패 — 시험의 전제이지 결함 아님)
+        env = {**os.environ, "VF_LIVE_API": "http://127.0.0.1:8080", "VF_LIVE_SETTLE_MS": "0", "IT_REDIRECT_TARGET": str(PORT),
+               "NODE_OPTIONS": f"--require {here / 'tools' / 'redirect8080.cjs'}"}
+        p = subprocess.run(["npx", "vitest", "run", "verify/live.verify.test.ts"], cwd=fe, env=env, capture_output=True, text=True, timeout=300)
+        out = p.stdout + p.stderr
+        outs.append(out)
+        m = re.search(r"Tests\s+(\d+) passed \((\d+)\)", out)
+        assert p.returncode == 0 and m and m.group(1) == "21" and m.group(2) == "21", (i, out[-1500:])
+
+
+@pytest.mark.slow
+@pytest.mark.destructive
+def test_it_062_real_browser_eight_screens_load_with_data_at_two_widths():
+    """IT-062: 헤드리스 Chromium 으로 화면 8개(홈·영상 목록·영상 상세·배치 목록·배치 상세·이력·리포트·설정)와 없는 주소(404 화면)를 실제 데이터가 있는 상태에서
+    1280px 과 1024px 두 폭으로 불러온다. 각 화면은 제목(h1)과 내용이 있고 오류 문구가 없으며, 콘솔 오류·경고·페이지 오류·CSP 위반·4xx/5xx·외부 요청이 0건이다.
+    검증: W-001~W-017 화면 로딩, S-W04, NFR-W06(UX 최소 폭 1024px)"""
+    import os
+    import subprocess
+    from pathlib import Path
+    from itlib import approve_many, reset_demo_db, set_cap, usable_videos
+    if not _browser_available():
+        pytest.skip("Chromium/playwright 가 없음 — 미수행으로 센다")
+    reset_demo_db()
+    a = Api()
+    assert a.login().status_code == 200
+    a.sync_demo()
+    set_cap(a, 20)
+    ap = approve_many(a, usable_videos(a, 4))
+    bid = a.make_batch([s["id"] for s in ap[:2]]).json()["batch"]["id"]
+    assert a.execute(bid, 2).status_code == 202
+    a.wait_batch(bid)
+    a.make_batch([s["id"] for s in ap[2:]])          # 배치 목록에는 완료 1건 + 초안 1건
+    a.close()
+    here = Path(__file__).resolve().parent
+    out = Path(os.environ.get("IT_LOGDIR", "/tmp")) / "screens8.json"
+    shots = os.environ.get("IT_SHOTS", "")
+    env = {**os.environ, "PLAYWRIGHT_BROWSERS_PATH": "/opt/pw-browsers"}
+    p = subprocess.run(["node", str(here / "tools" / "screens8.mjs"), str(PORT), str(out)] + ([shots] if shots else []), capture_output=True, text=True, timeout=400, env=env)
+    res = json.loads(out.read_text(encoding="utf-8"))
+    assert p.returncode == 0, p.stdout[-3000:] + p.stderr[-500:]
+    assert len(res["screens"]) == 18 and all(x["ok"] for x in res["screens"])
+    assert not res["console"] and not res["pageerrors"] and not res["csp"] and not res["badResponses"] and not res["thirdParty"]

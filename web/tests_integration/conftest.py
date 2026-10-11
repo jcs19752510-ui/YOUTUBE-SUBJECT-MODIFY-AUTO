@@ -8,6 +8,9 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+NATIVE = os.environ.get("IT_B_NATIVE") == "1"
+if NATIVE:  # 네이티브 스택(B 트랙)은 도커·nginx 가 아니라 별도 포트의 api 를 직접 본다(itlib 가 import 시점에 포트를 읽으므로 먼저 정한다)
+    os.environ["IT_PORT"] = os.environ.get("IT_B_API_PORT", "18090")
 import itlib  # noqa: E402
 
 
@@ -18,7 +21,7 @@ def pytest_configure(config):
 
 @pytest.fixture(scope="session", autouse=True)
 def _stack_ready():
-    if not os.environ.get("IT_STACK_DIR") or not os.environ.get("DOCKER_HOST"):
+    if not NATIVE and (not os.environ.get("IT_STACK_DIR") or not os.environ.get("DOCKER_HOST")):
         pytest.exit("IT_STACK_DIR, DOCKER_HOST 환경변수가 필요합니다(결과서 3절).", returncode=3)
     itlib.wait_healthy(120)
 

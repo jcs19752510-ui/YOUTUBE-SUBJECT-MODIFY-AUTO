@@ -553,3 +553,45 @@ def test_it_503_migration_0001_to_0002_on_deployed_db_revokes_app_dml_and_is_rev
     assert a.login().status_code == 200
     assert a.get("/api/v1/audit", params={"page_size": 1}).json()["chain_ok"] is True
     a.close()
+
+
+# ─────────────────────────── 기동 순서(콜드 스타트) ───────────────────────────
+
+@pytest.mark.destructive
+def test_it_053_cold_start_order_from_docker_events_and_single_loopback_publish():
+    """IT-053: 컨테이너를 모두 내렸다가(볼륨은 유지) 다시 올릴 때의 실제 이벤트 시각으로 기동 순서를 확인한다:
+    db healthy → migrate 시작 → migrate 정상 종료(코드 0) → api·worker 시작 → api healthy → web 시작 → web healthy.
+    호스트 게시는 web 의 127.0.0.1:<시험 포트> 하나뿐이다. 검증: D-01, D-02, D-07b, NFR-W04, W-016"""
+    since = int(time.time())
+    p = dc("down", "-t", "20")
+    assert p.returncode == 0, p.stderr[-400:]
+    u = dc("up", "-d", "--no-build")
+    assert u.returncode == 0, u.stderr[-600:]
+    wait_healthy(180)
+    t0 = time.time()
+    while time.time() - t0 < 90:     # web 의 첫 healthy 판정이 나올 때까지
+        st = {ln.split()[0]: ln for ln in dc("ps", "--format", "{{.Service}} {{.Status}}", "-a").stdout.strip().splitlines()}
+        if all("healthy" in st.get(s, "") and "unhealthy" not in st.get(s, "") for s in ("db", "api", "worker", "web")):
+            break
+        time.sleep(2)
+    ev = sh(["docker", "events", "--since", str(since), "--until", str(int(time.time()) + 1), "--filter", f"label=com.docker.compose.project={PROJECT}",
+             "--format", '{{.TimeNano}}|{{.Action}}|{{index .Actor.Attributes "com.docker.compose.service"}}|{{index .Actor.Attributes "exitCode"}}'], timeout=60).stdout
+    rows = [ln.split("|") for ln in ev.strip().splitlines() if ln.count("|") == 3]
+
+    def first(action: str, service: str, code: str | None = None) -> int:
+        c = [int(t) for t, a, s, x in rows if a == action and s == service and (code is None or x == code)]
+        assert c, (action, service, [r[1:] for r in rows if r[2] == service][:12])
+        return min(c)
+    db_ok = first("health_status: healthy", "db")
+    mig_start, mig_end = first("start", "migrate"), first("die", "migrate", "0")
+    api_start, wk_start = first("start", "api"), first("start", "worker")
+    api_ok, wk_ok = first("health_status: healthy", "api"), first("health_status: healthy", "worker")
+    web_start, web_ok = first("start", "web"), first("health_status: healthy", "web")
+    assert db_ok < mig_start < mig_end < min(api_start, wk_start), (db_ok, mig_start, mig_end, api_start, wk_start)
+    assert api_start < api_ok < web_start < web_ok and wk_start < wk_ok, rows[-8:]
+    assert not any(a == "die" and s in ("db", "api", "worker", "web") for _, a, s, _x in rows), "기동 중 비정상 종료가 있었음"
+    ports = {s: dc("port", s, "8080").stdout.strip() for s in ("web",)}
+    assert ports["web"] == f"127.0.0.1:{PORT}", ports
+    pub = sh(["docker", "ps", "--filter", f"label=com.docker.compose.project={PROJECT}", "--format", "{{.Names}}|{{.Ports}}"]).stdout.strip().splitlines()
+    published = [ln for ln in pub if "->" in ln]
+    assert len(published) == 1 and published[0].startswith(f"{PROJECT}-web-1|") and f"127.0.0.1:{PORT}->8080/tcp" in published[0] and "0.0.0.0" not in published[0], pub
