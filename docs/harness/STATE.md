@@ -66,3 +66,11 @@
 - **중지(미완료)**: 6단계 독립 검증 4건(W-BE-A/W-BE-B/W-FE/W-INF) — 시험 파일·변이 점검 진행분만 WIP 저장, 결과서 `web-WU-*-test.md`·검증 로그 없음. 7단계 통합 시험은 6단계 PASS 전이라 미착수
 - **재개 순서**: ①6단계 독립 검증 4건 재투입(공통 지시서 내용은 이 세션 scratchpad라 소실 — 새 세션에서 재작성) ②7단계 통합 ③문서의 '검증 대기 항목' 반영 ④사용자 질문 일괄 확인
 - **정리 상태**: 컨테이너·테스트 프로세스 중지함. 임시 PostgreSQL(127.0.0.1:54329)·dockerd·`.harness-tmp/`(약 1.8GB)·`harness-tmp-vinf*` 이미지·볼륨은 남아 있음(저장소 미포함, 컨테이너 회수 시 소멸)
+
+## 8. 웹 전환 트랙 — 6단계 종료, 7단계 진행 (2026-10-11)
+- **6단계 독립 검증**: W-BE-A PASS, W-BE-B PASS, W-FE 조건부 PASS, W-INF 조건부 PASS(결과서 `docs/harness/units/web-WU-*-test.md`, 로그 `verify-log_web-WU-*-test.md`, DEC-043)
+- **11단계 웹 문서 초안**: `docs/yt/WEB_{USER_MANUAL,FAQ,RUNBOOK,INSTALL,LEGAL_NOTICE}.md` 완료(초안, 7~10단계 후 대조 필요). 코드와 문서의 불일치(면책·AI 고지 문구 없음, `queued` 영문 표시, README 감사 키 설명 등)는 문서 하단 목록 참고
+- **진행 중**: 7단계 전체 스택 통합 시험(에이전트, 포트 18080, `.harness-tmp/int/`), DEF-VI-002 조치(W-BE-A)
+- **사용자 결정 대기(진행 비차단)**: DEF-VI-001(web→db·외부 통신 차단 설계: 네트워크 3분리/수용/egress 차단), DEF-VI-003 수용 여부, W-FE 질문(용어 통일, 1024px 미만 지원, 작업 404 완화 유지), W-BE-A 질문(`/readyz` mode 노출, hide_parameters, PIN scrypt 비용), W-INF 질문(PostgreSQL 17 ADR, 종료 코드 143, dev/test 프로필), 11단계 문서 질문 11가지(운영 담당자·백업 정책·PIN 필수 등)
+- **남은 오케스트레이터 작업**: `traceability.md` 웹 요구사항 단위테스트 컬럼 갱신(각 결과서 부록 B·D 요청), 7단계 결과 반영, 8~10단계, 11단계 문서 대조, 12단계 직전 사용자 승인
+- **진행률**: 전체 약 73%, M1 기준 약 97%

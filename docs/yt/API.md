@@ -222,6 +222,7 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 | 409 `video_excluded` | 제외 대상 영상 |
 | 409 `same_as_current` | 현재 제목과 같음 |
 | 409 `video_inconsistent` | 저장된 영상 정보 불일치(동기화 필요) |
+| 500 `approval_key_unreadable` | 승인 서명 키 파일이 없거나 깨져 승인을 만들 수 없음(키 파일은 덮어쓰지 않음, 6단계 DEF-VB-03) |
 | 404 `suggestion_not_found`, 422 `approver_required`·`approver_invalid` | |
 
 ### EVT-W17 `POST /api/v1/suggestions/{suggestion_id}/reject`
@@ -280,6 +281,8 @@ M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드
 |---|---|
 | 건너뜀(`skipped`, 아무것도 바꾸지 않음) | `approval_missing` `approval_tampered` `approval_used` `approval_expired` `plan_mismatch` `suggestion_state` `suggestion_blocked` `title_invalid` `same_as_current` `video_excluded` `pending_change_exists` `limit_interval` `limit_count` `limit_impressions` `limit_daily` `quota_exhausted` `title_changed` `video_changed` `batch_not_active` `suggestion_missing` `cancelled` |
 | 실패(`failed`, 시도했으나 실패) | `read_failed` `video_not_found` `snippet_invalid` `body_invalid` `update_failed` `result_unknown`(반영됐을 수도 있음 — 유튜브에서 확인) `internal_error` `verify_failed`(제목은 바뀌었으나 보존 항목 검증 불일치 — 변경은 `success`로 남고 롤백 가능) `interrupted`(재시작 복구에서 제목이 바뀌지 않았음을 확인) |
+- **이월(`deferred`)**: 오늘 몫(하루 상한)을 다 쓴 뒤 도달한 항목은 영구 건너뜀이 아니라 `pending`으로 되돌아가 예정일이 다음 KST 날로 옮겨지고, 감사 로그에 `batch.item.deferred`가 남는다(6단계 DEF-VB-01). `limit_daily`로 건너뛰는 경우는 하루 상한 외 다른 한도가 함께 걸린 때뿐이다.
+- 데모 모드의 교체 한도 판정은 '재변경 최소 노출수'를 0으로 완화한다(DEC-042 D1, 72시간 간격·횟수 한도는 그대로). 리포트의 '데이터 부족' 기준(노출 1,000)은 바뀌지 않는다.
 (`limit_*` 코드는 `ytitle.limits`의 판정 코드 `INTERVAL/COUNT/IMPRESSIONS/DAILY`를 소문자로 붙인 것. 정확한 집합은 코어 규칙을 따른다.)
 
 ---
