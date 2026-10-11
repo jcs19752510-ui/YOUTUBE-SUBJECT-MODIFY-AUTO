@@ -197,22 +197,41 @@ def test_logout_invalidates_server_side_and_replay_fails(app):
         assert replay.get("/api/v1/settings").status_code == 401
 
 
-def test_session_absolute_expiry_and_documented_idle_gap(app, clock):
+def test_session_idle_expiry_is_enforced_after_30_minutes(app, clock):
+    """DEF-9-003 ① 닫힘(W-FIX-BE, DEC-047): 마지막 사용 뒤 30분이 지나면 세션이 만료된다. 이전 판에서는 '유휴 11시간 59분 뒤에도 유효'를 재현했다."""
     with TestClient(app, base_url=ORIGIN) as c:
         login(c)
-        clock.advance(hours=11, minutes=59)
-        assert c.get("/api/v1/settings").status_code == 200, "유휴 11시간 59분 뒤에도 유효 - 유휴 만료 없음(TW-20 갭, DEF-9 참고)"
-        clock.advance(minutes=2)
+        clock.advance(minutes=29)
+        assert c.get("/api/v1/settings").status_code == 200
+        clock.advance(minutes=29)  # 사용했으므로 다시 29분 유휴 - 유효
+        assert c.get("/api/v1/settings").status_code == 200
+        clock.advance(minutes=30)  # 정확히 30분 유휴 - 만료 경계
         assert c.get("/api/v1/settings").status_code == 401
+    with TestClient(app, base_url=ORIGIN) as c2:
+        login(c2)
+        clock.advance(hours=11, minutes=59)  # 유휴 11시간 59분 - 이제 만료돼야 한다
+        assert c2.get("/api/v1/settings").status_code == 401
 
 
-def test_session_activity_does_not_extend_lifetime(app, clock):
+def test_session_idle_expiry_applies_to_me_and_state_changing_requests(app, clock):
+    with TestClient(app, base_url=ORIGIN) as c:
+        csrf = login(c).json()["csrf_token"]
+        clock.advance(minutes=31)
+        me = c.get("/api/v1/auth/me").json()
+        assert me["authenticated"] is False and me["csrf_token"] is None
+        # 만료된 세션의 쿠키+CSRF 토큰으로는 쓰기도 불가(401 또는 403)
+        r = c.patch("/api/v1/settings", headers=hdr(csrf), json={"daily_apply_cap": 5})
+        assert r.status_code in (401, 403), r.text
+
+
+def test_session_activity_extends_idle_but_not_absolute_lifetime(app, clock):
+    """활동은 유휴 만료만 늦추고 절대 12시간(expires_at)은 늘리지 못한다."""
     with TestClient(app, base_url=ORIGIN) as c:
         login(c)
-        for _ in range(11):
-            clock.advance(hours=1)
+        for _ in range(35):  # 20분 간격 35번 = 11시간 40분
+            clock.advance(minutes=20)
             assert c.get("/api/v1/settings").status_code == 200
-        clock.advance(hours=1, minutes=1)
+        clock.advance(minutes=21)  # 12시간 01분 - 절대 만료
         assert c.get("/api/v1/settings").status_code == 401
 
 
@@ -473,9 +492,9 @@ def test_huge_integers_never_leak_and_server_survives(client, csrf):
     assert client.get("/api/healthz").status_code == 200
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-9-001: 상한 없는 정수 ID/페이지 입력이 HTTP 500 을 낸다(DB 정수 범위 초과). 고치면 이 표식을 지운다.")
 def test_huge_integers_are_client_errors_not_500(client, csrf):
-    bad = {n: r.status_code for n, r in _huge_probes(client, csrf).items() if r.status_code >= 500}
+    """DEF-9-001 닫힘(W-FIX-BE): DB 정수 범위(2**63-1) 초과 ID·쪽 번호는 500 이 아니라 4xx(422)."""
+    bad = {n: r.status_code for n, r in _huge_probes(client, csrf).items() if not 400 <= r.status_code < 500}
     assert not bad, bad
 
 

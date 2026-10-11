@@ -1,8 +1,8 @@
 """SEC-05 규칙 I(규제 민감 도메인)·규칙 J(AI 투명성) 문구가 실제 화면 소스·빌드 번들에 있는가 (9단계).
 
 대상 요구: POL-002(면책), POL-006(AI 생성 고지), POL-008(AI 한계·표시광고 규정 확인), POL-013(Studio A/B 확인), 그리고 이미 구현된 POL-001·005·014.
-- `xfail(strict=True)` 시험은 "있어야 하는 것"이다. 지금은 없어서 실패(DEF-9-007·008)하는 것이 정상이며,
-  프런트가 문구를 넣으면 XPASS → strict 때문에 **일부러 실패**한다 → 그때 xfail 표식을 지우면 재검증 시험이 된다.
+- 개정 2판(2026-10-11): W-FIX-FE·BE 가 문구를 넣어 이 파일의 `xfail(strict)` 8건이 XPASS 로 바뀌었고(DEF-9-007·008 닫힘),
+  표식을 제거해 회귀 방지 시험으로 바꿨다. 문구를 지우면 다시 실패한다.
 - 번들 시험(`bundle_*`)은 YTWEB_SEC_LIVE_PORT 의 임시 스택(이미지에 빌드된 번들)을 대상으로 한다.
 법률 자문이 아니다: 문구의 법적 충분성은 판단하지 않는다. 이 시험은 '기획서가 정한 문구가 화면에 존재·연결되는가'만 본다.
 """
@@ -76,13 +76,11 @@ def test_ab_warning_exists_only_as_preflight_warning_line():
 
 # ---------------------------------------------------------------- 있어야 하지만 없는 것(DEF-9-007·008)
 
-@pytest.mark.xfail(strict=True, reason=DEF_007)
 def test_disclaimer_text_exists_in_ko_ts():
     ko = _ko()
     assert "법률 자문이 아니" in ko and "최종 책임" in ko and "채널 소유자" in ko
 
 
-@pytest.mark.xfail(strict=True, reason=DEF_007)
 def test_disclaimer_is_rendered_globally_or_on_all_result_screens():
     """문구는 (a) 전 화면 공통 Layout 에 있거나 (b) 영상 상세(검증 결과)·배치 상세(사전 점검)·리포트 전부에 연결돼야 한다."""
     keys = _keys_with(r"법률 자문")
@@ -93,21 +91,18 @@ def test_disclaimer_is_rendered_globally_or_on_all_result_screens():
     assert glob_ok or per_page
 
 
-@pytest.mark.xfail(strict=True, reason=DEF_008A)
 def test_ai_generated_notice_sentence_exists_and_is_on_suggestion_card():
     keys = _keys_with(r"AI가 (?:생성|만든)")
     assert keys, "ko.ts 에 'AI가 생성한 제안입니다' 류 고지 문장이 없다"
     assert _used_in(keys[0], ["SuggestionCard.tsx", "VideoDetailPage.tsx"])
 
 
-@pytest.mark.xfail(strict=True, reason=DEF_008B)
 def test_ai_limit_and_advertising_rule_notice_exists_and_is_on_suggestion_card():
     keys = _keys_with(r"(?=.*표시[·ㆍ]?\s?광고)(?=.*(?:보장하지|적합성))")
     assert keys, "ko.ts 에 '사실·법령 적합성 비보장 / 건강·금융 표시광고 규정 확인' 안내가 없다"
     assert _used_in(keys[0], ["SuggestionCard.tsx", "VideoDetailPage.tsx"])
 
 
-@pytest.mark.xfail(strict=True, reason=DEF_008C)
 def test_batch_execute_confirmation_mentions_ab_test():
     ko = _ko()
     assert re.search(r"A/B\s*테스트\s*중이\s*아", ko)
@@ -136,18 +131,15 @@ def test_bundle_contains_demo_badge_and_ai_label():
 
 
 @live
-@pytest.mark.xfail(strict=True, reason=DEF_007)
 def test_bundle_contains_disclaimer():
     assert "법률 자문이 아니" in _bundle()
 
 
 @live
-@pytest.mark.xfail(strict=True, reason=DEF_008A)
 def test_bundle_contains_ai_generated_notice():
     assert re.search(r"AI가 (?:생성|만든)", _bundle())
 
 
 @live
-@pytest.mark.xfail(strict=True, reason=DEF_008B)
 def test_bundle_contains_advertising_rule_notice():
     assert re.search(r"표시[·ㆍ]?\s?광고", _bundle())

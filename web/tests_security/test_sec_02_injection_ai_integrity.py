@@ -166,11 +166,12 @@ def test_approver_name_controls_rejected_but_html_is_data_only(client, csrf, nam
         assert r.status_code == 422, (name, r.status_code, r.text[:120])
 
 
-def test_approver_zero_width_chars_are_accepted_info(client, csrf):
-    """[정보/Low] 승인자 이름은 제어(Cc)·방향 문자만 거른다. 제로폭(Cf, U+200B 등)은 통과해 눈에 같은 이름을 만들 수 있다(승인자는 인증된 신원이 아니라 자유 입력)."""
+@pytest.mark.parametrize("name", ["김선생\u200b", "김\u200d선생", "\ufeff김선생", "김선\u00ad생", "김\u2028선생", "김\u2029선생", "김선생\u2060"])
+def test_approver_invisible_format_chars_are_rejected(client, csrf, name):
+    """DEF-9-004 닫힘(W-FIX-BE): 제로폭·소프트하이픈·줄/문단 구분자(Cf/Zl/Zp)가 든 승인자 이름은 422 approver_invalid. 이전 판에서는 통과(재현)했다."""
     s = pick_ok(suggest_api(client, csrf))
-    r = approve_api(client, csrf, s["id"], approver="김선생\u200b")
-    assert r.status_code == 200 and r.json()["approval"]["approver"] == "김선생\u200b"
+    r = approve_api(client, csrf, s["id"], approver=name)
+    assert r.status_code == 422 and r.json()["code"] == "approver_invalid", (name, r.status_code, r.text[:120])
 
 
 def test_edit_title_strips_control_bidi_and_invisible_chars(client, csrf):

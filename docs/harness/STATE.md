@@ -89,3 +89,4 @@
 - **이번 세션 1차 웨이브**: 수정 단위 독립 검증 3건(W-FIX-BE/FE/INF) ∥ 9단계 재검증(병렬). 7단계 영향분·8단계는 선행 결과 PASS 후
 - **환경**: 클라우드 임시 PostgreSQL 16(127.0.0.1:54329, DB `ytweb_test_a`~`_f`·`_int`)·dockerd를 새로 기동. 임시 파일은 `.harness-tmp/`(저장소 미포함)
 - **진행률(추정)**: 전체 약 82%, M1 약 98%
+- **2026-10-11 중지(사용자 지시)**: 1차 웨이브 4건(W-FIX-BE/FE/INF 독립 검증, 9단계 재검증)을 모두 중지. 각 결과서(`web-WU-FIX-*-test.md`, `security-web-m1-test.md` 개정 2판)는 작성 도중이면 WIP 상태(판정 미확정). 재개 시 각 단위를 처음부터 다시 검증하되 `web/backend/tests/verify_fix_be`, `web/frontend/verify/wfix*`, `web/tests_infra/test_fix_inf_*`, `web/tests_security/`의 진행분 시험을 재사용. 8단계는 미착수, 관리자 로그인은 8단계 이후

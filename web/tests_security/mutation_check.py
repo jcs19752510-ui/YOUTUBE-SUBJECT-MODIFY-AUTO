@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 WORK = ROOT / ".harness-tmp" / "sec" / "mut"
 S1 = "web/tests_security/test_sec_01_http_boundary.py"
 S2 = "web/tests_security/test_sec_02_injection_ai_integrity.py"
-SUITES = [S1, S2]
+S7 = "web/tests_security/test_sec_07_fix_regressions.py"
+SUITES = [S1, S2, S7]
 # 먼저 돌릴 시험 파일(빨리 잡히게). 못 잡으면 둘 다 돌려 최종 판정한다.
 HINT = {"core/deps.py": [S1], "core/guard.py": [S1], "routers/auth.py": [S1], "core/sessions.py": [S1], "core/pin.py": [S1], "routers/settings.py": [S1, S2], "core/ratelimit.py": [S1], "app.py": [S1]}
 
@@ -43,7 +44,7 @@ M = [
     ("routers/auth.py", "path=COOKIE_PATH, httponly=True, samesite=\"strict\", secure=False)", "path=COOKIE_PATH, httponly=True, samesite=\"lax\", secure=False)", "TW-01", "쿠키 SameSite 완화"),
     ("core/sessions.py", "token = secrets.token_urlsafe(32)", "token = secrets.token_urlsafe(2)", "TW-20", "세션 토큰 엔트로피 축소"),
     ("core/sessions.py", "id=hash_token(token), csrf_token=csrf", "id=token, csrf_token=csrf", "TW-20", "세션 토큰 평문 저장"),
-    ("core/sessions.py", "if row.expires_at <= now:", "if False:", "TW-20", "세션 만료 검사 제거"),
+    ("core/sessions.py", "if row.expires_at <= now or (idle_timeout is not None and row.last_seen + idle_timeout <= now):", "if False:", "TW-20", "세션 만료 검사 제거"),
     ("core/sessions.py", "for old in active[MAX_ACTIVE_SESSIONS - 1:]:", "for old in []:", "TW-20", "세션 개수 상한 제거"),
     ("core/pin.py", "MAX_FAILURES = 5", "MAX_FAILURES = 500", "TW-04", "PIN 잠금 임계 확대"),
     ("core/pin.py", "return hmac.compare_digest(actual, expected)", "return True", "TW-04", "PIN 비교 무력화"),
@@ -102,6 +103,27 @@ M = [
     ("routers/settings.py", "if not isinstance(value, list) or len(value) > TONE_MAX_ITEMS:", "if not isinstance(value, list):", "LLM01", "말투 항목 수 상한 제거"),
     ("core/logsetup.py", "text = _SQL_PARAMS_RE.sub(f\"[parameters: {MASK}]\", text)", "pass", "TW-17", "SQL 바인딩 값 마스킹 제거"),
     ("core/logsetup.py", "if _SENSITIVE_FIELD.search(key):", "if False:", "TW-17", "로그 extra 민감 키 마스킹 제거"),
+    # ── 개정 2판(2026-10-11): W-FIX-BE/FE/INF 가 만든 새 통제에 대한 변이 ──
+    ("core/sessions.py", " or (idle_timeout is not None and row.last_seen + idle_timeout <= now)", "", "TW-20", "[R2] 세션 유휴 만료 검사 제거(lookup)"),
+    ("core/sessions.py", "cond = or_(cond, SessionRow.last_seen <= now - idle_timeout)", "pass", "TW-20", "[R2] 유휴 세션 정리(purge) 제거"),
+    ("core/deps.py", "now=clock(), idle_timeout=request.app.state.web_settings.session_idle_timeout)\n    if info is None:", "now=clock())\n    if info is None:", "TW-20", "[R2] require_session 에서 유휴 만료 인자 제거"),
+    ("routers/auth.py", "now=clock(), idle_timeout=request.app.state.web_settings.session_idle_timeout)\n    return {\"authenticated\"", "now=clock())\n    return {\"authenticated\"", "TW-20", "[R2] /auth/me 에서 유휴 만료 인자 제거"),
+    ("config.py", 'session_idle_minutes=_non_negative_int(e, "YTWEB_SESSION_IDLE_MINUTES", 30)', 'session_idle_minutes=_non_negative_int(e, "YTWEB_SESSION_IDLE_MINUTES", 0)', "TW-20", "[R2] 유휴 만료 기본값 30분 -> 꺼짐"),
+    ("config.py", "    if value < 0:\n        raise ValueError", "    if False:\n        raise ValueError", "TW-20", "[R2] 유휴 설정 음수 거부 제거"),
+    ("domain/common.py", ' or any(unicodedata.category(ch) in ("Cf", "Zl", "Zp") for ch in name)', "", "TW-16", "[R2] 승인자 이름 서식 문자(Cf/Zl/Zp) 거부 제거"),
+    ("domain/schemas.py", "MAX_ID = 2**63 - 1", "MAX_ID = 2**80", "S-W13", "[R2] ID 상한 확대"),
+    ("domain/schemas.py", "MAX_PAGE = 1_000_000", "MAX_PAGE = 10**30", "S-W13", "[R2] 쪽 번호 상한 확대"),
+    ("domain/schemas.py", "suggestion_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]]", "suggestion_ids: list[int]", "S-W13", "[R2] 배치 제안 ID 항목 범위 제거"),
+    ("routers/batches.py", "def post_cancel(batch_id: int = Path(ge=1, le=MAX_ID)", "def post_cancel(batch_id: int = Path(ge=1)", "S-W13", "[R2] cancel 경로 ID 상한 제거"),
+    ("routers/batches.py", "env: Env = Depends(get_env), _=Depends(require_csrf)):\n    batch = cancel_batch(", "env: Env = Depends(get_env)):\n    batch = cancel_batch(", "TW-01", "[R2] 초안 버리기(cancel) CSRF·세션 의존 제거"),
+    ("domain/batches.py", 'if batch.status in ("cancelled", "done"):', "if False:", "TW-06", "[R2] 취소/완료 배치 재취소 거부 제거"),
+    ("domain/batches.py", '"notice": DISCLAIMER,', '"notice": None,', "POL-002", "[R2] 사전 점검 notice 제거"),
+    ("domain/reports.py", '"notes": [DISCLAIMER, LIMIT_NOTE,', '"notes": [LIMIT_NOTE,', "POL-002", "[R2] 리포트·CSV 면책 주석 제거"),
+    ("domain/notices.py", 'DISCLAIMER = "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다."', 'DISCLAIMER = "이 검증은 정확합니다."', "POL-002", "[R2] 면책 문구 내용 변경"),
+    ("core/jobs.py", "stmt = stmt.with_for_update(skip_locked=True)\n    requeued = failed = 0", "pass\n    requeued = failed = 0", "TW-06", "[R2] stale 재큐의 SKIP LOCKED 제거"),
+    ("core/jobs.py", "if job.locked_at is not None and job.locked_at >= now - limit(job.type):\n            continue", "if False:\n            continue", "TW-06", "[R2] 작업 유형별 stale 기준 검사 제거"),
+    ("core/jobs.py", "if job.attempts >= MAX_ATTEMPTS:\n            job.status, job.error, job.finished_at = \"failed\"", "if False:\n            job.status, job.error, job.finished_at = \"failed\"", "TW-06", "[R2] 재큐 시도 횟수 상한 제거"),
+    ("worker.py", "purge_expired(s, now=now, idle_timeout=self.session_idle_timeout)", "purge_expired(s, now=now)", "TW-20", "[R2] 워커 정비의 유휴 세션 정리 제거"),
 ]
 # 대조군(동치 변이)은 맨 위의 한 줄뿐이다. 사람이 읽기 쉽게 표시한다.
 
@@ -151,7 +173,21 @@ MC = [
     ("web/scripts/stop.ps1", "$r = Invoke-Compose -ArgList @('down')", "$r = Invoke-Compose -ArgList @('down', '--volumes')", "TW-29", "종료 스크립트에 볼륨 삭제"),
     ("web/scripts/backup.ps1", "param([ValidatePattern('^[A-Za-z0-9-]+$')][string]$Prefix = 'ytweb')", "param([string]$Prefix = 'ytweb')", "TW-12", "백업 접두사 검증 제거"),
     ("web/backend/requirements.txt", "uvicorn==0.54.0 \\\n    --hash=sha256:", "uvicorn==0.54.0 \\\n    # --hash=sha256:", "TW-13", "해시 줄 주석 처리(잠금 파일 해시 누락)"),
-    ("automation/github-actions-harness.yml", "production-deploy-approval", "production-deploy", "규칙 E", "배포 승인 environment 이름 변경(승인 게이트 상실)"),
+    ("automation/github-actions-harness.yml", "production-deploy-approval", "production-deploy", "규칙 E", "배포 승인 environment 이름 변경(승인 게이트 상실)"),    # ── 개정 2판 ──
+    (".gitignore", "client_secret*.json\n*client_secret*.json\n", "", "TW-18", "[R2] .gitignore 의 client_secret 패턴 제거"),
+    (".dockerignore", "*.pem\n**/*.pem\n*.key\n**/*.key\n", "", "TW-18", "[R2] .dockerignore 의 키 파일 패턴 제거"),
+    (".dockerignore", "**/.ruff_cache\n", "", "TW-18", "[R2] .dockerignore 의 개발 캐시 패턴 제거"),
+    ("web/docker/api.Dockerfile", "COPY web/backend/ytweb /app/backend/ytweb\nCOPY web/backend/alembic /app/backend/alembic\nCOPY web/backend/alembic.ini /app/backend/alembic.ini", "COPY web/backend /app/backend", "TW-18", "[R2] api 이미지 COPY 를 web/backend 전체로 되돌림"),
+    ("web/docker/nginx/security-headers-api.conf", 'Content-Security-Policy "default-src \'none\';', 'Content-Security-Policy "default-src \'self\';', "TW-23", "[R2] API 응답 CSP 완화"),
+    ("web/docker/nginx/nginx.conf", "limit_except GET HEAD POST PUT PATCH DELETE { deny all; }\n            include /etc/nginx/snippets/security-headers-api.conf;", "limit_except GET HEAD POST PUT PATCH DELETE { deny all; }\n            include /etc/nginx/snippets/security-headers.conf;", "TW-23", "[R2] /api/ location 이 페이지용 CSP 사용"),
+    ("web/docker/nginx/nginx.conf", "        location = /healthz {\n            include /etc/nginx/snippets/security-headers.conf;\n            add_header Cache-Control \"no-store\" always;\n            default_type text/plain;\n            return 404 \"not found\\n\";", "        location = /healthz {\n            include /etc/nginx/snippets/security-headers.conf;\n            add_header Cache-Control \"no-store\" always;\n            default_type text/plain;\n            return 200 \"ok\\n\";", "TW-34", "[R2] 루트 /healthz 를 200 으로(SPA 오판 재도입)"),
+    ("web/docker/nginx/proxy.conf", "proxy_hide_header Cache-Control;\n", "", "TW-23", "[R2] 백엔드 Cache-Control 숨김 제거(중복 헤더)"),
+    ("web/docker/db/audit-guard.sql", "REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.alembic_version FROM ytweb_app;", "", "TW-32", "[R2] 복원 후 alembic_version 권한 회수 제거"),
+    ("web/docker/db/audit-guard.sql", "REVOKE UPDATE, DELETE, TRUNCATE ON TABLE public.audit_log FROM ytweb_app;", "", "TW-08", "[R2] 복원 후 audit_log 권한 회수 제거"),
+    ("web/docker/web.Dockerfile", "COPY --chown=0:0 web/docker/nginx/security-headers-api.conf /etc/nginx/snippets/security-headers-api.conf\n", "", "TW-23", "[R2] web 이미지에 API 헤더 파일 미포함"),
+    ("web/frontend/src/app/Layout.tsx", "        <p>{ko.legal.disclaimer}</p>\n", "", "POL-002", "[R2] 화면 상시 푸터의 면책 문구 제거"),
+    ("web/frontend/src/pages/BatchDetailPage.tsx", "disabled={phrase !== expected || !abAck}", "disabled={phrase !== expected}", "POL-013", "[R2] A/B 확인 없이 실행 버튼 활성"),
+    ("web/frontend/src/i18n/ko.ts", "disclaimer: '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.',", "disclaimer: '이 검증은 정확합니다.',", "POL-002", "[R2] 화면 면책 문구 내용 변경"),
 ]
 
 
@@ -198,7 +234,7 @@ def run_one(idx: int, spec) -> dict:
 
 COPY_ITEMS = ["web/compose.yaml", "web/compose.online.yaml", "web/docker", "web/scripts", "web/frontend/src", "web/frontend/index.html", "web/frontend/package.json", "web/frontend/package-lock.json",
               "web/frontend/tsconfig.build.json", "web/frontend/vite.config.ts", "web/frontend/eslint.config.js", "web/frontend/.gitignore", ".gitignore", ".dockerignore", "requirements.txt",
-              "web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/backend/requirements.in", "automation", "config"]
+              "web/backend/requirements.txt", "web/backend/requirements-dev.txt", "web/backend/requirements.in", "automation", "config", "web/backend/ytweb", "src/ytitle/ui.py"]
 
 
 def run_infra(idx: int, spec) -> dict:
@@ -223,7 +259,7 @@ def run_infra(idx: int, spec) -> dict:
     env = dict(os.environ, YTWEB_SEC_ROOT=str(d / "root"), PYTHONDONTWRITEBYTECODE="1")
     env.pop("YTWEB_SEC_LIVE_PORT", None)
     t0 = time.time()
-    p = subprocess.run([sys.executable, "-m", "pytest", "web/tests_security/test_sec_03_static_repo.py", "-q", "-p", "no:cacheprovider", "--tb=line", "-W", "ignore"], cwd=ROOT, env=env, capture_output=True, text=True, timeout=600)
+    p = subprocess.run([sys.executable, "-m", "pytest", "web/tests_security/test_sec_03_static_repo.py", "web/tests_security/test_sec_08_fix_sources.py", "-q", "-p", "no:cacheprovider", "--tb=line", "-W", "ignore"], cwd=ROOT, env=env, capture_output=True, text=True, timeout=600)
     failed = [l for l in p.stdout.splitlines() if l.startswith("FAILED")]
     killed = p.returncode != 0 and bool(failed)
     shutil.rmtree(d, ignore_errors=True)

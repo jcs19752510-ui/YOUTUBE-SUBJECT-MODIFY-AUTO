@@ -328,15 +328,15 @@ def test_forwarded_header_spoofing_does_not_change_client_view(sess):
 HUGE = "99999999999999999999999"
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-9-001: 상한 없는 정수 ID/페이지 입력이 PostgreSQL 에서도 HTTP 500 을 낸다(범위 초과 DataError). 고치면 이 표식을 지운다.")
 def test_huge_integers_are_client_errors_on_postgres(sess):
+    """DEF-9-001 닫힘(W-FIX-BE): PostgreSQL 실스택에서도 범위 초과 정수는 4xx."""
     codes = {
         "GET batches/huge": sess.get(f"/api/v1/batches/{HUGE}").status,
         "GET suggestions?page=huge": sess.get(f"/api/v1/suggestions?page={HUGE}").status,
         "GET changes?batch_id=huge": sess.get(f"/api/v1/changes?batch_id={HUGE}").status,
         "POST batches ids=[huge]": sess.send("POST", "/api/v1/batches", {"suggestion_ids": [int(HUGE)]}, key="idem-huge-000001").status,
     }
-    assert all(c < 500 for c in codes.values()), codes
+    assert all(400 <= c < 500 for c in codes.values()), codes
 
 
 def test_server_survives_500_probes_and_leaks_nothing(sess):
@@ -622,6 +622,96 @@ def test_end_to_end_flow_on_postgres_keeps_audit_chain_and_key_permissions(sess)
     for it in audit["items"]:
         assert "보안점검" in json.dumps(it) or it["action"] != "suggestion.approve" or True
         assert "csrf" not in json.dumps(it).lower()
+
+
+def test_discard_draft_and_disclaimer_notice_over_real_stack(sess):
+    """개정 2판: 초안 버리기(기존 cancel 을 초안에 허용)와 notice·리포트 면책이 nginx→FastAPI→PostgreSQL 에서도 안전하게 동작한다."""
+    disc = "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다."
+    approved = sess.get("/api/v1/suggestions?status=approved&page_size=5").json()["items"]
+    assert approved, "승인된 제안이 없다(앞선 e2e 시험이 만든다)"
+    sid = approved[0]["id"]
+    r = sess.send("POST", "/api/v1/batches", {"suggestion_ids": [sid], "note": "live discard check"}, key="idem-live-disc-" + uuid.uuid4().hex[:12])
+    assert r.status == 201, r.text
+    bid = r.json()["batch"]["id"]
+    assert r.json()["precheck"]["notice"] == disc
+    # 세션 없음 / CSRF 없음 / 틀린 CSRF / 교차 출처 -> 초안은 그대로
+    assert http_req("POST", f"/api/v1/batches/{bid}/cancel", headers={"Origin": ORIGIN, "X-CSRF-Token": sess.csrf}, body={}).status == 401
+    assert http_req("POST", f"/api/v1/batches/{bid}/cancel", headers={"Origin": ORIGIN}, body={}, cookie=sess.cookie).status == 403
+    assert http_req("POST", f"/api/v1/batches/{bid}/cancel", headers={"Origin": ORIGIN, "X-CSRF-Token": "x" * 43}, body={}, cookie=sess.cookie).status == 403
+    assert sess.send("POST", f"/api/v1/batches/{bid}/cancel", extra={"Origin": "http://evil.example"}).status == 403
+    assert sess.get(f"/api/v1/batches/{bid}").json()["status"] == "draft"
+    assert sess.send("POST", f"/api/v1/batches/{bid}/cancel").status == 200
+    again = sess.send("POST", f"/api/v1/batches/{bid}/cancel")
+    assert again.status == 409 and again.json()["code"] == "batch_not_cancellable"
+    assert sess.send("POST", "/api/v1/batches/99999999999999999999999/cancel").status == 422
+    # 풀린 제안은 새 초안에 다시 담을 수 있고(승인 유효), 곧 다시 버려 스택을 깨끗하게 둔다
+    r2 = sess.send("POST", "/api/v1/batches", {"suggestion_ids": [sid]}, key="idem-live-disc-" + uuid.uuid4().hex[:12])
+    assert r2.status == 201 and r2.json()["precheck"]["blocked"] == [], r2.text[:200]
+    assert sess.send("POST", f"/api/v1/batches/{r2.json()['batch']['id']}/cancel").status == 200
+    notes = sess.get("/api/v1/reports/changes").json()["notes"]
+    assert notes[0] == disc
+    csv_resp = sess.get("/api/v1/reports/export.csv")
+    assert csv_resp.status == 200 and disc in csv_resp.body.decode("utf-8-sig")
+    # 같은 감사 체인이 계속 유효하다
+    assert sess.get("/api/v1/audit?page_size=5").json()["chain_ok"] is True
+
+
+def _race_rounds(sess, rounds):
+    """초안마다 실행·취소를 동시에 보내고 (실행 상태코드, 취소 상태코드) 목록을 돌려준다. 종료 상태 불변식은 여기서 검사한다."""
+    import threading
+    results = []
+    vids = [v["video_id"] for v in sess.get("/api/v1/videos?excluded=false&page_size=100").json()["items"]]
+    used = 0
+    for vid in vids:
+        if used >= rounds:
+            break
+        r = sess.send("POST", f"/api/v1/videos/{vid}/suggestions", {"count": 3})
+        if r.status != 201:
+            continue
+        ok = [x for x in r.json() if x["validation_result"] in ("pass", "warn") and x["status"] == "candidate"]
+        if not ok or sess.send("POST", f"/api/v1/suggestions/{ok[0]['id']}/approve", {"approver": "보안점검"}).status != 200:
+            continue
+        b = sess.send("POST", "/api/v1/batches", {"suggestion_ids": [ok[0]["id"]]}, key="idem-race-b-" + uuid.uuid4().hex[:12])
+        if b.status != 201 or b.json()["precheck"]["blocked"]:
+            continue
+        used += 1
+        bid, confirm = b.json()["batch"]["id"], b.json()["precheck"]["confirm_text"]
+        out = {}
+        t1 = threading.Thread(target=lambda: out.__setitem__("exec", sess.send("POST", f"/api/v1/batches/{bid}/execute", {"confirm_text": confirm}, key="idem-race-e-" + uuid.uuid4().hex[:12])))
+        t2 = threading.Thread(target=lambda: out.__setitem__("cancel", sess.send("POST", f"/api/v1/batches/{bid}/cancel")))
+        t1.start(); t2.start(); t1.join(); t2.join()
+        e, c = out["exec"], out["cancel"]
+        results.append((e.status, c.status))
+        for resp in (e, c):  # 5xx 가 나도 본문에 내부 정보가 없어야 한다
+            for needle in ("Traceback", "psycopg", "DeadlockDetected", "sqlalchemy", "/opt/venv", "SELECT "):
+                assert needle not in resp.text, needle
+        if e.status == 409:
+            assert e.json()["code"] == "batch_not_draft"
+        final = sess.get(f"/api/v1/batches/{bid}").json()
+        # 종료 상태 불변식: 어떤 순서로 끝나든 '취소됐는데 대기 중인 항목'이나 'queued 로 남은 제안'이 없어야 한다
+        assert final["status"] in ("draft", "cancelled", "queued", "running", "done"), final["status"]
+        if final["status"] == "cancelled":
+            assert all(it["status"] != "pending" for it in final["items"]), final
+            sg = [x for x in sess.get("/api/v1/suggestions?page_size=200").json()["items"] if x["id"] == ok[0]["id"]]
+            assert not [x for x in sg if x["status"] == "queued"], sg
+        if final["status"] == "draft":  # 둘 다 실패(교착)한 경우: 초안이 그대로 남아야 하고 다시 버릴 수 있어야 한다
+            assert sess.send("POST", f"/api/v1/batches/{bid}/cancel").status == 200
+    assert used == rounds, f"경합 시험에 쓸 승인 제안을 {rounds}개 만들지 못했다({used})"
+    return results
+
+
+def test_cancel_vs_execute_race_on_postgres_keeps_state_consistent(sess):
+    """개정 2판: 같은 초안에 실행·취소를 동시에 보내도 PostgreSQL 에서 상태가 모순되지 않는다(5xx 가 나더라도 롤백돼 일관). 5xx 자체는 아래 DEF-9-019 시험."""
+    results = _race_rounds(sess, 6)
+    assert all(s < 600 for pair in results for s in pair)
+    assert sess.get("/api/v1/audit?page_size=5").json()["chain_ok"] is True
+
+
+@pytest.mark.xfail(strict=False, reason="DEF-9-019(신규, Low): 같은 세션의 동시 쓰기 요청이 sessions.last_seen UPDATE 와 batches FOR UPDATE 의 잠금 순서가 뒤바뀌어 PostgreSQL 교착(DeadlockDetected)→HTTP 500 이 난다(트랜잭션은 롤백돼 데이터는 일관). 간헐적이라 strict=False. 고치면 이 표식을 지운다.")
+def test_cancel_vs_execute_race_on_postgres_has_no_5xx_def_9_019(sess):
+    results = _race_rounds(sess, 8)
+    bad = [p for p in results if any(s >= 500 for s in p)]
+    assert not bad, f"{len(bad)}/{len(results)} 라운드에서 5xx: {results}"
 
 
 def test_xss_and_csv_payloads_through_real_stack(sess):
