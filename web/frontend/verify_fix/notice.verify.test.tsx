@@ -34,8 +34,8 @@ describe('면책 문장 원문 대조 (DEF-9-007)', () => {
     expect(server).toBe(D);
   });
 
-  it('TC-VWF-002 CLI(src/ytitle/ui.py) 면책 문장과도 같고, 앞뒤 공백·NFD·보이지 않는 문자가 없다', () => {
-    const ui = readRepo('src/ytitle/ui.py');
+  it('TC-VWF-002 CLI(src/youtube_title/ui.py) 면책 문장과도 같고, 앞뒤 공백·NFD·보이지 않는 문자가 없다', () => {
+    const ui = readRepo('src/youtube_title/ui.py');
     const m = /^DISCLAIMER\s*=\s*"([^"\n]*)"/m.exec(ui);
     expect(m![1]).toBe(ko.legal.disclaimer);
     expect(ko.legal.disclaimer).toBe(ko.legal.disclaimer.normalize('NFC'));

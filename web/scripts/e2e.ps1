@@ -13,7 +13,7 @@ param([string]$Base = 'http://127.0.0.1:8080', [switch]$OpenReport)
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $script = Join-Path $root 'web\tests_integration\tools\e2e_functional.mjs'
-$pwVersion = '1.56.1'
+$playwrightVersion = '1.56.1'
 
 # 1) 서버가 떠 있는지
 try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri "$Base/api/healthz"; if ($r.StatusCode -ne 200) { throw 'status' } }
@@ -30,11 +30,11 @@ if (-not $edge) { Write-Host '[중단] Microsoft Edge 를 찾을 수 없습니�
 # 4) Playwright(처음 한 번만, 저장소 밖에 설치)
 $tools = Join-Path $env:LOCALAPPDATA 'ytweb-e2e'
 if (-not (Test-Path (Join-Path $tools 'node_modules\playwright'))) {
-  Write-Host "시험 도구(Playwright $pwVersion)를 처음 한 번 설치합니다(약 1분)..."
+  Write-Host "시험 도구(Playwright $playwrightVersion)를 처음 한 번 설치합니다(약 1분)..."
   New-Item -ItemType Directory -Force -Path $tools | Out-Null
   Push-Location $tools
   try { if (-not (Test-Path 'package.json')) { '{"name":"ytweb-e2e","private":true}' | Set-Content -Encoding ascii package.json }
-        npm install "playwright@$pwVersion" --no-audit --no-fund --loglevel=error
+        npm install "playwright@$playwrightVersion" --no-audit --no-fund --loglevel=error
         if ($LASTEXITCODE -ne 0) { throw 'npm install 실패' } } finally { Pop-Location }
 }
 
