@@ -298,7 +298,7 @@ export function SuggestionCard({
             <Field
               label={ko.suggestion.approverLabel}
               hint={ko.suggestion.approverHint}
-              error={approver !== '' ? approverError : undefined}
+              error={approverError}
             >
               <input
                 className="input"
