@@ -891,7 +891,7 @@ def test_tc_vi_054_access_log_is_json_without_query_string_or_cookies(ngx):
 
 
 @needs_docker
-@pytest.mark.xfail(strict=True, reason="DEF-VI-003: nginx 오류 로그(stderr)는 limit_req/업스트림 오류 때 쿼리 문자열이 든 요청 줄 전체를 기록한다(nginx.conf 주석의 '쿼리 문자열은 기록하지 않는다'와 불일치)")
+@pytest.mark.xfail(strict=False, reason="DEF-VI-003 부분 조치(7단계 재확인): 속도 제한(limit_req) 경로는 쿼리가 오류 로그에 남지 않는다(통과). 업스트림 오류(504/502) 줄에는 요청 줄이 남는 잔여가 수용됨(DEC-045, M2 OAuth 설계 때 재평가). 이 하네스는 stub api 기동 전 첫 요청이 502 가 되면 잔여 경로를 타 XFAIL, 아니면 XPASS 가 되는 경쟁이 있어 strict 를 해제")
 def test_tc_vi_055_error_log_never_contains_query_strings(ngx_fresh):
     for _ in range(30):
         curl(ngx_fresh, "/api/v1/auth/session?code=ZZ-SECRET-9", "POST", data=b"{}")
@@ -1276,7 +1276,7 @@ def test_tc_vi_105_live_lateral_paths_between_services():
 
 
 @live
-@pytest.mark.xfail(strict=True, reason="DEF-VI-001: web(nginx)이 edge 경유로 외부 egress 가능 + app 네트워크의 db:5432 에 도달 가능(설계 편차 #1)")
+@pytest.mark.xfail(strict=False, reason="DEF-VI-001 부분 조치(7단계 재확인): 3망 분리(DEC-045)로 web 은 db 에 도달하지 못한다(통과). 외부 egress(edge 경유)는 수용된 잔여다. 이 시험의 egress 판정은 wget 종료 코드라 프록시가 403 을 돌려주는 환경에서는 XPASS 가 되고(연결은 됨), 직접 차단 환경이 아니면 실패한다 -> 환경 의존이라 strict 를 해제")
 def test_tc_vi_106_live_web_container_is_isolated_from_db_and_internet():
     r = docker("exec", cname("web"), "sh", "-c", "timeout 4 nc -z db 5432")
     assert r.returncode != 0, "web 이 db 포트에 도달 가능"
@@ -1394,7 +1394,6 @@ def test_tc_vi_111_live_audit_log_privilege_matrix_and_probe_row_unmodifiable():
 
 
 @live
-@pytest.mark.xfail(strict=True, reason="DEF-VI-002(Low): 앱 계정이 마이그레이션 버전 표(alembic_version)를 수정/삭제할 수 있다 - 마이그레이션(백엔드 단위) 쪽 조치 필요")
 def test_tc_vi_112_live_app_account_cannot_tamper_alembic_version():
     r = _live_psql("postgres", "db_superuser_password",
                    "select has_table_privilege('ytweb_app','public.alembic_version','UPDATE')::text||has_table_privilege('ytweb_app','public.alembic_version','DELETE')::text", "ytweb")
