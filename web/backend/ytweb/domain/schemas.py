@@ -264,6 +264,10 @@ class GoogleStatusOut(BaseModel):
     message: str
     client_ready: bool = False
     last_error: str | None = None
+    write_connected: bool = False      # 제목 수정(쓰기) 권한 로그인 여부(M3)
+    live_write_enabled: bool = False   # YTWEB_LIVE_WRITE=1 여부
+    live_allowed_count: int = 0        # 실제 수정이 허용된 영상 수
+    live_write_ready: bool = False     # 위 3조건이 모두 맞아 실제 수정이 가능한 상태
 
 
 # ───────────── 요청 ─────────────

@@ -26,7 +26,8 @@ def get_env(policy=Depends(get_policy), web: WebSettings = Depends(get_web_setti
 
 
 def get_gateway(session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock)) -> YouTubeGateway:
-    return MockYouTubeGateway(session, clock=clock)
+    from ytweb.domain.live_gateway import select_gateway
+    return select_gateway(session, clock())
 
 
 def get_title_suggester(web: WebSettings = Depends(get_web_settings)) -> TitleSuggester:

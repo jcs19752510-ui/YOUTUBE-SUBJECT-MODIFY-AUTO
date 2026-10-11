@@ -50,7 +50,9 @@ GatewayFactory = Callable[[Session, datetime], YouTubeGateway]
 
 
 def mock_gateway_factory(session: Session, now: datetime) -> YouTubeGateway:
-    return MockYouTubeGateway(session, clock=lambda: now)
+    """이름은 유지하지만 live 쓰기 조건(M3)이 모두 맞으면 실제 게이트웨이를 돌려준다. 기본은 모의."""
+    from ytweb.domain.live_gateway import select_gateway
+    return select_gateway(session, now)
 
 
 # ───────────── 적격성·일정 ─────────────
