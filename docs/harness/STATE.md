@@ -90,3 +90,4 @@
 - **환경**: 클라우드 임시 PostgreSQL 16(127.0.0.1:54329, DB `ytweb_test_a`~`_f`·`_int`)·dockerd를 새로 기동. 임시 파일은 `.harness-tmp/`(저장소 미포함)
 - **진행률(추정)**: 전체 약 82%, M1 약 98%
 - **2026-10-11 중지(사용자 지시)**: 1차 웨이브 4건(W-FIX-BE/FE/INF 독립 검증, 9단계 재검증)을 모두 중지. 각 결과서(`web-WU-FIX-*-test.md`, `security-web-m1-test.md` 개정 2판)는 작성 도중이면 WIP 상태(판정 미확정). 재개 시 각 단위를 처음부터 다시 검증하되 `web/backend/tests/verify_fix_be`, `web/frontend/verify/wfix*`, `web/tests_infra/test_fix_inf_*`, `web/tests_security/`의 진행분 시험을 재사용. 8단계는 미착수, 관리자 로그인은 8단계 이후
+- **2026-10-11 사용자 PC 첫 구동 확인(10단계 일부, 사용자 제공 스크린샷)**: 사용자 Windows PC에서 `start.ps1 -OpenBrowser`로 컨테이너(db·migrate·worker·api·web)가 기동돼 Edge에서 `http://127.0.0.1:8080` 홈 화면이 열림("데모 모드" 배지, 서버 연결됨, 영상 200·제외 37, 반영 0/10건, API 6,000단위, 라이브 꺼짐). README §8 체크리스트 1번 충족 근거. 미확인: 2번(`status.ps1 -Detail`·휴대폰 접속 거부), 3번(F12 콘솔 CSP 오류), 4번(백업·복원), 5번(종료 후 재시작·데이터 유지), 6번(비밀 파일 읽기). 스크린샷은 저장소에 넣지 않음
