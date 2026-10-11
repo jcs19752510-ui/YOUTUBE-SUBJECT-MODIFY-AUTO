@@ -209,7 +209,7 @@ export function HistoryPage() {
                     <td>
                       {changeTypeLabel(c.change_type)}
                       <div className="muted">
-                        {c.mode === 'demo' ? ko.history.modeDemo : c.mode}
+                        {c.mode === 'demo' ? ko.history.modeDemo : ko.history.modeLive}
                       </div>
                     </td>
                     <td>

@@ -21,12 +21,15 @@ import {
   useToast,
 } from '../components';
 import { ko } from '../i18n/ko';
+import { useServerMode } from '../hooks/useServerMode';
 import { fmtDateTime } from '../lib/format';
 import { auditActionLabel, auditActorLabel, auditTargetLabel } from '../lib/labels';
 
 const T = ko.settings;
 
 function SafetyForm({ data }: { data: SettingsData }) {
+  const serverLive = useServerMode().live;
+  const live = serverLive || data.read_only.enable_live;
   const api = useApi();
   const qc = useQueryClient();
   const toast = useToast();
@@ -128,11 +131,8 @@ function SafetyForm({ data }: { data: SettingsData }) {
         <dl className="kv readonly-kv">
           <dt>{T.liveLabel}</dt>
           <dd>
-            <Badge
-              tone={data.read_only.enable_live ? 'danger' : 'success'}
-              icon={data.read_only.enable_live ? '▲' : '✓'}
-            >
-              {data.read_only.enable_live ? T.liveOn : T.liveOff}
+            <Badge tone={live ? 'danger' : 'success'} icon={live ? '▲' : '✓'}>
+              {live ? T.liveOn : T.liveOff}
             </Badge>{' '}
             <span className="muted">{T.readonlyNote}</span>
           </dd>
@@ -307,6 +307,7 @@ function PinCard({ data }: { data: SettingsData }) {
 }
 
 function SessionCard() {
+  const { live } = useServerMode();
   const api = useApi();
   const client = useApiClient();
   const conn = useConnection();
@@ -325,7 +326,7 @@ function SessionCard() {
           </Badge>
         </dd>
         <dt>{T.sessionMode}</dt>
-        <dd>{T.sessionModeDemo}</dd>
+        <dd>{live ? T.sessionModeLive : T.sessionModeDemo}</dd>
         <dt>{T.sessionGoogle}</dt>
         <dd>
           {g.isPending ? (

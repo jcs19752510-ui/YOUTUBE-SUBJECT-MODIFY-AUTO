@@ -144,7 +144,7 @@ def evaluate_limits(facts: LimitFacts, settings: Settings, now: datetime) -> Lim
     if facts.change_count < cap:
         checks.append(LimitCheck(COUNT, "변경 횟수", True, f"이 영상의 변경 {facts.change_count}회 / 상한 {cap}회"))
     else:
-        checks.append(LimitCheck(COUNT, "변경 횟수", False, f"이 영상은 이미 {facts.change_count}회 변경되어 상한({cap}회)에 도달했습니다. 시간이 지나도 풀리지 않으며, 설정 cadence.max_changes_per_video를 바꿔야 합니다."))
+        checks.append(LimitCheck(COUNT, "변경 횟수", False, f"이 영상은 이미 {facts.change_count}회 변경되어 상한({cap}회)에 도달했습니다. 시간이 지나도 풀리지 않습니다. 더 바꾸려면 설정 파일(config/settings.yaml)의 영상당 변경 횟수 상한(cadence.max_changes_per_video)을 늘려야 합니다."))
 
     # 3) 최소 노출수(재변경에만 적용)
     need = settings.min_impressions_before_rechange

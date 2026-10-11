@@ -285,7 +285,11 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
             </Callout>
           ) : (
             <div className="stack">
-              <p>{ko.batches.confirmBody}</p>
+              <p>
+                {expected.startsWith('실제 실행')
+                  ? ko.batches.confirmBodyLive
+                  : ko.batches.confirmBody}
+              </p>
               <Callout tone="warning">
                 <p>{ko.legal.abHint}</p>
                 <label className="check">

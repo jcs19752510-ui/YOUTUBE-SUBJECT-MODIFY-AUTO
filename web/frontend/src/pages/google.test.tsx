@@ -154,4 +154,22 @@ describe('구글 연결 카드', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/읽기 전용입니다/)).not.toBeInTheDocument();
   });
+  it('TC-WF-213 홈 상태 카드: 연결 파일만 있고 로그인 전이면 "구글 연결 안 됨", 실제 수정 가능 상태면 "라이브: 켜짐"이 보인다', async () => {
+    const mk = (over: object) =>
+      route('GET', '/api/v1/dashboard', () => json(200, { ...dashboard(), ...over }));
+    const a = await connectedClient([
+      mk({ mode: 'demo', live_enabled: false, google: { mode: 'read', connected: false } }),
+      route('GET', '/api/v1/google/status', () => json(200, base)),
+    ]);
+    const r1 = renderWithApp(<HomePage />, a.client);
+    expect(await screen.findByText('구글 연결 안 됨', { selector: 'li' })).toBeInTheDocument();
+    expect(screen.queryByText('구글 연결됨', { selector: '.badge' })).not.toBeInTheDocument();
+    r1.unmount();
+    const b = await connectedClient([
+      mk({ mode: 'live', live_enabled: true, google: { mode: 'read', connected: true } }),
+      route('GET', '/api/v1/google/status', () => json(200, { ...base, connected: true })),
+    ]);
+    renderWithApp(<HomePage />, b.client);
+    expect(await screen.findByText('실제 반영(라이브): 켜짐')).toBeInTheDocument();
+  });
 });

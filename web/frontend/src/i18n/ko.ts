@@ -255,7 +255,8 @@ export const ko = {
     quotaOf: (u: number, l: number) =>
       `${u.toLocaleString('ko-KR')} / ${l.toLocaleString('ko-KR')} 단위 사용`,
     quotaRemain: (r: number) => `${r.toLocaleString('ko-KR')} 단위 남음`,
-    quotaDate: (d: string) => `기준일 ${d} (태평양 시간)`,
+    quotaDate: (d: string) =>
+      `기준일 ${d} (미국 태평양 시간 기준 — 한국 시간 오후 4~5시에 하루가 바뀝니다)`,
     quotaWarn: '사용량이 80%를 넘었습니다. 오늘은 반영을 줄이는 것이 안전합니다.',
     queueTitle: '반영 대기열',
     queuePending: (n: number) => `대기 ${n}건`,
@@ -481,6 +482,8 @@ export const ko = {
     confirmTitle: '실행 확인',
     confirmBody:
       '실행하면 데모 데이터의 제목이 바뀝니다. 계속하려면 아래 문구를 그대로 입력하세요.',
+    confirmBodyLive:
+      '실제 수정 모드입니다. 실행하면 허용된 영상의 제목이 실제 유튜브에서 바뀝니다. 계속하려면 아래 문구를 그대로 입력하세요.',
     confirmLabel: '확인 문구 입력',
     confirmMismatch: '문구가 일치하지 않습니다.',
     confirmMatch: '문구가 일치합니다.',
@@ -554,6 +557,7 @@ export const ko = {
     rollback: '롤백',
     notRollbackable: '되돌릴 수 없음',
     modeDemo: '데모',
+    modeLive: '실제',
     notRollbackableWhy: '이후에 다른 변경이 있거나 이미 되돌려진 기록입니다.',
     rbTitle: '이 변경을 되돌릴까요?',
     rbBody:
@@ -644,6 +648,7 @@ export const ko = {
     sessionGoogle: '구글 연결',
     sessionMode: '실행 모드',
     sessionModeDemo: '데모 모드(유튜브에 아무것도 전송되지 않음)',
+    sessionModeLive: '실제 수정 모드(허용된 영상의 제목이 실제 유튜브에서 바뀝니다)',
     sessionLogout: '로그아웃',
     auditTitle: '감사 로그(읽기 전용)',
     auditChainOk: '기록 무결성 확인됨',
