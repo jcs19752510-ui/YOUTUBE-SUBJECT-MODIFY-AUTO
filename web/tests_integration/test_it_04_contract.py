@@ -72,10 +72,10 @@ def _diff(a, b, path=""):
         yield path, a, b
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-002(알려진 결함, 이전 세션 발견): docs/yt/openapi.json 이 DEF-VA-005 수정(audit page/page_size 상한)을 반영하지 않아 오래됨 — 재생성하면 이 표시를 지운다")
+@pytest.mark.xfail(strict=True, reason="DEF-7-003(알려진 결함, 이전 세션 발견): docs/yt/openapi.json 이 DEF-VA-005 수정(audit page/page_size 상한)을 반영하지 않아 오래됨 — 재생성하면 이 표시를 지운다")
 def test_it_400_openapi_json_in_repo_matches_running_app_schema():
     """IT-400: 저장소의 docs/yt/openapi.json 이 실제 앱 객체가 만드는 스키마와 같다(경로·메서드·컴포넌트·모든 필드). 검증: EVT-W01~W31, API.md 9장
-    (알려진 결함 DEF-7-002: 현재 audit 의 page/page_size 상한 두 줄만 다르다. 파일을 재생성하면 XPASS(strict 실패)로 알려 주므로 그때 표시를 지운다.)"""
+    (알려진 결함 DEF-7-003: 현재 audit 의 page/page_size 상한 두 줄만 다르다. 파일을 재생성하면 XPASS(strict 실패)로 알려 주므로 그때 표시를 지운다.)"""
     script = "import json\nfrom ytweb.app import create_app\nprint('OPENAPI ' + json.dumps(create_app().openapi(), sort_keys=True))\n"
     p = inside_python(script)
     assert p.returncode == 0, p.stderr[-400:]
@@ -360,7 +360,7 @@ def test_it_403_malformed_inputs_never_5xx_and_never_leak(fresh_demo):
     assert a.get("/api/v1/audit", params={"page_size": 1}).json()["chain_ok"] is True
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-003: API.md 5장·부록은 count 범위 위반을 422 count_invalid 로 적었으나 실제는 스키마 단계의 validation_error(count_invalid 는 HTTP 로 도달 불가)")
+@pytest.mark.xfail(strict=True, reason="DEF-7-004: API.md 5장·부록은 count 범위 위반을 422 count_invalid 로 적었으나 실제는 스키마 단계의 validation_error(count_invalid 는 HTTP 로 도달 불가)")
 def test_it_404_documented_count_invalid_code_is_reachable(fresh_demo):
     """IT-404(결함 고정): 문서화된 `count_invalid`(1~5 아님) 가 실제로 나오는가. 현재는 `validation_error`."""
     a = fresh_demo
@@ -939,7 +939,7 @@ def test_it_431_backend_rate_limits_and_foreign_origin_budget_and_entry_checks()
 
 # 이 스택(모의 유튜브·모의 AI·데모 시드)에서는 HTTP 로 도달할 수 없는 문서화된 코드와 그 이유.
 _UNREACHABLE_DOC_CODES = {
-    "count_invalid": "스키마 단계에서 validation_error 로 먼저 막힘(DEF-7-003)",
+    "count_invalid": "스키마 단계에서 validation_error 로 먼저 막힘(DEF-7-004)",
     "ai_unavailable": "모의 제안기는 실패하지 않음(M3 실제 AI 연결 전)",
     "ai_no_candidates": "모의 제안기는 항상 후보를 냄",
     "title_invalid": "본문 스키마가 문자열을 강제해 서비스 단계의 형식 오류에 도달하지 않음",

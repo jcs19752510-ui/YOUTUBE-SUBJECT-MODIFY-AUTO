@@ -771,10 +771,11 @@ def test_it_331_overdue_items_beyond_cap_with_many_workers_are_deferred_not_skip
     assert ib.count_success_per_video_max() == "1"
     ev_def = [x for x in a.get("/api/v1/audit", params={"page_size": 200}).json()["items"] if x["action"] == "batch.item.deferred"]
     print("deferred_events", len(ev_def))
-    assert ev_def, "7개 워커가 3건 몫을 두고 경쟁했는데 이월이 한 번도 일어나지 않음(시험이 경합을 만들지 못했거나 이월 로직 변경)"
+    # 7개 프로세스가 실제로 경합해 이월이 일어날지는 기동 시각 차이에 달려 있어(첫 워커가 3건을 끝낸 뒤 나머지가 뜨면 경합이 없다) 여기서는 요구하지 않는다.
+    # 이월 분기 자체는 결정적 시험 IT-332 가 본다. 이월이 일어났다면 그 내용이 올바른지만 확인한다.
     assert all(x["detail"]["code"] == "limit_daily" for x in ev_def)
     moved = int(psql_app(f"select count(*) from batch_items where status='pending' and scheduled_date = {today} + 1"))
-    assert moved >= len(ev_def) - 0 or moved >= 1
+    assert moved >= len(ev_def)
     assert a.get("/api/v1/dashboard").json()["quota"]["used"] == 3 * 52
     for day in range(2, 6):
         shift_days(1)
@@ -785,6 +786,59 @@ def test_it_331_overdue_items_beyond_cap_with_many_workers_are_deferred_not_skip
         time.sleep(4)
     done = a.wait_batch(bid, timeout=60)
     assert done["counts"]["success"] == 10 and done["counts"]["skipped"] == 0 and done["counts"]["failed"] == 0, done["counts"]
+    assert ib.count_success_per_video_max() == "1"
+
+
+def test_it_332_item_beyond_todays_cap_is_deferred_deterministically_without_quota_or_failure(fresh_demo):
+    """IT-332: 하루 상한 3 에서 오늘 3건을 반영한 뒤 4번째 항목이 오늘 도래분으로 남아 있는 상태(경합에서 진 워커가 마주치는 상황)를 결정적으로 만든다.
+    (a) 워커 틱(run_due_items)은 3건에서 멈추고 stopped_by=cap_reached (b) 같은 항목을 apply_one 으로 직접 처리하면 실패·건너뜀이 아니라 deferred 로 끝나 예정일이
+    내일로 넘어가고 감사 batch.item.deferred(limit_daily)가 남으며 쿼터·변경 기록이 늘지 않는다 (c) 다음 날이 되면 정확히 한 번 반영된다.
+    검증: W-008(초과분 다음 날), NFR-W03, DEF-VB-01. 이월 분기를 7개 프로세스 경합에 맡기지 않기 위한 결정적 보강."""
+    a = fresh_demo
+    set_cap(a, 3)
+    ap = approve_many(a, usable_videos(a, 5))
+    worker_stop()
+    bid = a.make_batch([s["id"] for s in ap]).json()["batch"]["id"]
+    assert a.execute(bid, 5).status_code == 202
+    today = "(now() at time zone 'Asia/Seoul')::date"
+    assert psql_app(f"select count(*) from batch_items where scheduled_date = {today}") == "3"       # 예약이 3건(오늘)+2건(내일)으로 나뉘었다
+    script = """
+import json
+from ytweb.config import load_web_settings
+from ytweb.core.clock import utcnow
+from ytweb.db.session import make_engine, make_session_factory
+from ytweb.db.models import BatchItem
+from ytweb.domain.batches import apply_one, mock_gateway_factory, run_due_items
+from ytweb.domain.common import default_env
+from sqlalchemy import text
+st = load_web_settings(); eng = make_engine(st.database_url); f = make_session_factory(eng)
+env = default_env(); now = utcnow()
+with f() as s:      # 5건 모두 오늘 도래분으로 만든다(워커가 꺼져 있다가 한꺼번에 밀린 상황)
+    s.execute(text("update batch_items set scheduled_date = (now() at time zone 'Asia/Seoul')::date where status='pending'"))
+    s.commit()
+tick = run_due_items(f, now, env)
+with f() as s:
+    nxt = s.execute(text("select id from batch_items where status='pending' order by seq limit 1")).scalar_one()
+with f() as s:
+    out = apply_one(s, nxt, now=utcnow(), env=env, gateway=mock_gateway_factory(s, utcnow()))
+print("RESULT " + json.dumps({"processed": tick.processed, "success": tick.success, "stopped_by": tick.stopped_by, "item": nxt, "outcome": out.status, "code": out.code}))
+"""
+    p = ib.inside_python(script)
+    assert p.returncode == 0, p.stderr[-600:]
+    r = json.loads([x for x in p.stdout.splitlines() if x.startswith("RESULT ")][-1][7:])
+    assert r["processed"] == 3 and r["success"] == 3 and r["stopped_by"] == "cap_reached", r
+    assert r["outcome"] == "deferred" and r["code"] == "limit_daily", r
+    assert psql_app(f"select status || '|' || (scheduled_date - {today})::text from batch_items where id = {r['item']}") == "pending|1"
+    assert psql_app("select count(*) from changes where change_type='apply' and result='success'") == "3"
+    assert psql_app("select count(*) from changes where result in ('failed','planned')") == "0"
+    assert a.get("/api/v1/dashboard").json()["quota"]["used"] == 3 * 52
+    ev = [x for x in a.get("/api/v1/audit", params={"page_size": 200}).json()["items"] if x["action"] == "batch.item.deferred"]
+    assert len(ev) == 1 and ev[0]["detail"]["code"] == "limit_daily" and ev[0]["target_id"] == str(r["item"]), ev
+    # (c) 다음 날: 이월된 항목을 포함해 남은 2건이 한 번씩만 반영된다
+    shift_days(1)
+    worker_start()
+    b = a.wait_batch(bid, timeout=90)
+    assert b["counts"]["success"] == 5 and b["counts"]["failed"] == 0 and b["counts"]["skipped"] == 0, b["counts"]
     assert ib.count_success_per_video_max() == "1"
 
 
