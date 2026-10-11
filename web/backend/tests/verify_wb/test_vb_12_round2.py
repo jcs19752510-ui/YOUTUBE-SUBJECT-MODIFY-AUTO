@@ -16,7 +16,7 @@ from ytweb.domain.suggestions import MAX_TITLE_CHARS, approve, edit_title, relea
 from ytweb.domain.videos import list_videos
 
 from tests.verify_wb.test_vb_04_apply_recover import _crash_apply
-from tests.verify_wb.vbh import Faulty, add_change, life_ids, make_sug, ok_sug, queued, set_all_due, set_cap, fill_quota
+from tests.verify_wb.vbh import Faulty, add_change, life_ids, make_sug, ok_sug, queued, set_all_due, fill_quota
 
 
 def _edit_db_snippet(db, vid, **kw):

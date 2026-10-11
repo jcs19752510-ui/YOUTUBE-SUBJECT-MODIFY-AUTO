@@ -12,7 +12,7 @@ from ytweb.domain.seed import seed_demo  # noqa: E402
 
 
 @pytest.fixture
-def seeded200(db, clock, env):
+def seeded200(db, clock, env):  # noqa: F811
     """200개 전체 시드(50건 배치 경계 시험용)."""
     seed_demo(db, clock(), env.policy, count=200)
     db.commit()

@@ -10,7 +10,7 @@ import pytest
 
 from ytweb.core import jobs
 from ytweb.db.models import Video
-from ytweb.domain.common import KST, MAX_PAGE_SIZE, clamp_page, kst_day_bounds, single_line
+from ytweb.domain.common import MAX_PAGE_SIZE, clamp_page, kst_day_bounds, single_line
 from ytweb.youtube.base import GatewayError, make_excerpt
 from ytweb.youtube.mock import MockYouTubeGateway
 
@@ -94,7 +94,6 @@ def test_tc_vb_277_worker_loader_returns_scheduler():
 def test_tc_vb_278_no_live_youtube_or_external_ai_code_in_m1():
     """M1 데모 한정(DEC-038): 도메인·AI·유튜브 모듈에 네트워크/외부 SDK 호출 코드가 없다(정적 점검: 임포트와 호출 이름)."""
     banned_imports = {"requests", "httpx", "urllib", "urllib3", "socket", "googleapiclient", "google", "openai", "anthropic", "aiohttp", "http", "smtplib", "ftplib"}
-    banned_calls = {"urlopen", "request", "post", "build"}
     for sub in ("domain", "ai", "youtube"):
         for path in (ROOT / sub).glob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"))

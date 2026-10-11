@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
 import os
 import stat
 from datetime import timedelta
@@ -12,14 +11,14 @@ import pytest
 from sqlalchemy import select, update
 
 from ytweb.core.errors import ProblemError
-from ytweb.db.models import Approval, Batch, BatchItem, Change, Suggestion, Video
+from ytweb.db.models import Approval, Batch, BatchItem, Suggestion, Video
 from ytweb.domain.batches import apply_one, create_draft, execute_batch
 from ytweb.domain.suggestions import (
     ApprovalInvalid, KEY_FILE, approve, check_approval, compute_mac, expire_stale_approvals, plan_hash_for,
 )
 from ytitle.updater import compute_plan_hash
 
-from tests.verify_wb.vbh import Faulty, changes, life_ids, make_sug, ok_sug, queued, set_all_due
+from tests.verify_wb.vbh import Faulty, changes, life_ids, make_sug, queued
 
 
 def _ap(db, sid):

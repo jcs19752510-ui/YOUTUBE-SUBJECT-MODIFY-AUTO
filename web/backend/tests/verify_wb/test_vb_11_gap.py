@@ -1,7 +1,7 @@
 """6단계 독립 검증 11: 커버리지 틈 보강 + 결함 수정(DEF-VB-01/02) 회귀."""
 from __future__ import annotations
 
-from datetime import timedelta, timezone
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
@@ -107,3 +107,19 @@ def test_tc_vb_306_title_invalid_non_string_has_hint(seeded, db, env, clock):
     with pytest.raises(ProblemError) as e:
         edit_title(db, s.id, 123, now=clock(), env=env)  # type: ignore[arg-type]
     assert e.value.code == "title_invalid" and e.value.hint
+
+
+def test_tc_vb_307_def_vb_03_approve_with_corrupt_key_is_problem_json_not_raw_exception_and_key_untouched(seeded, db, env, clock):
+    """DEF-VB-03 회귀: 키 파일이 깨져 있으면 승인은 한국어 hint 가 있는 ProblemError(fail-closed)이고, 키 파일을 덮어쓰지 않으며 승인 기록도 남지 않는다."""
+    from ytweb.core.errors import ProblemError
+    from ytweb.domain.suggestions import KEY_FILE, approve
+    from tests.verify_wb.vbh import make_sug
+    s = make_sug(db, env, clock(), life_ids(db, 1)[0])
+    keyp = env.secrets_dir / KEY_FILE
+    keyp.parent.mkdir(parents=True, exist_ok=True)
+    for bad in ("zz-corrupt", "ab" * 16):
+        keyp.write_text(bad)
+        with pytest.raises(ProblemError) as e:
+            approve(db, s.id, "검수자", now=clock(), env=env)
+        assert e.value.code == "approval_key_unreadable" and e.value.hint and keyp.read_text() == bad
+        assert s.approval is None and s.status == "candidate"

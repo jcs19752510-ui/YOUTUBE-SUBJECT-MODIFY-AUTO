@@ -23,7 +23,6 @@ from ytweb.domain.exclusions import exclusion_reasons
 from ytweb.domain.seed import seed_demo
 from ytweb.domain.suggestions import approve, edit_title, generate_for_video, reject
 
-from tests.conftest import ORIGIN
 from tests.verify_wb.vbh import Stub, life_ids, make_sug
 from tests.verify_wb.conftest import hdr
 
@@ -174,7 +173,6 @@ def test_tc_vb_013_strict_mode_health_finance_warn_becomes_block_and_cannot_be_a
     health = next(v for v in db.execute(select(Video).order_by(Video.video_id)).scalars() if not v.exclusion_reasons and v.category_id == "27" and any(k in v.title for k in HEALTH_KW))
     life = db.get(Video, life_ids(db, 1)[0])
     for video, expect_strict in ((health, True), (life, False)):
-        core = video.title.rsplit(" ", 1)[0] if False else video.title
         s = make_sug(db, env, clock(), video.video_id, video.title.split(" ")[0] + " " + video.title.split(" ")[1] + long_title_suffix, evidence=(video.description_excerpt or "").split(".")[0] + ".", topic="health" if expect_strict else "life")
         codes = {r["code"] for r in s.validation_reasons}
         assert "LEN_REC" in codes, (video.video_id, s.validation_result, codes)

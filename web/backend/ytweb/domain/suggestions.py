@@ -274,7 +274,10 @@ def approve(session: Session, suggestion_id: int, approver: str, *, now: datetim
         raise ProblemError(409, "same_as_current", "현재 제목과 같아 바꿀 내용이 없습니다.", hint="다른 제목을 선택하세요.")
     ttl = timedelta(hours=env.policy.approval_ttl_hours)
     sug.plan_hash = plan_hash_for(sug, video)
-    key = _load_key(env.secrets_dir, create=True)
+    try:
+        key = _load_key(env.secrets_dir, create=True)
+    except ApprovalInvalid as exc:  # 키 파일이 깨져 있으면 새 키로 덮어쓰지 않고(기존 승인 전부 무효화 방지) 승인을 거부한다
+        raise ProblemError(500, exc.code, "승인 인증 키를 사용할 수 없어 승인할 수 없습니다.", detail=exc.message, hint="관리자에게 알리세요. 비밀 폴더의 approval_hmac.key 파일 상태를 확인해야 합니다.") from None
     expires = now + ttl
     mac = compute_mac(key, suggestion_id=sug.id, video_id=sug.video_id, plan_hash=sug.plan_hash, approver=name, approved_at=now, expires_at=expires)
     if sug.approval is not None:  # 만료/사용된 이전 승인을 새 승인으로 교체

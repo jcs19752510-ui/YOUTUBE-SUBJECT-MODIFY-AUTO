@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 
 from ytweb.core import audit
 from ytweb.core.errors import ProblemError
-from ytweb.db.models import AuditLog, Batch, Change, MetricsSnapshot, Suggestion, Video
+from ytweb.db.models import AuditLog, Change, MetricsSnapshot, Video
 from ytweb.domain.batches import apply_one, cancel_batch, create_draft, execute_batch
 from ytweb.domain.changes import rollback_change
 from ytweb.domain.dashboard import build_dashboard
@@ -292,8 +292,8 @@ def test_tc_vb_220_video_detail_preserved_limits_and_changes(seeded, db, env, cl
 
 def test_tc_vb_221_workflow_status_priority(seeded, db, env, clock):
     ids = life_ids(db, 4)
-    a = make_sug(db, env, clock(), ids[0])                      # candidate → suggested
-    b = ok_sug(db, env, clock(), ids[1])                        # approved
+    make_sug(db, env, clock(), ids[0])                      # candidate → suggested
+    ok_sug(db, env, clock(), ids[1])                        # approved
     q, _ = queued(db, env, clock(), 1, skip=2)                  # queued
     items, _ = list_videos(db, now=clock(), q=None, status=None, excluded=None, sort="video_id", order="asc", page=1, page_size=200)
     st = {i["video_id"]: i["workflow_status"] for i in items}

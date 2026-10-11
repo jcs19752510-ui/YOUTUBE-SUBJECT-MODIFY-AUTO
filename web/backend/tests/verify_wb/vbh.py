@@ -2,17 +2,16 @@
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ytweb.ai.base import SuggestionDraft
-from ytweb.db.models import Approval, Batch, BatchItem, Change, QuotaUsage, Suggestion, Video
+from ytweb.db.models import BatchItem, Change, QuotaUsage, Suggestion, Video
 from ytweb.domain.batches import create_draft, execute_batch
 from ytweb.domain.common import Env
 from ytweb.domain.suggestions import approve, generate_for_video
-from ytweb.youtube.base import GatewayError
 from ytweb.youtube.mock import MockYouTubeGateway
 
 UTC = timezone.utc

@@ -138,8 +138,8 @@ def test_tc_vb_135_indeterminate_update_not_applied_keeps_planned_no_auto_cleanu
     assert applied_today(db, clock()) == 1       # planned 도 한도에 산입(보수적)
     assert db.get(Video, vid).title != sugs[0].title
     # 같은 영상의 다른 제안을 새 배치로 반영 시도 → 차단
-    from tests.verify_wb.vbh import make_sug, ok_sug
-    from ytweb.domain.batches import create_draft, execute_batch
+    from tests.verify_wb.vbh import make_sug
+    from ytweb.domain.batches import create_draft
     s2 = make_sug(db, env, clock(), vid, "냉장고 정리 쉽게 따라 하는 순서 천천히 알려드립니다 둘")
     from ytweb.domain.suggestions import approve
     approve(db, s2.id, "검수자", now=clock(), env=env)

@@ -8,9 +8,9 @@ import pytest
 from sqlalchemy import select
 
 from ytweb.core.errors import ProblemError
-from ytweb.db.models import AuditLog, Change, QuotaUsage, Suggestion, Video
+from ytweb.db.models import AuditLog, Change, Suggestion, Video
 from ytweb.domain.batches import apply_one
-from ytweb.domain.changes import list_changes, rollback_change, rollbackable_map
+from ytweb.domain.changes import list_changes, rollback_change
 from ytweb.youtube.base import GatewayError
 
 from tests.verify_wb.vbh import Faulty, add_change, changes, life_ids, queued, quota_units, snippet_of, fill_quota
@@ -123,7 +123,7 @@ def test_tc_vb_165_later_change_blocks_rollback_and_double_rollback(seeded, db, 
         _rb(db, env, clock, g, c1)
     assert (e.value.status, e.value.code) == (409, "later_change_exists") and f"#{c2.id}" in e.value.title
     assert g.reads == g.updates == 0
-    rbk = _rb(db, env, clock, gw, c2)             # 최신 변경은 롤백 가능
+    _rb(db, env, clock, gw, c2)             # 최신 변경은 롤백 가능
     db.commit()
     assert snippet_of(db, vid)["title"] == c2.previous_title
     with pytest.raises(ProblemError) as e2:       # 같은 변경 이중 롤백

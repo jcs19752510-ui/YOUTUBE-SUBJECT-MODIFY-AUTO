@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import func, select
 
 from ytweb.core import jobs
-from ytweb.db.models import AuditLog, Batch, BatchItem, Change, Job, Suggestion, Video
+from ytweb.db.models import AuditLog, Batch, Change, Job, Video
 from ytweb.domain import handlers
 from ytweb.domain.common import set_default_env
 from ytweb.domain.seed import seed_demo

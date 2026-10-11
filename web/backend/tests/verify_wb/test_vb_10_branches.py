@@ -1,19 +1,18 @@
 """6단계 독립 검증 10: 1차 커버리지에서 비어 있던 분기와 보존 항목별 사후 검증을 보강한다."""
 from __future__ import annotations
 
-import copy
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from ytweb.core.errors import ProblemError
-from ytweb.db.models import Batch, BatchItem, Change, QuotaUsage, Suggestion, Video
+from ytweb.db.models import Batch, Change, QuotaUsage
 from ytweb.domain.batches import apply_one, recover_running_items, run_due_items, verify_snippet
 from ytweb.domain.changes import rollback_change
 from ytweb.youtube.base import GatewayError
 
-from tests.verify_wb.vbh import Faulty, changes, life_ids, queued, snippet_of
+from tests.verify_wb.vbh import Faulty, changes, queued
 
 
 @pytest.mark.parametrize("field", ["description", "tags", "defaultLanguage", "defaultAudioLanguage"])

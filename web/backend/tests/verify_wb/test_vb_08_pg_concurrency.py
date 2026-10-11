@@ -14,7 +14,7 @@ from sqlalchemy import func, select, text, update
 from ytweb.core import audit
 from ytweb.core.errors import ProblemError
 from ytweb.core.settings_store import set_web_setting
-from ytweb.db.models import Approval, AuditLog, Base, Batch, BatchItem, Change, Job, QuotaUsage, Suggestion
+from ytweb.db.models import Approval, AuditLog, Base, Batch, BatchItem, Change, Job, QuotaUsage
 from ytweb.db.session import make_engine, make_session_factory
 from ytweb.domain.batches import _APPLY_LOCK_KEY, apply_one, cancel_batch, create_draft, execute_batch, run_due_items
 from ytweb.domain.changes import rollback_change
@@ -230,7 +230,7 @@ def test_tc_vb_257_concurrent_rollback_only_one(pg, env, clock):
     def rb():
         with pg() as s:
             try:
-                r = rollback_change(s, cid, vid, "담당", now=clock(), env=env, gateway=MockYouTubeGateway(s, clock))
+                rollback_change(s, cid, vid, "담당", now=clock(), env=env, gateway=MockYouTubeGateway(s, clock))
                 s.commit()
                 return "ok"
             except ProblemError as e:
