@@ -1236,6 +1236,7 @@ def test_tc_vi_102_live_published_ports_only_loopback_one():
 
 
 @live
+@pytest.mark.xfail(strict=True, reason="낡은 시험(7단계 확인): DEC-045 이후 망이 front/back/edge 3개이고 `_app` 단일망은 없다. 새 구성의 망·소속은 web/tests_integration IT-521·IT-530 이 실가동에서 직접 검증한다. 시험을 새 구성으로 고치는 것은 6단계(W-INF) 소관")
 def test_tc_vi_103_live_networks_internal_and_membership():
     n = json.loads(docker("network", "inspect", f"{PROJECT}_app").stdout)[0]
     assert n["Internal"] is True
