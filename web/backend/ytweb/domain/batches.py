@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import func, select, text, update
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InterfaceError, OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 from youtube_title.errors import YtError
 from youtube_title.updater import build_update_body, validate_new_title
@@ -366,6 +366,14 @@ def apply_one(session: Session, item_id: int, *, now: datetime, env: Env, gatewa
         log.exception("batch item %s failed unexpectedly", item_id)
         planned_id = state.change.id if state.change is not None else None
         session.rollback()
+        if planned_id is None and isinstance(exc, (OperationalError, InterfaceError)):
+            # DB 연결이 잠깐 끊긴 경우(DB 재시작 등): 아직 유튜브에 아무것도 쓰기 전(planned 기록 전)이므로 실패로 닫지 않고 대기로 되돌려 다음 틱에 다시 처리한다(DEF-8-001).
+            try:
+                session.execute(update(BatchItem).where(BatchItem.id == item_id, BatchItem.status == "running").values(status="pending", updated_at=now))
+                session.commit()
+                return ItemOutcome(item_id, "deferred", "db_unavailable", None)
+            except Exception:  # noqa: BLE001 - 되돌리기도 실패하면 기존 방식(failed)으로 닫는다
+                session.rollback()
         state = _State([], keep_planned=True) if planned_id else _State([])
         state.change = session.get(Change, planned_id) if planned_id else None
         return _finish_failure(session, item_id, StepFailure("internal_error", f"예상하지 못한 오류({type(exc).__name__})로 중단했습니다.", kind="failed"), state, now, env, actor)
@@ -639,6 +647,9 @@ def run_due_items(factory: sessionmaker, now: datetime, env: Env | None = None, 
                 break
             outcome = apply_one(s, item.id, now=now, env=env, gateway=gateway_factory(s, now), job_id=job_id)
         result.add(outcome)
+        if outcome.code == "db_unavailable":  # DB 가 불안정하면 이번 틱은 여기서 멈추고 다음 틱에 다시 시도한다
+            result.stopped_by = "db_unavailable"
+            break
         if on_progress is not None and outcome.status not in ("not_pending", "deferred"):
             on_progress(result.processed)
     return result
