@@ -86,3 +86,21 @@ DEF-7-002 복원 후 실가동, DEF-7B-002 실가동, DEF-8-001 재현·원인 �
 
 ### Teardown
 이 절이 만든 것: `.harness-tmp/i2/s82/`(캡처·json·로그·perf.py, git 제외 폴더). 새 venv·DB·컨테이너 생성 없음. 스택은 지시대로 유지. `git status --short`(23:34): ` M web/backend/ytweb/domain/batches.py`, `?? web/backend/tests/domain/test_db_transient.py` — 둘 다 이 절이 만든 것이 아님(다른 단위 소유). 이 절이 만든 잔여물 없음(문서 추가 제외).
+
+
+## 8단계 재확인(DEF-8-001)
+
+- 시작 2026-10-11 23:33:53 UTC / 종료 약 23:38 UTC(약 5분, 상한 12분 이내). 스택 `harness-tmp-i2`(127.0.0.1:18083). api·worker 이미지를 현재 작업 트리로 재빌드(프록시 CA 사본 Dockerfile)하고 api·worker 만 재생성. 소스 수정·커밋·푸시·실제 구글 접속 없음. 검증 로그 `docs/harness/verify-logs/verify-log_web-system-8-recheck-def8001.md`.
+- **한 줄 결론: 합격. DEF-8-001 은 새 이미지에서 2/2 통과(재현 안 됨), DEF-7B-002·DEF-7-002 도 실제 스택에서 통과. 열린 결함 0건(이 재확인 범위).**
+
+| ID | 확인 | 결과 |
+|---|---|---|
+| IT-I2-042 (1회) | db 재시작 중 배치 20건 모두 success·이중 반영 없음 | 합격(24초) |
+| IT-I2-042 (2회) | 동일 | 합격(22초) |
+| IT-323 | 복구로 success 확정된 반영의 감사 로그에 변경·영상 ID(DEF-7B-002) | 합격 |
+| IT-504 | backup→restore.ps1 뒤 앱 계정 alembic_version UPDATE/DELETE 거부(DEF-7-002) | 합격 |
+
+- 합계 4건 실행 4건 통과, 불합격 0. 첫 실행 결과 그대로이며 기대값 변경 없음.
+- 한계: DEF-8-001 은 타이밍 의존이라 "2회 통과"는 수정 효과의 증거이지 재현 불가의 증명이 아니다(이전 재현율도 1/1 로만 알려져 있음). 이전 실패의 원인 분석(failed 사유 조회)은 미수행. IT-323·504 는 1회씩만 실행.
+- 미수행: 위 외 8단계 취합 몫(호환성·접근성·API 계약·UAT·traceability 판정), S-02 빈 DB 재확인.
+- Teardown: 스택은 지시대로 정리하지 않음. docker ps(23:37): web·worker·api·db healthy(IT-504 복원 시험이 재시작함), migrate Exited(0). 새로 만든 것: 이미지 `harness-tmp-i2-api:local` 재태그, 로그 `.harness-tmp/i2/logs/rerun_*.log`. 이전 api 이미지(7ce1c241969d)는 태그 없는 상태로 남음.
