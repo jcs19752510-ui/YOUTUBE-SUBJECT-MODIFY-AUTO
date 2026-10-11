@@ -51,3 +51,4 @@ credentials*.json
 *.pem
 *.key
 *.p12
+web/e2e-results/
