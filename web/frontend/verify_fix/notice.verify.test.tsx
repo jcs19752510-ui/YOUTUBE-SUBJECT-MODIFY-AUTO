@@ -84,33 +84,47 @@ describe('위치별 렌더링', () => {
 
   it.each([
     ['통과', { validation_result: 'pass' as const, strict: false }],
-    ['경고', { validation_result: 'warn' as const, strict: false, reasons: [{ code: 'w', severity: 'warn' as const, message: '주의 문장' }] }],
+    [
+      '경고',
+      {
+        validation_result: 'warn' as const,
+        strict: false,
+        reasons: [{ code: 'w', severity: 'warn' as const, message: '주의 문장' }],
+      },
+    ],
     ['직접 수정(manual)', { source: 'manual', strict: false }],
     ['엄격 모드 통과', { strict: true, validation_result: 'pass' as const }],
-  ])('TC-VWF-006 승인 대화상자(%s)에 면책이 정확히 1번, AI 고지는 AI 출처에서만', async (_n, over) => {
-    const user = userEvent.setup();
-    await openVideo([suggestion(1, over)]);
-    await screen.findByRole('article');
-    await user.click(within(cardOf(1)).getByRole('button', { name: '승인' }));
-    const dlg = await screen.findByRole('dialog', { name: ko.suggestion.approveTitle });
-    expect(count(dlg, D)).toBe(1);
-    expect(within(dlg).getAllByText(ko.legal.aiLimit)).toHaveLength(1);
-    const isAi = (over as { source?: string }).source !== 'manual';
-    expect(within(dlg).queryAllByText(ko.legal.aiNotice)).toHaveLength(isAi ? 1 : 0);
-    expect(within(dlg).queryAllByText(ko.legal.strictCaution)).toHaveLength(
-      (over as { strict?: boolean }).strict ? 1 : 0,
-    );
-  });
+  ])(
+    'TC-VWF-006 승인 대화상자(%s)에 면책이 정확히 1번, AI 고지는 AI 출처에서만',
+    async (_n, over) => {
+      const user = userEvent.setup();
+      await openVideo([suggestion(1, over)]);
+      await screen.findByRole('article');
+      await user.click(within(cardOf(1)).getByRole('button', { name: '승인' }));
+      const dlg = await screen.findByRole('dialog', { name: ko.suggestion.approveTitle });
+      expect(count(dlg, D)).toBe(1);
+      expect(within(dlg).getAllByText(ko.legal.aiLimit)).toHaveLength(1);
+      const isAi = (over as { source?: string }).source !== 'manual';
+      expect(within(dlg).queryAllByText(ko.legal.aiNotice)).toHaveLength(isAi ? 1 : 0);
+      expect(within(dlg).queryAllByText(ko.legal.strictCaution)).toHaveLength(
+        (over as { strict?: boolean }).strict ? 1 : 0,
+      );
+    },
+  );
 
   it('TC-VWF-007 사전 점검: notice 가 없으면 화면 면책을, 서버 notice 가 면책 원문이면 카드 안에 정확히 1번만(중복 없음)', async () => {
     const withoutNotice = await openBatch();
-    const card1 = (await screen.findByText(ko.batches.precheckTitle)).closest('section, div.card') as HTMLElement;
+    const card1 = (await screen.findByText(ko.batches.precheckTitle)).closest(
+      'section, div.card',
+    ) as HTMLElement;
     expect(count(card1, D)).toBe(1);
     withoutNotice.unmount();
     const b = draftBatch();
     b.precheck = { ...b.precheck!, notice: D };
     await openBatch([], b);
-    const card2 = (await screen.findByText(ko.batches.precheckTitle)).closest('section, div.card') as HTMLElement;
+    const card2 = (await screen.findByText(ko.batches.precheckTitle)).closest(
+      'section, div.card',
+    ) as HTMLElement;
     expect(count(card2, D)).toBe(1);
     expect(within(card2).getAllByText(ko.legal.aiLimit)).toHaveLength(1);
   });
@@ -127,7 +141,9 @@ describe('위치별 렌더링', () => {
 
   it('TC-VWF-009 성과 리포트: notes 가 비어도 화면 면책 1번, 서버 notes 에 면책이 있으면 본문에는 1번(푸터 제외)', async () => {
     const mk = (notes: string[]) =>
-      connectedClient([route('GET', '/api/v1/reports/changes', () => json(200, { items: [], notes }))]);
+      connectedClient([
+        route('GET', '/api/v1/reports/changes', () => json(200, { items: [], notes })),
+      ]);
     const a = await mk([]);
     const r1 = renderWithApp(<ReportsPage />, a.client);
     await screen.findByText(ko.legal.reportsNote);
@@ -142,7 +158,9 @@ describe('위치별 렌더링', () => {
 
   it('TC-VWF-010 리포트: 서버 notes 가 면책을 앞뒤 문장과 한 줄로 이어 줘도 중복되지 않는다', async () => {
     const c = await connectedClient([
-      route('GET', '/api/v1/reports/changes', () => json(200, { items: [], notes: [`※ ${D} (참고)`] })),
+      route('GET', '/api/v1/reports/changes', () =>
+        json(200, { items: [], notes: [`※ ${D} (참고)`] }),
+      ),
     ]);
     renderWithApp(<ReportsPage />, c.client);
     await screen.findByText(`※ ${D} (참고)`);

@@ -14,7 +14,8 @@ export const REPO = resolve(process.cwd(), '..', '..');
 export const readRepo = (p: string) => readFileSync(join(REPO, p), 'utf8');
 
 /** 기획이 정한 면책 문장(서버 notices.py · CLI ui.py 와 같아야 한다). 시험이 파일에서 다시 읽어 대조한다. */
-export const DISCLAIMER_LITERAL = '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.';
+export const DISCLAIMER_LITERAL =
+  '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.';
 
 export const page = (items: unknown[]) =>
   json(200, { items, total: items.length, page: 1, page_size: 20 });
@@ -54,10 +55,22 @@ export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const execOk = () =>
   json(202, {
     batch: draftBatch({ status: 'running', executed_at: '2026-10-10T00:00:00Z' }),
-    job: { id: 'j', type: 'batch.execute', status: 'queued', progress: 0, total: 2, error: null, result: null },
+    job: {
+      id: 'j',
+      type: 'batch.execute',
+      status: 'queued',
+      progress: 0,
+      total: 2,
+      error: null,
+      result: null,
+    },
   });
 
-export async function openBatch(extra: Handler[] = [], batch = draftBatch(), entry: string = '/batches/7') {
+export async function openBatch(
+  extra: Handler[] = [],
+  batch = draftBatch(),
+  entry: string = '/batches/7',
+) {
   const c = await connectedClient([
     route('GET', '/api/v1/batches/7', () => json(200, batch)),
     ...extra,

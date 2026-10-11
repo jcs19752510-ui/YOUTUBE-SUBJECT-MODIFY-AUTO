@@ -581,13 +581,13 @@ def test_vif_055_no_dangerous_constructs():
     for f in PS_FILES:
         t = rd(f)
         assert not re.search(r"Invoke-Expression|\biex\b", t, re.I), f.name
-        assert not re.search(r"(DownloadString|Invoke-WebRequest|Invoke-RestMethod|\bcurl\b|\bwget\b)", t, re.I) or f.name in ("e2e.ps1", "pin-digests.ps1"), f.name
+        assert not re.search(r"(DownloadString|Invoke-WebRequest|Invoke-RestMethod|\bcurl\b|\bwget\b)", t, re.I) or f.name in ("e2e.ps1", "pin-digests.ps1", "status.ps1"), f.name
         assert "0.0.0.0" not in t, f.name
         assert not re.search(r"Remove-Item[^\n]*\$YtwebSecretsDir", t), f.name
     urls = set()
     for f in PS_FILES:
         urls |= set(re.findall(r"https?://[^\s'\"`)]+", rd(f)))
-    ok = re.compile(r"^https?://(127\.0\.0\.1|localhost)|^https://(www\.docker\.com|docs\.docker\.com|github\.com|aka\.ms|learn\.microsoft\.com)")
+    ok = re.compile(r"^https?://(127\.0\.0\.1|localhost)|^https://(www\.docker\.com|docs\.docker\.com|github\.com|aka\.ms|learn\.microsoft\.com|auth\.docker\.io|registry-1\.docker\.io|nodejs\.org)")
     assert [u for u in urls if not ok.match(u)] == []
 
 
@@ -609,6 +609,16 @@ def test_vif_057_backup_filename_guard_regex_matches_db_tool():
     assert a == b == r"^[A-Za-z0-9._-]+\.dump$"
     rx = re.compile(a)
     assert not rx.match("../x.dump") and not rx.match("a/b.dump") and not rx.match("a.dump\n x") and rx.match("ytweb-20260101-120000.dump")
+
+
+def test_vif_058_status_script_probes_only_api_paths():
+    """TC-VIF-058 status.ps1 의 응답 확인은 /api/healthz·/api/readyz 만 쓰고 루트 /healthz 를 부르지 않는다(DEC-047)."""
+    t = rd(SCRIPTS / "status.ps1")
+    m = re.search(r"foreach \(\$path in @\(([^)]*)\)\)", t)
+    assert re.findall(r"'([^']+)'", m.group(1)) == ["/api/healthz", "/api/readyz"]
+    assert re.findall(r"Invoke-WebRequest -Uri \(\$YtwebUrl \+ \$path\)", t)
+    assert not re.search(r"\$YtwebUrl\s*\+\s*'/(healthz|readyz)", t)
+    assert "http://" not in re.sub(r"#.*", "", t).replace("http://127.0.0.1", "")
 
 
 # ---------------------------------------------------------------- E. 문서 일관성 (DEC-047)

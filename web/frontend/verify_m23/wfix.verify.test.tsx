@@ -15,7 +15,8 @@ import { connectedClient, json, problem, renderWithApp, route } from '../src/tes
 import type { Handler } from '../src/test/utils';
 
 const D = '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.';
-const page = (items: unknown[]) => json(200, { items, total: items.length, page: 1, page_size: 20 });
+const page = (items: unknown[]) =>
+  json(200, { items, total: items.length, page: 1, page_size: 20 });
 const videoUi = (
   <Routes>
     <Route path="videos/:videoId" element={<VideoDetailPage />} />
@@ -27,7 +28,11 @@ const batchUi = (
     <Route path="batches/:batchId" element={<BatchDetailPage />} />
   </Routes>
 );
-const blockedReason = { code: 'banned', severity: 'error' as const, message: '금칙어가 들어 있습니다.' };
+const blockedReason = {
+  code: 'banned',
+  severity: 'error' as const,
+  message: '금칙어가 들어 있습니다.',
+};
 
 async function openVideo(sg: Suggestion[], extra: Handler[] = []) {
   const c = await connectedClient([
@@ -38,29 +43,42 @@ async function openVideo(sg: Suggestion[], extra: Handler[] = []) {
   await screen.findByText(ko.legal.validationNote);
   return { ...c, ...r };
 }
-const cardOf = (id: number) => document.querySelector<HTMLElement>(`#sg-${id}`)!.closest('article') as HTMLElement;
+const cardOf = (id: number) =>
+  document.querySelector<HTMLElement>(`#sg-${id}`)!.closest('article') as HTMLElement;
 
 describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
   const blockedCases: [string, Partial<Suggestion>][] = [
     ['검증 차단', { validation_result: 'block', reasons: [blockedReason] }],
     ['상태 blocked', { status: 'blocked', validation_result: 'block', reasons: [blockedReason] }],
-    ['엄격 모드+경고(건강·금융)', { strict: true, validation_result: 'warn', reasons: [{ code: 'w', severity: 'warn', message: '효능 단정 표현' }] }],
+    [
+      '엄격 모드+경고(건강·금융)',
+      {
+        strict: true,
+        validation_result: 'warn',
+        reasons: [{ code: 'w', severity: 'warn', message: '효능 단정 표현' }],
+      },
+    ],
     ['엄격 모드+검증 전', { strict: true, validation_result: 'none' }],
   ];
-  it.each(blockedCases)('TC-VMF-100 %s: 승인은 막히고 이유가 카드에 있으며 [제목 수정]·[반려]는 누를 수 있다', async (_n, over) => {
-    await openVideo([suggestion(1, over)]);
-    const card = within(cardOf(1));
-    expect(card.getByRole('button', { name: ko.suggestion.approve })).toBeDisabled();
-    expect(card.getByRole('button', { name: ko.suggestion.edit })).toBeEnabled();
-    expect(card.getByRole('button', { name: ko.suggestion.reject })).toBeEnabled();
-    expect(card.getByText(ko.suggestion.cannotApproveTitle)).toBeInTheDocument();
-    expect(card.getByText(ko.suggestion.approveBlocked)).toBeInTheDocument();
-    expect(card.getByText(ko.suggestion.blockedStatusHint)).toBeInTheDocument();
-    // 승인 버튼은 이유 설명과 연결돼 있다(스크린리더)
-    const ap = card.getByRole('button', { name: ko.suggestion.approve });
-    const desc = ap.getAttribute('aria-describedby');
-    expect(desc && document.getElementById(desc)?.textContent).toContain(ko.suggestion.cannotApproveTitle);
-  });
+  it.each(blockedCases)(
+    'TC-VMF-100 %s: 승인은 막히고 이유가 카드에 있으며 [제목 수정]·[반려]는 누를 수 있다',
+    async (_n, over) => {
+      await openVideo([suggestion(1, over)]);
+      const card = within(cardOf(1));
+      expect(card.getByRole('button', { name: ko.suggestion.approve })).toBeDisabled();
+      expect(card.getByRole('button', { name: ko.suggestion.edit })).toBeEnabled();
+      expect(card.getByRole('button', { name: ko.suggestion.reject })).toBeEnabled();
+      expect(card.getByText(ko.suggestion.cannotApproveTitle)).toBeInTheDocument();
+      expect(card.getByText(ko.suggestion.approveBlocked)).toBeInTheDocument();
+      expect(card.getByText(ko.suggestion.blockedStatusHint)).toBeInTheDocument();
+      // 승인 버튼은 이유 설명과 연결돼 있다(스크린리더)
+      const ap = card.getByRole('button', { name: ko.suggestion.approve });
+      const desc = ap.getAttribute('aria-describedby');
+      expect(desc && document.getElementById(desc)?.textContent).toContain(
+        ko.suggestion.cannotApproveTitle,
+      );
+    },
+  );
 
   it('TC-VMF-101 이유가 서버에서 오지 않은 차단도 빈 안내가 아니라 "사유는 위 검증 사유를 확인" 안내가 나온다', async () => {
     await openVideo([suggestion(1, { validation_result: 'block', reasons: [] })]);
@@ -103,9 +121,10 @@ describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
 
   it('TC-VMF-105 차단 카드에서 [제목 수정]: 빈 값·같은 값·101자는 저장 불가, 100자는 저장되어 PATCH 로 trim 된 제목이 간다', async () => {
     const user = userEvent.setup();
-    const { calls } = await openVideo([suggestion(1, { validation_result: 'block', reasons: [blockedReason] })], [
-      route('PATCH', '/api/v1/suggestions/1', () => json(200, suggestion(1))),
-    ]);
+    const { calls } = await openVideo(
+      [suggestion(1, { validation_result: 'block', reasons: [blockedReason] })],
+      [route('PATCH', '/api/v1/suggestions/1', () => json(200, suggestion(1)))],
+    );
     await user.click(within(cardOf(1)).getByRole('button', { name: ko.suggestion.edit }));
     const dlg = await screen.findByRole('dialog', { name: ko.suggestion.editTitle });
     const input = within(dlg).getByRole('textbox');
@@ -121,14 +140,21 @@ describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
     expect(save).toBeEnabled();
     await user.click(save);
     await waitFor(() => expect(calls.some((c) => c.method === 'PATCH')).toBe(true));
-    expect((calls.find((c) => c.method === 'PATCH')!.body as { title: string }).title).toBe('나'.repeat(100));
+    expect((calls.find((c) => c.method === 'PATCH')!.body as { title: string }).title).toBe(
+      '나'.repeat(100),
+    );
   });
 
   it('TC-VMF-106 차단 카드에서 [반려]는 확인 후 POST reject, 취소하면 요청 없음', async () => {
     const user = userEvent.setup();
-    const { calls } = await openVideo([suggestion(1, { validation_result: 'block', reasons: [blockedReason] })], [
-      route('POST', '/api/v1/suggestions/1/reject', () => json(200, suggestion(1, { status: 'rejected' }))),
-    ]);
+    const { calls } = await openVideo(
+      [suggestion(1, { validation_result: 'block', reasons: [blockedReason] })],
+      [
+        route('POST', '/api/v1/suggestions/1/reject', () =>
+          json(200, suggestion(1, { status: 'rejected' })),
+        ),
+      ],
+    );
     await user.click(within(cardOf(1)).getByRole('button', { name: ko.suggestion.reject }));
     let dlg = await screen.findByRole('dialog', { name: ko.suggestion.rejectTitle });
     await user.click(within(dlg).getByRole('button', { name: ko.app.cancel }));
@@ -140,7 +166,9 @@ describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
   });
 
   it('TC-VMF-107 차단 제안이어도 키보드/강제 제출로 승인 요청이 서버에 가지 않는다(화면 방어)', async () => {
-    const { calls } = await openVideo([suggestion(1, { validation_result: 'block', reasons: [blockedReason] })]);
+    const { calls } = await openVideo([
+      suggestion(1, { validation_result: 'block', reasons: [blockedReason] }),
+    ]);
     const ap = within(cardOf(1)).getByRole('button', { name: ko.suggestion.approve });
     ap.click(); // disabled 버튼의 click()
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -150,8 +178,17 @@ describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
   it('TC-VMF-108 승인 대화상자: 승인자 이름이 비면 승인 불가, 경고 제안은 확인란 체크 전에는 승인 불가, 둘 다 하면 POST approve', async () => {
     const user = userEvent.setup();
     const { calls } = await openVideo(
-      [suggestion(1, { validation_result: 'warn', reasons: [{ code: 'w', severity: 'warn', message: '주의 문장' }] })],
-      [route('POST', '/api/v1/suggestions/1/approve', () => json(200, suggestion(1, { status: 'approved' })))],
+      [
+        suggestion(1, {
+          validation_result: 'warn',
+          reasons: [{ code: 'w', severity: 'warn', message: '주의 문장' }],
+        }),
+      ],
+      [
+        route('POST', '/api/v1/suggestions/1/approve', () =>
+          json(200, suggestion(1, { status: 'approved' })),
+        ),
+      ],
     );
     window.localStorage.clear();
     await user.click(within(cardOf(1)).getByRole('button', { name: ko.suggestion.approve }));
@@ -164,13 +201,18 @@ describe('C-1 차단 제안 카드 (DEF-7-008)', () => {
     expect(ok).toBeEnabled();
     await user.click(ok);
     await waitFor(() => expect(calls.filter((c) => c.path.endsWith('/approve'))).toHaveLength(1));
-    expect((calls.find((c) => c.path.endsWith('/approve'))!.body as { approver: string }).approver).toBe('홍길동');
+    expect(
+      (calls.find((c) => c.path.endsWith('/approve'))!.body as { approver: string }).approver,
+    ).toBe('홍길동');
   });
 });
 
 describe('C-2 초안 배치 버리기 (DEF-7-009)', () => {
   const gone = () =>
-    draftBatch({ status: 'cancelled', items: draftBatch().items.map((i) => ({ ...i, status: 'cancelled' })) });
+    draftBatch({
+      status: 'cancelled',
+      items: draftBatch().items.map((i) => ({ ...i, status: 'cancelled' })),
+    });
   // 서버처럼 상태를 기억한다: 취소 응답 뒤 다시 읽으면 취소된 상태가 돌아온다
   let serverBatch = draftBatch();
   const cancelOk = (delay = 0) =>
@@ -181,7 +223,10 @@ describe('C-2 초안 배치 버리기 (DEF-7-009)', () => {
     });
   async function openBatch(extra: Handler[] = [], b = draftBatch()) {
     serverBatch = b;
-    const c = await connectedClient([route('GET', '/api/v1/batches/7', () => json(200, serverBatch)), ...extra]);
+    const c = await connectedClient([
+      route('GET', '/api/v1/batches/7', () => json(200, serverBatch)),
+      ...extra,
+    ]);
     const r = renderWithApp(batchUi, c.client, '/batches/7');
     await screen.findByText(ko.batches.confirmTitle).catch(() => undefined);
     await screen.findByText('새 제목 1');
@@ -218,7 +263,11 @@ describe('C-2 초안 배치 버리기 (DEF-7-009)', () => {
 
   it('TC-VMF-112 버리기 실패(409: 이미 취소됨)면 확인창이 남고 오류가 보이며 "버렸습니다" 안내는 없다', async () => {
     const user = userEvent.setup();
-    await openBatch([route('POST', '/api/v1/batches/7/cancel', () => problem(409, 'batch_not_cancellable', '이미 처리된 배치입니다', '상태를 확인하세요.'))]);
+    await openBatch([
+      route('POST', '/api/v1/batches/7/cancel', () =>
+        problem(409, 'batch_not_cancellable', '이미 처리된 배치입니다', '상태를 확인하세요.'),
+      ),
+    ]);
     await user.click(screen.getByRole('button', { name: /초안 버리기/ }));
     const dlg = await screen.findByRole('dialog', { name: ko.batches.discardTitle });
     await user.click(within(dlg).getByRole('button', { name: ko.batches.discardConfirm }));
@@ -253,20 +302,32 @@ describe('C-2 초안 배치 버리기 (DEF-7-009)', () => {
     ]) {
       const r = await openBatch([], draftBatch(over));
       expect(screen.queryByRole('button', { name: /초안 버리기/ })).toBeNull();
-      expect(screen.queryByText(ko.batches.discardedBody), `executed_at 있는 ${over.status} 를 버려진 초안으로 오인`).toBeNull();
+      expect(
+        screen.queryByText(ko.batches.discardedBody),
+        `executed_at 있는 ${over.status} 를 버려진 초안으로 오인`,
+      ).toBeNull();
       r.unmount();
     }
   });
 
   it('TC-VMF-115 목록의 초안 행에만 [초안 버리기]가 있고, 구별용 숨은 이름에 배치 번호가 들어 있다', async () => {
-    const mk = (id: number, status: string) => ({ ...draftBatch({ id, status: status as 'draft' }), items: [] });
+    const mk = (id: number, status: string) => ({
+      ...draftBatch({ id, status: status as 'draft' }),
+      items: [],
+    });
     const c = await connectedClient([
       route('GET', '/api/v1/suggestions', () => page([])),
-      route('GET', '/api/v1/batches', () => page([mk(7, 'draft'), mk(5, 'completed'), mk(3, 'draft')])),
-      route('GET', /^\/api\/v1\/batches\/\d+$/, (r) => json(200, draftBatch({ id: Number(r.path.split('/').pop()) }))),
+      route('GET', '/api/v1/batches', () =>
+        page([mk(7, 'draft'), mk(5, 'completed'), mk(3, 'draft')]),
+      ),
+      route('GET', /^\/api\/v1\/batches\/\d+$/, (r) =>
+        json(200, draftBatch({ id: Number(r.path.split('/').pop()) })),
+      ),
     ]);
     renderWithApp(batchUi, c.client, '/batches');
-    expect(await screen.findByRole('button', { name: /초안 버리기\s*\(배치 #7\)/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /초안 버리기\s*\(배치 #7\)/ }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /초안 버리기\s*\(배치 #3\)/ })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /초안 버리기/ })).toHaveLength(2);
   });
@@ -313,7 +374,18 @@ describe('A/B 확인 문구 · 실행 버튼 조건', () => {
     const c = await connectedClient([
       route('GET', '/api/v1/batches/7', () => json(200, draftBatch())),
       route('POST', '/api/v1/batches/7/execute', () =>
-        json(202, { batch: draftBatch({ status: 'running', executed_at: '2026-10-10T00:00:00Z' }), job: { id: 'j', type: 'batch.execute', status: 'queued', progress: 0, total: 2, error: null, result: null } }),
+        json(202, {
+          batch: draftBatch({ status: 'running', executed_at: '2026-10-10T00:00:00Z' }),
+          job: {
+            id: 'j',
+            type: 'batch.execute',
+            status: 'queued',
+            progress: 0,
+            total: 2,
+            error: null,
+            result: null,
+          },
+        }),
       ),
     ]);
     renderWithApp(batchUi, c.client, '/batches/7');
@@ -322,7 +394,9 @@ describe('A/B 확인 문구 · 실행 버튼 조건', () => {
     await user.type(screen.getByRole('textbox'), '실행 2건');
     await user.click(run());
     await waitFor(() => expect(c.calls.filter((x) => x.path.endsWith('/execute'))).toHaveLength(1));
-    expect(c.calls.find((x) => x.path.endsWith('/execute'))!.body).toEqual({ confirm_text: '실행 2건' });
+    expect(c.calls.find((x) => x.path.endsWith('/execute'))!.body).toEqual({
+      confirm_text: '실행 2건',
+    });
   });
 
   it('TC-VMF-123 모든 항목이 차단이면 A/B 확인란·실행 버튼 없이 "모두 제외" 안내만 나온다', async () => {
@@ -352,24 +426,38 @@ describe('면책·AI 고지가 실제 화면(App 전체)의 어디에 나오는�
     expect(main.compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy(); // 푸터는 본문 뒤
   });
 
-  it.each(['/', '/videos', '/batches', '/history', '/reports', '/settings'])('TC-VMF-131 %s 화면에서 푸터 면책은 정확히 1번 보이고 숨김(hidden/aria-hidden/display:none) 처리가 아니다', async (path) => {
-    const c = await connectedClient([route('GET', '/api/v1/dashboard', () => json(200, dashboard()))]);
-    renderWithApp(<App />, c.client, path);
-    const foot = await screen.findByRole('contentinfo', { name: ko.legal.footerLabel });
-    const p = within(foot).getByText(D);
-    for (let el: HTMLElement | null = p; el; el = el.parentElement) {
-      expect(el.hidden).toBe(false);
-      expect(el.getAttribute('aria-hidden')).not.toBe('true');
-      expect(el.style.display).not.toBe('none');
-    }
-    expect(within(foot).getAllByRole('paragraph').length).toBe(2);
-  });
+  it.each(['/', '/videos', '/batches', '/history', '/reports', '/settings'])(
+    'TC-VMF-131 %s 화면에서 푸터 면책은 정확히 1번 보이고 숨김(hidden/aria-hidden/display:none) 처리가 아니다',
+    async (path) => {
+      const c = await connectedClient([
+        route('GET', '/api/v1/dashboard', () => json(200, dashboard())),
+      ]);
+      renderWithApp(<App />, c.client, path);
+      const foot = await screen.findByRole('contentinfo', { name: ko.legal.footerLabel });
+      const p = within(foot).getByText(D);
+      for (let el: HTMLElement | null = p; el; el = el.parentElement) {
+        expect(el.hidden).toBe(false);
+        expect(el.getAttribute('aria-hidden')).not.toBe('true');
+        expect(el.style.display).not.toBe('none');
+      }
+      expect(within(foot).getAllByRole('paragraph').length).toBe(2);
+    },
+  );
 });
 
 describe('화면 상단 모드 배지는 현재 모드에 대해 사실이어야 한다', () => {
   it('TC-VMF-140 실제 모드(dashboard.mode=live)인데도 상단 배지가 "유튜브에 아무것도 전송되지 않습니다"라고 하면 거짓 안내', async () => {
     const c = await connectedClient([
-      route('GET', '/api/v1/dashboard', () => json(200, dashboard({ mode: 'live', live_enabled: true, google: { mode: 'read', connected: true } }))),
+      route('GET', '/api/v1/dashboard', () =>
+        json(
+          200,
+          dashboard({
+            mode: 'live',
+            live_enabled: true,
+            google: { mode: 'read', connected: true },
+          }),
+        ),
+      ),
     ]);
     renderWithApp(<App />, c.client, '/');
     await screen.findByRole('heading', { name: ko.home.title });
@@ -379,11 +467,52 @@ describe('화면 상단 모드 배지는 현재 모드에 대해 사실이어야
 
   it('TC-VMF-141 구글 읽기 연결 상태(실제 영상 목록을 읽는 중)에서 상단 배지가 "데모 모드"라고만 하면 현재 상태와 맞지 않는다', async () => {
     const c = await connectedClient([
-      route('GET', '/api/v1/dashboard', () => json(200, dashboard({ mode: 'demo', google: { mode: 'read', connected: true } }))),
-      route('GET', '/api/v1/google/status', () => json(200, { mode: 'read', connected: true, client_ready: true, message: '구글에 연결돼 있습니다.', write_connected: false, live_allowed_count: 0, live_write_ready: false })),
+      route('GET', '/api/v1/dashboard', () =>
+        json(200, dashboard({ mode: 'demo', google: { mode: 'read', connected: true } })),
+      ),
+      route('GET', '/api/v1/google/status', () =>
+        json(200, {
+          mode: 'read',
+          connected: true,
+          client_ready: true,
+          message: '구글에 연결돼 있습니다.',
+          write_connected: false,
+          live_allowed_count: 0,
+          live_write_ready: false,
+        }),
+      ),
     ]);
     renderWithApp(<App />, c.client, '/');
     await screen.findByText('구글에 연결돼 있습니다.');
-    expect(document.body.textContent).not.toContain('데모 모드 — 유튜브에 아무것도 전송되지 않습니다');
+    expect(document.body.textContent).not.toContain(
+      '데모 모드 — 유튜브에 아무것도 전송되지 않습니다',
+    );
+  });
+});
+
+describe('실제 서버가 보내는 모양(대시보드는 항상 demo·live_enabled=false) 그대로 실제 수정 가능 상태일 때', () => {
+  it('TC-VMF-142 구글 상태가 live_write_ready=true 인 화면 전체에서 "유튜브에 아무것도 전송되지 않습니다"·"실제 반영(라이브): 꺼짐"이 함께 보이면 서로 모순되는 거짓 안내', async () => {
+    const c = await connectedClient([
+      route('GET', '/api/v1/dashboard', () => json(200, dashboard())), // 백엔드 dashboard.py 는 live_enabled 를 항상 False 로 보낸다
+      route('GET', '/api/v1/google/status', () =>
+        json(200, {
+          mode: 'read',
+          connected: true,
+          client_ready: true,
+          message: '구글에 연결돼 있습니다.',
+          write_connected: true,
+          live_write_enabled: true,
+          live_allowed_count: 1,
+          live_write_ready: true,
+        }),
+      ),
+    ]);
+    renderWithApp(<App />, c.client, '/');
+    await screen.findByText(ko.google.liveWarnTitle);
+    const t = document.body.textContent ?? '';
+    expect(t, '경고는 "실제로 바뀐다"인데 상단은 "아무것도 전송되지 않는다"').not.toContain(
+      '아무것도 전송되지 않습니다',
+    );
+    expect(t, '경고는 켜짐인데 홈 상태 카드는 라이브 꺼짐').not.toContain(ko.home.liveOff);
   });
 });
