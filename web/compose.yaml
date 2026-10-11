@@ -1,4 +1,4 @@
-# ytitle 웹(M1 데모) — Docker Compose 구성. 실행은 web/scripts/start.ps1 을 쓴다(비밀 파일 생성·점검 포함).
+# 유튜브 제목 웹(M1 데모) — Docker Compose 구성. 실행은 web/scripts/start.ps1 을 쓴다(비밀 파일 생성·점검 포함).
 # 직접 실행하려면 web/secrets/ 의 비밀 파일 3개가 먼저 있어야 한다(README 참고).
 #
 # 설계 요약
@@ -77,7 +77,7 @@ services:
       - /run/postgresql:rw,noexec,nosuid,size=4m,uid=999,gid=999,mode=0775
     shm_size: 128mb
     networks:
-      app: {}
+      back: {}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -q -h 127.0.0.1 -p 5432 -U ytweb_app -d ytweb && test -f \"$$PGDATA/.ytweb-init-ok\""]
       interval: 5s
@@ -108,7 +108,7 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m,uid=10001,gid=10001,mode=1777
     networks:
-      app: {}
+      back: {}
     depends_on:
       db:
         condition: service_healthy
@@ -150,7 +150,8 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001,mode=1777
     networks:
-      app: {}
+      front: {}
+      back: {}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -190,7 +191,7 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001,mode=1777
     networks:
-      app: {}
+      back: {}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -228,8 +229,8 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m,uid=101,gid=101,mode=1777
     networks:
-      app: {}
-      edge: {}
+      front: {}   # api 와만 통신(db 에는 도달하지 못한다, DEF-VI-001)
+      edge: {}    # 호스트 포트 게시용(유일한 비-internal 망)
     depends_on:
       api:
         condition: service_healthy
@@ -248,8 +249,12 @@ services:
           pids: 128
 
 networks:
-  app:
+  # front: web↔api 전용, back: api·worker·migrate↔db 전용. 둘 다 internal(외부 통신 불가). web 은 db 에 도달할 수 없다(DEF-VI-001 조치).
+  front:
     internal: true
+  back:
+    internal: true
+  # edge: 호스트 포트 게시를 위해 web 만 붙는 유일한 비-internal 망(web 의 외부 egress 는 수용된 잔여 위험, DEC-045)
   edge:
     driver: bridge
 

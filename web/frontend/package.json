@@ -10,7 +10,7 @@
     "dev": "vite",
     "dev:mock": "node dev/run-dev-mock.mjs",
     "mock": "node dev/mock-server.mjs",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.build.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",

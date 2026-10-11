@@ -104,7 +104,7 @@ def create_app(
         engine.dispose()
 
     app = FastAPI(
-        title="ytitle web",
+        title="유튜브 제목 웹",
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/docs" if settings.enable_docs else None,

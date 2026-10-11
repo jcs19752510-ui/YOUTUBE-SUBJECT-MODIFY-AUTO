@@ -21,7 +21,7 @@ import {
 
 beforeAll(() => {
   document.documentElement.lang = 'ko'; // index.html 과 같은 조건
-  document.title = 'ytitle 웹';
+  document.title = '유튜브 제목 웹';
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -438,7 +438,7 @@ describe('키보드 이동·포커스', () => {
       await user.tab();
       order.push(document.activeElement?.textContent ?? '');
     }
-    expect(order[0]).toMatch(/ytitle/);
+    expect(order[0]).toMatch(/유튜브 제목/);
     expect(order.slice(1)).toEqual([
       '홈',
       '영상 목록',

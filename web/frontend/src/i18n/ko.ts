@@ -1,7 +1,7 @@
 // 화면에 보이는 한국어 문구는 모두 여기서 관리한다(F-08). 용어: dry-run 은 "미리보기".
 export const ko = {
   app: {
-    name: 'ytitle 웹',
+    name: '유튜브 제목 웹',
     tagline: '유튜브 제목 개선 도우미',
     demoBadge: '데모 모드 — 유튜브에 아무것도 전송되지 않습니다',
     skip: '본문으로 건너뛰기',
