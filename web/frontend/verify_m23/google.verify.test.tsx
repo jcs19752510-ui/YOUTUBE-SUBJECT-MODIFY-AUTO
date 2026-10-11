@@ -62,9 +62,15 @@ describe('M2 단위4: 연결 전 상태', () => {
   it('TC-VMF-003 [구글 계정 연결]은 POST /google/connect 후 받은 주소로 이동하고, 중복 클릭해도 요청은 1번', async () => {
     const user = userEvent.setup();
     const { calls } = await card(base, [
-      route('POST', '/api/v1/google/connect', () => json(200, { auth_url: 'https://accounts.google.com/x?y=1' })),
+      route('POST', '/api/v1/google/connect', async () => {
+        await new Promise((r) => setTimeout(r, 300)); // 실제 네트워크처럼 응답이 늦는 상황에서 연타
+        return json(200, { auth_url: 'https://accounts.google.com/x?y=1' });
+      }),
     ]);
-    await user.dblClick(btn(ko.google.connect)!);
+    const b = btn(ko.google.connect)!;
+    await user.click(b);
+    await user.click(b);
+    await user.click(b);
     await waitFor(() => expect(navigateTo).toHaveBeenCalledWith('https://accounts.google.com/x?y=1'));
     expect(calls.filter((c) => c.path === '/api/v1/google/connect')).toHaveLength(1);
     expect(calls.find((c) => c.path === '/api/v1/google/connect')!.headers['x-csrf-token']).toBe('csrf-1');
@@ -112,7 +118,8 @@ describe('M2 단위4: 연결 후(읽기)', () => {
       route('POST', '/api/v1/videos/sync', () => problem(429, 'quota_exceeded', '오늘 사용량을 모두 썼습니다', '내일 다시 시도하세요.')),
     ]);
     await user.click(btn(ko.google.syncReal)!);
-    expect(await screen.findByText('오늘 사용량을 모두 썼습니다')).toBeInTheDocument();
+    expect(await screen.findByText('내일 다시 시도하세요.')).toBeInTheDocument(); // 429 는 화면이 '한도' 제목으로 바꿔 보여 준다
+    expect(screen.getByText(ko.state.limitTitle)).toBeInTheDocument();
     expect(screen.queryByText(ko.google.syncStarted)).toBeNull();
   });
 
@@ -286,7 +293,7 @@ describe('M3 단위3: 제목 수정 권한 구역', () => {
               // 실제 수정 가능이면 "꺼져 있습니다" 가 나오면 거짓
               if (ready) expect(t, label).not.toMatch(/아직 꺼져 있습니다/);
               // 실제 수정이 가능한데 경고가 안 보이면(읽기 연결이 없는 경우 포함) 안전 결함
-              if (ready) expect(screen.queryByText(ko.google.liveWarnTitle), `경고 누락 ${label}`).toBeInTheDocument();
+              if (ready) expect(screen.queryByText(ko.google.liveWarnTitle) !== null, `경고 누락 ${label}`).toBe(true);
               // 수정이 불가능한데 경고가 보이면 거짓 경고
               if (!ready) expect(screen.queryByText(ko.google.liveWarnTitle), label).toBeNull();
               r.unmount();
@@ -307,7 +314,7 @@ describe('M3 단위3: 제목 수정 권한 구역', () => {
     const t = text();
     if (/YTWEB_[A-Z_]+/.test(t)) {
       // 설정 파일/스크립트 위치 또는 문서 안내가 같이 있어야 한다
-      expect(t, '환경변수 이름만 있고 어디에서 설정하는지 없음').toMatch(/web[\\/]|\.env|start\.ps1|설정 파일|문서|WEB_/);
+      expect(t, '환경변수 이름만 있고 어디에서 설정하는지 없음').toMatch(/web[\\/]|\.env|start\.ps1|설정 파일|문서/);
     }
   });
 });
