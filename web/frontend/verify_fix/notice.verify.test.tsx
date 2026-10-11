@@ -72,14 +72,14 @@ describe('위치별 렌더링', () => {
   );
 
   it('TC-VWF-005 영상 상세: 제안이 0건이어도 본문에 면책이 있고(푸터와 별개), 제안이 있으면 본문 면책은 1번', async () => {
+    // [06 재검증 시험 수정] 이 시험은 Layout 없이 VideoDetailPage 만 그려 <main> 이 없다(원래 실패: null.querySelectorAll). 본문만 그려지므로 body 로 센다.
     const a = await openVideo([]);
     await screen.findByText(ko.legal.validationNote);
-    const main = document.querySelector('main') as HTMLElement;
-    expect(count(main, D)).toBe(1);
+    expect(count(document.body, D)).toBe(1);
     a.unmount();
     await openVideo([suggestion(1), suggestion(2, { title: '두번째' })]);
-    await screen.findByText('두번째');
-    expect(count(document.querySelector('main') as HTMLElement, D)).toBe(1);
+    await screen.findAllByText('두번째'); // [06 재검증 시험 수정] 제목이 카드 제목·비교 표에 모두 나와 findByText 는 중복 오류
+    expect(count(document.body, D)).toBe(1);
   });
 
   it.each([
@@ -164,8 +164,9 @@ describe('위치별 렌더링', () => {
     ]);
     renderWithApp(<App />, client, '/');
     await screen.findByRole('heading', { name: '홈' });
-    await user.click(screen.getByRole('link', { name: '영상' }));
-    await screen.findByRole('heading', { name: '영상' });
+    // [06 재검증 시험 수정] 원래 실패: 메뉴 이름은 '영상'이 아니라 '영상 목록'(ko.nav.videos)
+    await user.click(screen.getByRole('link', { name: ko.nav.videos }));
+    await screen.findByRole('heading', { name: ko.videos.title });
     const foot = screen.getByRole('contentinfo');
     expect(within(foot).getByText(D)).toBeInTheDocument();
   });
