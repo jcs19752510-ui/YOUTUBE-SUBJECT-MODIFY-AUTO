@@ -1,0 +1,6 @@
+M45 chmod 0600→0644(교체 후) KILLED 2s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_060_store_file_is_0600_dir_created_no_tmp_left
+M46 os.open·chmod 모두 0644 KILLED 2s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_060_store_file_is_0600_dir_created_no_tmp_left
+M47 롤백 확인 문구 대신 영상 ID 입력 검사 제거 KILLED 16s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_641_rollback_wrong_typed_id_is_422_and_no_google_call
+M48 롤백 mode 항상 demo KILLED 17s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_640_rollback_allowed_video_puts_original_title_with_write_token_mode_live
+DONE 4 / 4
+(M01-M44 파일의 마지막 줄 "DONE 43 / 44" 와 합쳐 48개 중 47 KILLED, 1 SURVIVED[M20])

@@ -12,7 +12,7 @@
 | 마일스톤 | 내용 | 라이브 위험 |
 |---|---|---|
 | **M1 (구현·자체 테스트 완료, 독립 검증 대기)** | **데모 모드** 웹 1차: 가짜 영상 200개, 모의 AI 제안, 기존 검증기, 승인, 배치 미리보기·모의 반영, 이력·롤백, 설정, 리포트. `web\scripts\start.ps1`(내부적으로 `docker compose`) 한 번으로 내 PC `http://127.0.0.1:8080` | **없음** — 유튜브·AI 호출 코드가 아예 연결되지 않음 |
-| M2 | 구글 웹 방식 OAuth(읽기)로 내 채널 영상 실제 가져오기 | 읽기만 |
+| M2 | 구글 웹 방식 OAuth(읽기)로 내 채널 영상 실제 가져오기 **(코드 구현됨·가짜 구글 시험만, 실제 접속 미수행 — §12)** | 읽기만 |
 | M3 | 실제 AI 어댑터(서비스 확정 후), 쓰기 로그인, 라이브 반영(테스트 영상 1개로 먼저, 사용자 승인) | 사용자 승인 필수 |
 | M4 | 통합·전체·보안·구동 검증 문서(7~11단계) 마무리, 풀 설계서 확정 | - |
 
@@ -68,7 +68,7 @@
 | GET `/api/v1/reports/export.csv` | CSV 내보내기 | text/csv |
 | GET `/api/v1/audit` | 감사 로그(읽기 전용, 최신순). 호출마다 체인 전체를 검증 | Page<AuditEntry> + `chain_ok:bool` |
 | GET/PATCH `/api/v1/settings` | 안전 설정만 변경(`daily_apply_cap` 1~20 기본 10, `suggestions_per_video` 1~5 기본 3, `tone` 문자열 최대 5개·각 20자, `pin` `{action:"set"\|"clear",new_pin?,current_pin?}`). 그 외 키는 400 `setting_not_allowed`(**라이브 허용·허용 영상 목록은 API로 변경 불가**, 읽기 전용 표시) | Settings `{daily_apply_cap,suggestions_per_video,tone,pin_enabled,mode,read_only{enable_live,live_allowlist,note}}` |
-| GET `/api/v1/google/status` | 구글 연결 상태 | `{mode:"demo", connected:false, message}` (M1) |
+| GET `/api/v1/google/status` | 구글 연결 상태 | `{mode:"demo", connected:false, message}` (M1) — M2·M3 에서 필드가 늘었다: §12 |
 
 주요 스키마(필드 대조 결과는 `DESIGN.md` 부록 A-2): **VideoSummary** `{video_id,title,privacy_status,duration_sec,is_short,excluded,exclusion_reasons[],workflow_status("none|suggested|approved|queued|applied|rolled_back"),suggestion_count,last_change_at,views}` / **Suggestion** `{id,video_id,title,evidence,source,topic,strict,validation_result("pass|warn|block"),reasons[{code,severity,message}],length,match_ratio,status,plan_hash,approval{approver,approved_at,expires_at}|null,created_at}` / **VideoDetail** = VideoSummary + `{description_excerpt,suggestions[],changes[],limits{allowed,reasons[],next_allowed_at},preserved{category_id,tags[],default_language,default_audio_language,description_chars}}` *(v2: `preserved` 추가)* / **Change** `{id,video_id,video_title,change_type,previous_title,new_title,result,mode,approver,applied_at,verified_at,error_code,rollbackable,batch_id}` / **Batch** `{id,status(draft|queued|running|paused|done|cancelled — paused는 M1 미사용, failed 없음),note,created_at,executed_at,counts{pending,running,success,failed,skipped,cancelled},items[BatchItem],precheck?}` *(v2: `precheck`는 상세·생성·실행 응답에서만 채움, 목록은 `items:[]`·null)* / **BatchItem** `{id,suggestion_id,video_id,video_title,previous_title,new_title,seq,scheduled_date,status,skip_reason,change_id}` / **precheck** `{item_count,estimated_units,daily_cap,quota_remaining_units,schedule[{date,count}],warnings[],blocked[{suggestion_id,reason,code?}],confirm_text}`. **Job** `{id(UUID),type(videos.sync|suggestions.generate|batch.execute),status(queued|running|succeeded|failed|cancelled),progress,total,error,result}`.
 
@@ -144,3 +144,54 @@ def pt_date(now: datetime) -> date             # America/Los_Angeles 날짜
 |---|---|---|---|
 | 2026-10-10 | v1 | 최초 작성(속도 우선 압축판) | DEC-038 |
 | 2026-10-10 | v2 | 헤더(상태·근거·짝 문서), §0 M1 상태·진입점, §1 서비스 5개(migrate)·edge 네트워크·PG17·실제 프런트 버전·시간 표기, §2 14테이블·승인 서명·감사 체인 한계, §3 공통 규약(Origin·멱등 3종·페이지 422)·healthz 행·세션 행·sync·approve·execute/cancel·audit·settings 행·스키마 추가 필드(`preserved`, `precheck`, `blocked.code`, Job), §4 승인 만료 기준·한도(52단위 선예약·최소 노출수)·롤백 세부·감사 범위, §5 보안 세부, §7 완료 표시, §8 테스트 환경 정정(DEC-039)·결과, §9 질문 이관, §10 추가 공개 항목, 본 이력 추가 | 구현 결과(as-built)에 맞춘 풀 설계서(`DESIGN.md` Part B)와 일치시키기. 각 변경은 실제 코드와 대조했다(`DESIGN.md` 부록 A). **의미를 바꾸는 수정은 없다** — 문서와 코드가 달랐던 곳은 편차 표(DV-W)에 올렸다 |
+| 2026-10-11 | v3 | §12 M2·M3(구글 읽기 연동·제목 수정) 신설, §3 google/status 행에 §12 참조 | M2·M3 구현 반영(DEC-048), 11단계 문서 갱신 |
+
+## 12. M2·M3 — 구글 읽기 연동과 실제 제목 수정 (2026-10-11 추가, as-built)
+
+> **검증 상태 (정확히)**: 코드와 가짜 구글 자동 시험(백엔드·화면)만 있다. **실제 구글 서버 접속, 실제 채널 영상 읽기, 실제 제목 변경은 한 번도 하지 않았다.** 독립 검증 결과서(`docs/harness/units/web-WU-M23-FE-test.md` 등)에 열린 결함이 있다(아래 12-6). 근거 결정: DEC-046~048.
+
+### 12-1. OAuth 흐름 (데스크톱 앱 클라이언트, DEC-048)
+1. 소유자가 구글 클라우드에서 **데스크톱 앱** 유형 클라이언트 ID 를 만들고 JSON 을 `web\secrets\google_client.json` 으로 저장 → `start.ps1` 재실행. 이 파일이 있을 때만 `_common.ps1` 의 `Invoke-Compose` 가 `web/compose.online.yaml` 을 함께 쓴다(api·worker 가 `egress` 네트워크 + Docker secret `google_client`). 없으면 M1 데모와 동일(외부 통신 없음).
+   - DEC-034 Q-5 의 가정(웹 애플리케이션)에서 바꾼 이유: 복귀 주소를 따로 등록할 필요가 없어 가장 단순하고 `03_manual_setup.md` 와 일치. 구글이 복귀 주소 `http://127.0.0.1:8080/api/v1/google/callback` 을 실제로 받는지는 **미검증-실제환경**.
+2. 화면 [구글 계정 연결] → `POST /api/v1/google/connect`(세션+CSRF) → 서버가 state(256비트 1회용, 10분)와 PKCE(S256)를 만들고 `auth_url` 반환 → 브라우저가 구글로 이동(읽기 범위 `youtube.readonly`, `access_type=offline`, `prompt=consent`).
+3. 구글이 `GET /api/v1/google/callback?code&state` 로 되돌려 보냄 → state 검증(없음·재사용·만료는 코드 교환 없이 거부) → 서버가 `https://oauth2.googleapis.com/token` 로 코드 교환(PKCE verifier 포함) → 토큰을 `app_secrets` 볼륨의 `google_token.json`(0600, 원자 저장)에 저장 → `303 /#/`. 오류는 한국어 안내를 한 번만 카드에 표시.
+4. `POST /api/v1/google/disconnect` 는 읽기·쓰기 토큰 파일을 모두 삭제(구글 쪽 권한 취소 요청은 하지 않음).
+5. **GET 상태 변경 예외**: 콜백은 구글에서 오는 최상위 이동이라 SameSite=Strict 세션 쿠키가 실리지 않으므로 세션·CSRF 대신 state+PKCE 로 보호한다. S-W03 의 유일한 예외(위협 모델 TW-37).
+
+### 12-2. 읽기/쓰기 토큰 분리 (M3)
+| 항목 | 읽기 | 쓰기 |
+|---|---|---|
+| 범위 | `youtube.readonly` | `youtube.force-ssl` (videos.update 에 필요) |
+| 시작 | `POST /api/v1/google/connect` | `POST /api/v1/google/connect-write` (별도 state 표시: `write_states`) |
+| 토큰 파일 | `google_token.json` | `google_write_token.json` (별도) |
+| 쓰임 | 내 채널 영상 목록(`live_read.py`: channels → uploads 재생목록 → videos 50개씩, 최대 2,000개, 읽기 약 9단위/200개) | 제목 수정(`live_write.py`, `videos.update` 1회 = 50단위) |
+- 같은 콜백이 두 흐름을 받되, 쓰기로 시작한 state 로 돌아온 경우에만 쓰기 토큰 파일에 저장한다(위조 state 는 아무것도 저장하지 않음, TC-M3-013).
+- 영상 불러오기(`videos.sync` 작업): 구글에 연결되어 있으면 실제 영상을 `videos`(source='youtube')에 저장, 아니면 데모. 데모 영상에 제안·배치·변경 기록이 있으면 `demo_data_in_use` 로 거부(실제와 데모가 섞이지 않게). 기록 없는 데모 영상만 지우고 불러온다.
+
+### 12-3. 게이트웨이 선택 3조건 (`domain/live_gateway.py`)
+아래가 **모두** 맞을 때만 `SyncedLiveGateway(LiveYouTubeGateway)`(실제 쓰기), 아니면 `MockYouTubeGateway`.
+1. 서버 설정 `YTWEB_LIVE_WRITE=1` (기본 꺼짐)
+2. 쓰기 토큰 연결됨(`google_write_token.json` 존재)
+3. `YTWEB_LIVE_ALLOWED_VIDEOS`(쉼표 구분 영상 ID)에 1개 이상
+- 반영이 확인되면 같은 값으로 `videos` 행(title·snippet)을 동기화한다(오류 시 DB 불변).
+- `GET /api/v1/google/status` 필드: `mode`, `connected`, `client_ready`, `message`, `last_error`, `write_connected`, `live_write_enabled`, `live_allowed_count`, `live_write_ready`.
+- **미해소 (확인 필요)**: `YTWEB_LIVE_WRITE`·`YTWEB_LIVE_ALLOWED_VIDEOS` 를 컨테이너에 전달하는 항목이 `compose.yaml`·`compose.online.yaml`·스크립트에 **없다**(2026-10-11 확인). 켜는 공식 방법을 정해야 한다(DEF-VMF-004, Q-11-10).
+
+### 12-4. 안전장치 3가지 (실제 모드 = 위 3조건 충족)
+1. **허용 영상만**: 초안 단계(`_eligibility`) → 반영 직전(변경 기록·쿼터 확정 전) → 롤백 → 게이트웨이(`live_write`, 네트워크 호출 전 재검사)에서 허용 목록 밖은 `live_not_allowed`. 목록이 비면 수정 0건. 설정 API 로 목록을 바꿀 수 없음.
+2. **다른 확인 문구**: 실제 모드의 배치 실행 확인 문구는 `실제 실행 N건`(데모 `실행 N건` 유지) + 사전 점검 경고. 서버가 `confirm_text` 를 알려 주고 화면은 그대로 표시한다.
+3. **모호 응답 보호**: 쓰기 응답이 불분명하면(`definite=False`: 5xx·연결 끊김·응답에 새 제목 없음) 한 번 재조회하고, 확인되지 않으면 `planned` 를 남긴 채 `result_unknown` 으로 중단한다(자동 정리·재시도 없음). 변경 기록의 `mode` 는 live/demo 로 구분 저장한다.
+- 승인(plan_hash·HMAC·1회용·24시간), 하루 상한, 72시간 간격, 쿼터 선예약 등 M1 안전장치는 그대로 적용된다.
+
+### 12-5. 화면 (`web/frontend/src/pages/GoogleCard.tsx`, 홈의 "구글(유튜브) 연결" 카드)
+연결 파일 없음 안내 → [구글 계정 연결] → 연결됨이면 [내 영상 불러오기]·[연결 해제](한 번 더 확인) → "제목 수정 권한" 구역: [제목 수정 권한 연결], 연결됐으나 꺼짐이면 "아직 꺼져 있음(허용 영상 N개)", 3조건이 맞으면 "실제 수정 모드가 켜져 있습니다" 경고. 쓰기 연결/실제 모드에서는 "읽기 전용" 문구를 숨긴다.
+
+### 12-6. 알려진 결함·후속 조치 (6단계 프런트 독립 검증, `web-WU-M23-FE-test.md`)
+| ID | 내용 | 등급 | 상태 |
+|---|---|---|---|
+| **DEF-VMF-001** | **대시보드 모드 표시 결함**: 상단 띠("데모 모드 — 유튜브에 아무것도 전송되지 않습니다")와 홈 "연결 상태" 칸이 고정값(`Layout.tsx`, `domain/dashboard.py` 가 `mode:"demo"`, `live_enabled:false` 를 항상 내려 줌)이라 구글 연결·실제 수정 상태와 모순된다 | High | **Open — 후속 조치 예정(실제 구글 연결 전 필수).** 제안: 상단 배지를 3상태(데모/읽기 연결/실제 수정 가능)로, 대시보드 응답을 실제 상태에서 계산 |
+| DEF-VMF-002 | 읽기 로그인만 풀리고 쓰기 토큰이 남은 드문 경우 경고 숨김 | Low | Open |
+| DEF-VMF-003 | "꺼짐" 안내가 무엇이 부족한지(켜기 vs 허용 영상 0개) 구분 못 함 | Low | Open |
+| DEF-VMF-004 | 설정 방법(어디에 어떻게)이 화면·문서에 없음 — 이 문서의 12-3 미해소 항목과 같음 | Low | Open (문서에 '확인 필요'로 반영) |
+- 외부 통신 모듈은 `google_oauth.py`·`live_read.py`·`live_write.py` 3개로 한정하고 그 밖은 시험이 금지한다(`test_tc_vb_278`).
+- 위협 모델: `threat_model.md` W9(TW-37~44). 미반영: `API.md` 상세·`openapi.json` 은 2026-10-11 갱신됨(EVT-W31~35), 독립 검증·9단계 재검증은 이 장을 아직 다루지 않았다.

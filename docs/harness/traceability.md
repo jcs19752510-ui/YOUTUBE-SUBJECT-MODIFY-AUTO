@@ -136,7 +136,7 @@
 | ID | 유형 | 요구사항/기능 (출처 문서 §) | 설계 매핑 (WEB_DESIGN §) | 작업 단위 | 구현 상태 | 단위테스트 (TC-ID) | 통합테스트 (IT-ID) | 전체테스트 (UAT-ID) | 비고 |
 |----|------|------|------|------|------|------|------|------|------|
 | W-001 | W | compose 한 번(start.ps1)으로 시작·종료·재시작·상태·로그, 127.0.0.1 접속 (요청 §6-1) | 1, 7 | W-INF | Done | TC-VI-001, 027, 031, 033, 102, 130, 131, 132, 133, 137 [I§4-3]; TC-WI-001~034 [I-note§4] |  |  | M1=데모 모드; I=COND.PASS[Open DEF-VI-001·002·003, C-02] (W-001과 결과서상 직접 연결된 열린 결함 없음). Windows Docker Desktop·PowerShell 5.1 미수행(사용자 PC, README 8절) |
-| W-002 | W | 구글 로그인(읽기→쓰기 분리)을 웹에서 시작·확인·해제 — M2 (요청 §6-1) | 3 /google | W-BE-B(M2) | Not Started(M2 대기) | TC-WB-134 [B-note§7]; TC-VB-222 [B§4] (M1 데모 구글 상태 읽기만) |  |  | M1=데모 모드; B=PASS(M1 범위). OAuth 시작·확인·해제는 미구현(BE-B 노트 §10 M2/M3). M1 은 GET google/status(connected=false)만. BE-B 결과서 부록 B 에 W-002 요청 없음(C-06) |
+| W-002 | W | 구글 로그인(읽기→쓰기 분리)을 웹에서 시작·확인·해제 — M2 (요청 §6-1) | 3 /google; WEB_DESIGN §12 | W-BE-B(M2), W-FE(M2·M3) | Implemented(M2·M3, 가짜 구글 시험만; 실제 구글 접속 미수행) | TC-M2-001~017, 020~031; TC-M3-010~013; TC-WF-200~203, 210~212 (자세한 연결은 아래 "M2·M3 요구사항 v5" 표) |  |  | 2026-10-11 갱신(이전: Not Started). 독립 검증: 프런트 CONDITIONAL(`units/web-WU-M23-FE-test.md`, DEF-VMF-001 High Open), 백엔드 독립 검증 시험 파일(`verify_m23`)은 있으나 결과서 없음(확인 필요). M1 시험 TC-WB-134, TC-VB-222 는 데모 상태 읽기 한정 |
 | W-003 | W | 영상 목록(200개) 표, 검색·정렬·필터 (요청 §6-1) | 3 /videos | W-BE-B, W-FE | Done | TC-WB-113~116, 125 [B-note§7]; TC-VB-006, 321, 322 [B§4]; TC-VF-084~091, 151~157 [F부록B(F-03)]; TC-WF-027~030 [F-note§7] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
 | W-004 | W | 영상별 AI 제목 후보 생성(어댑터, 모의 AI는 M1) (요청 §6-1) | 3 /suggestions, 4 | W-BE-B, W-FE | Done | TC-WB-008~013, 018~023, 126, 128 [B-note§7]; TC-VB-010~017, 020~026, 030~032 [B§4]; TC-VF-084~095, 151~172, 184~188, 300~313 [F§4-1 AC-02(핵심 흐름 전체)] |  |  | M1=데모 모드; 모의 AI(M1) 한정, 실 AI 어댑터 M3 대기. B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
 | W-005 | W | 후보 자동 검증(통과/경고/차단), 차단은 반영 불가 (요청 §6-1) | 3·4 | W-BE-B, W-FE | Done | TC-WB-013, 024~026, 039 [B-note§7]; TC-VB-010~017, 020~026, 311, 312, 341 [B§4-1 AC2]; TC-VF-060~066, 190~193, 221, 307~308 [F§4-1 AC-08]; TC-WF-036~038 [F-note§7] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. DEF-VF-001(엄격 모드 경고=차단 표시) Fixed |
@@ -186,7 +186,7 @@
 | S-W05 | SEC | XSS 방어(외부 문자열 텍스트 처리) (요청 §9) | 5 | W-FE | Done | TC-VF-037, 038, 092, 097~102, 106, 114 [F§4-1 AC-12]; TC-WF-018, 081 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
 | S-W06 | SEC | 프롬프트 인젝션 방어(입력 데이터 구분·응답 검증·권한 없음) (요청 §9) | 5 | W-BE-B | Done | TC-WB-008~011, 023, 024, 070 [B-note§7]; TC-VB-010~017, 020~026, 306, 340, 341 [B§4] |  |  | B=PASS. 모의 AI(M1) 한정 — 실 AI 응답 검증은 M3 에서 재확인 필요 |
 | S-W07 | SEC | 외부 AI 전송 최소화·비용 상한(실서비스 M3) (요청 §9) | 5 | W-BE-B | Partial(M1 모의 AI 한정, 실서비스 M3 대기) | TC-WB-011, 018 [B-note§7]; TC-VB-030~032 [B§12] |  |  | B=PASS. 비용 상한 시험 근거 미확인 |
-| S-W08 | SEC | OAuth state·PKCE·비밀 보관(M2) (요청 §9) | 5 | W-BE-B | Not Started(M2 대기) | OAuth state·PKCE 시험 없음 |  |  | A 결과서는 S-W08 을 세션·PIN 보안 TC(TC-VA-031~038, 043~055 등)의 요구 ID 로 표기 — 정의 불일치(C-03), 이 행의 TC 로는 세지 않음 |
+| S-W08 | SEC | OAuth state·PKCE·비밀 보관(M2) (요청 §9) | 5 | W-BE-B | Implemented(코드·가짜 구글 시험만; 독립 검증·9단계 재검증 미수행) | TC-M2-001~006, 009, 014, 026~029, 031; TC-M3-013 (`web/backend/tests/test_google_oauth.py`, `tests/domain/test_google_router.py`, `tests/domain/test_live_gateway.py`) |  |  | 2026-10-11 갱신(이전: 시험 없음). A 결과서의 S-W08 표기(세션·PIN TC)는 여전히 정의 불일치(C-03)이며 이 행의 TC 로 세지 않음. 위협 TW-37~38·42(`threat_model.md` W9). 실제 구글 환경 미검증 |
 | S-W09 | SEC | 로그 JSON·비밀 마스킹, 오류에 스택트레이스 없음 (요청 §9) | 5 | W-BE-A | Done | TC-VA-007, 026, 041, 064, 088~099 [A§4-1 AC-4·AC-13]; TC-WA-017~023, 126~132 [A-note§4] |  |  | A=PASS |
 | S-W10 | SEC | CSV 업로드 검증(M2) (요청 §9) | 5 | W-BE-B | Not Started(M2 대기) | 시험 없음 |  |  | CSV 업로드(M2). 내보내기(W-013)와 별개 |
 | S-W11 | SEC | 신규 의존성 실존·라이선스·취약점 확인 (요청 §9) | 5 | W-BE-A, W-FE, W-INF | Partial(9단계 확인 대기, A 라이선스 개별 확인 미수행) | TC-VI-017 [I§4-2(잠금)] (F: npm audit 취약점 0, F§4-2·F-note§11 — TC-ID 없음) |  |  | A 노트 §5: PyPI 실존·버전 확인, 라이선스 미확인. I: 취약점·SBOM 9단계. I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
@@ -243,7 +243,7 @@ v4 추가분(POL/SEC 22행)은 02_planning §W7-1(POL)·§W7-2(SEC)의 정의를
 | F-02 | Partial(OpenAPI 타입 생성 미적용: 계약 수동 전사) | OpenAPI 타입 생성 미적용(계약 수동 전사), TC-ID 없음 |
 | F-10 | Done | 실브라우저 점검(F§4-3)만 있고 TC-ID 없음 |
 | F-11 | Done | 토큰·axe 점검만 있고 TC-ID 없음 |
-| S-W08 | Not Started(M2 대기) | M2 대기(OAuth). 기존 TC-VA 의 S-W08 표기는 정의 불일치(C-03) |
+| S-W08 | SEC | OAuth state·PKCE·비밀 보관(M2) (요청 §9) | 5 | W-BE-B | Implemented(코드·가짜 구글 시험만; 독립 검증·9단계 재검증 미수행) | TC-M2-001~006, 009, 014, 026~029, 031; TC-M3-013 (`web/backend/tests/test_google_oauth.py`, `tests/domain/test_google_router.py`, `tests/domain/test_live_gateway.py`) |  |  | 2026-10-11 갱신(이전: 시험 없음). A 결과서의 S-W08 표기(세션·PIN TC)는 여전히 정의 불일치(C-03)이며 이 행의 TC 로 세지 않음. 위협 TW-37~38·42(`threat_model.md` W9). 실제 구글 환경 미검증 |
 | S-W10 | Not Started(M2 대기) | M2 대기(CSV 업로드) |
 | S-W15 | Not Started(M4 설계 문서 대기) | M4 설계 문서 대기(시험 대상 아님) |
 | POL-007 | Not Started(M3 대기) | M3 대기(외부 AI 전송 자체가 없음) |
@@ -254,6 +254,27 @@ v4 추가분(POL/SEC 22행)은 02_planning §W7-1(POL)·§W7-2(SEC)의 정의를
 
 통합테스트(IT)·전체테스트(UAT) 컬럼은 이번 갱신 범위가 아니어서 비워 두었다.
 
+### M2·M3 요구사항 (v5, 2026-10-11; 구글 읽기 연동·제목 수정, DEC-046~048, 설계 `WEB_DESIGN.md` §12)
+
+> **ID 주의(규칙 H)**: 아래 `W-M2-xx`·`W-M3-xx`·`S-W17` 은 11단계 문서 갱신 중 이 표에 맞춰 임시로 붙인 **미승인 ID**이다. 정식 ID 부여·02단계 기획서 반영은 오케스트레이터 확인이 필요하다(확인 필요). 기존 `W-002`·`S-W08`·`POL-010`·`POL-012`·`POL-015` 행도 함께 해당된다. 시험 파일·함수는 존재를 확인했으나(2026-10-11 `grep`), 이 갱신에서 시험을 다시 실행하지는 않았다(마지막 실행 결과는 `STATE.md`의 "M3 회귀 시험": 백엔드 전체 1461 통과·96 건너뜀·실패 0, 프런트 659 통과·2 실패(별도 시험 코드 문제)).
+
+| ID | 유형 | 요구사항/기능 | 설계 매핑 | 작업 단위 | 구현 상태 | 단위테스트 (TC-ID / 파일) | 통합테스트 (IT-ID) | 전체테스트 (UAT-ID) | 비고 |
+|----|------|------|------|------|------|------|------|------|------|
+| W-M2-01 | W | 구글 읽기 OAuth(데스크톱 앱 클라이언트, state 1회용 10분·PKCE S256, 토큰 0600 원자 저장) | WEB_DESIGN §12-1; DEC-048 | M2 단위 1 | Implemented(가짜 구글만) | TC-M2-001~017 (`web/backend/tests/test_google_oauth.py`) |  |  | 실제 구글 접속 미수행. 클라이언트 유형 변경(DEC-034 Q-5 → 데스크톱 앱) |
+| W-M2-02 | W | 로그인 API connect·callback·status·disconnect, 구글 비밀 파일·통신 경로(compose.online.yaml, `_common.ps1`) | WEB_DESIGN §12-1·§3; API.md EVT-W31~35 | M2 단위 2 | Implemented(가짜 구글만) | TC-M2-020~031 (`web/backend/tests/domain/test_google_router.py`); 인프라 정적 시험(실패 0, STATE 기록) |  |  | 콜백은 S-W03 의 GET 예외. Windows 스크립트 실행 미수행 |
+| W-M2-03 | W | 내 채널 영상 읽기(channels→uploads→videos, 최대 2,000개)·videos 저장·데모 영상 보호(`demo_data_in_use`) | WEB_DESIGN §12-2 | M2 단위 3 | Implemented(가짜 구글만) | TC-M2-040~053 (`web/backend/tests/domain/test_live_sync.py`) |  |  | 미시험: 이 프로그램이 바꾼 적 있는 영상의 보존 로직(STATE 기록) |
+| W-M2-04 | F | 화면 "구글(유튜브) 연결" 카드(연결·불러오기·해제·오류 안내) | WEB_DESIGN §12-5 | M2 단위 4 | Implemented | TC-WF-200~203 (`web/frontend/src/pages/google.test.tsx`); 독립: TC-VMF-xxx (`verify_m23/google.verify.test.tsx`) |  |  | E2E 21/21(37초, STATE 기록). 독립 검증 CONDITIONAL — DEF-VMF-001(High, Open) |
+| W-M3-01 | W | 쓰기 권한 별도 로그인(`youtube.force-ssl`, `google_write_token.json` 분리)·제목 수정 게이트웨이(허용 영상만, 모호 응답=반영 여부 불명) | WEB_DESIGN §12-2·§12-4 | M3 단위 1·2 | Implemented(가짜 구글만) | TC-M3-010~013 (`web/backend/tests/domain/test_live_gateway.py`); `test_live_write.py` 시험 7개(함수명 `test_scope_and_auth_url_write` 등, TC-ID 없음) |  |  | 실제 제목 변경 없음. 사용자 승인 전 실제 반영 금지(규칙 E) |
+| W-M3-02 | W | 게이트웨이 선택 3조건(YTWEB_LIVE_WRITE=1 + 쓰기 토큰 + 허용 영상 1개 이상)·반영 확인 시 videos 동기화 | WEB_DESIGN §12-3 | M3 단위 2 | Partial — 켜는 방법 미정 | TC-M3-020·021·030·031 (`test_live_gateway.py`) |  |  | **환경변수를 컨테이너에 전달하는 설정이 저장소에 없음**(확인 필요, DEF-VMF-004, Q-11-10). `config.MODES` 는 아직 `("demo",)` 뿐이며(YTWEB_MODE 는 demo 고정) 실제 쓰기는 별도 환경변수 3조건으로만 선택됨 — 의도된 설계인지 확인 필요 |
+| W-M3-03 | W | 실제 모드 안전장치: 확인 문구 `실제 실행 N건`, 허용 외 영상 `live_not_allowed`(초안·반영 직전·롤백), 변경 기록 mode live/demo | WEB_DESIGN §12-4 | M3 단위 4 | Implemented(가짜 구글만) | TC-M3-040~047 (`web/backend/tests/domain/test_live_guard.py`) |  |  | 프런트 확인 문구 표시 시험 없음(서버 문구 표시), "A/B 중 아님" 서버 필드는 M3 결정 대기(DEC-047 ②) |
+| W-M3-04 | F | 화면 "제목 수정 권한" 구역(연결·꺼짐·실제 모드 경고) | WEB_DESIGN §12-5 | M3 단위 3 | Implemented | TC-WF-210~212 (`google.test.tsx`) |  |  | DEF-VMF-002~004(Low) Open |
+| W-M3-05 | F | 모드 표시 정확성: 구글 연결·실제 모드 상태에서 상단 띠·연결 상태 칸이 사실을 표시 | WEB_DESIGN §12-6 | (후속 조치 예정) | **Not Started — 결함 DEF-VMF-001(High, Open)** | 결함 고정 시험 TC-VMF-140·141·142 (`web/frontend/verify_m23/google.verify.test.tsx`) |  |  | 실제 구글 연결 전 수정 필수. 위협 TW-40 |
+| S-W17 | SEC | M2·M3 위협 대응(콜백 위조·쓰기 토큰·허용 목록 우회·확인 문구 우회·모호 응답·토큰 로그 유출) | `threat_model.md` W9(TW-37~44) | M2·M3 | Partial(문서화됨; 독립 검증·9단계 재검증 미수행) | TC-M2-003~006, 008, 011, 026~029; TC-M3-012, 013, 031, 042, 046, 047; `test_tc_vb_278`(외부 통신 허용 모듈 3개 한정) |  |  | TW-38(쓰기 토큰 암호화 없음·revoke 미구현) 사용자 수용 결정 대기 |
+| POL-015 | POL | (기존 행 보강) 구글 클라우드 프로젝트 1개만 사용 | 03_manual_setup; WEB_LEGAL_NOTICE §10 | W-M2 | 문서 정책(변경 없음) | 시험 대상 아님 |  |  | 기존 POL-015 행 상태는 그대로이며 여기서는 M2 실행 시 확인 항목으로만 재언급 |
+| POL-012 | POL | (기존 행 보강) 구글 유래 데이터·토큰 보관·삭제 | WEB_LEGAL_NOTICE §10 | W-M2 | Not Started(정책 미정, 변경 없음) | 시험 없음 |  |  | [연결 해제]는 토큰만 삭제, videos·이력·감사 로그는 남음(코드 확인). 정책 확정 필요 |
+
+M2·M3 v5 요약: 신규 임시 행 12개(POL 보강 2행 포함) 중 시험 연결 10행, 시험 없음 2행(POL-012·015, 시험 대상 아님/정책 미정), 구현 상태는 Implemented 7·Partial 2·Not Started 1(W-M3-05)·정책행 2. **전체 연결률 숫자는 재계산하지 않았다**(기존 83행 표의 85.5% 는 이 갱신 전 값).
+
 ## 변경 이력
 | 일시 | 버전 | 변경 내용 | 사유 |
 |---|---|---|---|
@@ -262,3 +283,4 @@ v4 추가분(POL/SEC 22행)은 02_planning §W7-1(POL)·§W7-2(SEC)의 정의를
 | 2026-10-10 | v2 | 웹 전환 요구사항(W/D/F/S-W) 등록 | 규칙 H, DEC-038 |
 | 2026-10-11 | v3 | 웹 요구사항(W/D/F/S-W 61행) 구현 상태·단위테스트·비고를 4개 단위 결과서(A·B·F·I)와 구현 노트로 채움, 시험 연결 요약 표 추가, 모순·누락 목록은 verify-log_web-traceability.md | 규칙 H, 규칙 B |
 | 2026-10-11 | v4 | 웹 정책·AI 안전 요구 POL-005~016(12행)·SEC-021~030(10행) 정식 등록(총 83행). 정의는 02_planning §W7-1·§W7-2 에서 옮김(새 ID 없음), 구현 상태·TC 는 9단계 결과서와 단위 결과서 기준, 시험 연결 요약 표 갱신. POL-006·008·013 은 DEF-9-007·008 Open 으로 연결 | DEF-9-018 조치(규칙 H·I·J 추적성) |
+| 2026-10-11 | v5 | W-002·S-W08 행 갱신, "M2·M3 요구사항 v5" 표 신설(임시 ID W-M2-01~04, W-M3-01~05, S-W17 및 POL-012·015 보강 — 미승인 ID, 규칙 H 확인 필요) | M2·M3 구현 반영(DEC-048), 11단계 문서 갱신 |
