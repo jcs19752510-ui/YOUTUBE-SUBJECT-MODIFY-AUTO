@@ -1,0 +1,3 @@
+secrets dir mode 0o755
+audit detail length 3344
+61 passed, 1 warning in 9.12s

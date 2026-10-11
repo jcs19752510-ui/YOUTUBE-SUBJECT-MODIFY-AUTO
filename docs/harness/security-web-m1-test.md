@@ -495,3 +495,145 @@ Host/Origin/Sec-Fetch-Site 위조, 로그인 CSRF, 상태 변경 전수 CSRF, �
 - 이력(96커밋, 전 브랜치, **읽기 전용 git**): ① 파일명 검색 — `.env`·`token*.json`·`client_secret*`·`credentials*.json`·`*.pem`·`*.key`·`*.p12`·`secrets/`·`data/`·DB 덤프 이력 **0건**. ② 추가 줄(+) 정규식 — Google API 키(`AIza…`)·Anthropic/OpenAI 키·개인키 블록·GitHub 토큰·AWS 키·Slack 토큰·OAuth 액세스/리프레시 토큰(`ya29.`·`1//0`)·클라이언트 ID(`*.apps.googleusercontent.com`)·`refresh_token` JSON·`password/secret/token/api_key = "…16자+"` 패턴. 일치한 줄은 전부 시험 더미(`FAKE…`·`…EXAMPLE`·`topsecretvalue`·`SuperSecretValue-12345`·`GOCSPX-fakeclientsecret…`)로 **실제 비밀 0건**.
 - 한계: 정규식 기반이라 임의 형식 비밀은 놓칠 수 있다(gitleaks 등 전용 도구는 이 환경에서 미사용). 커밋 전 비밀 검사 훅이 없다는 점은 OBS-9·DEF-9-006 에 기록.
 - OBS-8: `GIT연동(CLAUDE-TO-YOUTUBE)2222.MD` 에 소유자 이메일 1건 — 사용자 본인 정보, 공개 저장소 여부 확인 필요.
+
+
+---
+
+# 개정 2판 — 9단계 보안 재검증 (2026-10-11, M2 구글 읽기·M3 쓰기 게이트웨이·W-FIX 이후)
+
+> **한 줄 결론: 판정 FAIL.** DEF-9-007(Critical)·DEF-9-008(High)은 **닫혔다**(직접 확인). 그러나 **DEF-9-002(롤백이 Studio 수정 내용을 덮어씀)가 실제 모드(M3)에서 재현되어 High 로 확정**됐고, 신규 Medium 4건·Low 5건이 열려 있다. High 가 닫히기 전에는 실제 모드(`YTWEB_LIVE_WRITE=1`) 활성·12단계 배포 승인을 올리지 않는다. **데모 모드(M1)만 쓰는 범위는 새 Critical/High 가 없다.** 소스는 고치지 않았다(결함은 재현 시험 + 권고).
+> 이 문서는 정적 분석·코드 리뷰·로컬 재현(가짜 구글)에 한정한다. **법률 자문이 아니다**: 면책·AI 고지·A/B 확인 문구의 법적 충분성은 판단하지 않으며 공개·실연동 전 전문가(변호사 등) 확인이 필요하다. 개인정보 영향평가(PIA)·ISMS-P 해당 여부는 판단하지 않고 **"확인 필요"**로 둔다.
+
+## R0. 침투/동적 점검 범위
+| 항목 | 내용 |
+|---|---|
+| 대상 | `web/backend/ytweb/**`(특히 `youtube/google_oauth.py`·`live_read.py`·`live_write.py`, `routers/google.py`, `domain/live_gateway.py`·`batches.py`·`changes.py`, `core/logsetup.py`·`guard.py`), `web/frontend/src`·빌드 번들 `web/frontend/dist`, `web/compose.yaml`+`compose.online.yaml`(`docker compose config` 렌더링), `web/.env.example`, 의존성 잠금 파일 3종, 위협 모델 W9(TW-37~44) |
+| 환경 | 로컬 파이썬 3.13 venv(`.harness-tmp/venv_fix_be`), 임시 SQLite, **가짜 구글(`web/backend/tests/verify_m23/fakegoogle.py`: `urlopen` 대체 + loopback 외 이름 해석 차단)**. 컨테이너 스택은 올리지 않았다(`harness-tmp-s2` 컨테이너·볼륨·네트워크·이미지 0개, 포트 18084 미사용, PostgreSQL 전용 DB `ytweb_test_s2` 미사용) |
+| 허용한 기법 | 코드 정독, Host/Origin/Sec-Fetch-Site/CSRF 위조, 교차 사이트 GET 콜백 재생·재사용·교차 종류 시도, 허용 목록 변형 15종(대소문자·공백·NBSP·제로폭·전각·경로·쿼리·쉼표·와일드카드 등), 환경변수 파싱 변형, 모드 전환 중 확정 배치, 롤백 모드 불일치, 모호 응답(타임아웃·5xx) 재시도, 비밀 카나리 문자열의 응답·DB·로그 전수 검색, 소스 사본 변이 7곳, pip-audit/npm audit(레지스트리 조회) |
+| 금지·하지 않은 것 | 실제 구글·유튜브·AI·외부 호출(가짜 구글이 비허용 호스트 호출 시 즉시 오류), 운영 8080·남의 컨테이너·포트 18080~18083 접촉, 소스 수정, git 커밋/푸시 |
+| 하지 못한 것 → 규칙 A | 외부 침투 테스트·Windows Docker Desktop 실측·실제 구글 OAuth 동의 화면(데스크톱 클라이언트가 `http://127.0.0.1:8080/...` 복귀 주소를 구글이 받는지)·실제 브라우저 CSP 로그·실서비스 LLM 인젝션은 전문 업체/별도 승인된 점검이 필요하다. 컨테이너 이미지 취약점 재스캔(Trivy 바이너리 없음)·실스택 시험 `test_sec_04`·번들 시험 4건(스택 필요)은 **미수행**(사유·잔여 위험은 R8) |
+
+## R1. 개요
+- 목적: ① 기존 보안 시험 재실행으로 DEF-9-007·008 종결 확인, ② M2·M3 신규 공격면(TW-37~44) 점검, ③ 의존성·이미지·개인정보·규제 재확인. 입력: `security-web-m1-test.md`(FAIL), W-FIX/M23 검증 결과서 3건, 위협 모델 W9.
+- 시험 자산: 기존 `web/tests_security/` + **신규 `test_sec_09_m23_attack.py`(61건, 이 회차에 추가)**. 실행: 신규는 `cd web/backend && python -m pytest ../tests_security/test_sec_09_m23_attack.py -p no:cacheprovider -o addopts='' --noconftest`, 전체 오프라인은 `python -m pytest web/tests_security --ignore=web/tests_security/test_sec_04_live_stack.py -p no:cacheprovider`.
+
+## R2. 범위 / 제외
+포함: 위 R0 대상 전부. 제외(미수행): 컨테이너 이미지 Trivy 재스캔, 실스택 `test_sec_04`, 번들 4건(`YTWEB_SEC_LIVE_PORT` 필요 — 대신 `web/frontend/dist` 번들 파일을 직접 검색해 확인), 변이 점검기 `mutation_check.py` 전체(1시간) — 대신 이 회차 신규 시험에 대해 변이 7곳만 수행.
+
+## R3. 환경 / 도구
+Linux 6.18, 파이썬 3.13, pytest, pip-audit(임시 `--target` 설치, `.harness-tmp/s2`), npm 10대(`npm audit --package-lock-only`), Docker 29.8.2(`compose config` 렌더링만). 임시 산출물은 모두 `.harness-tmp/s2/` 아래, 정리 결과는 R7.
+
+## R4. 테스트 케이스 및 결과
+
+### R4-1. 기존 보안 시험 재실행 (첫 실행 결과 그대로)
+명령: `python -m pytest web/tests_security --ignore=…test_sec_04_live_stack.py`(신규 파일 추가 전 첫 실행, `-x` 없이). **첫 실행 결과: 4 실패 · 245 통과 · 7 건너뜀 · 2 xfail** (45.5초, 재측정 값; 첫 실행 원문 로그는 `docs/harness/verify-logs/web-security-rev2-raw/run1_full.log`).
+| 실패 시험 | 원인(제품 결함인가?) | 판단 |
+|---|---|---|
+| `test_sec_02::test_ytweb_has_no_outbound_capable_imports` | `youtube/{google_oauth,live_read,live_write}.py` 가 `urllib.request` 를 임포트. M2·M3 의 **의도된 외부 통신 3개 모듈**(TW-44 허용 파일 3개)을 옛 시험이 모르는 것 | 시험 자산 미갱신. 의도와 일치하는지는 신규 `test_d4`(정확히 그 3개만 허용)로 별도 확인. **기대값을 고쳐 통과시키지 않았다** → DEF-9B-006 |
+| `test_sec_03::test_no_secrets_in_current_tree` | 적중 3건: `verify_m23/test_vm_05_live_write.py:27`(`RT-WRITE-X`)·`test_vm_03_live_read.py:258`(`R-REVOKED-SECRET`)·`web/tests_infra/test_vinf2_live.py:577`(`VIFFAKESECRET…`) — **모두 가짜 시험 값**(실제 비밀 0, 직접 확인) | 오탐. 신규 시험 파일이 allowlist 에 없음 → DEF-9B-006 |
+| `test_sec_03::test_no_secret_like_files_in_tree` | `web/.env.example`(이름이 `.env.*` 패턴). 내용은 `YTWEB_LIVE_WRITE=0`·`YTWEB_LIVE_ALLOWED_VIDEOS=` 두 줄(비밀 아님) | 오탐 → DEF-9B-006 |
+| `test_sec_03::test_powershell_scripts_have_no_dangerous_constructs…` | `e2e.ps1:19` 의 `Invoke-WebRequest`(기본 대상 `http://127.0.0.1:8080/api/healthz`, `-Base` 매개변수로 바꿀 수 있음) | 시험 규칙이 새 스크립트를 모름. 기본값이 loopback 이라 실제 위험은 Low → DEF-9B-006 |
+- **xfail 전환 확인**: 이전 xfail 15건 중 DEF-9-001×2·006×1·007×3·008×5·017×2 의 표식이 제거되어 **통과**(XPASS strict 실패 0건). 남은 xfail 2건 = **DEF-9-002**(`test_rollback_should_refuse_when_title_was_changed_elsewhere`, `…not_overwrite_description_edited_elsewhere`) → 아직 안 고쳐졌다. DEF-9-001 은 직접 재확인: 2⁶⁴ 급 정수 ID 를 `/batches/{id}`·`/changes?page=`·`?batch_id=`·롤백·배치 생성에 넣으면 전부 422(이전 500) — 닫힘.
+- **DEF-9-007·008 종결 직접 확인** (R4-4 참고): 통과.
+
+### R4-2. 신규 시험 `test_sec_09_m23_attack.py` — 61건
+**첫 실행 결과(실패 포함)**: 작성 직후 1차 46건 중 `test_c4` 1건 실패(롤백 요청에 `Idempotency-Key` 헤더 누락 → 400; **시험 쪽 오류**, 헤더 추가), 이어서 `test_a7` 실패(롤백 성공 코드를 200 으로 가정했으나 201; 시험 오류, 수정), `test_f2` 실패(번들에 "실제 실행" 문구가 없다고 단정 — 이 문구는 서버가 만들어 줌; 시험 오류, 해당 문구 제외). **제품 코드 결함으로 인한 실패는 0건**이었고, 최종 61건 통과. 제품 결함은 `repro_` 성격의 시험(통과 = 결함 재현)으로 고정했다.
+| 그룹 | 건수 | 확인한 것 | 결과 |
+|---|---|---|---|
+| A. OAuth 콜백(TW-37·38·42) | 9 | 위조 state 는 구글 호출·토큰 저장 0; state 1회용(재사용 시 교환 시도 0); 10분 만료; 읽기/쓰기 종류가 다른 저장소에 안 섞임; 복귀 주소 항상 `/#/`(next/redirect/redirect_uri/Referer/X-Forwarded-Host/Origin 변조에도), `Cache-Control: no-store`, 쿠키 미설정; 비허용 Host 403; 인가 URL 은 `accounts.google.com` 고정+PKCE S256+state≥43자; 토큰 파일 0600·`.tmp` 잔재 없음; **비밀 카나리(AT/RT/클라이언트 비밀) 전수 검색**: 읽기·쓰기 연결→배치→실제 반영→롤백→연결 해제 한 사이클 후 모든 API 응답·**DB 전 테이블**·로그 줄에 0건 | 통과. 단 **A6 관찰**: 비밀 폴더가 `0755`(→ DEF-9B-004), **A8 관찰**: 구글 오류 문자열이 길이 제한 없이 감사 기록 detail 에 들어감(3,344자 재현, → DEF-9B-005), **A9**: 세션 없는 교차 사이트 GET 25회 → 감사 기록 25행(→ DEF-9B-001) |
+| B. 허용 목록(TW-39) | 33 (변형 15·본문 1·파싱 6·플래그 10·설정 API 1) | 변형 15종(대소문자·앞뒤 공백/개행·제로폭·전각·`/../`·`?part=status`·쉼표 연결·`*`·빈 값·길이 ±1·`%00`) 전부 **네트워크 호출 전** `not_allowed`; 본문 id 불일치·snippet 형식 오류 7종 거부, 정상 1건만 고정 URL `…/videos?part=snippet` 로 전송; 환경변수 파싱은 정확 일치(와일드카드 없음), `YTWEB_LIVE_WRITE` 는 정확히 `"1"` 만 켜짐(`true`·` 1`·`01`·`on`·`1\n` 모두 꺼짐 — fail-closed); 설정 API 로 live 키 5종 설정 시도 400, `daily_apply_cap` 10,000 → 거부 | 통과 |
+| C. 모드 전환·롤백·모호 응답·감사(TW-40·41) | 9 | 실제 모드로 확정 후 데모로 전환 / 데모로 확정 후 실제로 전환 → 둘 다 `live_mode_changed` 로 중단, PUT 0건; 실제 모드에서 데모 문구·`실제 실행 1건​`·전각 숫자·NBSP 확인 문구 422; 롤백 `live_mode_mismatch` 409; 타임아웃(미반영)·5xx(반영됨) 모호 응답 후 틱 4회·재배치에도 **PUT 정확히 1회**(planned 유지); 허용 외 영상 PUT 0; 감사 기록에 연결 시작·연결·쓰기 연결·배치 실행·변경 적용·연결 해제·롤백 존재 | 통과 |
+| D. 외부 호출 경로(TW-35·44) | 4 | http/file/ftp/대문자 스킴/공백 스킴을 읽기·쓰기·OAuth 전송 3종이 모두 거부; `read_snippet` 이 영상 ID 를 쿼리 한 매개변수로 인코딩(`&part=status&id=…#frag` 주입 불가); `urllib.request` 임포트 파일이 정확히 3개; **D3 재현: 3xx 리다이렉트 시 Authorization 헤더가 다른 호스트로 따라감**(urllib 기본 동작, → DEF-9B-003) | 통과(D3 은 결함 재현) |
+| E. 롤백 덮어쓰기 | 1 | **실제 모드** 반영 후 사람이 Studio 에서 설명과 제목을 고쳤다고 가정하고 롤백 → 201 로 성공, 설명·제목이 반영 전 백업 값으로 되돌아가 **Studio 수정이 사라짐** | **DEF-9-002 재현(High)** |
+| F. 규칙 I·J (DEF-9-007·008) | 2 | 사전 점검 응답 `notice`=면책 문구, 리포트 `notes` 에 면책 포함; **빌드 번들**에 면책·AI 고지·A/B 확인·실제 수정 모드 배지 문구 존재 | 통과 |
+| G. 신규 POST 3종 CSRF | 3 | `connect`·`connect-write`·`disconnect`: CSRF 토큰 없음/틀림/다른 Origin/`Sec-Fetch-Site: cross-site`/세션 없음 → 거부, GET·PUT·DELETE·PATCH 로 호출 불가 | 통과 |
+- **변이 점검(신규 시험의 실효성, 소스 사본에서만)**: 허용 목록 검사 제거(15건 실패 검출), `live_mode_changed` 제거(2), 롤백 모드 불일치 제거(1), 토큰 파일 권한 0666(1), state 1회용 제거(1), 실제 모드 확인 문구 데모와 동일화(1), 토큰을 로그에 남기는 줄 주입(1) = **7/7 검출**. 처음 한 번은 사본 경로 설정 오류(`banned_terms.yaml` 없음)로 4곳이 "오류"만 나와 검출로 세지 않았고, 환경을 고쳐 다시 돌려 확인했다.
+
+### R4-3. 위협 모델 W9 TW-37~44 확인 (구현 여부·서술 정확도)
+| TW | 위험도(모델) | 완화책이 코드에 있는가 | 모델 서술과 차이 / 비고 |
+|---|---|---|---|
+| TW-37 로그인 CSRF·콜백 위조 | 중 | **있음** — `PendingAuth`(256비트·1회용·600초·최대 20개)·PKCE S256(`google_oauth.py:67-85,99-105`), 길이 상한(`routers/google.py` code 2048·state 256), 실패 시 저장 0, 고정 복귀 `/#/`. | "모든 시도 감사 기록"은 **세션 없는 교차 사이트 요청도 매번 감사 행을 만든다**는 뜻이 됨 → DEF-9B-001(모델 미서술). 요청한 쿠키 비결합·http 루프백은 모델 서술대로 |
+| TW-38 쓰기 토큰 탈취 | **상** | **부분(모델 서술대로)** — 별도 파일 0600 원자 저장·Docker secret·응답/로그/DB 에 없음(위 A7 카나리 0건)·연결 해제 시 둘 다 삭제. 암호화 없음·구글 revoke 호출 없음 | **누락 서술**: 비밀 폴더 0755(DEF-9B-004); 화면의 [연결 해제] 안내에 구글 계정에서 앱 접근 제거 안내가 없음(EVT-001 은 CLI 에서 "계정 회수 절차 안내"를 요구, 웹 `WEB_RUNBOOK` 에만 있음) → DEF-9B-008. SEC-015 "쓰기 토큰은 실행 순간에만 로드"는 웹에서 **상태 조회·사전 점검마다 api 가 쓰기 토큰 파일을 읽는** 구현으로 다름(Low) |
+| TW-39 허용 목록 우회 | 중 | **있음** — 4겹 검사(`_eligibility`·`_apply`·`rollback_change`·`LiveYouTubeGateway.update_snippet`) 모두 확인, 우회 변형 15종 거부 | 서술 오류: "환경변수를 컨테이너에 넣는 공식 절차가 아직 없어(Q-11-10)"는 **낡음** — `compose.online.yaml`+`web/.env.example` 가 전달 경로(비밀 없음, 확인). "목록이 비면 수정 0건"은 정확히는 **게이트웨이가 모의로 바뀜**(`select_gateway`)이라 결과는 같음 |
+| TW-40 확인 문구 우회 | 중 | **있음(서버)** — `confirm_text` 실제/데모 구분, 변형 4종 거부, `live_mode_changed` | **낡은 서술**: "DEF-VMF-001(High) 수정 전 실제 연결 금지" → 상단 배지는 `dashboard.mode==='live'`로 이제 '실제 수정 모드'를 표시(`Layout.tsx:11-20`, 번들 확인)해 해결된 것으로 확인(TC-VMF-140~142). **A/B 확인은 아직 화면 체크박스뿐 — 서버가 요구하지 않음**(`ExecuteIn` 에 필드 없음) → DEF-9B-002 |
+| TW-41 모호 응답 | 중 | **있음** — `_confirm_indeterminate`, planned 유지, 롤백도 `change.rollback_failed`+planned. 이중 반영 0 확인 | 정확. 단 롤백 덮어쓰기는 모델에 없음 → DEF-9-002 |
+| TW-42 로그·응답 비밀 | **상** | **있음** — 카나리 전수 검색 0건(응답 9종·DB 전 테이블·로그), OAuth 오류는 고정 한국어 | "구글 오류 응답 본문이 예외 메시지로" 우려: 본문은 쓰이지 않고 `error` 코드 문자열만 `e.code` 로 감사에 들어감(길이 무제한) → DEF-9B-005 |
+| TW-43 쿼터 | 중 | **있음** — `reserve_calls`(전부 또는 무), 일 상한, 설정 API 상한 1~20 | 정확 |
+| TW-44 egress | 중 | **있음** — `docker compose config` 렌더링: api·worker 만 `egress`(비-internal) 추가, db·web·migrate 는 미연결, 환경변수 3종 비밀 아님 | api 는 외부에서 오는 HTTP 입력을 받는 컴포넌트이면서 egress+쓰기 토큰+DB 비밀번호를 모두 가짐 — 모델이 이 조합의 영향(침해 시 토큰·데이터 외부 반출)을 "중"으로만 봄 → DEF-9B-009 |
+
+### R4-4. DEF-9-007·008 종결 — 직접 확인
+- **면책(POL-002)**: 문구 `이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.` — 위치: ① `ko.ts:42` 한 곳 정의 → 전 화면 푸터 `app/Layout.tsx:128`, 영상 상세 `VideoDetailPage.tsx:116`, 제안 카드 `SuggestionCard.tsx:283`, 배치 사전 점검 `BatchDetailPage.tsx:156`; ② API: 사전 점검 `precheck.notice`(`batches.py:214`), 리포트 `notes[0]`(`reports.py:76`, CSV 에도) — 신규 `test_f1` 로 응답 확인; ③ 빌드 번들 `dist/assets/index-*.js` 에 문구 존재(`test_f2`). 서버/CLI/프런트 문장 동일성은 기존 `test_sec_08`(통과).
+- **AI 고지(POL-006)**: `ko.ts:44` "AI가 생성한 제안입니다. 사람이 검토하고 승인한 제목만 반영됩니다." 번들 확인.
+- **A/B 확인(POL-013)**: 실행 확인창에 체크박스 `ko.ts:49` 를 체크해야 버튼 활성(`BatchDetailPage.tsx:285-310`, 기존 `test_sec_08` 이 게이트를 검사). **서버 강제는 없음**(DEF-9B-002).
+- 실제 렌더링된 컨테이너 화면·브라우저 캡처는 이 회차에 **미수행**(스택 미기동). 번들 파일 검색 + 소스 + 응답 JSON 으로 확인.
+
+## R5. 커버리지
+기존 오프라인·정적 시험 258건(통과 245·건너뜀 7·xfail 2·실패 4=시험 자산 문제) + 신규 61건 = **319건: 통과 306 · 실패 4 · 건너뜀 7(모두 컨테이너 스택 필요) · xfail 2**. 신규 공격면 TW-37~44 8개 전부 시험 또는 코드 확인. 미수행: R2.
+
+## R6. 결함 목록 (DEF-9B-NNN 신규, 기존 ID 는 상태 갱신)
+| ID | 설명 (관련 ID) | 재현 절차 | 심각도 | 상태 | 권고 |
+|---|---|---|---|---|---|
+| **DEF-9-002** | **롤백이 "현재 제목 == 방금 반영한 제목"을 확인하지 않고 백업 snippet 통째로 되돌려 쓴다 → 반영 후 Studio 에서 고친 설명·태그·제목이 옛 값으로 덮어써진다.** M3 에서 실제 쓰기 가능해져 **High 로 확정**(1판 6절이 예고한 승격 조건). 관련 TW-14, TW-41, SEC-015/롤백 요구, 사업 영향: 채널 소유자 작업물 소실(복구는 사람이 Studio 이력에서 수동). `changed_since_backup` 은 덮어쓴 **뒤에** 기록만 함(`changes.py:~150`) | `cd web/backend && python -m pytest ../tests_security/test_sec_09_m23_attack.py -k e2 --noconftest -o addopts=''`(통과 = 재현). xfail 2건(`test_sec_02`)도 아직 xfail | **High** | **Open** — 백엔드 소유, 설계 결정 Q-S9-2(미응답) | 롤백 전에 `current.title == target.new_title` 및 보존 필드(`description/tags/categoryId/…`)가 `target.backup_snippet` 과 같은지 확인하고 다르면 `later_edit_exists` 409 로 거부(또는 제목만 바꾸는 본문 + 확인 문구). 고치면 xfail 2건이 XPASS 로 바뀌므로 표식 제거 |
+| **DEF-9B-001** | **세션 없는 교차 사이트 GET `/api/v1/google/callback` 이 임의 state 로 감사 기록 행을 만들고(`google.connect.failed`) 화면 안내문(`last_error`)을 바꾼다.** 악성 웹페이지가 `<img src=…/callback?state=x>` 를 반복 호출 → 교차 사이트 한도(분당 600)까지 감사 로그 오염(보관 만료 없음 DEF-9-013 과 결합해 누적), 정상 이벤트 묻힘, 소유자에게 "구글 로그인이 취소됐거나…" 거짓 안내 표시. state 를 모르면 토큰 저장·구글 호출은 불가(확인) (TW-37, S-W03 예외, SEC-008) | 신규 `test_a9`(세션 쿠키 없이 25회 → 감사 25행) | **Medium** | Open | 알 수 없는/만료 state 는 감사·`last_error` 없이 즉시 303; 유효 state 에 대해서만 기록. 콜백 경로 별도 분당 한도(예: 10) |
+| **DEF-9B-002** | **'A/B 테스트 중이 아님' 확인이 화면 체크박스뿐이고 서버는 요구하지 않는다**(`ExecuteIn` 에 필드 없음). 같은 PC 의 비브라우저 프로세스(TW-03·24 한계)나 UI 우회 호출은 실제 모드 배치를 확인 없이 실행(문구 `실제 실행 N건`만 필요). POL-013 규칙 I 확인 단계. DEC-047 ②가 "M3 에서 서버 필드 결정"으로 미룸 | `POST /batches/{id}/execute {"confirm_text":"실제 실행 1건"}` 가 A/B 필드 없이 202(`test_c1~c3` 의 `do_execute`) | **Medium** (UI 에서는 반영됨 — 규칙 I 미반영이 아니므로 Critical 아님; **실제 모드 활성 전 결정 필수**) | Open — 사용자 결정 | 실제 모드일 때 `ab_confirmed: true` 필수 필드를 서버가 검사하고 감사에 기록 |
+| **DEF-9B-003** | 쓰기·읽기 전송이 urllib 기본 리다이렉트 처리를 쓴다: 첫 URL 만 https 검사하고, 3xx 로 다른 호스트/`http://` 가 오면 `Authorization: Bearer` 가 따라간다(PUT 은 urllib 가 리다이렉트를 따르지 않음 — GET 경로 `default_http_get` 만 해당). 구글 응답 위조/중간자 전제라 가능성 낮음 (TW-35, TW-44) | 신규 `test_d3` | **Low** | Open | 리다이렉트 비활성 opener 사용(`HTTPRedirectHandler.redirect_request` 가 None 반환) |
+| **DEF-9B-004** | 토큰 폴더(`/var/lib/ytweb/secrets`)가 `mkdir` 기본 권한 0755 로 만들어진다(파일은 0600). 같은 볼륨을 마운트한 다른 사용자가 파일 이름·존재 여부를 알 수 있음. 컨테이너에서는 명명 볼륨+비루트 단일 사용자라 실제 노출은 작음 (TW-38) | 신규 `test_a6`(`-s` 로 `secrets dir mode 0o755`) | **Low** | Open | `mkdir(mode=0o700)` + `chmod 0700` |
+| **DEF-9B-005** | 구글 토큰 교환 오류의 `error` 문자열이 `OAuthError.code`(`"grant_"+값`)로 감사 기록 detail 에 **길이 제한 없이** 저장됨(3,344자 재현). 구글이 보내는 값이라 외부 공격자 제어는 어렵지만 비정상 응답/중간자 시 감사 비대화·비밀 유사 문자열 저장 가능 (TW-42) | 신규 `test_a8` | **Low** | Open | 허용 오류 코드 목록으로 정규화하거나 64자로 자른다 |
+| **DEF-9B-006** | 기존 보안 시험 4건이 M2·M3 변경을 반영하지 못해 **스위트가 빨간색**(R4-1). 제품 결함 아님(오탐/미갱신)이며 1~3은 M2·M3 이 의도한 구조 | R4-1 표 | **Low** (프로세스) | Open — 시험 소유자 | 근거를 남기고 allowlist 갱신: 외부 통신 3개 모듈 목록, 가짜 값 3곳·`web/.env.example`, `e2e.ps1`(기본 loopback) — 고칠 때 "기대값을 맞춰 통과시킨 이유"를 결과서에 쓴다. 이 회차에서는 **고치지 않았다** |
+| **DEF-9B-007** | 위협 모델 W9 의 낡은/부정확 서술 3곳(TW-39 "공식 절차 없음", TW-40 "DEF-VMF-001 수정 전…", TW-37 "모든 시도 감사"의 의미) — 문서-구현 불일치 | R4-3 | **Low** | Open — 규칙 F 갱신 요청(부록 R-G) | 문구 정정 |
+| **DEF-9B-008** | 쓰기 토큰 수명주기: ① 구글에 revoke 요청 안 함(연결 해제는 로컬 삭제만), ② 화면의 [연결 해제] 직후 "구글 계정 → 타사 앱 접근에서 이 앱 제거" 안내 없음(EVT-001 은 CLI 에서 요구, 웹은 `WEB_RUNBOOK` 에만), ③ 토큰 평문(0600)·암호화 없음. `youtube.force-ssl` 토큰이 새면 허용 목록과 무관하게 **채널의 모든 영상 수정·삭제** 가능 (TW-38 위험도 "상", SEC-015, EVT-001, RISK-007) | 코드: `routers/google.py:google_disconnect`(revoke 없음), 모델 W9-1 | **Medium** (호스트/볼륨 접근 선행 필요; 그러나 영향이 채널 전체라 사용자 결정 전 실제 쓰기 연결 금지) | Open — **사용자 수용 결정 필요(Q, 대기)** | 연결 해제 시 `https://oauth2.googleapis.com/revoke` 최선 호출(실패해도 로컬 삭제) + 화면 안내 문구; 평문 저장을 수용하려면 DEC 기록. 수용 결정 없이 실제 쓰기 연결하지 않는다 |
+| **DEF-9B-009** | api·worker 에 도메인 제한 없는 egress(TW-44). api 는 웹 입력을 받는 컴포넌트이면서 쓰기 토큰·DB 비밀번호·클라이언트 비밀을 모두 보유 → api 침해 시 외부 반출 가능. DEF-9-011 과 같은 계열 | `docker compose config` 렌더링(R4-3) | **Medium** | Open — 사용자 결정(수용 또는 egress 프록시/방화벽) | 구글 도메인만 허용하는 egress 프록시 또는 쓰기 호출을 worker 로만 한정(api 는 읽기 연결만) 검토 |
+- **닫힌 결함(이번 회차 확인)**: DEF-9-007(Critical)·DEF-9-008(High) — R4-4; DEF-9-001 — 422 확인; DEF-9-006 — `git check-ignore` 로 `client_secret*.json`·`web/secrets/`·`web/.env` 무시 확인; DEF-9-018 — `traceability.md` v4 에 POL-005~016·SEC-021~030 등록 확인(21행 검색); DEF-9-017 — `test_sec_08` 통과(이미지 실측은 미수행).
+- **변동 없는 열린 결함(코드/설정 diff 없음, 재평가 안 함)**: DEF-9-003·004·005·009·010·011·012·013·014·015·016. 참고: DEF-9-016(nginx 오류 로그 쿼리 문자열)은 M2 콜백(`?code=…&state=…`)으로 영향이 커졌으나 PKCE+1회용이라 **Low 유지**, `compose` 설정은 오류 로그 level=error 만(확인).
+- **열린 결함 합계: Critical 0 · High 1(DEF-9-002) · Medium 8(9-010·011·013·014, 9B-001·002·008·009) · Low 12(9-003·004·005·009·012·015·016, 9B-003·004·005·006·007)**.
+
+## R7. 테스트 환경 정리(Teardown) — 규칙 K
+- 만든 것: `.harness-tmp/s2/`(로그·XML·`pipaudit` 임시 설치·`cfg`(compose 렌더링용 가짜 비밀 4개)·`mut`(변이 사본)·복사한 `config`·`src`·`web`). **컨테이너·볼륨·네트워크·이미지·PostgreSQL DB 는 만들지 않았다**(`harness-tmp-s2` 자원 0개). 신규 시험 파일 `web/tests_security/test_sec_09_m23_attack.py` 는 의도된 산출물로 남긴다. 임시 시험 파일 `web/backend/tests/_tmp_s2_big.py` 는 실행 직후 삭제했다.
+- 정리: 이 절 마지막 줄의 `git status` 와 정리 명령 결과 참고(아래 R7-1).
+- 소유 표기: 작업 트리의 `web/tests_integration/test_it_07_rev2.py`, `web/tests_integration/tools/rev2_screens.mjs` 는 **다른 에이전트(7단계 재검증) 소유** — 건드리지 않았다.
+
+## R8. 리스크 및 잔존 이슈 / 미수행
+| 미수행 항목 | 사유 | 잔여 위험 |
+|---|---|---|
+| 컨테이너 이미지 Trivy 재스캔 | 이 환경에 Trivy 바이너리 없음. Dockerfile·베이스 이미지·`requirements*.txt` 는 SBOM 시점(커밋 9cd6fdc) 이후 **diff 없음**(`git diff --stat`: compose 2개만 변경)이라 기존 부록 C 결과가 유효하나 이후 공개된 새 CVE 는 미반영 | DEF-9-010 계열(Medium) 최신성 미확인 |
+| 실스택 `test_sec_04`, 번들 4건 | 컨테이너 스택 미기동(시간·범위) — 번들은 `dist/` 파일 검색으로 대체 | nginx 경유 경로에서 `/api/v1/google/callback` 의 헤더·한도 동작은 실측 안 함(코드·TestClient 로만 확인) |
+| 실제 구글 OAuth/실제 제목 변경 | 금지(규칙 E, 사용자 승인 전) | `[미검증-실제환경]`: 토큰 갱신·실제 모호 응답·데스크톱 클라이언트 복귀 주소 수락 여부·쿼터 실제 소모 |
+| 변이 점검기 전체 | 1시간 소요 — 신규 시험 7곳만 수행 | 기존 시험의 변이 실효성은 1판 값(119곳) 유지 |
+| 브라우저 화면 캡처 | 스택 미기동 | 문구의 실제 렌더링 위치/가독성은 6단계 FE 결과서·10단계에서 확인 |
+
+## R9. 결론 및 판정
+- [ ] PASS  [ ] CONDITIONAL PASS  [x] **FAIL**
+- 사유: **High 1건(DEF-9-002) Open**. Critical/High 가 있으면 PASS 불가. 기술 취약점(인증 우회·인젝션·비밀 노출·허용 목록 우회·이중 반영) 신규 Critical/High 는 **없음**(위 시험으로 확인). 규칙 I·J(면책·AI 고지·A/B 확인 UI)는 반영 확인.
+- 다음 단계: DEF-9-002 수정 → 9단계 재검증(xfail 2건 XPASS 전환) 후 PASS/CONDITIONAL 재판정. 데모 모드 범위의 10단계(구동 검증)는 진행 가능하나 **실제 모드 활성·12단계 배포 승인 요청은 금지**. Medium 은 수정 또는 DEC 로 Deferred(수용) — 특히 DEF-9B-002·008·009 는 실제 연결 전 사용자 결정 필요.
+- 위협 모델 TW-01~36 재확인(1판 부록 A)은 코드 diff 가 없는 영역이라 변경 없음.
+
+## R10. 내부 검증 (3회)
+- 1차(체크리스트): 에이전트 정의 최소 점검 항목 전부 — 인증/인가·권한 경계(G 그룹, 콜백 무세션 예외), 인젝션·입력 검증(허용 목록 변형, 쿼리 인코딩), 시크릿(카나리 전수·`git check-ignore`·키 패턴 grep 모두 가짜 값), 의존성 CVE(`pip-audit` 3개 요구 파일 0건 · `npm audit` 0건), **의존성 환각**(M2·M3 가 새 패키지를 도입하지 않음 — `requirements*.txt`·`package*.json` diff 없음, 표준 라이브러리만 사용 → 신규 패키지 0, 해당 없음 확인), 암호화(토큰 평문 0600 — DEF-9B-008), 에러 노출, 설계-구현 불일치(W9 서술 3곳), 개인정보(아래), 라이선스·SBOM(변경 없음 → 기존 `sbom-web-m1*` 유효, 재생성 불필요 사유 명시), 외부 API 약관(호출 코드는 읽기 최대 40쪽·쓰기 허용 영상만 — 약관 확인 문서는 3단계), 규칙 I·J(R4-4), CI/자동화(`automation/` 변경 없음 → DEF-9-005 유지). 이 과정에서 **내 시험 오류 3건**을 발견·수정(R4-2).
+- 2차(공격자 관점, 카테고리 연쇄): ① 교차 사이트 페이지 → 콜백 GET 스팸 → 감사 오염 + 거짓 안내(DEF-9B-001) 발견; ② 비브라우저 프로세스(같은 PC) → 화면 응답 없이 `실제 실행 N건` 직접 호출 → A/B 확인 없음(DEF-9B-002); ③ api 침해 → egress + 토큰/DB 비밀 반출(DEF-9B-009); ④ 인증 우회 + 롤백 덮어쓰기: 세션 탈취 시 롤백으로 사람 작업 소실(DEF-9-002 와 결합, 별개 신규 경로 없음); ⑤ 모드 전환 중 확정 배치 / 롤백 불일치 / 모호 응답 재시도 모두 차단 확인. 변이 7곳으로 시험 실효성 확인.
+- 3차(결함 0건 확인 회차): 위 결함 표 외 **신규 결함 0건** 재확인 — 신규 61건 + 기존 258건 재실행(R4-1·R5 수치)이 동일, 소스 diff 없음. 단 Critical/High 0건 조건은 DEF-9-002 때문에 **충족 못 함** → FAIL 유지.
+- 검증 로그: `docs/harness/verify-logs/verify-log_security-web-m1-rev2.md`, 원문 `docs/harness/verify-logs/web-security-rev2-raw/`.
+
+## R-F. 개인정보·규제 (법률 자문 아님)
+- 수집·저장: 승인자 이름(자유 입력)·영상 메타데이터·구글 OAuth 토큰(개인 구글 계정 접근 자격). 이메일 등 계정 식별자 저장 코드는 없음(확인). 로그는 JSON 에 method/path/status/ms/request_id 만(쿼리·본문·헤더 없음, `logsetup.py`·nginx `$uri`), 토큰·세션·PIN 키는 마스킹.
+- 토큰 보관: **평문 0600**, 암호화·구글 revoke 없음 → 위 DEF-9B-008. **사용자 수용 결정 필요(TW-38)**. 보관기간·파기(POL-012/016)는 DEF-9-013 로 미구현 — 개인정보 보호법상 보관·파기 기준 충족 여부는 판단하지 않으며 **확인 필요**(전문가).
+- 제3자 제공/위탁: 구글(유튜브 API)로 영상 ID·제목 변경 본문 전송, 읽기 토큰·쓰기 토큰 전송. AI 서비스는 미연결(M3 후속). 이용자 고지·동의 흐름 문서화는 `WEB_LEGAL_NOTICE.md` 대상이며 **확인 필요**.
+- 개인정보 영향평가(PIA)·ISMS-P 해당 여부: 판단하지 않음 — **확인 필요**(1인 로컬 도구, 외부 이용자 없음 전제).
+- 규제 민감 도메인(건강·금융, 규칙 I): 면책·AI 고지·A/B 확인 UI 반영 확인(R4-4). 문구의 법적 충분성은 전문가 확인 필요.
+- 보안 사고 대응(탐지→격리→통지→복구)이 11단계 Runbook 에 담길 근거: `WEB_RUNBOOK.md` 15장·338행(구글 보안 활동 확인)·200행(계정·키 회수)이 있다. 토큰 유출 시 **구글 계정에서 앱 접근 제거를 첫 단계로** 명시할 것(DEF-9B-008 권고와 연결). 접근 권한 관리(최소권한)·계정 회수 절차와 로그 보관·감사 추적은 1판 부록 + 이번 감사 행 확인(연결·실행·적용·롤백·해제 기록)으로 설계와 일치; 로그 보관기간은 DEF-9-013 미결.
+
+## R-G. 규칙 F — 위협 모델 갱신 요청 (`docs/yt/threat_model.md` W9)
+1. TW-37 완화 칸: "모든 시도 감사 기록"에 **세션 없는 교차 사이트 요청 포함** 및 DEF-9B-001 잔여 위험 추가. 2. TW-39 잔여: "공식 절차 없음(Q-11-10)" 삭제 → `compose.online.yaml`+`web/.env.example` 경로 명시. 3. TW-40: DEF-VMF-001 해결됨으로 정정, DEF-9B-002(A/B 서버 필드) 유지. 4. TW-38: 비밀 폴더 0755, 연결 해제 시 revoke 없음·화면 회수 안내 없음 추가, SEC-015 "실행 순간에만 로드"와 구현 차이. 5. TW-42: 감사 detail 오류 코드 길이 무제한(DEF-9B-005). 6. TW-35/44: 리다이렉트 시 Authorization 전달(DEF-9B-003) 추가. 7. 신규 TW 후보: **TW-45 롤백 덮어쓰기(DEF-9-002) 실제 모드 영향**. 8. 모델 W9 의 "독립 검증·9단계 재검증은 아직" 문구를 이 판 기준으로 갱신. `traceability.md`: S-W08(비고 칸에 "09단계 확인 2판"), SEC-008·SEC-015·EVT-001·POL-002·006·008·013·010 행의 비고에 **"09단계 확인(2판, 2026-10-11)"** 갱신을 요청한다(이 에이전트는 공유 파일을 수정하지 않는다).
+
+## R-Q. 사용자(오케스트레이터) 결정 요청 (규칙 A)
+1. DEF-9-002: 롤백 방식 — (a) 현재 제목·보존 필드가 백업과 다르면 거부(권장) (b) 제목만 되돌리는 본문(설명 보존). 2. DEF-9B-002: 실제 모드 A/B 서버 확인 필드 추가 여부(권장: 추가). 3. DEF-9B-008: 쓰기 토큰 평문 보관 수용 여부와 revoke 호출 추가 여부. 4. DEF-9B-009: egress 도메인 제한 수용 여부. 5. 시험 자산 갱신(DEF-9B-006) 담당 지정.
+
+### R7-1. 정리 결과 (git status 원문, 정리 후)
+```
+ M docs/harness/security-web-m1-test.md
+?? docs/harness/verify-logs/verify-log_security-web-m1-rev2.md
+?? docs/harness/verify-logs/web-security-rev2-raw/
+?? web/tests_integration/test_it_07_rev2.py        (타 에이전트 소유)
+?? web/tests_integration/tools/rev2_screens.mjs    (타 에이전트 소유)
+?? web/tests_security/test_sec_09_m23_attack.py
+```
+`.harness-tmp/s2/` 에는 원문 로그 3개(run1_full.log·run2_full.log·run3.xml; 같은 내용을 `verify-logs/web-security-rev2-raw/` 에 복사)만 남기고 `cfg`·`pipaudit`·`mut`·복사본 폴더는 삭제했다. `docker ps -a/network/volume/images | grep s2` 결과 0건. `.harness-tmp/` 전체 삭제·janitor `--clean`·`pkill` 은 사용하지 않았다.
