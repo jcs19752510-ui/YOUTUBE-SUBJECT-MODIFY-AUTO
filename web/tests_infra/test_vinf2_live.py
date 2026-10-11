@@ -167,7 +167,10 @@ def test_vif_101_runtime_hardening(svc, user):
     assert i["Config"]["User"] == user
     assert hc["NetworkMode"] not in ("host", "none") and not hc.get("PidMode") and not hc.get("IpcMode") in ("host",)
     for m in i["Mounts"]:
-        assert m["Type"] in ("volume", "tmpfs"), m
+        if m["Type"] == "bind":                                     # 파일 비밀(file:)은 /run/secrets 아래 읽기 전용 바인드
+            assert m["Destination"].startswith("/run/secrets/") and m["RW"] is False, m
+        else:
+            assert m["Type"] in ("volume", "tmpfs"), m
         assert "docker.sock" not in m.get("Source", "")
     assert hc["PidsLimit"] and hc["Memory"] > 0
     if i["State"]["Status"] == "running":
@@ -432,7 +435,7 @@ def test_vif_131_data_survives_restart_and_down_up():
     wait_ready()
     assert counts() == c0
     for svc in ("db", "api", "worker", "web"):
-        assert inspect(svc)["State"]["Health"]["Status"] == "healthy" or True
+        assert inspect(svc)["State"]["Status"] == "running"
     assert inspect("migrate")["State"]["ExitCode"] == 0
     STATE["restart_ready_s"] = t
 
