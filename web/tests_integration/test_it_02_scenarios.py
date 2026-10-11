@@ -1,4 +1,4 @@
-"""IT 그룹 E — 사용자 시나리오 End-to-End(IT-001~IT-010). 실제 5개 컨테이너를 nginx 주소로 두드린다.
+"""IT 그룹 E — 사용자 시나리오 End-to-End(IT-050~IT-059). 실제 5개 컨테이너를 nginx 주소로 두드린다.
 
 각 시나리오는 단위 시험이 따로 본 것을 되풀이하지 않고 '단위 사이를 지나는' 값(승인 → 배치 → 워커 → 이력 → 롤백 → 리포트 → 감사)이
 서로 맞물리는지를 본다. 시나리오마다 DB 를 초기화한다(reset-demo 경로: web/api/worker 정지 → reset-schema → up).
@@ -9,13 +9,14 @@ import csv
 import io
 import json
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from itlib import (
-    Api, approve_many, approved_suggestion, dc, forge_approval_expiry, psql_app, psql_owner, set_cap, shift_days,
-    two_pass_suggestions, usable_videos, wait_healthy, worker_start, worker_stop,
+import itlib_b as ib
+from itlib_b import (  # noqa: F401  (fresh_demo 는 픽스처)
+    Api, apply_via_batch, approvable_set, approve_many, approved_suggestion, forge_approval_expiry, fresh_demo, mark_video_title, psql_app, psql_owner,
+    rollback, server_logs, set_cap, shift_days, shift_hours, two_pass_suggestions, usable_videos, wait_healthy, worker_start, worker_stop,
 )
 
 pytestmark = pytest.mark.destructive
@@ -25,10 +26,10 @@ def _parse_ts(s: str) -> datetime:
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-# ─────────────────────────── IT-001 전체 정상 흐름 ───────────────────────────
+# ─────────────────────────── IT-050 전체 정상 흐름 ───────────────────────────
 
-def test_it_001_full_happy_path_demo_to_report(fresh_demo):
-    """IT-001(TC-IT-100~): 데모 영상 불러오기 → AI 제안(모의) 생성 → 검증 → 사람 승인(승인자 이름) → 배치·사전 점검 → 확인 문구 실행 → 워커 처리 → 이력
+def test_it_050_full_happy_path_demo_to_report(fresh_demo):
+    """IT-050(TC-IT-100): 데모 영상 불러오기 → AI 제안(모의) 생성 → 검증 → 사람 승인(승인자 이름) → 배치·사전 점검 → 확인 문구 실행 → 워커 처리 → 이력
     → 롤백(영상 ID 직접 입력) → 리포트·CSV → 감사 체인. 검증: W-001~W-014, W-017, S-W03, S-W12, S-W16, NFR-W03"""
     a = fresh_demo
     d = a.get("/api/v1/dashboard").json()
@@ -53,7 +54,7 @@ def test_it_001_full_happy_path_demo_to_report(fresh_demo):
         assert s["status"] == "approved" and s["plan_hash"] and s["approval"]["approver"] == "홍길동"
         ttl = _parse_ts(s["approval"]["expires_at"]) - _parse_ts(s["approval"]["approved_at"])
         assert timedelta(hours=23, minutes=59) <= ttl <= timedelta(hours=24, minutes=1)
-    r = a.make_batch([s["id"] for s in approved], note="IT-001")
+    r = a.make_batch([s["id"] for s in approved], note="IT-050")
     assert r.status_code == 201
     batch, pre = r.json()["batch"], r.json()["precheck"]
     assert batch["status"] == "draft" and pre["item_count"] == 3 and pre["estimated_units"] == 156 and pre["confirm_text"] == "실행 3건"
@@ -96,8 +97,10 @@ def test_it_001_full_happy_path_demo_to_report(fresh_demo):
     r = a.post(f"/api/v1/changes/{c0['id']}/rollback", json={"typed_video_id": c0["video_id"], "approver": "홍길동"}, idem=True)
     assert r.status_code == 409
     # 재동기화는 앱이 바꾼 제목을 되돌리지 않는다(BE-B 시드 ↔ 변경 이력)
+    snaps0 = psql_app("select count(*) from metrics_snapshots")
     j = a.sync_demo()
-    assert j["status"] == "succeeded" and j["result"]["total"] == 200
+    assert j["status"] == "succeeded" and j["result"]["total"] == 200 and j["result"]["created"] == 0 and j["result"]["updated"] == 200
+    assert j["result"]["snapshots_created"] == 0 and psql_app("select count(*) from metrics_snapshots") == snaps0, "재동기화가 변경 전 기준선(스냅샷)을 다시 만들었다"
     now = {v["video_id"]: v for v in a.videos()}
     for c in chs[1:]:
         assert now[c["video_id"]]["title"] == c["new_title"]
@@ -123,10 +126,10 @@ def test_it_001_full_happy_path_demo_to_report(fresh_demo):
     assert "pin" not in blob.lower() or '"pin": "' not in blob  # PIN 값은 감사에 없다
 
 
-# ─────────────────────────── IT-002 차단·경고·제외·수정 경로 ───────────────────────────
+# ─────────────────────────── IT-051 차단·경고·제외·수정 경로 ───────────────────────────
 
-def test_it_002_block_warn_strict_excluded_and_edit_paths(fresh_demo):
-    """IT-002: 차단 제안은 승인 불가(409), 경고는 승인 가능하고 사전 점검에 경고가 실린다, 엄격 모드(건강·금융)는 경고도 차단,
+def test_it_051_block_warn_strict_excluded_and_edit_paths(fresh_demo):
+    """IT-051(TC-IT-101): 차단 제안은 승인 불가(409), 경고는 승인 가능하고 사전 점검에 경고가 실린다, 엄격 모드(건강·금융)는 경고도 차단,
     제외 영상은 제안 단계에서 409, 승인 후 제목 수정은 승인을 무효로 하며 배치에 담기지 않는다. 검증: W-004, W-005, W-007, W-008, POL"""
     a = fresh_demo
     vs = a.videos()
@@ -193,10 +196,10 @@ def test_it_002_block_warn_strict_excluded_and_edit_paths(fresh_demo):
     assert w["id"] in got and p["id"] in got
 
 
-# ─────────────────────────── IT-003 승인 만료 ───────────────────────────
+# ─────────────────────────── IT-052 승인 만료 ───────────────────────────
 
-def test_it_003_approval_expiry_across_units(fresh_demo):
-    """IT-003: 승인 24시간 만료 경로. (a) 만료된 승인은 배치에 담기지 않고 제안이 expired 로 바뀐다 (b) 다시 승인하면 새 유효 시간으로 담긴다
+def test_it_052_approval_expiry_across_units(fresh_demo):
+    """IT-052(TC-IT-102): 승인 24시간 만료 경로. (a) 만료된 승인은 배치에 담기지 않고 제안이 expired 로 바뀐다 (b) 다시 승인하면 새 유효 시간으로 담긴다
     (c) 실행 확정 뒤 승인이 만료돼도(DEC-042 D1: 기준 시각=실행 확정 시각) 이미 확정된 항목은 반영된다. 검증: W-007, W-008, SEC-W17"""
     a = fresh_demo
     ok = usable_videos(a, 3)
@@ -234,10 +237,10 @@ def test_it_003_approval_expiry_across_units(fresh_demo):
     assert r.status_code == 409 and r.json()["code"] == "precheck_stale", r.text[:300]
 
 
-# ─────────────────────────── IT-004 하루 한도·이월 ───────────────────────────
+# ─────────────────────────── IT-053 하루 한도·이월 ───────────────────────────
 
-def test_it_004_daily_cap_carry_over_and_no_catch_up(fresh_demo):
-    """IT-004: 하루 상한(설정 화면 값)이 배치 일정·워커 처리·대시보드에 일관되게 적용된다. 상한 2·항목 5 → 오늘 2건만 반영, 나머지는 예약만 남고
+def test_it_053_daily_cap_carry_over_and_no_catch_up(fresh_demo):
+    """IT-053(TC-IT-103): 하루 상한(설정 화면 값)이 배치 일정·워커 처리·대시보드에 일관되게 적용된다. 상한 2·항목 5 → 오늘 2건만 반영, 나머지는 예약만 남고
     (놓친 예약 몰아서 실행 금지) 다음 날 계산이 되면 2건씩 이어서 처리. 검증: W-008, W-010, S-W12, NFR-W06(하루 상한)"""
     a = fresh_demo
     set_cap(a, 2)
@@ -285,8 +288,8 @@ def test_it_004_daily_cap_carry_over_and_no_catch_up(fresh_demo):
     assert psql_app("select count(*) from changes where change_type='apply' and result='success'") == "5"
 
 
-def test_it_004b_cap_lowered_after_execute_follows_cap(fresh_demo):
-    """IT-004b: 실행 확정 뒤(워커 정지 중) 하루 상한을 낮추면 워커는 낮아진 상한까지만 처리하고 나머지는 대기한다(설정 ↔ 워커 경계). 검증: W-008, W-014"""
+def test_it_053b_cap_lowered_after_execute_follows_cap(fresh_demo):
+    """IT-053b(TC-IT-103b): 실행 확정 뒤(워커 정지 중) 하루 상한을 낮추면 워커는 낮아진 상한까지만 처리하고 나머지는 대기한다(설정 ↔ 워커 경계). 검증: W-008, W-014"""
     a = fresh_demo
     ok = usable_videos(a, 3)
     ap = approve_many(a, ok)
@@ -306,12 +309,18 @@ def test_it_004b_cap_lowered_after_execute_follows_cap(fresh_demo):
     time.sleep(6)
     b = a.get(f"/api/v1/batches/{bid}").json()
     assert b["counts"]["success"] == 1 and b["counts"]["pending"] == 2 and b["counts"]["failed"] == 0 and b["counts"]["skipped"] == 0, b["counts"]
+    # 남은 2건은 '오늘 예약' 그대로 대기한다(내일로 이월되지 않는다) — 상한을 다시 올리면 곧바로 이어서 처리된다
+    assert {i["scheduled_date"] for i in b["items"] if i["status"] == "pending"} == {x["scheduled_date"] for x in b["items"] if x["status"] == "success"}
+    assert not [x for x in a.get("/api/v1/audit", params={"page_size": 200}).json()["items"] if x["action"] == "batch.item.deferred"]
+    set_cap(a, 3)
+    done = a.wait_batch(bid, timeout=40)
+    assert done["counts"]["success"] == 3, done["counts"]
 
 
-# ─────────────────────────── IT-005 중복 실행 ───────────────────────────
+# ─────────────────────────── IT-054 중복 실행 ───────────────────────────
 
-def test_it_005_double_execute_and_idempotency(fresh_demo):
-    """IT-005: 배치 이중 실행 방지 — 같은 Idempotency-Key 재전송은 첫 응답 재생(작업 1개), 다른 키로 두 번째 실행은 409 batch_not_draft,
+def test_it_054_double_execute_and_idempotency(fresh_demo):
+    """IT-054(TC-IT-104): 배치 이중 실행 방지 — 같은 Idempotency-Key 재전송은 첫 응답 재생(작업 1개), 다른 키로 두 번째 실행은 409 batch_not_draft,
     다른 요청에 같은 키는 422. 동시에 8번 실행해도 실행은 1회이고 영상당 반영 1건. 검증: W-010, S-W12, NFR-W03, API.md 1-6"""
     a = fresh_demo
     set_cap(a, 20)
@@ -369,10 +378,10 @@ def test_it_005_double_execute_and_idempotency(fresh_demo):
     assert a.get("/api/v1/dashboard").json()["quota"]["used"] == 6 * 52
 
 
-# ─────────────────────────── IT-006 중지 ───────────────────────────
+# ─────────────────────────── IT-055 중지 ───────────────────────────
 
-def test_it_006_cancel_before_worker_picks_up_and_cancel_states(fresh_demo):
-    """IT-006: 실행 확정 후 워커가 처리하기 전에 중지하면 대기 항목이 전부 취소되고 제안이 승인 대기로 돌아오며, 워커가 다시 떠도 반영되지 않는다.
+def test_it_055_cancel_before_worker_picks_up_and_cancel_states(fresh_demo):
+    """IT-055(TC-IT-105): 실행 확정 후 워커가 처리하기 전에 중지하면 대기 항목이 전부 취소되고 제안이 승인 대기로 돌아오며, 워커가 다시 떠도 반영되지 않는다.
     이미 끝난 배치·취소된 배치의 취소/재실행은 409. 초안 취소도 가능. 검증: W-010, W-008"""
     a = fresh_demo
     ok = usable_videos(a, 5)
@@ -406,23 +415,23 @@ def test_it_006_cancel_before_worker_picks_up_and_cancel_states(fresh_demo):
     assert r.status_code == 409 and r.json()["code"] == "batch_not_cancellable"
 
 
-# ─────────────────────────── IT-007 롤백 불가 사유 ───────────────────────────
+# ─────────────────────────── IT-056 롤백 불가 사유 ───────────────────────────
 
-def test_it_007_rollback_refusal_reasons(fresh_demo):
-    """IT-007: 롤백이 막히는 사유가 단위 경계(이력 ↔ 백업 ↔ 쿼터 ↔ 멱등성)에서 각각 올바른 코드로 나온다: typed_video_id_mismatch, change_not_found,
+def test_it_056_rollback_refusal_reasons(fresh_demo):
+    """IT-056(TC-IT-106): 롤백이 막히는 사유가 단위 경계(이력 ↔ 백업 ↔ 쿼터 ↔ 멱등성)에서 각각 올바른 코드로 나온다: typed_video_id_mismatch, change_not_found,
     not_rollbackable(롤백의 롤백), later_change_exists/already_restored(이중 롤백), backup_invalid(백업 손상), quota_exhausted(429), 키 누락 400.
     모든 거부는 영상 제목을 바꾸지 않는다. 검증: W-011, S-W12"""
     a = fresh_demo
-    ok = usable_videos(a, 3)
+    ok = usable_videos(a, 4)
     ap = approve_many(a, ok)
     bid = a.make_batch([s["id"] for s in ap]).json()["batch"]["id"]
-    a.execute(bid, 3)
+    a.execute(bid, 4)
     a.wait_batch(bid)
     chs = a.get("/api/v1/changes").json()["items"]
     byv = {c["video_id"]: c for c in chs}
     def title(v: str) -> str:
         return {x["video_id"]: x for x in a.videos()}[v]["title"]
-    c1, c2, c3 = (byv[v["video_id"]] for v in ok)
+    c1, c2, c3, c4 = (byv[v["video_id"]] for v in ok)
     rb = lambda c, typed=None, idem=True: a.post(f"/api/v1/changes/{c['id']}/rollback", json={"typed_video_id": typed or c["video_id"], "approver": "복구자"}, idem=idem)  # noqa: E731
     assert rb(c1, idem=False).status_code == 400
     assert rb({"id": 99999, "video_id": "demoVid0001"}).json()["code"] == "change_not_found"
@@ -440,6 +449,15 @@ def test_it_007_rollback_refusal_reasons(fresh_demo):
     r = rb(c1)
     assert r.status_code == 409 and r.json()["code"] in ("later_change_exists", "already_restored", "not_rollbackable"), r.text[:200]
     assert title(c1["video_id"]) == c1["previous_title"]
+    lst = {c["id"]: c for c in a.get("/api/v1/changes").json()["items"]}        # 되돌린 적용·롤백 자신은 더 이상 롤백 대상이 아니다
+    assert lst[c1["id"]]["rollbackable"] is False and lst[r1.json()["id"]]["rollbackable"] is False and lst[c2["id"]]["rollbackable"] is True
+    # 이미 원래 제목(사용자가 Studio 에서 직접 되돌림) → already_restored, 제목은 그대로, 쿼터 소비 없음
+    q0 = a.get("/api/v1/dashboard").json()["quota"]["used"]
+    ib.mark_video_title(c4["video_id"], c4["previous_title"])
+    r = rb(c4)
+    assert r.status_code == 409 and r.json()["code"] == "already_restored", r.text[:200]
+    assert a.get("/api/v1/dashboard").json()["quota"]["used"] == q0 + 1          # 실제로 호출한 재조회 1회(1단위)만 남고, 호출하지 않은 갱신·검증 예약(51)은 풀린다
+    ib.mark_video_title(c4["video_id"], c4["new_title"])
     # 백업 손상 → backup_invalid(제목 불변)
     psql_app(f"update changes set backup_snippet = '{{\"title\": \"x\"}}'::jsonb where id = {c2['id']}")
     r = rb(c2)
@@ -452,47 +470,55 @@ def test_it_007_rollback_refusal_reasons(fresh_demo):
     assert title(c3["video_id"]) == c3["new_title"]
     psql_app("delete from quota_usage where method = 'it.fill'")
     assert rb(c3).status_code == 201 and title(c3["video_id"]) == c3["previous_title"]
+    # 쿼터 경계: 남은 단위가 52 미만(51)이면 거부, 정확히 52 이면 통과(사용 + 필요 == 상한은 허용)
+    used = a.get("/api/v1/dashboard").json()["quota"]["used"]
+    psql_app(f"insert into quota_usage (pt_date, method, units, called_at, status) select (now() at time zone 'America/Los_Angeles')::date, 'it.fill', {6000 - used - 51}, now(), 'ok'")
+    r = rb(c4)
+    assert r.status_code == 429 and r.json()["code"] == "quota_exhausted" and title(c4["video_id"]) == c4["new_title"], r.text[:200]
+    psql_app("update quota_usage set units = units - 1 where method = 'it.fill'")           # 남은 단위 52
+    assert rb(c4).status_code == 201 and title(c4["video_id"]) == c4["previous_title"]
+    assert a.get("/api/v1/dashboard").json()["quota"]["remaining"] == 0
 
 
-# ─────────────────────────── IT-008 CSV 수식 무력화와 리포트 ───────────────────────────
+# ─────────────────────────── IT-057 CSV 수식 무력화와 리포트 ───────────────────────────
 
-def test_it_008_report_and_csv_formula_neutralized_end_to_end(fresh_demo):
-    """IT-008: 사람이 수정한 제목이 '=' 로 시작해도(검증기가 허용하는 경우) 반영 → 이력 → CSV 에서 수식으로 실행되지 않게 `'` 접두가 붙는다.
+def test_it_057_report_and_csv_formula_neutralized_end_to_end(fresh_demo):
+    """IT-057(TC-IT-107): 사람이 수정한 제목이 `=` `+` `-` `@` 로 시작해도(검증기가 허용함) 반영 → 이력 → CSV 에서 수식으로 실행되지 않게 `'` 접두가 붙는다 — 네 문자 각각.
     변경이 없는 영상은 리포트에 '변경 없음'/'데이터 부족'으로만 나오고 원인을 단정하지 않는다. 검증: W-013, SEC-W21"""
     a = fresh_demo
-    v = usable_videos(a, 1)[0]
-    s = [x for x in a.make_suggestion(v["video_id"], 3) if x["validation_result"] != "block" and not x["strict"]][0]
-    res = None
-    for prefix in ("=", "+", "-", "@"):
-        r = a.patch(f"/api/v1/suggestions/{s['id']}", json={"title": prefix + "합계 " + s["title"]})
-        if r.status_code == 200 and r.json()["validation_result"] != "block" and r.json()["status"] != "blocked":
-            res = (prefix, r.json())
-            break
-    if res is None:
-        pytest.skip("이 검증기는 수식 문자로 시작하는 제목을 모두 차단/거부함: CSV 경로는 단위 시험(TC-VB-195~)이 담당")
-    prefix, sg = res
-    assert a.approve(sg["id"]).status_code == 200
-    bid = a.make_batch([sg["id"]]).json()["batch"]["id"]
-    a.execute(bid, 1)
-    assert a.wait_batch(bid)["counts"]["success"] == 1
+    set_cap(a, 20)
+    vs = usable_videos(a, 5)
+    prefixes = ("=", "+", "-", "@")
+    picked = {}
+    for p, v in zip(prefixes, vs):
+        s = [x for x in a.make_suggestion(v["video_id"], 3) if x["validation_result"] != "block" and not x["strict"]][0]
+        r = a.patch(f"/api/v1/suggestions/{s['id']}", json={"title": p + "합계 " + s["title"]})
+        assert r.status_code == 200 and r.json()["validation_result"] != "block" and r.json()["status"] == "candidate", (p, r.text[:200])
+        assert a.approve(r.json()["id"]).status_code == 200
+        picked[p] = (v["video_id"], r.json())
+    bid = a.make_batch([sg["id"] for _, sg in picked.values()]).json()["batch"]["id"]
+    a.execute(bid, 4)
+    assert a.wait_batch(bid)["counts"]["success"] == 4
     raw = a.get("/api/v1/reports/export.csv").content.decode("utf-8-sig")
     rows = list(csv.DictReader(io.StringIO(raw)))
-    mine = [x for x in rows if x["video_id"] == v["video_id"]][0]
-    assert mine["new_title"].startswith("'" + prefix) and not mine["new_title"].startswith(prefix)
+    by = {x["video_id"]: x for x in rows if (x.get("video_id") or "").startswith("demoVid")}
+    for p, (vid, sg) in picked.items():
+        mine = by[vid]
+        assert mine["new_title"].startswith("'" + p) and not mine["new_title"].startswith(p), (p, mine["new_title"])
     for row in rows:
         for cell in row.values():
             assert not (cell or "").startswith(("=", "+", "-", "@", "\t", "\r")) or cell.replace(".", "", 1).lstrip("+-").isdigit()
-    rep = a.get("/api/v1/reports/changes", params={"video_id": v["video_id"]}).json()
-    assert rep["items"][0]["status"] in ("insufficient", "ok", "no_change") and rep["notes"]
-    other = usable_videos(a, 2)[1]
-    rep2 = a.get("/api/v1/reports/changes", params={"video_id": other["video_id"]}).json()
+    vid0 = picked["="][0]
+    rep = a.get("/api/v1/reports/changes", params={"video_id": vid0}).json()
+    assert rep["items"][0]["status"] in ("insufficient", "ok") and rep["notes"]
+    rep2 = a.get("/api/v1/reports/changes", params={"video_id": vs[4]["video_id"]}).json()
     assert rep2["items"][0]["status"] == "no_change"
 
 
-# ─────────────────────────── IT-009 PIN 생애주기 ───────────────────────────
+# ─────────────────────────── IT-058 PIN 생애주기 ───────────────────────────
 
-def test_it_009_pin_lifecycle_sessions_lock_and_revocation(fresh_demo):
-    """IT-009: 설정(PIN) ↔ 인증 ↔ 세션 ↔ nginx 속도 제한의 경계. PIN 설정 시 다른 세션이 폐기되고, PIN 없는 로그인은 거부되며, 5회 틀리면 잠금(429
+def test_it_058_pin_lifecycle_sessions_lock_and_revocation(fresh_demo):
+    """IT-058(TC-IT-108): 설정(PIN) ↔ 인증 ↔ 세션 ↔ nginx 속도 제한의 경계. PIN 설정 시 다른 세션이 폐기되고, PIN 없는 로그인은 거부되며, 5회 틀리면 잠금(429
     pin_locked + Retry-After), 잠금 중에는 맞는 PIN 도 거부, 변경·해제는 현재 PIN 필수, PIN 값은 로그·감사에 남지 않는다. 검증: W-014, SEC-W19, SEC-W20, S-W09"""
     a = fresh_demo
     b = Api()                            # 두 번째 세션(다른 브라우저)
@@ -502,14 +528,14 @@ def test_it_009_pin_lifecycle_sessions_lock_and_revocation(fresh_demo):
     assert a.get("/api/v1/dashboard").status_code == 200              # 현재 세션은 유지
     assert b.get("/api/v1/dashboard").status_code == 401              # 다른 세션은 폐기
     c = Api()
-    r = c.login(patient=False)
+    r = c.login()
     assert r.status_code == 401 and r.json()["code"] == "pin_invalid"
-    assert c.login("907356", patient=False).status_code == 401
+    assert c.login("907356").status_code == 401
     r = None
     for _ in range(5):
-        r = c.login("818283", patient=False)
+        r = c.login("818283")
     assert r.status_code == 429 and r.json()["code"] == "pin_locked" and int(r.headers["retry-after"]) >= 60
-    r = c.login("424242", patient=False)                              # 잠금 중에는 맞는 PIN 도 거부
+    r = c.login("424242")                              # 잠금 중에는 맞는 PIN 도 거부
     assert r.status_code == 429 and r.json()["code"] == "pin_locked"
     # 잠금 해제(5분을 기다릴 수 없어 상태 행을 지움: 앱 계정에 UPDATE/DELETE 권한 있음) 후 정상 로그인
     keys = psql_app("select key from settings_kv").splitlines()
@@ -537,16 +563,15 @@ def test_it_009_pin_lifecycle_sessions_lock_and_revocation(fresh_demo):
     au = json.dumps(d.get("/api/v1/audit", params={"page_size": 200}).json(), ensure_ascii=False)
     for pin in ("424242", "131313", "818283", "907356"):
         assert pin not in au
-        for svc in ("api", "web", "worker", "db"):
-            assert pin not in dc("logs", "--no-log-prefix", svc).stdout, (svc, pin)
+        assert pin not in server_logs(), pin
     for x in (a, b, c, d):
         x.close()
 
 
-# ─────────────────────────── IT-010 설정 경계 ───────────────────────────
+# ─────────────────────────── IT-059 설정 경계 ───────────────────────────
 
-def test_it_010_settings_allow_list_and_live_cannot_be_enabled(fresh_demo):
-    """IT-010: 설정 API 는 4개 키만 받고 enable_live·live_allowlist 같은 키는 전체 거부(400)하며, 범위를 벗어난 값은 422. 설정 변경이 읽기 API 에 즉시 반영된다.
+def test_it_059_settings_allow_list_and_live_cannot_be_enabled(fresh_demo):
+    """IT-059(TC-IT-109): 설정 API 는 4개 키만 받고 enable_live·live_allowlist 같은 키는 전체 거부(400)하며, 범위를 벗어난 값은 422. 설정 변경이 읽기 API 에 즉시 반영된다.
     검증: W-014, SEC-W23, S-W03"""
     a = fresh_demo
     for body in ({"enable_live": True}, {"live_allowlist": ["demoVid0001"]}, {"daily_apply_cap": 5, "enable_live": True}, {"mode": "live"}):
@@ -560,14 +585,19 @@ def test_it_010_settings_allow_list_and_live_cannot_be_enabled(fresh_demo):
     assert (g["daily_apply_cap"], g["suggestions_per_video"], g["tone"]) == (7, 2, ["친근한"])
     assert g["mode"] == "demo" and g["read_only"]["enable_live"] is False and g["read_only"]["live_allowlist"] == []
     assert a.get("/api/v1/dashboard").json()["today"]["cap"] == 7       # 설정 ↔ 대시보드(도메인) 경계
+    # DB 에 범위를 벗어난 값이 저장돼 있어도(수동 수정·구버전 잔재) 안전한 기본값(10)으로 읽는다 — 상한 0 이면 반영이 영영 멈추고 99 이면 상한이 사라진다
+    for bad in ('99', '0', '"5"', 'true'):
+        psql_app(f"update settings_kv set value = '{bad}'::jsonb where key = 'daily_apply_cap'")
+        assert a.get("/api/v1/dashboard").json()["today"]["cap"] == 10, bad
+        assert a.get("/api/v1/settings").json()["daily_apply_cap"] == 10, bad
     a.patch("/api/v1/settings", json={"daily_apply_cap": 10, "suggestions_per_video": 3, "tone": []})
     assert a.get("/api/v1/google/status").json()["connected"] is False
 
 
-# ─────────────────────────── IT-011 같은 영상 두 배치 ───────────────────────────
+# ─────────────────────────── IT-060 같은 영상 두 배치 ───────────────────────────
 
-def test_it_011_same_video_in_two_batches_applies_once(fresh_demo):
-    """IT-011: 같은 영상의 서로 다른 제안을 두 배치(초안)에 나눠 담고 둘 다 실행해도 영상은 한 번만 바뀐다(두 번째는 건너뜀·제목 불변·쿼터 1건분).
+def test_it_060_same_video_in_two_batches_applies_once(fresh_demo):
+    """IT-060(TC-IT-110): 같은 영상의 서로 다른 제안을 두 배치(초안)에 나눠 담고 둘 다 실행해도 영상은 한 번만 바뀐다(두 번째는 건너뜀·제목 불변·쿼터 1건분).
     배치 단위(BE-B)와 이력/한도(BE-B)·워커(BE-A) 사이의 경계. 검증: W-008, W-010, S-W12, NFR-W03"""
     a = fresh_demo
     two = two_pass_suggestions(a, usable_videos(a, 30))
@@ -592,3 +622,379 @@ def test_it_011_same_video_in_two_batches_applies_once(fresh_demo):
     assert psql_app(f"select count(*) from changes where video_id='{v}' and change_type='apply' and result='success'") == "1"
     assert {x["video_id"]: x for x in a.videos()}[v]["title"] == two[0]["title"]
     assert a.get("/api/v1/dashboard").json()["quota"]["used"] == 52
+
+
+# ─────────────────────────── IT-061 교체 한도(간격·횟수)와 롤백 ───────────────────────────
+
+def test_it_061_replace_limits_interval_count_and_rollback_exempt(fresh_demo):
+    """IT-061(TC-IT-111): 같은 영상의 교체 한도(72시간 간격·영상당 3회)가 이력(롤백 포함) ↔ 배치 사전 점검 ↔ 영상 상세(limits)에 일관되게 적용된다.
+    롤백 자체는 한도를 적용받지 않지만 변경 1회로 센다. 72시간 뒤에는 다시 담긴다. 3회가 차면 시간이 지나도 막힌다. 검증: W-008, W-011, S-W12(교체 한도)"""
+    a = fresh_demo
+    set_cap(a, 20)
+    v, sugs = approvable_set(a, usable_videos(a, 60), 3)
+    vid = v["video_id"]
+    assert a.get(f"/api/v1/videos/{vid}").json()["limits"]["allowed"] is True
+    s1 = a.approve(sugs[0]["id"]).json()
+    ch1 = apply_via_batch(a, s1["id"])
+    d = a.get(f"/api/v1/videos/{vid}").json()
+    assert d["limits"]["allowed"] is False and d["limits"]["next_allowed_at"] and any("72" in x for x in d["limits"]["reasons"]), d["limits"]
+    assert _parse_ts(d["limits"]["next_allowed_at"]) > datetime.now(timezone.utc) + timedelta(hours=70)
+    r = rollback(a, ch1)                                     # 롤백은 간격 한도를 무시한다(사고 복구가 막히지 않게)
+    assert r.status_code == 201 and r.json()["change_type"] == "rollback"
+    assert a.approve(sugs[1]["id"]).status_code == 200
+    r = a.make_batch([sugs[1]["id"]])                         # 롤백도 변경 1회 → 간격 한도에 걸린다
+    assert r.status_code == 422 and r.json()["code"] == "batch_empty" and "72" in r.json()["detail"], r.text[:300]
+    shift_hours(70)                                           # 경계: 72시간 직전(롤백으로부터 70시간)에는 아직 막힌다
+    r = a.make_batch([sugs[1]["id"]])
+    assert r.status_code == 422 and r.json()["code"] == "batch_empty", r.text[:300]
+    shift_hours(3)                                            # 73시간 → 통과
+    ch2 = apply_via_batch(a, sugs[1]["id"])                   # 두 번째 적용(영상 기준 변경 3회째: 적용·롤백·적용)
+    assert {x["video_id"]: x["title"] for x in a.videos()}[vid] == ch2["new_title"]
+    assert a.approve(sugs[2]["id"]).status_code == 200
+    shift_hours(73)                                           # 간격은 지났지만 횟수(3회)가 찼다
+    r = a.make_batch([sugs[2]["id"]])
+    assert r.status_code == 422 and r.json()["code"] == "batch_empty", r.text[:300]
+    assert "3" in r.json()["detail"] and ("횟수" in r.json()["detail"] or "회" in r.json()["detail"]), r.json()["detail"]
+    lim = a.get(f"/api/v1/videos/{vid}").json()["limits"]
+    assert lim["allowed"] is False and lim["next_allowed_at"] is None, lim              # 시간이 해결해 주지 않는 한도는 다음 가능 시각이 없다
+    assert psql_app(f"select count(*) from changes where video_id='{vid}' and result='success'") == "3"
+    # 이후 변경이 있는 옛 변경의 롤백은 거부된다(옛 제목으로 최신 제목을 덮는 사고 방지) — 제목 불변
+    r = rollback(a, ch1)
+    assert r.status_code == 409 and r.json()["code"] == "later_change_exists", r.text[:300]
+    assert {x["video_id"]: x["title"] for x in a.videos()}[vid] == ch2["new_title"]
+    chs = {c["id"]: c for c in a.get("/api/v1/changes", params={"video_id": vid}).json()["items"]}
+    assert [c["rollbackable"] for c in sorted(chs.values(), key=lambda c: c["id"])] == [False, False, True], chs      # 적용1(이미 되돌림)·롤백·적용2(최신)
+    # 롤백은 횟수가 차도 가능(가장 최근 변경이면)
+    assert rollback(a, ch2).status_code == 201
+
+
+# ─────────────────────────── IT-062 워커 쪽 승인·상태 재검증(건너뜀 사유 11종) ───────────────────────────
+
+def _planned_row_sql(video_id: str, suggestion_id: int, batch_id: int, result: str, ago_hours: float) -> str:
+    return (
+        "insert into changes (video_id, suggestion_id, batch_id, change_type, previous_title, new_title, backup_snippet, reason, approver, approved_at, plan_hash, result, mode, created_at, applied_at) "
+        f"select v.video_id, s.id, {batch_id}, 'apply', v.title, s.title, v.snippet, 'it', a.approver, a.approved_at, a.plan_hash, '{result}', 'demo', now() - interval '{ago_hours} hour', "
+        f"case when '{result}'='success' then now() - interval '{ago_hours} hour' else null end "
+        f"from videos v join suggestions s on s.id = {suggestion_id} join approvals a on a.suggestion_id = s.id where v.video_id = '{video_id}'"
+    )
+
+
+def test_it_062_worker_rechecks_everything_after_execute_confirm(fresh_demo):
+    """IT-062(TC-IT-112): 실행을 확정한 뒤 워커가 처리하기 전에 상태가 어긋나면(승인 삭제·변조·사용·만료, 영상 정보 변경, 제안 상태·판정 변경, 제외 사유 발생,
+    미확정 변경 기록, 간격·횟수 한도) 워커는 영상을 바꾸지 않고 항목을 [코드] 사유와 함께 건너뛴다. 11가지를 한 DB 에서 한꺼번에 시험한다
+    (승인 ↔ 배치 ↔ 워커 ↔ 한도 ↔ 이력 경계). 검증: W-008, W-010, SEC-W17, S-W12"""
+    a = fresh_demo
+    set_cap(a, 20)
+    cases = ["approval_missing", "approval_tampered", "approval_used", "approval_expired", "plan_mismatch", "suggestion_state", "suggestion_blocked",
+             "video_excluded", "pending_change_exists", "limit_interval", "limit_count"]
+    vids = usable_videos(a, len(cases) + 1)
+    ap = {c: approved_suggestion(a, vids[i]["video_id"]) for i, c in enumerate(cases)}
+    ok_sug = approved_suggestion(a, vids[len(cases)]["video_id"])            # 대조군: 아무 이상 없는 항목은 정상 반영
+    worker_stop()
+    items: dict[str, dict] = {}
+    try:
+        for c in cases + ["control"]:
+            sg = ok_sug if c == "control" else ap[c]
+            bid = a.make_batch([sg["id"]]).json()["batch"]["id"]
+            assert a.execute(bid, 1).status_code == 202
+            items[c] = {"batch": bid, "sug": sg["id"], "video": sg["video_id"], "title": {x["video_id"]: x["title"] for x in a.videos()}[sg["video_id"]]}
+        for c in cases:
+            S, V, B = items[c]["sug"], items[c]["video"], items[c]["batch"]
+            sql = {
+                "approval_missing": f"delete from approvals where suggestion_id={S}",
+                "approval_tampered": f"update approvals set approver='위조자' where suggestion_id={S}",
+                "approval_used": f"update approvals set used_at=now() where suggestion_id={S}",
+                "approval_expired": f"update batches set executed_at = executed_at + interval '25 hours' where id={B}",
+                "plan_mismatch": f"update videos set snippet = jsonb_set(snippet,'{{description}}','\"바뀐 설명\"'::jsonb) where video_id='{V}'",
+                "suggestion_state": f"update suggestions set status='approved' where id={S}",
+                "suggestion_blocked": f"update suggestions set validation_result='block' where id={S}",
+                "video_excluded": f"update videos set privacy_status='private' where video_id='{V}'",
+                "pending_change_exists": _planned_row_sql(V, S, B, "planned", 0),
+                "limit_interval": _planned_row_sql(V, S, B, "success", 1),
+                "limit_count": "; ".join(_planned_row_sql(V, S, B, "success", h) for h in (100, 200, 300)),
+            }[c]
+            psql_owner(sql)
+    finally:
+        worker_start()
+    for c in cases + ["control"]:
+        b = a.wait_batch(items[c]["batch"], timeout=90)
+        it = b["items"][0]
+        if c == "control":
+            assert it["status"] == "success", it
+            continue
+        assert it["status"] == "skipped" and it["skip_reason"].startswith(f"[{c}]"), (c, it["status"], it["skip_reason"])
+        assert b["status"] == "done" and b["counts"]["skipped"] == 1
+        assert psql_app(f"select count(*) from changes where batch_id={items[c]['batch']} and result='success' and applied_at > now() - interval '1 minute' and reason <> 'it'") == "0", c
+    titles = {x["video_id"]: x["title"] for x in a.videos()}
+    for c in cases:
+        assert titles[items[c]["video"]] == items[c]["title"], f"{c}: 건너뛴 항목의 영상 제목이 바뀜"
+    assert titles[ok_sug["video_id"]] == ok_sug["title"]
+    au = a.get("/api/v1/audit", params={"page_size": 200}).json()
+    skipped = [x["detail"]["code"] for x in au["items"] if x["action"] == "batch.item.skipped"]
+    assert sorted(skipped) == sorted(cases), skipped
+    assert au["chain_ok"] is True
+    # 건너뛴 제안은 승인이 아직 쓸 수 있으면 approved, 아니면 expired 로 돌아온다(승인 삭제·변조·사용·만료 등은 expired, 그 밖은 approved 로 복귀하거나 상태 유지)
+    st = {s["id"]: s["status"] for s in a.get("/api/v1/suggestions", params={"page_size": 200}).json()["items"]}
+    for c in ("approval_missing", "approval_tampered", "approval_used", "approval_expired"):
+        assert st[items[c]["sug"]] == "expired", (c, st[items[c]["sug"]])
+    assert psql_app("select count(*) from quota_usage where status in ('ok','failed') and units>0") == "3", "쿼터는 정상 반영 1건(3행)만 소비"
+
+
+# ─────────────────────────── IT-063 일부 반영 뒤 중지 ───────────────────────────
+
+def test_it_063_cancel_after_partial_apply_keeps_applied_and_releases_rest(fresh_demo):
+    """IT-063(TC-IT-113): 하루 상한 2·항목 5 배치에서 2건이 반영된 뒤 중지하면 나머지 3건만 취소되고 제안은 승인 대기로 돌아오며, 다음 날이 되어도 더 반영되지 않는다.
+    이미 반영된 2건의 이력·롤백 가능 여부는 그대로. 검증: W-008, W-010, W-011"""
+    a = fresh_demo
+    set_cap(a, 2)
+    ap = approve_many(a, usable_videos(a, 5))
+    bid = a.make_batch([s["id"] for s in ap]).json()["batch"]["id"]
+    assert a.execute(bid, 5).status_code == 202
+    from itlib_b import wait_until
+    wait_until(lambda: a.get(f"/api/v1/batches/{bid}").json()["counts"]["success"] >= 2, 60, what="2건 반영")
+    r = a.post(f"/api/v1/batches/{bid}/cancel")
+    assert r.status_code == 200 and r.json()["counts"] == {"pending": 0, "running": 0, "success": 2, "failed": 0, "skipped": 0, "cancelled": 3}, r.json()["counts"]
+    st = {s["id"]: s["status"] for s in a.get("/api/v1/suggestions", params={"page_size": 100}).json()["items"]}
+    done = [x["suggestion_id"] for x in r.json()["items"] if x["status"] == "success"]
+    rest = [x["suggestion_id"] for x in r.json()["items"] if x["status"] == "cancelled"]
+    assert all(st[i] == "applied" for i in done) and all(st[i] == "approved" for i in rest)
+    shift_days(1)
+    time.sleep(7)
+    assert psql_app("select count(*) from changes where result='success'") == "2"
+    d = a.get("/api/v1/dashboard").json()
+    assert d["queue"]["pending_items"] == 0 and d["counts"]["applied"] == 2 and d["counts"]["approved"] == 3
+    assert all(c["rollbackable"] for c in a.get("/api/v1/changes", params={"batch_id": bid}).json()["items"])
+    # 이 시점에서 시늉으로 하루를 당겼으므로 오늘 몫은 비어 있다. 되돌리고(오늘 이미 2건 반영) 새 배치를 만들면 오늘 몫이 없어 모두 내일 이후로 잡힌다
+    shift_days(-1)
+    nb = a.make_batch(rest)                                   # 돌려받은 제안으로 새 배치
+    assert nb.status_code == 201 and nb.json()["precheck"]["item_count"] == 3
+    pre = nb.json()["precheck"]
+    assert date.fromisoformat(pre["schedule"][0]["date"]) >= datetime.now(timezone(timedelta(hours=9))).date() + timedelta(days=1) - timedelta(days=0), pre["schedule"]
+    assert any("상한" in w and "내일" in w for w in pre["warnings"]), pre["warnings"]
+
+
+# ─────────────────────────── IT-064 사용자가 Studio 에서 먼저 제목을 바꾼 경우 ───────────────────────────
+
+def test_it_064_external_title_change_is_never_overwritten(fresh_demo):
+    """IT-064(TC-IT-114): 승인한 뒤 유튜브(모의) 쪽 제목이 사용자에 의해 바뀌면 (a) 배치 초안 단계 (b) 실행 확정 단계 (c) 확정 뒤 워커 단계 중 어디서든
+    덮어쓰지 않는다. 재동기화(videos.sync)도 앱이 바꾼 제목을 되돌리지 않는다. 검증: W-008, W-010, SEC-W17, S-W12"""
+    a = fresh_demo
+    set_cap(a, 20)
+    vs = usable_videos(a, 4)
+    s_a, s_b, s_c, s_d = approve_many(a, vs)
+    # (a) 초안 전에 바뀜 → 담기지 않음
+    mark_video_title(s_a["video_id"], "사용자가 직접 바꾼 제목 A")
+    r = a.make_batch([s_a["id"]])
+    assert r.status_code == 422 and r.json()["code"] == "batch_empty"
+    # (b) 초안 뒤·확정 전에 바뀜 → 확정 거부(precheck_stale), 영상 제목 그대로
+    bid_b = a.make_batch([s_b["id"]]).json()["batch"]["id"]
+    mark_video_title(s_b["video_id"], "사용자가 직접 바꾼 제목 B")
+    r = a.execute(bid_b, 1)
+    assert r.status_code == 409 and r.json()["code"] == "precheck_stale", r.text[:300]
+    assert a.get(f"/api/v1/batches/{bid_b}").json()["status"] == "draft"
+    # (c) 확정 뒤·워커 전에 바뀜 → 워커가 건너뜀
+    worker_stop()
+    try:
+        bid_c = a.make_batch([s_c["id"]]).json()["batch"]["id"]
+        assert a.execute(bid_c, 1).status_code == 202
+        mark_video_title(s_c["video_id"], "사용자가 직접 바꾼 제목 C")
+    finally:
+        worker_start()
+    b = a.wait_batch(bid_c)
+    assert b["counts"]["skipped"] == 1 and b["items"][0]["skip_reason"].startswith(("[plan_mismatch]", "[title_changed]", "[video_changed]")), b["items"]
+    titles = {x["video_id"]: x["title"] for x in a.videos()}
+    assert titles[s_a["video_id"]].endswith("A") and titles[s_b["video_id"]].endswith("B") and titles[s_c["video_id"]].endswith("C")
+    # 재동기화: 앱이 반영한 제목은 유지(d), 사용자가 직접 바꾼 제목도 앱이 건드리지 않은 영상은 시드 기준으로 되돌아간다
+    ch = apply_via_batch(a, s_d["id"])
+    j = a.sync_demo()
+    assert j["status"] == "succeeded"
+    titles2 = {x["video_id"]: x["title"] for x in a.videos()}
+    assert titles2[s_d["video_id"]] == ch["new_title"]
+
+
+# ─────────────────────────── IT-065 영상 workflow 상태와 대시보드 집계 ───────────────────────────
+
+def test_it_065_workflow_status_and_dashboard_counts_follow_every_transition(fresh_demo):
+    """IT-065(TC-IT-115): 제안 → 승인 → 배치 대기 → 반영 → 롤백 → 반려 각 단계에서 영상 목록의 workflow_status/필터·영상 상세·대시보드 counts 가 서로 일치한다
+    (제안·배치·이력·영상 단위 사이의 파생 상태). 검증: W-002, W-005, W-009, W-012"""
+    a = fresh_demo
+    set_cap(a, 20)
+    v1, v2, v3 = usable_videos(a, 3)
+    def ws(v): return {x["video_id"]: x for x in a.videos()}[v["video_id"]]["workflow_status"]
+    def cnt(): return a.get("/api/v1/dashboard").json()["counts"]
+    assert ws(v1) == "none" and cnt()["suggested"] == 0
+    s1 = a.make_suggestion(v1["video_id"], 3)
+    assert ws(v1) == "suggested" and cnt()["suggested"] >= 1
+    ok = [x for x in s1 if x["validation_result"] != "block" and not x["strict"]][0]
+    assert a.approve(ok["id"]).status_code == 200
+    assert ws(v1) == "approved" and cnt()["approved"] == 1
+    assert [x["video_id"] for x in a.videos(status="approved")] == [v1["video_id"]]
+    worker_stop()
+    try:
+        bid = a.make_batch([ok["id"]]).json()["batch"]["id"]
+        assert a.execute(bid, 1).status_code == 202
+        assert ws(v1) == "queued" and cnt()["queued"] == 1 and cnt()["approved"] == 0
+    finally:
+        worker_start()
+    a.wait_batch(bid)
+    assert ws(v1) == "applied" and cnt()["applied"] == 1 and cnt()["queued"] == 0
+    det = a.get(f"/api/v1/videos/{v1['video_id']}").json()
+    assert det["changes"][0]["result"] == "success" and {x["id"]: x["status"] for x in det["suggestions"]}[ok["id"]] == "applied"
+    ch = a.get("/api/v1/changes", params={"video_id": v1["video_id"]}).json()["items"][0]
+    assert rollback(a, ch).status_code == 201
+    assert ws(v1) == "rolled_back" and cnt()["applied"] == 0
+    assert {x["id"]: x["status"] for x in a.get(f"/api/v1/videos/{v1['video_id']}").json()["suggestions"]}[ok["id"]] == "rolled_back"
+    assert [x["video_id"] for x in a.videos(status="rolled_back")] == [v1["video_id"]]
+    # 반려
+    s2 = a.make_suggestion(v2["video_id"], 1)[0]
+    assert a.post(f"/api/v1/suggestions/{s2['id']}/reject").json()["status"] == "rejected"
+    assert ws(v2) == "none" or ws(v2) == "suggested"
+    # 제외 필터 + 상태 필터 교차
+    ex = a.videos(excluded=True)
+    assert len(ex) == 37 and all(x["excluded"] for x in ex)
+    assert a.get("/api/v1/dashboard").json()["counts"]["excluded"] == 37
+
+
+# ─────────────────────────── IT-066 설정이 제안 생성의 두 경로에 흐름 ───────────────────────────
+
+def test_it_066_settings_flow_into_sync_and_job_suggestion_paths(fresh_demo):
+    """IT-066(TC-IT-116): 설정 화면의 '영상당 후보 수'와 '말투'가 동기 제안(POST /videos/{id}/suggestions)과 일괄 제안(작업) 두 경로에 똑같이 반영되고 AI 실행 기록(ai_runs)에
+    남는다. 명시한 count 는 설정보다 우선하고, 같은 제목은 중복 생성되지 않는다. 설정 단위 ↔ 제안 단위 ↔ 작업 큐 경계. 검증: W-004, W-014, S-W03"""
+    a = fresh_demo
+    assert a.patch("/api/v1/settings", json={"suggestions_per_video": 2, "tone": ["친근한", "차분한"]}).status_code == 200
+    v1, v2, v3 = usable_videos(a, 3)
+    r = a.post(f"/api/v1/videos/{v1['video_id']}/suggestions")           # 본문 없음 → 설정값(2)
+    assert r.status_code == 201 and len(r.json()) == 2
+    j = a.wait_job(a.post("/api/v1/suggestions/generate", json={"video_ids": [v2["video_id"]]}).json()["id"])   # count 생략 → 설정값(2)
+    assert j["status"] == "succeeded" and j["result"]["suggestions"] == 2
+    r5 = a.post(f"/api/v1/videos/{v3['video_id']}/suggestions", json={"count": 5})                              # 명시 count 가 우선
+    assert r5.status_code == 201 and len(r5.json()) == 5
+    again = a.post(f"/api/v1/videos/{v3['video_id']}/suggestions", json={"count": 5})
+    assert [x["id"] for x in again.json()] == [x["id"] for x in r5.json()], "같은 제목은 새로 만들지 않고 기존 제안을 돌려준다"
+    assert psql_app(f"select count(*) from suggestions where video_id='{v3['video_id']}'") == "5"
+    tones = psql_app("select distinct params->>'tone' from ai_runs").splitlines()
+    assert tones == ["친근한, 차분한"], tones
+    assert sorted(psql_app("select (params->>'count') from ai_runs order by id").splitlines()) == ["2", "2", "5", "5"]
+    assert a.patch("/api/v1/settings", json={"tone": []}).status_code == 200
+    a.post(f"/api/v1/videos/{usable_videos(a, 4)[3]['video_id']}/suggestions", json={"count": 1})
+    assert psql_app("select params->>'tone' from ai_runs order by id desc limit 1") == "friendly"    # 비우면 기본 말투
+
+
+# ─────────────────────────── IT-067 초안에 담긴 뒤 제안이 바뀌면 ───────────────────────────
+
+def test_it_067_edit_or_reject_after_draft_blocks_execute(fresh_demo):
+    """IT-067(TC-IT-117): 배치 초안에 담은 뒤 (a) 제목을 수정하거나 (b) 반려하면 승인이 사라지므로 실행 확정이 409 precheck_stale 로 거부되고 영상은 바뀌지 않는다.
+    초안을 취소해도 수정·반려된 제안은 승인 상태로 되돌아오지 않는다(승인이 없으므로). 새로 승인하면 다시 담긴다. 제안 ↔ 배치 ↔ 승인 경계. 검증: W-007, W-008, SEC-W17"""
+    a = fresh_demo
+    set_cap(a, 20)
+    ap = approve_many(a, usable_videos(a, 3))
+    titles0 = {v["video_id"]: v["title"] for v in a.videos()}
+    b1 = a.make_batch([ap[0]["id"], ap[1]["id"]]).json()["batch"]["id"]
+    r = a.patch(f"/api/v1/suggestions/{ap[0]['id']}", json={"title": ap[0]["title"] + " 하나더"})
+    assert r.status_code == 200 and r.json()["approval"] is None and r.json()["status"] in ("candidate", "blocked")
+    assert a.post(f"/api/v1/suggestions/{ap[1]['id']}/reject").status_code == 200
+    r = a.execute(b1, 2)
+    assert r.status_code == 409 and r.json()["code"] == "precheck_stale", r.text[:300]
+    assert r.json()["detail"].count("#") == 2, r.json()["detail"]              # 두 항목 모두 사유와 함께 보고
+    assert a.get(f"/api/v1/batches/{b1}").json()["status"] == "draft"
+    assert {v["video_id"]: v["title"] for v in a.videos()} == titles0
+    c = a.post(f"/api/v1/batches/{b1}/cancel")
+    assert c.status_code == 200
+    st = {s["id"]: s["status"] for s in a.get("/api/v1/suggestions", params={"page_size": 100}).json()["items"]}
+    assert st[ap[0]["id"]] in ("candidate", "blocked") and st[ap[1]["id"]] == "rejected"
+    assert psql_app("select count(*) from batch_items where status in ('pending','running')") == "0"
+    # 수정한 제안을 새로 승인 → 새 계획 해시로 정상 반영
+    if st[ap[0]["id"]] == "candidate":
+        assert a.approve(ap[0]["id"], "재승인").status_code == 200
+        ch = apply_via_batch(a, ap[0]["id"])
+        assert ch["new_title"].endswith("하나더") and ch["approver"] == "재승인"
+    # 대조: 손대지 않은 제안은 영향 없이 반영
+    assert apply_via_batch(a, ap[2]["id"])["result"] == "success"
+
+
+# ─────────────────────────── IT-068 배치 최대 크기 경계 ───────────────────────────
+
+def test_it_068_batch_of_exactly_50_schedules_20_20_10_and_51_is_refused(fresh_demo):
+    """IT-068(TC-IT-118): 배치 한도 50건 경계. 51건은 422 batch_too_large 이고, 정확히 50건은 하루 20건 상한으로 20/20/10 으로 나뉘어 사흘에 걸쳐 모두 한 번씩만 반영된다.
+    사전 점검의 단위 수·쿼터 합계가 실제 소비와 같다(2,600). 검증: W-008, W-010, NFR-W03"""
+    a = fresh_demo
+    set_cap(a, 20)
+    ap = approve_many(a, usable_videos(a, 50))
+    ids = [s["id"] for s in ap]
+    r51 = a.make_batch(ids + [ids[0] + 100000])
+    assert r51.status_code == 422 and r51.json()["code"] == "batch_too_large"
+    r = a.make_batch(ids)
+    assert r.status_code == 201
+    pre = r.json()["precheck"]
+    assert pre["item_count"] == 50 and pre["estimated_units"] == 50 * 52 and pre["confirm_text"] == "실행 50건"
+    assert [x["count"] for x in pre["schedule"]] == [20, 20, 10], pre["schedule"]
+    bid = r.json()["batch"]["id"]
+    assert a.execute(bid, 50).status_code == 202
+    from itlib_b import wait_until
+    wait_until(lambda: a.get(f"/api/v1/batches/{bid}").json()["counts"]["success"] >= 20, 120, what="첫째 날 20건")
+    time.sleep(5)
+    assert a.get(f"/api/v1/batches/{bid}").json()["counts"]["success"] == 20
+    shift_days(1)
+    wait_until(lambda: a.get(f"/api/v1/batches/{bid}").json()["counts"]["success"] >= 40, 120, what="둘째 날 20건")
+    time.sleep(5)
+    assert a.get(f"/api/v1/batches/{bid}").json()["counts"]["success"] == 40
+    shift_days(1)
+    done = a.wait_batch(bid, timeout=120)
+    assert done["counts"]["success"] == 50 and done["status"] == "done"
+    assert psql_app("select count(*) from (select video_id from changes where change_type='apply' and result='success' group by video_id having count(*)>1) t") == "0"
+    assert psql_app("select coalesce(sum(units),0) from quota_usage where status='ok'") == str(50 * 52)
+
+
+# ─────────────────────────── IT-069 쿼터 소진 → 대기 → 초기화 후 이어서 ───────────────────────────
+
+def test_it_069_quota_exhaustion_pauses_processing_and_resumes_after_reset(fresh_demo):
+    """IT-069(TC-IT-119): 오늘 남은 API 쿼터가 반영 1건분(52)과 조금 뿐이면 사전 점검이 경고하고, 워커는 1건만 반영한 뒤 쿼터 부족으로 멈춘다(건너뜀·실패 처리 없이 대기,
+    작업 결과 stopped_by=quota_exhausted). 태평양 날짜가 바뀌어 쿼터가 초기화되면 남은 항목이 이어서 처리된다. 쿼터 ↔ 워커 ↔ 배치 경계. 검증: W-008, NFR-W06"""
+    a = fresh_demo
+    set_cap(a, 20)
+    ap = approve_many(a, usable_videos(a, 3))
+    psql_app(f"insert into quota_usage (pt_date, method, units, called_at, status) select (now() at time zone 'America/Los_Angeles')::date, 'it.fill', {6000 - 62}, now(), 'ok'")
+    r = a.make_batch([s["id"] for s in ap])
+    pre = r.json()["precheck"]
+    assert pre["quota_remaining_units"] == 62 and any("쿼터" in w for w in pre["warnings"]), pre["warnings"]
+    bid = r.json()["batch"]["id"]
+    jid = a.execute(bid, 3).json()["job"]["id"]
+    from itlib_b import wait_until
+    wait_until(lambda: a.get(f"/api/v1/batches/{bid}").json()["counts"]["success"] >= 1, 40, what="1건 반영")
+    j = a.wait_job(jid, timeout=60)
+    assert j["status"] == "succeeded" and j["result"]["stopped_by"] == "quota_exhausted" and j["result"]["success"] == 1, j
+    time.sleep(5)
+    b = a.get(f"/api/v1/batches/{bid}").json()
+    assert b["counts"]["success"] == 1 and b["counts"]["pending"] == 2 and b["counts"]["skipped"] == 0 and b["counts"]["failed"] == 0 and b["status"] in ("queued", "running"), b["counts"]
+    d = a.get("/api/v1/dashboard").json()
+    assert d["quota"]["remaining"] == 10 and d["queue"]["pending_items"] == 2
+    psql_owner("update quota_usage set pt_date = pt_date - 1")           # 태평양 시간 자정이 지나 쿼터가 초기화됨
+    done = a.wait_batch(bid, timeout=60)
+    assert done["counts"]["success"] == 3
+    assert a.get("/api/v1/dashboard").json()["quota"]["used"] == 2 * 52          # 초기화 뒤 오늘 쓴 몫(어제 몫으로 옮긴 것 제외)
+    assert psql_app("select count(*) from changes where change_type='apply' and result='success'") == "3"
+
+
+# ─────────────────────────── IT-070 KST 하루 경계 ───────────────────────────
+
+def test_it_070_kst_day_boundary_for_daily_cap_and_pt_boundary_for_quota(fresh_demo):
+    """IT-070(TC-IT-120): '오늘 반영 건수'는 한국 시간 자정 기준이다 — 반영 시각을 KST 자정 1초 전/정각으로 옮기면 대시보드 today.applied 가 0/1 이 된다. 쿼터의 하루는
+    태평양 시간 날짜라 어제 날짜의 쿼터 사용은 오늘 잔여에 영향이 없다. 변경 이력 ↔ 대시보드 ↔ 쿼터 경계. 검증: W-008, API.md 1-4"""
+    a = fresh_demo
+    set_cap(a, 5)
+    s = approved_suggestion(a, usable_videos(a, 1)[0]["video_id"])
+    ch = apply_via_batch(a, s["id"])
+    kst = timezone(timedelta(hours=9))
+    midnight = datetime.now(kst).replace(hour=0, minute=0, second=0, microsecond=0)
+    def put(ts):
+        psql_owner(f"update changes set applied_at = '{ts.astimezone(timezone.utc).isoformat()}', created_at = '{ts.astimezone(timezone.utc).isoformat()}' where id = {ch['id']}")
+    put(midnight - timedelta(seconds=1))
+    assert a.get("/api/v1/dashboard").json()["today"]["applied"] == 0
+    put(midnight)
+    assert a.get("/api/v1/dashboard").json()["today"]["applied"] == 1
+    put(midnight + timedelta(days=1) - timedelta(seconds=1))
+    assert a.get("/api/v1/dashboard").json()["today"]["applied"] == 1
+    # 쿼터: 어제(태평양) 날짜의 큰 사용량은 오늘 잔여에 영향이 없다
+    psql_app("insert into quota_usage (pt_date, method, units, called_at, status) select (now() at time zone 'America/Los_Angeles')::date - 1, 'it.fill', 5000, now(), 'ok'")
+    q = a.get("/api/v1/dashboard").json()["quota"]
+    assert q["used"] == 52 and q["remaining"] == 6000 - 52

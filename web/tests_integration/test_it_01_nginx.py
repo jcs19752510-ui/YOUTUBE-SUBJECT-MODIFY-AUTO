@@ -14,7 +14,7 @@ import httpx
 import pytest
 
 from itlib import (
-    BASE, HOST_OK, ORIGIN_OK, Api, dc, dexec, inside_api_python, parse_raw, raw_request, wait_healthy,
+    BASE, HOST_OK, ORIGIN_OK, PORT, PROJECT, Api, dc, dexec, inside_api_python, parse_raw, raw_request, wait_healthy,
 )
 
 CSP_EXPECTED = (
@@ -350,7 +350,7 @@ def test_tc_it_041_malformed_content_length_and_slow_request_closed():
         st, _, _ = parse_raw(raw_request(base + cl + b"Connection: close\r\n\r\n{}"))
         assert st in (0, 400), (cl, st)
     import socket
-    s = socket.create_connection(("127.0.0.1", 18080), timeout=20)
+    s = socket.create_connection(("127.0.0.1", PORT), timeout=20)
     t0 = time.time()
     s.sendall(b"GET / HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nX-Slow: ")
     try:
@@ -445,7 +445,7 @@ def test_tc_it_051_rate_limit_api_general_and_write_limit():
 def test_tc_it_052_health_checks_all_healthy_and_migrate_exited_zero():
     """TC-IT-052: 컨테이너 헬스체크가 실제로 healthy 이고 migrate 는 종료 코드 0 이다(기동 순서 체인의 결과). 검증: W-017, D-01, D-08"""
     import subprocess
-    out = subprocess.run(["docker", "ps", "-a", "--filter", "label=com.docker.compose.project=harness-tmp-int", "--format", "{{.Label \"com.docker.compose.service\"}}|{{.Status}}"],
+    out = subprocess.run(["docker", "ps", "-a", "--filter", f"label=com.docker.compose.project={PROJECT}", "--format", "{{.Label \"com.docker.compose.service\"}}|{{.Status}}"],
                          capture_output=True, text=True).stdout.splitlines()
     st = dict(x.split("|", 1) for x in out)
     for s in ("db", "api", "worker", "web"):
@@ -459,3 +459,81 @@ def test_tc_it_053_api_responses_have_single_cache_control():
     """TC-IT-053(결함 고정): /api 응답의 Cache-Control 은 한 줄이어야 한다. 현재는 백엔드와 nginx 가 각각 붙여 두 줄이다(값은 같아 동작 영향 없음, 보안 헤더 '한 벌' 원칙과 불일치)."""
     r = _get("/api/healthz")
     assert len(r.headers.get_list("cache-control")) == 1
+
+
+# ─────────────────────────── 백엔드 계층의 Host 방어(nginx 우회) ───────────────────────────
+
+def test_tc_it_013_backend_host_guard_independent_of_nginx():
+    """TC-IT-013: nginx 를 거치지 않고 api 컨테이너 안에서 127.0.0.1:8000 으로 직접 보내도 비허용·중복 Host 는 백엔드가 403 으로 거부한다(이중 방어의 두 번째 층).
+    허용 Host 는 통과하고, 헬스 경로는 Host 와 무관하다(컨테이너 헬스체크용). 검증: S-W02, TB-W1"""
+    script = """
+import http.client, json
+def req(hosts, path="/api/v1/auth/me", method="GET"):
+    c = http.client.HTTPConnection("127.0.0.1", 8000, timeout=10)
+    c.putrequest(method, path, skip_host=True, skip_accept_encoding=True)
+    for h in hosts: c.putheader("Host", h)
+    c.endheaders()
+    r = c.getresponse(); b = r.read()
+    try: code = json.loads(b).get("code")
+    except Exception: code = None
+    return r.status, code
+out = {
+  "evil": req(["evil.example"]), "evil_port": req(["evil.example:8080"]), "other_port": req(["127.0.0.1:8081"]), "bare": req(["127.0.0.1"]),
+  "dup_bad_first": req(["evil.example", "127.0.0.1:8080"]), "dup_ok_first": req(["127.0.0.1:8080", "evil.example"]),
+  "ok": req(["127.0.0.1:8080"]), "ok_local": req(["localhost:8080"]), "upper": req(["LOCALHOST:8080"]),
+  "health_any_host": req(["whatever"], "/healthz"),
+}
+print(json.dumps(out))
+"""
+    p = inside_api_python(script)
+    assert p.returncode == 0, p.stderr[-400:]
+    d = json.loads(p.stdout.strip().splitlines()[-1])
+    for k in ("evil", "evil_port", "other_port", "bare"):
+        assert d[k][0] == 403 and d[k][1] == "host_not_allowed", (k, d[k])
+    for k in ("dup_bad_first", "dup_ok_first"):      # 중복 Host: HTTP 서버(h11)가 400 으로 먼저 거부하거나 가드가 403 으로 거부. 200 이면 밀수 성공
+        assert d[k][0] in (400, 403), (k, d[k])
+    assert d["ok"][0] == 200 and d["ok_local"][0] == 200, d
+    assert d["upper"][0] in (200, 403), d
+    assert d["health_any_host"][0] == 200, d
+
+
+# ─────────────────────────── 실제 브라우저(헤드리스 Chromium) 화면 흐름 ───────────────────────────
+
+def _browser_available() -> bool:
+    import os
+    from pathlib import Path
+    return Path("/opt/node22/lib/node_modules/playwright").exists() and any(Path("/opt/pw-browsers").glob("chromium-*"))
+
+
+@pytest.mark.slow
+@pytest.mark.destructive
+def test_tc_it_060_real_browser_core_flow_no_console_csp_or_http_errors():
+    """TC-IT-060: 헤드리스 Chromium 으로 nginx 경유 핵심 흐름(PIN 없는 첫 화면 → 영상 불러오기 → 제안 생성 → 승인 → 배치 사전 점검 → 확인 문구 → 실행 → 이력)을
+    화면 조작만으로 끝까지 수행한다. 콘솔 오류·경고, 페이지 오류, CSP 위반, 4xx/5xx 응답, 외부 도메인 요청이 0건이고, 쿠키는 HttpOnly·SameSite=Strict 이며,
+    CSP 가 실제로 인라인 스크립트·외부 연결·프레임 삽입을 막는다. 화면 조작의 결과는 API·감사 체인으로 다시 확인한다.
+    검증: W-001~W-017 핵심 흐름, S-W04, NFR-W06, DEF-VF-B01/B05(브라우저에서의 경합)"""
+    import os
+    import subprocess
+    from pathlib import Path
+    from itlib import counts, reset_demo_db
+    if not _browser_available():
+        pytest.skip("Chromium/playwright 가 없음 — 미수행으로 센다")
+    reset_demo_db()
+    here = Path(__file__).resolve().parent
+    out = Path(os.environ.get("IT_LOGDIR", "/tmp")) / "browser_flow.json"
+    shots = os.environ.get("IT_SHOTS", "")
+    env = {**os.environ, "PLAYWRIGHT_BROWSERS_PATH": "/opt/pw-browsers"}
+    p = subprocess.run(["node", str(here / "tools" / "browser_flow.mjs"), str(PORT), str(out), shots] if shots else
+                       ["node", str(here / "tools" / "browser_flow.mjs"), str(PORT), str(out)], capture_output=True, text=True, timeout=400, env=env)
+    res = json.loads(out.read_text(encoding="utf-8"))
+    assert p.returncode == 0, p.stdout[-2500:] + p.stderr[-500:] + json.dumps({k: res[k] for k in ("console", "pageerrors", "csp", "badResponses", "thirdParty")}, ensure_ascii=False)[:1500]
+    assert all(s["ok"] for s in res["steps"]) and len(res["steps"]) >= 15
+    assert not res["console"] and not res["pageerrors"] and not res["csp"] and not res["badResponses"] and not res["thirdParty"]
+    ck = [c for c in res["cookies"] if c["name"] == "ytw_session"]
+    assert len(ck) == 1 and ck[0]["httpOnly"] is True and ck[0]["sameSite"] == "Strict" and ck[0]["path"] == "/api" and ck[0]["secure"] is False
+    # 화면 조작이 실제로 서버 상태를 만들었다
+    assert counts()["changes"] == 1 and counts()["videos"] == 200
+    a = Api()
+    assert a.login().status_code == 200
+    assert a.get("/api/v1/audit", params={"page_size": 1}).json()["chain_ok"] is True
+    a.close()

@@ -11,14 +11,15 @@ import subprocess
 import time
 from pathlib import Path
 
+import httpx
 import pytest
 
 from itlib import (
-    PROJECT, STACK_DIR, Api, approve_many, approved_suggestion, cid, counts, dc, dexec, parse_raw, ps, psql_app, psql_owner, raw_request,
+    BASE, HOST_OK, PORT, PROJECT, STACK_DIR, Api, approve_many, approved_suggestion, cid, counts, dc, dexec, parse_raw, ps, psql_app, psql_owner, raw_request,
     secret_values, set_cap, sh, usable_videos, wait_healthy,
 )
 
-pytestmark = pytest.mark.skipif(not os.environ.get("IT_PWSH") or not Path(os.environ.get("IT_PWSH", "/nonexistent")).exists(), reason="pwsh 7 이 없음(미수행)")
+needs_pwsh = pytest.mark.skipif(not os.environ.get("IT_PWSH") or not Path(os.environ.get("IT_PWSH", "/nonexistent")).exists(), reason="pwsh 7 이 없음(미수행)")
 
 
 def _backups() -> list[Path]:
@@ -47,6 +48,7 @@ def _state_with_changes(n_apply: int = 3) -> Api:
 
 # ─────────────────────────── 백업 → 복원 ───────────────────────────
 
+@needs_pwsh
 @pytest.mark.destructive
 def test_tc_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard():
     """TC-IT-500: backup.ps1 → (데이터 변경) → restore.ps1 -Latest 로 행 수가 백업 시점과 정확히 일치하고, 복원 직전 상태가 pre-restore-*.dump 로 자동 보관되며,
@@ -105,6 +107,7 @@ def test_tc_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard()
     for sql in ("update audit_log set actor='x' where id=1", "delete from audit_log where id=1", "truncate audit_log"):
         with pytest.raises(RuntimeError, match="permission denied"):
             psql_app(sql)
+    assert psql_app("select version_num from alembic_version") == "0002"      # (버전표 쓰기 권한은 TC-IT-504 가 따로 본다: DEF-7-002)
     # 복원 전에 받은 승인(서명 키 볼륨은 그대로)이 지금도 유효 → 반영 가능
     ap = pending_ap[0]
     st = {s["id"]: s for s in b.get("/api/v1/suggestions", params={"page_size": 100}).json()["items"]}
@@ -126,6 +129,7 @@ def test_tc_it_500_backup_restore_roundtrip_with_safety_backup_and_audit_guard()
         x.close()
 
 
+@needs_pwsh
 @pytest.mark.destructive
 def test_tc_it_501_reset_demo_confirmation_phrases_and_auto_backup_and_delete_volumes():
     """TC-IT-501: reset-demo.ps1 — 틀린 확인 문구(다른 모드의 문구 포함)는 종료코드 2 로 아무것도 안 바꾸고, 맞는 문구는 pre-reset-*.dump 를 먼저 만든 뒤 DB 를
@@ -159,6 +163,9 @@ def test_tc_it_501_reset_demo_confirmation_phrases_and_auto_backup_and_delete_vo
     for sql in ("update audit_log set actor='x' where id=1", "delete from audit_log where id=1"):
         with pytest.raises(RuntimeError, match="permission denied"):
             psql_app(sql)            # 초기화 뒤에도 감사 로그 보호가 다시 적용되어 있다
+    with pytest.raises(RuntimeError, match="permission denied"):
+        psql_app("update alembic_version set version_num = version_num")   # 초기화 뒤 마이그레이션 0001→0002 가 다시 적용되어 버전표도 보호
+    assert psql_app("select version_num from alembic_version") == "0002"
     # 사전 백업으로 되돌리기
     p = ps("restore.ps1", "-File", pre[0].name, "-ConfirmText", "복원합니다", "-SkipSafetyBackup")
     assert p.returncode == 0, p.stdout[-800:]
@@ -213,7 +220,10 @@ def test_tc_it_510_secrets_not_in_logs_inspect_env_config_images_or_responses(ow
         for e in envs:
             for v in vals:
                 assert v not in e
-            if re.search(r"PASSWORD|SECRET|TOKEN|KEY", e.split("=", 1)[0], re.I) and not e.split("=", 1)[0].endswith("_DIR"):
+            nm = e.split("=", 1)[0]
+            if nm == "GPG_KEY":
+                continue   # 공식 postgres·python 베이스 이미지가 설정하는 '서명 키 지문(공개값)'. 비밀이 아니다(관찰 O-IT-01)
+            if re.search(r"PASSWORD|SECRET|TOKEN|KEY", nm, re.I) and not nm.endswith("_DIR"):
                 assert e.split("=", 1)[0].endswith("_FILE") and e.split("=", 1)[1].startswith("/run/secrets/"), e
     for s in ("db", "api", "worker"):
         environ = dexec(s, "bash", "-c", "tr '\\0' '\\n' < /proc/1/environ").stdout if s == "db" else dexec(s, "python", "-c", "print(open('/proc/1/environ','rb').read().decode('latin-1'))").stdout
@@ -258,7 +268,7 @@ def test_tc_it_520_demo_mode_api_worker_db_have_no_outbound_and_host_exposure_is
     assert _try_connect("api", "db", 5432) and _try_connect("worker", "db", 5432) and _try_connect("web", "api", 8000)
     ports = sh(["docker", "ps", "--filter", f"label=com.docker.compose.project={PROJECT}", "--format", "{{.Label \"com.docker.compose.service\"}}|{{.Ports}}"]).stdout.splitlines()
     pubs = {x.split("|")[0]: x.split("|")[1] for x in ports}
-    assert pubs["web"].startswith("127.0.0.1:18080->8080/tcp"), pubs
+    assert pubs["web"].startswith(f"127.0.0.1:{PORT}->8080/tcp"), pubs
     for s in ("db", "api", "worker"):
         assert "->" not in pubs[s], pubs
     import socket
@@ -269,37 +279,49 @@ def test_tc_it_520_demo_mode_api_worker_db_have_no_outbound_and_host_exposure_is
     addrs = [a for a in sh(["hostname", "-I"]).stdout.split() if ":" not in a and not a.startswith("127.")]
     for ad in addrs:
         sck = socket.socket(); sck.settimeout(2)
-        assert sck.connect_ex((ad, 18080)) != 0, f"{ad}:18080 이 열려 있음"
+        assert sck.connect_ex((ad, PORT)) != 0, f"{ad}:{PORT} 이 열려 있음"
         sck.close()
 
 
-def test_tc_it_521_known_def_vi_001_web_to_db_and_web_egress_actual_impact():
-    """TC-IT-521(알려진 결함 DEF-VI-001 재현·영향 측정, 새 결함 아님): web(nginx) 컨테이너에서 db:5432 에 도달하는가, 외부로 나갈 수 있는가, 그리고 DB 가 비밀번호 없이
-    무엇을 허용하는가. 이 시험은 '현재 상태를 기록'하며 통과/실패가 아니라 실측값을 결과서에 남긴다(해결 방식은 사용자 결정 대기)."""
+def test_tc_it_521_def_vi_001_network_split_effect_and_accepted_web_egress():
+    """TC-IT-521(DEF-VI-001 재평가, DEC-045 네트워크 3분리의 실제 효과): web(nginx) 은 db 에 도달할 수 없고(DNS 이름조차 풀리지 않음, IP 직접 접속도 불가),
+    api 에는 도달하며, worker 는 web 에 도달할 수 없다. web 의 외부 egress 는 수용된 잔여 위험(DEC-045)이므로 '현재 상태'를 측정해 기록한다.
+    검증: D-02, D-10, S-W01, DEC-045"""
     reach_db = _try_connect("web", "db", 5432)
+    db_ip = dexec("api", "python", "-c", "import socket;print(socket.gethostbyname('db'))").stdout.strip()
+    reach_db_ip = _try_connect("web", db_ip, 5432)
+    web_resolves_db = dexec("web", "sh", "-c", "getent hosts db >/dev/null 2>&1 && echo YES || echo NO").stdout.strip()
+    worker_to_web = _try_connect("worker", "web", 8080)
+    web_to_api = _try_connect("web", "api", 8000)
     wg = dexec("web", "sh", "-c", "wget -T4 -O- http://1.1.1.1/ 2>&1 | head -3").stdout
-    reach_net = "OK" if ("server returned error" in wg or "<html" in wg.lower() or "HTTP/1" in wg) else "FAIL"   # 403 이라도 서버 응답을 받았다면 나갈 수 있는 것
-    reach_dns = dexec("web", "sh", "-c", "nslookup example.com 2>&1 | grep -c Address || true").stdout.strip()
-    # DB 가 인증 없이 허용하는 것: 시작 메시지 전송 → 'R'(인증 요청: 비밀번호 필요) 또는 'E'(pg_hba 가 거부). 'R' 뒤 비밀번호 없이는 SQL 불가
-    probe = dexec("web", "sh", "-c", "(printf '\\000\\000\\000\\051\\000\\003\\000\\000user\\000ytweb_app\\000database\\000ytweb\\000\\000'; sleep 1) | nc -w 3 db 5432 | head -c 1 | od -An -c | tr -d ' '").stdout.strip()
-    probe_pg = dexec("web", "sh", "-c", "(printf '\\000\\000\\000\\051\\000\\003\\000\\000user\\000postgres\\000database\\000postgres\\000\\000'; sleep 1) | nc -w 3 db 5432 | head -c 1 | od -An -c | tr -d ' '").stdout.strip()
+    reach_net = "OK" if ("server returned error" in wg or "<html" in wg.lower() or "HTTP/1" in wg) else "FAIL"
     outdir = os.environ.get("IT_LOGDIR")
-    rec = {"web_to_db_5432": reach_db, "web_to_internet_http": reach_net, "web_dns_addresses": reach_dns, "db_first_reply_byte_app_user": probe, "db_first_reply_byte_postgres_user": probe_pg, "wget_head": wg.strip()[:120]}
+    rec = {"web_to_db_5432": reach_db, "web_to_db_ip_5432": reach_db_ip, "web_resolves_db": web_resolves_db, "worker_to_web_8080": worker_to_web,
+           "web_to_api_8000": web_to_api, "web_to_internet_http": reach_net, "wget_head": wg.strip()[:120]}
     if outdir:
         Path(outdir, "def_vi_001_measure.json").write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")
-    print("DEF-VI-001 실측:", rec)
-    assert reach_db, "DEF-VI-001 재현 실패(web→db 도달 불가): 결함이 고쳐졌다면 이 시험을 기대 반전으로 바꾼다"
-    assert probe == "R" and probe_pg == "E"      # app 계정: 비밀번호 요구(R) / 슈퍼유저: pg_hba 가 즉시 거부(E)
-    # 인증 없이 SQL 이 실행되지 않음을 다른 방식으로도 확인: 잘못된 비밀번호는 거부
-    p = dexec("db", "bash", "-c", "PGPASSWORD=wrong psql -h db -U ytweb_app -d ytweb -c 'select 1' 2>&1 | head -2")
-    assert "authentication failed" in p.stdout or "password" in p.stdout.lower()
+    print("DEF-VI-001 재평가 실측:", rec)
+    assert reach_db is False and reach_db_ip is False and web_resolves_db == "NO", rec
+    assert worker_to_web is False, rec
+    assert web_to_api is True, rec
+    # 네트워크 소속(compose 정의가 실제로 적용됐는지): 서비스별 소속 네트워크 집합
+    def nets(s):
+        i = json.loads(sh(["docker", "inspect", cid(s)]).stdout)[0]
+        return {n.split("_", 1)[1] for n in i["NetworkSettings"]["Networks"]}
+    assert nets("web") == {"front", "edge"} and nets("api") == {"front", "back"} and nets("worker") == {"back"} and nets("db") == {"back"}, \
+        {s: nets(s) for s in ("web", "api", "worker", "db")}
+    for n, internal in (("front", True), ("back", True), ("edge", False)):
+        info = json.loads(sh(["docker", "network", "inspect", f"{PROJECT}_{n}"]).stdout)[0]
+        assert info["Internal"] is internal, (n, info["Internal"])
 
 
-@pytest.mark.xfail(strict=False, reason="DEF-VI-002(알려진 결함, W-BE-A 조치 진행 중): 앱 계정이 alembic_version 을 변경할 수 있다. 이미지가 수정 전 소스로 빌드되었으면 xfail, 수정 반영 뒤 이미지면 XPASS")
-def test_tc_it_522_known_def_vi_002_app_role_cannot_modify_alembic_version():
-    """TC-IT-522(알려진 결함 DEF-VI-002 현황): 앱 계정으로 alembic_version 변경 시도가 거부되어야 한다."""
-    with pytest.raises(RuntimeError, match="permission denied"):
-        psql_app("update alembic_version set version_num = version_num")
+def test_tc_it_522_def_vi_002_app_role_cannot_modify_alembic_version():
+    """TC-IT-522(DEF-VI-002 조치 확인, 마이그레이션 0002): 앱 계정은 alembic_version 을 읽기만 할 수 있고(INSERT·UPDATE·DELETE·TRUNCATE 거부), 버전은 0002 다."""
+    assert psql_app("select version_num from alembic_version") == "0002"
+    for sql in ("update alembic_version set version_num = version_num", "delete from alembic_version", "insert into alembic_version values ('x')",
+                "truncate alembic_version"):
+        with pytest.raises(RuntimeError, match="permission denied"):
+            psql_app(sql)
 
 
 @pytest.mark.parametrize("svc", ["db", "api", "worker", "web", "migrate"])
@@ -373,10 +395,12 @@ def test_tc_it_540_log_hygiene_query_strings_cookies_and_known_def_vi_003(owner)
     import threading
     import httpx
     from itlib import BASE, HOST_OK
+    burst_429 = [0]
     def burst():
         with httpx.Client(base_url=BASE, headers={"Host": HOST_OK}, timeout=20) as c:
             for _ in range(15):
-                c.get(f"/api/v1/auth/me?code={marker2}")
+                if c.get(f"/api/v1/auth/me?code={marker2}").status_code == 429:
+                    burst_429[0] += 1
     ts = [threading.Thread(target=burst) for _ in range(20)]
     [t.start() for t in ts]; [t.join() for t in ts]
     wl2 = dc("logs", "--no-log-prefix", "web").stdout + dc("logs", "--no-log-prefix", "web").stderr
@@ -384,5 +408,145 @@ def test_tc_it_540_log_hygiene_query_strings_cookies_and_known_def_vi_003(owner)
     outdir = os.environ.get("IT_LOGDIR")
     if outdir:
         Path(outdir, "def_vi_003_measure.json").write_text(json.dumps({"error_log_contains_query": leaked}), encoding="utf-8")
-    print("DEF-VI-003 실측: 오류 로그에 쿼리 문자열이 남음 =", leaked)
+    print("DEF-VI-003 재평가(속도 제한 거절 경로): 오류 로그에 쿼리 문자열이 남음 =", leaked)
+    assert burst_429[0] >= 50, f"속도 제한이 충분히 걸리지 않아 시험이 무의미함: {burst_429[0]}"
+    assert leaked is False, "DEC-045 부분 조치(limit_req_log_level warn + error_log error)가 실가동에서 효과 없음"
     time.sleep(5)
+
+
+def test_tc_it_541_def_vi_003_residual_upstream_error_line_records_query_string():
+    """TC-IT-541(DEF-VI-003 잔여, DEC-045 가 수용한 부분의 실측): api 가 죽어 있을 때 nginx 의 업스트림 오류(error) 줄에 요청 줄(쿼리 문자열)이 남는가.
+    남으면 '수용된 잔여'가 실제로 남아 있다는 뜻이며 M2 OAuth 콜백(?code=) 설계 전에 해결해야 한다(결함으로 고정하지 않고 기록 + 기대 반전 대비)."""
+    marker = "ITUPSTREAMSECRET" + str(int(time.time()))
+    dc("stop", "-t", "20", "api")
+    try:
+        r = httpx.get(f"{BASE}/api/v1/videos?q={marker}", headers={"Host": HOST_OK}, timeout=15)
+        assert r.status_code in (502, 503, 504), r.status_code
+        assert r.headers.get_list("content-security-policy"), "오류 응답에도 보안 헤더가 붙어야 한다"
+        wl = dc("logs", "--no-log-prefix", "web")
+        leaked = marker in (wl.stdout + wl.stderr)
+    finally:
+        dc("start", "api")
+        wait_healthy(120)
+    outdir = os.environ.get("IT_LOGDIR")
+    if outdir:
+        Path(outdir, "def_vi_003_upstream_measure.json").write_text(json.dumps({"upstream_error_line_contains_query": leaked}), encoding="utf-8")
+    print("DEF-VI-003 잔여 실측(업스트림 오류 줄):", leaked)
+    assert leaked is True, "잔여가 사라졌다면(수정됨) 이 시험을 `assert leaked is False` 로 반전하고 DEC-045 잔여 문구를 갱신"
+
+
+# ─────────────────────────── 재시작·충돌 복구 후 감사 체인 / 마이그레이션 ───────────────────────────
+
+def _audit_head(api: Api) -> dict:
+    d = api.get("/api/v1/audit", params={"page_size": 5}).json()
+    return {"chain_ok": d["chain_ok"], "head": d["items"][0], "items": d["items"]}
+
+
+@needs_pwsh
+@pytest.mark.destructive
+@pytest.mark.xfail(strict=True, reason="DEF-7-002: restore.ps1(pg_restore --clean + audit-guard.sql)이 alembic_version 의 앱 계정 쓰기 권한을 되돌려 놓는다(마이그레이션 0002 의 회수가 복원 뒤 사라짐)")
+def test_tc_it_504_restore_keeps_alembic_version_protected_from_app_role():
+    """TC-IT-504(결함 고정, DEF-7-002): 백업 → 복원(restore.ps1) 뒤에도 앱 계정은 alembic_version 을 UPDATE/DELETE 할 수 없어야 한다(0002 가 보장하는 상태).
+    현재는 복원이 audit_log 만 다시 회수하고(audit-guard.sql) alembic_version 은 회수하지 않아 앱 계정이 버전표를 바꿀 수 있다. 검증: S-W16, S-W13a, D-07a, D-07b"""
+    _clear_backups()
+    a = _state_with_changes(1)
+    a.close()
+    assert ps("backup.ps1").returncode == 0
+    f = [x for x in _backups() if x.name.startswith("ytweb-")][0]
+    p = ps("restore.ps1", "-File", f.name, "-ConfirmText", "복원합니다", "-SkipSafetyBackup")
+    assert p.returncode == 0, p.stdout[-600:]
+    wait_healthy(240)
+    assert psql_app("select version_num from alembic_version") == "0002"
+    with pytest.raises(RuntimeError, match="permission denied"):
+        psql_app("update alembic_version set version_num = version_num")
+    with pytest.raises(RuntimeError, match="permission denied"):
+        psql_app("delete from alembic_version")
+
+
+@pytest.mark.destructive
+def test_tc_it_502_audit_chain_and_data_survive_restart_all_and_db_crash(fresh_demo):
+    """TC-IT-502: 전체 서비스 재시작과 DB 컨테이너 강제 종료(SIGKILL, 충돌 복구) 뒤에도 행 수가 그대로이고, 세션이 유지되며, 감사 해시 체인이 끊기지 않고
+    이어진다(재시작 직후 첫 새 기록의 prev_hash 가 직전 기록의 hash). 검증: W-016, SEC-W22, S-W16, NFR-W08"""
+    a = fresh_demo
+    set_cap(a, 20)
+    ap = approve_many(a, usable_videos(a, 2))
+    bid = a.make_batch([s["id"] for s in ap[:1]]).json()["batch"]["id"]
+    assert a.execute(bid, 1).status_code == 202
+    a.wait_batch(bid)
+    c0 = counts()
+    h0 = _audit_head(a)
+    assert h0["chain_ok"] is True and c0["changes"] == 1
+
+    p = dc("restart", timeout=420)
+    assert p.returncode == 0, p.stderr[-400:]
+    wait_healthy(240)
+    assert counts() == c0
+    assert a.get("/api/v1/auth/me").json()["authenticated"] is True      # 세션은 DB 에 있어 재시작을 견딘다
+    a.csrf = a.get("/api/v1/auth/me").json()["csrf_token"]
+    assert a.patch("/api/v1/settings", json={"daily_apply_cap": 11}).status_code == 200
+    h1 = _audit_head(a)
+    c0 = counts()                                   # 설정 변경이 감사 행을 1개 더했다 — 충돌 직전 상태를 기준으로 다시 잡는다
+    assert h1["chain_ok"] is True and h1["head"]["id"] > h0["head"]["id"]
+    first_new = [x for x in h1["items"] if x["id"] == h0["head"]["id"] + 1]
+    assert first_new and first_new[0]["prev_hash"] == h0["head"]["hash"], "재시작 경계에서 해시 체인이 이어지지 않음"
+
+    # 충돌: DB 를 SIGKILL (정상 종료 절차 없이). restart 정책이 되살리고, 커밋된 것은 모두 남아야 한다
+    sh(["docker", "kill", cid("db")])
+    time.sleep(2)
+    dc("up", "-d", "--no-build", timeout=300)
+    wait_healthy(240)
+    assert counts() == c0
+    a.csrf = a.get("/api/v1/auth/me").json()["csrf_token"]
+    assert a.patch("/api/v1/settings", json={"daily_apply_cap": 12}).status_code == 200
+    h2 = _audit_head(a)
+    assert h2["chain_ok"] is True and h2["head"]["id"] > h1["head"]["id"]
+    # 충돌 복구 뒤에는 시퀀스가 몇 칸 건너뛸 수 있다(PostgreSQL 은 시퀀스 값을 미리 WAL 에 기록) — id+1 이 아니라 prev_hash 로 이어짐을 본다
+    nxt = [x for x in h2["items"] if x["prev_hash"] == h1["head"]["hash"]]
+    assert len(nxt) == 1 and nxt[0]["id"] > h1["head"]["id"], "충돌 경계에서 해시 체인이 이어지지 않음"
+    # 충돌 뒤에도 쓰기 가능한 업무 흐름이 끝까지 이어진다
+    bid2 = a.make_batch([ap[1]["id"]]).json()["batch"]["id"]
+    assert a.execute(bid2, 1).status_code == 202
+    assert a.wait_batch(bid2)["counts"]["success"] == 1
+    assert _audit_head(a)["chain_ok"] is True
+
+
+@pytest.mark.destructive
+def test_tc_it_503_migration_0001_to_0002_on_deployed_db_revokes_app_dml_and_is_reversible():
+    """TC-IT-503: 배포 이미지·실제 소유자 계정으로 0001 까지만 적용한 DB 에서는 앱 계정이 alembic_version 을 바꿀 수 있고(대조군), 0002 적용 뒤에는 바꿀 수 없다.
+    audit_log 는 0001 부터 UPDATE/DELETE 불가. 재실행은 멱등이고, 0002 → 0001 → 0002 왕복이 권한을 되돌렸다가 다시 회수한다. 검증: S-W16, S-W13a, D-07a, DEF-VI-002"""
+    dc("stop", "web", "api", "worker")
+    assert dexec("db", "ytweb-db", "reset-schema").returncode == 0
+    py = "from ytweb.migrate import upgrade, owner_database_url as u; upgrade(u(), '%s')"
+    down = "from ytweb.migrate import alembic_config, owner_database_url as u; from alembic import command; command.downgrade(alembic_config(u()), '0001')"
+    def run_py(code: str):
+        r = dc("run", "--rm", "--no-deps", "-T", "migrate", "python", "-c", code, timeout=240)
+        assert r.returncode == 0, r.stderr[-600:] + r.stdout[-300:]
+    try:
+        run_py(py % "0001")
+        assert psql_owner("select version_num from alembic_version") == "0001"
+        psql_app("update alembic_version set version_num = version_num")          # 대조군: 0001 에서는 가능(= 0002 가 하는 일이 실재함)
+        for sql in ("update audit_log set actor='x'", "delete from audit_log", "truncate audit_log"):
+            with pytest.raises(RuntimeError, match="permission denied"):
+                psql_app(sql)
+        run_py(py % "0002")
+        assert psql_owner("select version_num from alembic_version") == "0002"
+        for sql in ("update alembic_version set version_num = version_num", "delete from alembic_version"):
+            with pytest.raises(RuntimeError, match="permission denied"):
+                psql_app(sql)
+        assert psql_app("select count(*) from alembic_version") == "1"
+        run_py(py % "head")                                                          # 멱등
+        assert psql_owner("select version_num from alembic_version") == "0002"
+        run_py(down)                                                                 # 왕복
+        assert psql_owner("select version_num from alembic_version") == "0001"
+        psql_app("update alembic_version set version_num = version_num")
+        run_py(py % "head")
+        with pytest.raises(RuntimeError, match="permission denied"):
+            psql_app("update alembic_version set version_num = version_num")
+    finally:
+        u = dc("up", "-d", "--no-build", timeout=400)
+        assert u.returncode == 0, u.stderr[-400:]
+        wait_healthy(240)
+    a = Api()
+    assert a.login().status_code == 200
+    assert a.get("/api/v1/audit", params={"page_size": 1}).json()["chain_ok"] is True
+    a.close()
