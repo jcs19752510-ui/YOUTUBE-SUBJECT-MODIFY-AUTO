@@ -251,11 +251,10 @@ def test_it_i2_030_job_row_closed_after_worker_sigkill_mid_batch_docker(fd):
         time.sleep(0.05)
     w = cid("worker")
     sh(["docker", "kill", "-s", "KILL", w])
-    t0 = time.time()
-    while time.time() - t0 < 90:   # 재시작 정책으로 되살아날 때까지
-        if sh(["docker", "inspect", "-f", "{{.State.Running}}", w]).stdout.strip() == "true":
-            break
-        time.sleep(1)
+    time.sleep(0.5)
+    # `docker kill` 은 엔진이 수동 중지로 취급해 재시작 정책이 동작하지 않는다(첫 실행에서 확인) -> 시험이 직접 시작한다(기존 itlib_b.worker_kill_and_restart 와 같은 방식)
+    if sh(["docker", "inspect", "-f", "{{.State.Running}}", w]).stdout.strip() != "true":
+        assert sh(["docker", "start", w]).returncode == 0
     b = a.wait_batch(bid, timeout=150)
     assert b["status"] == "done"
     assert b["counts"]["success"] + b["counts"]["failed"] == 20, b["counts"]
