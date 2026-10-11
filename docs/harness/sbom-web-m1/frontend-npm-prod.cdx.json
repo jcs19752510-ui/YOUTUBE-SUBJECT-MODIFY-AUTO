@@ -1,0 +1,259 @@
+{
+ "bomFormat": "CycloneDX",
+ "specVersion": "1.6",
+ "version": 1,
+ "serialNumber": "urn:uuid:4dcfde75-aed4-4529-9ad3-b5029b782b09",
+ "metadata": {
+  "timestamp": "2026-10-11T09:02:53Z",
+  "tools": {
+   "components": [
+    {
+     "type": "application",
+     "name": "sbom_from_npm_lock.py (web/tests_security)",
+     "version": "1"
+    }
+   ]
+  },
+  "component": {
+   "type": "application",
+   "name": "ytitle-web-frontend",
+   "version": "0.1.0",
+   "bom-ref": "root"
+  },
+  "properties": [
+   {
+    "name": "scope",
+    "value": "production-only"
+   }
+  ]
+ },
+ "components": [
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/%40tanstack/query-core@5.104.1",
+   "name": "@tanstack/query-core",
+   "version": "5.104.1",
+   "purl": "pkg:npm/%40tanstack/query-core@5.104.1",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "4e246085cac69144c4f8ce09071be93d2a41871bc8cd06a2af0f9c92cac7606afedaec02efbc96d5263d9d8c6761160ea69bee71ff2b120e9be5bca8cf8ad3a7"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/%40tanstack/react-query@5.104.1",
+   "name": "@tanstack/react-query",
+   "version": "5.104.1",
+   "purl": "pkg:npm/%40tanstack/react-query@5.104.1",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "673ef41208da84d23b682cfc059c4cdef506538e32731100cccb825232de03b4958613a48376603e33c93ef1e3b3a466932fddb669eed56ce31873479a10a865"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/cookie@1.1.1",
+   "name": "cookie",
+   "version": "1.1.1",
+   "purl": "pkg:npm/cookie@1.1.1",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "7a2f00a2cee36b4c1e469173267100f541c9ffb5d09aa8256d1c277f60138dc07d5aaf3be15287f647e38e2acce94854dbf1397c561a77297284595d72a4a275"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react@19.3.0",
+   "name": "react",
+   "version": "19.3.0",
+   "purl": "pkg:npm/react@19.3.0",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "13c2d471bb415addb46db9766281dfc7864305dc554df38ab42667f5c0d227897afe7ba8029729201723e3bb76c19a155fc836647b8c1db892860091d53e52a2"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react-dom@19.3.0",
+   "name": "react-dom",
+   "version": "19.3.0",
+   "purl": "pkg:npm/react-dom@19.3.0",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "24393c76089fe753a31680c4ef4f8e4fd202c98afeebd1e59a284dc29d7e36c7db9dadede6c22209af59264b43990e3fd5bfeb9f6ea1200476b985c332be6bd1"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react-router@7.18.4",
+   "name": "react-router",
+   "version": "7.18.4",
+   "purl": "pkg:npm/react-router@7.18.4",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "3d43d070c84c19102c94b72fb653f3fe49b304458f84b7602c5acbee92cd7a904be9d5f49568f8583d9c518560602b93de3c6f82160583cd5c0d38f8e0385eb5"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/react-router-dom@7.18.4",
+   "name": "react-router-dom",
+   "version": "7.18.4",
+   "purl": "pkg:npm/react-router-dom@7.18.4",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "cab7e62472290c6eed682a6a2a34f51b907aab73b62be44df3f7e035fd254e30b088f6d0d1e8babd75fd663411fbb95df13afb679c66c8c9d9f1826ba6159053"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/scheduler@0.28.0",
+   "name": "scheduler",
+   "version": "0.28.0",
+   "purl": "pkg:npm/scheduler@0.28.0",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "8eea2b7c2988908c3cb53fa9e415d29ba3c98d017fc9c11898acb3511088b7f45a64884bf8fba56d0f58bb6cf51dd3890dda834e5c40d7ec4a0661d726c73303"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "bom-ref": "pkg:npm/set-cookie-parser@2.7.2",
+   "name": "set-cookie-parser",
+   "version": "2.7.2",
+   "purl": "pkg:npm/set-cookie-parser@2.7.2",
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "a1e33596953f52f853c70fa0ddc21fc571f225173fba275ddf22b53f6e368331ddb34b9d401633b37cbc8f8802096f9927b69dd3272d95df1160ef9b76eae5bf"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  }
+ ],
+ "dependencies": [
+  {
+   "ref": "pkg:npm/%40tanstack/query-core@5.104.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:npm/%40tanstack/react-query@5.104.1",
+   "dependsOn": [
+    "pkg:npm/%40tanstack/query-core@5.104.1"
+   ]
+  },
+  {
+   "ref": "pkg:npm/cookie@1.1.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:npm/react-dom@19.3.0",
+   "dependsOn": [
+    "pkg:npm/scheduler@0.28.0"
+   ]
+  },
+  {
+   "ref": "pkg:npm/react-router-dom@7.18.4",
+   "dependsOn": [
+    "pkg:npm/react-router@7.18.4"
+   ]
+  },
+  {
+   "ref": "pkg:npm/react-router@7.18.4",
+   "dependsOn": [
+    "pkg:npm/cookie@1.1.1",
+    "pkg:npm/set-cookie-parser@2.7.2"
+   ]
+  },
+  {
+   "ref": "pkg:npm/react@19.3.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:npm/scheduler@0.28.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:npm/set-cookie-parser@2.7.2",
+   "dependsOn": []
+  }
+ ]
+}

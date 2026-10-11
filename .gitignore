@@ -20,3 +20,34 @@ __pycache__/
 
 # CI 헤드리스 실행 로그 (automation/run-harness-agent.sh 산출물)
 docs/harness/_ci-logs/
+
+# 비밀·개인 데이터 (YT-03, 03_manual_setup.md)
+.env
+secrets/
+token*.json
+*.token
+data/
+config/settings.local.yaml
+approvals/
+.coverage
+node_modules/
+web/frontend/dist/
+web/secrets/
+web/backups/
+.pytest_cache/
+htmlcov/
+
+# 웹 전환(web/): 비밀 파일·백업·빌드 산출물
+web/secrets/
+web/backups/
+web/frontend/dist/
+node_modules/
+*.dump
+
+# 구글 OAuth 클라이언트 비밀 파일·키 파일(DEF-9-006, M2 에서 내려받는 client_secret_*.json 이 저장소에 올라가지 않게)
+client_secret*.json
+*client_secret*.json
+credentials*.json
+*.pem
+*.key
+*.p12

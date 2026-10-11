@@ -1,0 +1,127 @@
+[
+ [
+  "M000",
+  false,
+  "477 passed in 159.09s (0:02:39)"
+ ],
+ [
+  "M01",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_host_header_missing_rejected"
+ ],
+ [
+  "M001",
+  false,
+  "444 passed, 33 skipped in 127.96s (0:02:07)"
+ ],
+ [
+  "M02",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_host_allowed_variants[127.0.0.1:8080]"
+ ],
+ [
+  "M03",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_content_length_boundary_exact_limit_and_one_over"
+ ],
+ [
+  "M04",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_content_length_boundary_exact_limit_and_one_over"
+ ],
+ [
+  "M05",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_content_length_non_ascii_digits_rejected[\\xb2]"
+ ],
+ [
+  "M06",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_duplicate_or_conflicting_content_length_rejected"
+ ],
+ [
+  "M07",
+  true,
+  "FAILED tests/verify_wa/test_va_11_guard_worker_misc.py::test_retry_after_is_ceiling_seconds_never_zero[30.5-30]"
+ ],
+ [
+  "M08",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_rate_limit_excludes_health_and_host_rejected"
+ ],
+ [
+  "M09",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_security_headers_on_every_api_response_class"
+ ],
+ [
+  "M10",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_security_headers_on_every_api_response_class"
+ ],
+ [
+  "M11",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_security_headers_on_every_api_response_class"
+ ],
+ [
+  "M12",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_foreign_classification_by_sec_fetch_site[none-False]"
+ ],
+ [
+  "M13",
+  true,
+  "FAILED tests/verify_wa/test_va_11_guard_worker_misc.py::test_missing_origin_counts_as_foreign_only_for_state_changing_methods[DELETE-True]"
+ ],
+ [
+  "M14",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_websocket_upgrade_refused_without_reaching_app"
+ ],
+ [
+  "M15",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_cross_site_requests_do_not_exhaust_owner_rate_limit"
+ ],
+ [
+  "M90",
+  false,
+  "444 passed, 33 skipped in 127.36s (0:02:07)"
+ ],
+ [
+  "M115",
+  true,
+  "FAILED tests/verify_wa/test_va_09_static_serving.py::test_static_serves_assets_spa_fallback_and_api_404_stays_json"
+ ],
+ [
+  "M124",
+  true,
+  "FAILED tests/verify_wa/test_va_12_commit_before_response.py::test_returned_4xx_response_commits_before_it_is_sent"
+ ],
+ [
+  "M125",
+  true,
+  "FAILED tests/verify_wa/test_va_08_static_and_live.py::test_live_read_after_write_sees_committed_state_pin_cannot_be_bypassed"
+ ],
+ [
+  "M126",
+  true,
+  "FAILED tests/verify_wa/test_va_12_commit_before_response.py::test_session_row_is_committed_before_response_starts"
+ ],
+ [
+  "M127",
+  true,
+  "FAILED tests/verify_wa/test_va_12_commit_before_response.py::test_session_row_is_committed_before_response_starts"
+ ],
+ [
+  "M131",
+  true,
+  "FAILED tests/verify_wa/test_va_12_commit_before_response.py::test_problem_responses_from_this_unit_carry_korean_hint"
+ ],
+ [
+  "M134",
+  true,
+  "FAILED tests/verify_wa/test_va_12_commit_before_response.py::test_commit_failure_before_response_gives_500_not_success"
+ ]
+]

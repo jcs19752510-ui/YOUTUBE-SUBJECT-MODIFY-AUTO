@@ -1,0 +1,527 @@
+[
+ [
+  "M01",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_host_header_missing_rejected"
+ ],
+ [
+  "M02",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_host_allowed_variants[127.0.0.1:8080]"
+ ],
+ [
+  "M03",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_content_length_boundary_exact_limit_and_one_over"
+ ],
+ [
+  "M04",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_content_length_boundary_exact_limit_and_one_over"
+ ],
+ [
+  "M05",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_content_length_non_ascii_digits_rejected[\\xb2]"
+ ],
+ [
+  "M06",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_duplicate_or_conflicting_content_length_rejected"
+ ],
+ [
+  "M07",
+  false,
+  "385 passed, 33 skipped in 113.60s (0:01:53)"
+ ],
+ [
+  "M08",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_rate_limit_excludes_health_and_host_rejected"
+ ],
+ [
+  "M09",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_security_headers_on_every_api_response_class"
+ ],
+ [
+  "M10",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_security_headers_on_every_api_response_class"
+ ],
+ [
+  "M11",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_security_headers_on_every_api_response_class"
+ ],
+ [
+  "M12",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_foreign_classification_by_sec_fetch_site[none-False]"
+ ],
+ [
+  "M13",
+  false,
+  "385 passed, 33 skipped in 109.06s (0:01:49)"
+ ],
+ [
+  "M14",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_websocket_upgrade_refused_without_reaching_app"
+ ],
+ [
+  "M15",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_cross_site_requests_do_not_exhaust_owner_rate_limit"
+ ],
+ [
+  "M16",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_rate_limit_global_boundary_and_window_edge"
+ ],
+ [
+  "M17",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_rate_limit_global_boundary_and_window_edge"
+ ],
+ [
+  "M18",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_rate_limit_write_and_auth_buckets_separate"
+ ],
+ [
+  "M19",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_rate_limit_write_and_auth_buckets_separate"
+ ],
+ [
+  "M20",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_session_expiry_boundary_is_exclusive_absolute_and_row_deleted"
+ ],
+ [
+  "M21",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_active_session_cap_is_20_and_oldest_evicted"
+ ],
+ [
+  "M22",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_active_session_cap_is_20_and_oldest_evicted"
+ ],
+ [
+  "M23",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_session_expiry_boundary_is_exclusive_absolute_and_row_deleted"
+ ],
+ [
+  "M24",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lock_shared_with_settings_pin_change_path"
+ ],
+ [
+  "M25",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_cookie_attributes_exact"
+ ],
+ [
+  "M26",
+  false,
+  "385 passed, 33 skipped in 108.45s (0:01:48)"
+ ],
+ [
+  "M27",
+  false,
+  "385 passed, 33 skipped in 103.02s (0:01:43)"
+ ],
+ [
+  "M28",
+  true,
+  "FAILED tests/verify_wa/test_va_08_static_and_live.py::test_secret_comparisons_use_constant_time_compare"
+ ],
+ [
+  "M29",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_origin_secfetch_matrix_patch_settings[same-site]"
+ ],
+ [
+  "M30",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_origin_secfetch_matrix_patch_settings[None]"
+ ],
+ [
+  "M31",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_origin_secfetch_matrix_patch_settings[None]"
+ ],
+ [
+  "M32",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_csrf_rejected_variants_and_accepted_exact"
+ ],
+ [
+  "M33",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lockout_exact_boundary_4_ok_5th_locks_correct_pin_rejected_while_locked"
+ ],
+ [
+  "M34",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lockout_exact_boundary_4_ok_5th_locks_correct_pin_rejected_while_locked"
+ ],
+ [
+  "M35",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lock_duration_doubles_up_to_one_hour_cap"
+ ],
+ [
+  "M36",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lockout_exact_boundary_4_ok_5th_locks_correct_pin_rejected_while_locked"
+ ],
+ [
+  "M37",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lockout_exact_boundary_4_ok_5th_locks_correct_pin_rejected_while_locked"
+ ],
+ [
+  "M38",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lockout_exact_boundary_4_ok_5th_locks_correct_pin_rejected_while_locked"
+ ],
+ [
+  "M39",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_hash_scheme_salt_and_params"
+ ],
+ [
+  "M40",
+  true,
+  "FAILED tests/verify_wa/test_va_08_static_and_live.py::test_secret_comparisons_use_constant_time_compare"
+ ],
+ [
+  "M41",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_success_resets_failure_counter"
+ ],
+ [
+  "M42",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_format_boundaries[1234567890123-False]"
+ ],
+ [
+  "M43",
+  true,
+  "FAILED tests/verify_wa/test_va_07_postgres.py::test_grants_given_after_migration_would_undo_revoke_documented_dependency"
+ ],
+ [
+  "M44",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_ttl_boundary_exactly_24h_replays_and_one_microsecond_later_reexecutes"
+ ],
+ [
+  "M45",
+  false,
+  "385 passed, 33 skipped in 110.60s (0:01:50)"
+ ],
+ [
+  "M46",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_same_key_different_route_is_reuse_error"
+ ],
+ [
+  "M47",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_in_progress_row_blocks_with_409_and_other_request_gets_422"
+ ],
+ [
+  "M48",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_key_format_boundaries[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-False]"
+ ],
+ [
+  "M49",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_key_format_boundaries[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-False]"
+ ],
+ [
+  "M50",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_key_order_insensitive_but_value_sensitive"
+ ],
+ [
+  "M51",
+  true,
+  "FAILED tests/verify_wa/test_va_04_audit.py::test_tamper_detected_by_verify_and_api[m_prev]"
+ ],
+ [
+  "M52",
+  true,
+  "FAILED tests/verify_wa/test_va_04_audit.py::test_tamper_detected_by_verify_and_api[m_actor]"
+ ],
+ [
+  "M53",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_origin_secfetch_matrix_patch_settings[None]"
+ ],
+ [
+  "M54",
+  true,
+  "FAILED tests/verify_wa/test_va_04_audit.py::test_non_utc_timezone_hashes_same_as_utc_and_naive_rejected"
+ ],
+ [
+  "M55",
+  true,
+  "FAILED tests/verify_wa/test_va_04_audit.py::test_chain_matches_independent_reference_implementation"
+ ],
+ [
+  "M56",
+  true,
+  "FAILED tests/verify_wa/test_va_07_postgres.py::test_grants_given_after_migration_would_undo_revoke_documented_dependency"
+ ],
+ [
+  "M57",
+  false,
+  "385 passed, 33 skipped in 107.01s (0:01:47)"
+ ],
+ [
+  "M58",
+  true,
+  "FAILED tests/verify_wa/test_va_07_postgres.py::test_grants_given_after_migration_would_undo_revoke_documented_dependency"
+ ],
+ [
+  "M59",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_enqueue_defaults_and_claim_due_boundary"
+ ],
+ [
+  "M60",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_claim_is_fifo_by_run_after_then_created_and_never_twice"
+ ],
+ [
+  "M61",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_requeue_stale_time_boundary[age0-False]"
+ ],
+ [
+  "M62",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_requeue_stale_attempt_cap[3-failed]"
+ ],
+ [
+  "M63",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_error_text_is_truncated_and_handler_exception_text_not_stored"
+ ],
+ [
+  "M64",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_error_text_is_truncated_and_handler_exception_text_not_stored"
+ ],
+ [
+  "M65",
+  true,
+  "FAILED tests/verify_wa/test_va_07_postgres.py::test_grants_given_after_migration_would_undo_revoke_documented_dependency"
+ ],
+ [
+  "M66",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_complete_and_fail_only_affect_running_jobs"
+ ],
+ [
+  "M67",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_requeue_stale_time_boundary[age1-True]"
+ ],
+ [
+  "M68",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_update_progress_heartbeat_only_for_running"
+ ],
+ [
+  "M69",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_non_allowlisted_key_variants_rejected_and_nothing_written[enable_live]"
+ ],
+ [
+  "M70",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_int_setting_boundaries_and_type_confusion[daily_apply_cap-1-20]"
+ ],
+ [
+  "M71",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_int_setting_boundaries_and_type_confusion[suggestions_per_video-1-5]"
+ ],
+ [
+  "M72",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_tone_boundaries_and_sanitization"
+ ],
+ [
+  "M73",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_tone_boundaries_and_sanitization"
+ ],
+ [
+  "M74",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_int_setting_boundaries_and_type_confusion[daily_apply_cap-1-20]"
+ ],
+ [
+  "M75",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_change_and_clear_revoke_other_sessions_but_keep_current"
+ ],
+ [
+  "M76",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_non_allowlisted_key_variants_rejected_and_nothing_written[enable_live]"
+ ],
+ [
+  "M77",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_non_object_or_empty_body_is_422_or_400_never_500[{}]"
+ ],
+ [
+  "M78",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_clear_pin_requires_current_pin_when_set"
+ ],
+ [
+  "M79",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_pin_lock_shared_with_settings_pin_change_path"
+ ],
+ [
+  "M80",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_cookie_attributes_exact"
+ ],
+ [
+  "M81",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_cookie_attributes_exact"
+ ],
+ [
+  "M82",
+  true,
+  "FAILED tests/verify_wa/test_va_02_session_csrf_pin.py::test_cookie_attributes_exact"
+ ],
+ [
+  "M83",
+  true,
+  "FAILED tests/verify_wa/test_va_01_http_boundary.py::test_origin_secfetch_matrix_session_issue[None]"
+ ],
+ [
+  "M84",
+  true,
+  "FAILED tests/verify_wa/test_va_04_audit.py::test_audit_api_requires_session_and_paginates_newest_first"
+ ],
+ [
+  "M85",
+  true,
+  "FAILED tests/verify_wa/test_va_04_audit.py::test_audit_huge_page_does_not_500[1000000000000000000]"
+ ],
+ [
+  "M86",
+  true,
+  "FAILED tests/verify_wa/test_va_05_errors_logs.py::test_mask_secrets_known_forms[session AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA end-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]"
+ ],
+ [
+  "M87",
+  true,
+  "FAILED tests/verify_wa/test_va_05_errors_logs.py::test_db_error_log_does_not_contain_bound_parameter_values"
+ ],
+ [
+  "M88",
+  true,
+  "FAILED tests/verify_wa/test_va_05_errors_logs.py::test_mask_secrets_authorization_header_values[Authorization: Basic dXNlcjpwYXNzd29yZA==-dXNlcjpwYXNzd29yZA==]"
+ ],
+ [
+  "M89",
+  true,
+  "FAILED tests/verify_wa/test_va_05_errors_logs.py::test_json_formatter_masks_extra_fields_nested_and_exc"
+ ],
+ [
+  "M90",
+  false,
+  "385 passed, 33 skipped in 59.10s"
+ ],
+ [
+  "M91",
+  true,
+  "FAILED tests/verify_wa/test_va_05_errors_logs.py::test_validation_error_does_not_echo_submitted_values"
+ ],
+ [
+  "M92",
+  true,
+  "FAILED tests/verify_wa/test_va_09_static_serving.py::test_static_serves_assets_spa_fallback_and_api_404_stays_json"
+ ],
+ [
+  "M93",
+  true,
+  "FAILED tests/verify_wa/test_va_09_static_serving.py::test_static_path_traversal_and_symlink_escape_never_leak[/%2e%2e/outside_secret.txt]"
+ ],
+ [
+  "M94",
+  true,
+  "FAILED tests/verify_wa/test_va_05_errors_logs.py::test_db_unreachable_gives_503_ready_and_500_api_without_connection_details"
+ ],
+ [
+  "M95",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_kst_today_boundaries[utc1-kst1]"
+ ],
+ [
+  "M96",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_pt_date_boundaries_incl_dst[utc0-pt0]"
+ ],
+ [
+  "M97",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_clock_accepts_other_tz_and_rejects_naive"
+ ],
+ [
+  "M98",
+  false,
+  "385 passed, 33 skipped in 113.78s (0:01:53)"
+ ],
+ [
+  "M99",
+  true,
+  "FAILED tests/verify_wa/test_va_06_jobs_worker.py::test_worker_stop_request_finishes_current_job_and_leaves_the_rest_queued"
+ ],
+ [
+  "M100",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_effective_daily_cap_clamps_corrupt_values[21-10]"
+ ],
+ [
+  "M101",
+  true,
+  "FAILED tests/verify_wa/test_va_10_clock_store_foreign.py::test_effective_daily_cap_clamps_corrupt_values[True-10]"
+ ],
+ [
+  "M102",
+  true,
+  "FAILED tests/verify_wa/test_va_03_settings_idempotency.py::test_idem_key_order_insensitive_but_value_sensitive"
+ ],
+ [
+  "M103",
+  true,
+  "FAILED tests/verify_wa/test_va_08_static_and_live.py::test_live_full_flow_cookie_headers_and_no_secret_in_server_output"
+ ],
+ [
+  "M104",
+  true,
+  "FAILED tests/verify_wa/test_va_07_postgres.py::test_app_role_audit_log_is_append_only_and_other_tables_dml_allowed"
+ ],
+ [
+  "M105",
+  false,
+  "385 passed, 33 skipped in 109.20s (0:01:49)"
+ ]
+]

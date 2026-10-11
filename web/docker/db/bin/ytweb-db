@@ -1,0 +1,94 @@
+#!/bin/bash
+# DB 컨테이너 안에서 쓰는 관리 도구(백업·복원·점검). PowerShell 스크립트가 `docker compose exec` 로 호출한다.
+# 비밀번호는 /run/secrets 파일에서 읽어 이 프로세스의 환경변수로만 쓰며 출력하지 않는다.
+set -Eeuo pipefail
+umask 077
+
+SECRETS_DIR="${YTWEB_DB_SECRETS_DIR:-/run/secrets}"
+SHARE_DIR="${YTWEB_DB_SHARE_DIR:-/usr/local/share/ytweb}"
+BACKUP_DIR="${YTWEB_BACKUP_DIR:-/backups}"
+DB_NAME="${YTWEB_DB_NAME:-ytweb}"
+DB_HOST="${YTWEB_DB_TOOL_HOST:-127.0.0.1}"
+DB_PORT="${PGPORT:-5432}"
+
+die() { echo "[ytweb-db] $*" >&2; exit 1; }
+
+secret() {
+    local file="$SECRETS_DIR/$1"
+    [ -s "$file" ] || die "비밀 파일이 없거나 비어 있습니다: $1"
+    tr -d '\r\n' < "$file"
+}
+
+backup_path() {
+    local name="${1:-}"
+    [[ "$name" =~ ^[A-Za-z0-9._-]+\.dump$ ]] || die "백업 파일 이름이 올바르지 않습니다(영문·숫자·.-_ 와 .dump 확장자만 허용)."
+    echo "$BACKUP_DIR/$name"
+}
+
+owner_env() {
+    export PGPASSWORD
+    PGPASSWORD="$(secret db_owner_password)"
+}
+
+owner_psql() {
+    owner_env
+    psql -v ON_ERROR_STOP=1 --no-psqlrc -h "$DB_HOST" -p "$DB_PORT" -U ytweb_owner -d "$DB_NAME" "$@"
+}
+
+cmd_dump() {
+    local file; file="$(backup_path "${1:-}")"
+    [ ! -e "$file" ] || die "이미 같은 이름의 파일이 있습니다."
+    owner_env
+    # --no-owner: 소유자 정보 없이 저장(복원 시 복원하는 계정이 소유자). 권한(GRANT)은 포함한다. 역할·비밀번호는 덤프에 들어가지 않는다.
+    pg_dump -h "$DB_HOST" -p "$DB_PORT" -U ytweb_owner -d "$DB_NAME" --format=custom --no-owner --lock-wait-timeout=30s -f "$file"
+    echo "크기(바이트): $(stat -c %s "$file")"
+}
+
+cmd_list() {
+    local file; file="$(backup_path "${1:-}")"
+    [ -s "$file" ] || die "백업 파일이 없거나 비어 있습니다."
+    pg_restore --list "$file" > /dev/null
+    echo "목차 항목 수: $(pg_restore --list "$file" | grep -c -v '^;')"
+}
+
+cmd_counts() {
+    owner_psql -At -F ' ' -c "
+        SELECT table_name,
+               (xpath('/row/c/text()', query_to_xml(format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, '')))[1]::text
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+        ORDER BY table_name"
+}
+
+cmd_restore() {
+    local file; file="$(backup_path "${1:-}")"
+    [ -s "$file" ] || die "백업 파일이 없거나 비어 있습니다."
+    pg_restore --list "$file" > /dev/null || die "백업 파일을 읽을 수 없습니다(손상 가능)."
+    owner_env
+    # 한 트랜잭션: 중간에 실패하면 기존 데이터는 그대로 남는다.
+    pg_restore -h "$DB_HOST" -p "$DB_PORT" -U ytweb_owner -d "$DB_NAME" \
+        --single-transaction --exit-on-error --clean --if-exists --no-owner "$file"
+    owner_psql -q -f "$SHARE_DIR/audit-guard.sql"
+    echo "복원 완료(감사 로그·마이그레이션 버전표 권한 재확인 포함)"
+}
+
+cmd_reset_schema() {
+    # 데모 데이터 초기화: public 스키마를 지우고 권한을 다시 부여한다. 테이블은 다음 migrate 실행이 다시 만든다.
+    owner_psql -q -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public AUTHORIZATION ytweb_owner;" -f "$SHARE_DIR/schema-grants.sql"
+    echo "초기화 완료"
+}
+
+cmd_remove() {
+    local file; file="$(backup_path "${1:-}")"
+    rm -f -- "$file"
+}
+
+case "${1:-}" in
+    dump)         shift; cmd_dump "$@" ;;
+    list)         shift; cmd_list "$@" ;;
+    counts)       shift; cmd_counts "$@" ;;
+    restore)      shift; cmd_restore "$@" ;;
+    reset-schema) shift; cmd_reset_schema "$@" ;;
+    remove)       shift; cmd_remove "$@" ;;
+    *) die "사용법: ytweb-db {dump|list|restore|remove} <파일명.dump> | counts | reset-schema" ;;
+esac
