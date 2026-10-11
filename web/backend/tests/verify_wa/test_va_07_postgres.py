@@ -127,7 +127,7 @@ def test_upgrade_twice_and_downgrade_upgrade_cycle_are_safe(pg_url, pg):
     from alembic import command
     migrate.upgrade(pg_url)
     with pg.connect() as c:
-        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0001"
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"
     command.downgrade(migrate.alembic_config(pg_url), "base")
     with pg.connect() as c:
         left = c.execute(text("select count(*) from information_schema.tables where table_schema='public' and table_name <> 'alembic_version'")).scalar_one()

@@ -57,9 +57,9 @@ def test_migration_is_frozen_sql_not_model_import():
 
 
 def test_single_head_revision():
-    """TC-WA-119 마이그레이션 헤드는 하나(0001)다."""
+    """TC-WA-119 마이그레이션 헤드는 하나(0002)다."""
     from alembic.script import ScriptDirectory
-    assert ScriptDirectory.from_config(migrate.alembic_config()).get_heads() == ["0001"]
+    assert ScriptDirectory.from_config(migrate.alembic_config()).get_heads() == ["0002"]
 
 
 def test_owner_url_from_explicit_env():
