@@ -682,7 +682,6 @@ def test_it_322_recovery_is_not_triggered_for_fresh_running_items_and_unknown_re
     assert {v["video_id"]: v["title"] for v in a.videos()}[it["video_id"]] == "제3자가 바꾼 제목"
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7B-002: 재시작 복구로 success 확정된 반영은 감사 로그에 batch.item.recovered(항목 번호·상태만)만 남고 change.apply(변경 ID·영상 ID·제안 ID)가 없다 — 추가 전용 감사 기록만으로는 어느 영상이 어떻게 바뀌었는지 복원할 수 없다(changes 표는 앱 계정이 수정 가능)")
 def test_it_323_recovered_apply_is_traceable_in_append_only_audit(fresh_demo):
     """IT-323(결함 고정, DEF-7B-002): 워커가 갱신 직후(planned 기록 후, 검증 전) 죽어 재시작 복구가 success 로 확정한 반영도 정상 반영처럼 감사 로그에 변경 ID 와 영상 ID 가
     남는가. 현재는 batch.item.recovered 에 {status: success} 만 남는다. 검증: W-016, SEC-W06(감사 추적), NFR-W05"""

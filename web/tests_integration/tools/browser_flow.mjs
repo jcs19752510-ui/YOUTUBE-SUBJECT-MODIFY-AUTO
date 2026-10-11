@@ -120,6 +120,9 @@ try {
   await phrase.fill((m ? m[0] : '실행 1건').replace(/\s+/g, ' ') + ' ');
   step('문구 끝에 공백이 있으면 실행 버튼 비활성', !(await runBtn.isEnabled()));
   await phrase.fill((m ? m[0] : '실행 1건').replace(/\s+/g, ' '));
+  // 개정 2판: 실행 전 A/B 테스트 확인란(ko.legal.abConfirm)이 새로 생겼다. 문구가 맞아도 확인란 전에는 실행할 수 없어야 한다.
+  step('A/B 테스트 확인란 체크 전에는 문구가 맞아도 실행 버튼 비활성', !(await runBtn.isEnabled()));
+  await page.getByRole('checkbox', { name: /A\/B 테스트 중이 아님/ }).check();
   await runBtn.click();
   await page.getByText(/실행을 시작했습니다/).first().waitFor({ timeout: 20000 }).catch(() => {});
   const doneOk = await page.getByText('완료', { exact: true }).first().waitFor({ timeout: 90000 }).then(() => true).catch(() => false);

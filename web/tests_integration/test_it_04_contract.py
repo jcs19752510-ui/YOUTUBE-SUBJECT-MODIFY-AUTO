@@ -72,7 +72,6 @@ def _diff(a, b, path=""):
         yield path, a, b
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-003(알려진 결함, 이전 세션 발견): docs/yt/openapi.json 이 DEF-VA-005 수정(audit page/page_size 상한)을 반영하지 않아 오래됨 — 재생성하면 이 표시를 지운다")
 def test_it_400_openapi_json_in_repo_matches_running_app_schema():
     """IT-400: 저장소의 docs/yt/openapi.json 이 실제 앱 객체가 만드는 스키마와 같다(경로·메서드·컴포넌트·모든 필드). 검증: EVT-W01~W31, API.md 9장
     (알려진 결함 DEF-7-003: 현재 audit 의 page/page_size 상한 두 줄만 다르다. 파일을 재생성하면 XPASS(strict 실패)로 알려 주므로 그때 표시를 지운다.)"""
@@ -83,7 +82,7 @@ def test_it_400_openapi_json_in_repo_matches_running_app_schema():
     repo = json.loads(json.dumps(OPENAPI, sort_keys=True))
     ops = lambda d: sorted(f"{m.upper()} {p}" for p, v in d["paths"].items() for m in v)  # noqa: E731
     assert ops(live) == ops(repo)
-    assert len(ops(live)) == 31
+    assert len(ops(live)) == 34   # 개정 2판: M2·M3 가 google 3개 추가(31 -> 34)
     assert sorted(live["components"]["schemas"]) == sorted(repo["components"]["schemas"])
     d = list(_diff(live, repo))
     assert not d, "저장소 openapi.json 이 오래됨(앱 객체와 다름): " + " | ".join(f"{p}: 앱={str(a)[:90]} 저장소={str(b)[:90]}" for p, a, b in d[:6])
@@ -144,7 +143,8 @@ def test_it_401_live_responses_conform_to_openapi_schemas(fresh_demo):
         if not any(("content" in rr and "$ref" in json.dumps(rr["content"])) for s, rr in op["responses"].items() if s.startswith("2"))
     )
     allowed = {"GET /api/v1/auth/me", "POST /api/v1/auth/session", "DELETE /api/v1/auth/session", "GET /api/v1/settings", "PATCH /api/v1/settings", "GET /api/v1/audit",
-               "GET /api/healthz", "GET /healthz", "GET /api/readyz", "GET /readyz", "GET /api/v1/reports/export.csv"}
+               "GET /api/healthz", "GET /healthz", "GET /api/readyz", "GET /readyz", "GET /api/v1/reports/export.csv",
+                   "POST /api/v1/google/connect", "POST /api/v1/google/connect-write", "POST /api/v1/google/disconnect"}   # 개정 2판: M2·M3 가 더한 3개(API.md EVT-W32~35 에 필드 문서화, openapi 응답 스키마는 없음 — DEF-I2-001)
     assert set(no_schema) <= allowed, set(no_schema) - allowed
 
 
@@ -190,6 +190,10 @@ def test_it_420_every_operation_is_served_with_documented_success_status_and_enu
         "POST /api/v1/changes/{change_id}/rollback": lambda: rollback(a, ch),
         "GET /api/v1/dashboard": lambda: a.get("/api/v1/dashboard"),
         "GET /api/v1/google/status": lambda: a.get("/api/v1/google/status"),
+        # 개정 2판: M2·M3 가 더한 3개. 연결 파일이 없는 기본 compose 에서는 문서화된 409 google_client_missing 이 정상(성공 200 은 구글 파일이 있을 때 — 미수행)
+        "POST /api/v1/google/connect": lambda: a.post("/api/v1/google/connect"),
+        "POST /api/v1/google/connect-write": lambda: a.post("/api/v1/google/connect-write"),
+        "POST /api/v1/google/disconnect": lambda: a.post("/api/v1/google/disconnect"),
         "GET /api/healthz": lambda: a.c.get("/api/healthz"),
         "GET /healthz": lambda: a.c.get("/healthz"),
         "GET /api/readyz": lambda: a.c.get("/api/readyz"),
@@ -217,6 +221,8 @@ def test_it_420_every_operation_is_served_with_documented_success_status_and_enu
         want = [int(s) for s in doc_ops[key]["responses"] if s.startswith("2")][0]
         if key in ("GET /healthz", "GET /readyz"):      # 백엔드 라우트는 문서대로 있으나 nginx 가 밖으로는 닫는다(DEF-7-006, W-FIX-INF) → 404
             want = 404
+        if key in ("POST /api/v1/google/connect", "POST /api/v1/google/connect-write"):
+            want = 409 if r.json().get("code") == "google_client_missing" else want
         if r.status_code != want:
             bad.append((key, want, r.status_code, r.text[:160]))
     # 그 사이 ‘수정’한 제안은 반려했으므로 마지막 호출의 상태 충돌은 순서 문제: (approve 이후 reject)
@@ -362,13 +368,12 @@ def test_it_403_malformed_inputs_never_5xx_and_never_leak(fresh_demo):
     assert a.get("/api/v1/audit", params={"page_size": 1}).json()["chain_ok"] is True
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-004: API.md 5장·부록은 count 범위 위반을 422 count_invalid 로 적었으나 실제는 스키마 단계의 validation_error(count_invalid 는 HTTP 로 도달 불가)")
 def test_it_404_documented_count_invalid_code_is_reachable(fresh_demo):
     """IT-404(결함 고정): 문서화된 `count_invalid`(1~5 아님) 가 실제로 나오는가. 현재는 `validation_error`."""
     a = fresh_demo
     v = usable_videos(a, 1)[0]["video_id"]
     r = a.post(f"/api/v1/videos/{v}/suggestions", json={"count": 6})
-    assert r.status_code == 422 and r.json()["code"] == "count_invalid"
+    assert r.status_code == 422 and r.json()["code"] == "validation_error"   # 개정 2판: API.md 가 실제 동작(스키마 단계 거부)으로 정정됨(DEF-7-004 문서 수정 확인)
 
 
 # ─────────────────────────── 검사 순서(API.md 1-1) ───────────────────────────
@@ -437,7 +442,7 @@ def test_it_433_unschemaed_responses_have_documented_fields(fresh_demo):
     assert set(d["quota"]) >= {"used", "limit", "remaining", "pt_date"} and d["quota"]["limit"] == 6000
     assert set(d["queue"]) >= {"pending_items", "next_run_date"} and set(d["today"]) >= {"applied", "cap"}
     g = a.get("/api/v1/google/status").json()
-    assert g == {"mode": "demo", "connected": False, "message": g["message"]} and "시연용" in g["message"]
+    assert g == {"mode": "demo", "connected": False, "client_ready": False, "last_error": None, "write_connected": False, "live_write_enabled": False, "live_allowed_count": 0, "live_write_ready": False, "message": g["message"]} and "시연용" in g["message"]   # 개정 2판: API.md EVT-W31 의 M3 필드 포함
     for path in ("/api/healthz",):      # 루트 /healthz·/readyz 는 nginx 가 404 로 닫는다 → DEF-7-006 (IT-436)
         r = a.c.get(path)
         assert r.status_code == 200 and r.json() == {"status": "ok"}
@@ -700,7 +705,7 @@ def test_it_428_csv_export_columns_and_filter_match_documented_contract(fresh_de
     blank = rows.index([])                                     # 데이터 행 뒤에 빈 줄, 그 아래에 주의 문구(notes)
     data, notes = rows[1:blank], [x[0] for x in rows[blank + 1:]]
     assert all(len(x) == len(doc_cols) for x in data) and len(data) == 1, data      # 변경이 있는 영상만 행이 된다(전체 보기)
-    assert any("원인" in n for n in notes) and any("가상" in n for n in notes) and len(notes) == 4, notes
+    assert any("원인" in n for n in notes) and any("가상" in n for n in notes) and len(notes) == 5 and notes[0].startswith("이 검증은 법률 자문이 아니며"), notes   # 개정 2판: 면책 고지가 첫 줄(API.md EVT-W27)
     row = dict(zip(doc_cols, data[0]))
     assert row["video_id"] == ch["video_id"] and row["new_title"] == ch["new_title"] and row["previous_title"] == ch["previous_title"] and row["status"] in ("insufficient", "ok")
     one = list(csv.reader(io.StringIO(a.get("/api/v1/reports/export.csv", params={"video_id": ch["video_id"]}).content.decode("utf-8-sig"))))
@@ -981,10 +986,9 @@ _DOCUMENTED_ERROR_CODES = [
 ]
 
 
-_DOC_MISSING_CODES = {"session_required"}      # DEF-7-005: 서버가 가장 흔하게 내는 401 코드인데 API.md 어디에도 적혀 있지 않다
+_DOC_MISSING_CODES: set = set()      # DEF-7-005: 서버가 가장 흔하게 내는 401 코드인데 API.md 어디에도 적혀 있지 않다
 
 
-@pytest.mark.xfail(strict=True, reason="DEF-7-005: API.md 가 401 `session_required`(세션 없음·만료)를 어느 절에도 적지 않았다(서버는 모든 보호 엔드포인트에서 이 코드를 낸다). 문서에 추가하면 XPASS(strict 실패)로 알려 주므로 이 표시와 _DOC_MISSING_CODES 를 지운다")
 def test_it_435_api_md_documents_session_required_error_code():
     """IT-435(결함 고정, DEF-7-005): 세션 없이 보호 엔드포인트를 부르면 401 `session_required` 가 나오고(실제), 같은 코드가 API.md 에 적혀 있어야 한다(프런트가 이 코드로 세션 만료 화면을 띄운다).
     검증: API.md 1-7, S-W02"""
