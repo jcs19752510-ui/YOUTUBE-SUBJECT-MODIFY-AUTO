@@ -230,6 +230,8 @@ def edit_title(session: Session, suggestion_id: int, new_title: str, *, now: dat
     invalidated = _drop_approval(session, sug)
     old = sug.title
     sug.title = title
+    if sug.source != "manual" and not sug.source.endswith("+edited"):
+        sug.source = f"{sug.source}+edited"[:40]  # AI 원문을 사람이 고친 제안임을 구분한다(규칙 J, 원문 출처는 접두에 남는다)
     res, fr = validate_title(env, video, title, sug.evidence or "", sug.topic)
     _apply_validation(sug, res, fr, now)
     sug.status = "blocked" if res.result == "block" else "candidate"

@@ -476,7 +476,7 @@ def test_tc_vi_026_ytweb_db_cli_rejects_bad_names_and_unknown_commands(tmp_path)
 
 def test_tc_vi_027_powershell_scripts_encoding_and_dangerous_commands():
     files = sorted(SCRIPTS.glob("*.ps1"))
-    assert [f.name for f in files] == sorted(["_common.ps1", "backup.ps1", "e2e.ps1", "logs.ps1", "pin-digests.ps1", "reset-demo.ps1", "restore.ps1", "start.ps1", "status.ps1", "stop.ps1"])
+    assert [f.name for f in files] == sorted(["_common.ps1", "backup.ps1", "e2e.ps1", "live-check.ps1", "logs.ps1", "pin-digests.ps1", "reset-demo.ps1", "restore.ps1", "start.ps1", "status.ps1", "stop.ps1"])
     for f in files:
         raw = f.read_bytes()
         assert raw.startswith(b"\xef\xbb\xbf"), f.name

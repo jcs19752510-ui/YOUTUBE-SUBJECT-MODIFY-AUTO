@@ -372,6 +372,7 @@ export const ko = {
   suggestion: {
     ai: 'AI 제안',
     manual: '직접 수정',
+    aiEdited: 'AI 제안(직접 고침)',
     topic: '주제',
     topics: {
       life: '생활',

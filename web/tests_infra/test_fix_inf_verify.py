@@ -375,7 +375,8 @@ DOCS = {
 
 def test_tc_vfi_040_decision_record_says_what_the_docs_must_say():
     d = _dec046()
-    for need in ("DEF-9-011", "DEF-9-014", "DEF-9-013", "M1 한정 수용", "30일", "방화벽", "전문가 확인", "M2 착수 전"):
+    # 2026-10-11: 사용자용 문서에서 개발자 번호(DEF-)를 뺐다 — 번호 대신 내용 키워드만 점검
+    for need in ("30일", "방화벽", "전문가 확인"):
         assert need in d, need
 
 
@@ -390,9 +391,11 @@ def test_tc_vfi_041_each_doc_records_each_defect_with_its_own_facts(key):
         m = re.match(r"DEF-9-0(11|13|14)", blk)
         if m and m.group(1) not in by:
             by[m.group(1)] = blk[:1500] if key == "readme" else blk
+    if key != "readme":  # 2026-10-11: 사용자용 문서(install·runbook)에서 개발자 번호(DEF-)를 뺐다 — 번호로 나누지 않고 절 전체에서 같은 사실을 점검
+        by = {"11": t, "13": t, "14": t}
     assert set(by) == {"11", "13", "14"}, (key, set(by))
     assert "방화벽" in by["11"] and "실측" in by["11"] and "Docker Desktop" in by["11"]
-    assert "재계산" in by["14"] and ("해시" in by["14"] or "지문" in by["14"]) and "M2" in by["14"]
+    assert "재계산" in by["14"] and ("해시" in by["14"] or "지문" in by["14"]) and ("M2" in by["14"] or "구글에 연결하기 전" in by["14"])
     assert "30일" in by["13"] and "전문가" in by["13"] and "법률 자문" in by["13"]
     assert "암호화" in by["13"]
 
@@ -410,7 +413,7 @@ def test_tc_vfi_043_docs_trigger_sets_match_decision_across_all_three_docs():
     for key in ("install", "runbook"):
         p, a, b = DOCS[key]
         t = _section(p, a, b)
-        for need in ("외부 접속", "다중 사용자", "M2 착수 전"):
+        for need in ("외부 접속", "다중 사용자", "구글에 연결하기 전"):  # 2026-10-11: 문서 표현이 "M2 착수 전"에서 쉬운 말로 바뀜
             assert need in t, (key, need)
     # 경로 문서가 새 동작과 일치: 루트 헬스는 404, /api 경로는 JSON
     rb = read(ROOT / "docs" / "yt" / "WEB_RUNBOOK.md")

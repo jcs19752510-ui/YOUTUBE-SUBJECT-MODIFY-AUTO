@@ -164,13 +164,14 @@ def test_tc_wix_010_docs_state_security_decisions_in_plain_words(key):
     t = t[t.index(marker):]                 # 다른 장에 우연히 있는 문구로 통과하지 못하게 해당 절 안에서만 찾는다
     if key == "runbook":
         t = t[:t.index("## 14.")]
-    for need in ("DEF-9-011", "DEF-9-013", "DEF-9-014", "DEC-046"):
+    # 2026-10-11: 사용자용 문서에서 개발자 번호(DEF-/DEC-)를 뺐다(비개발자 가독성, 사용자 관점 결함 원칙). 번호 대신 쉬운 말 내용 점검은 아래 항목이 한다.
+    for need in ():
         assert need in t, (key, need)
     assert "방화벽" in t and "실측" in t                      # 011: 호스트 서비스 점검 + Docker Desktop 실측 필요
     assert "법률 자문" in t and "전문가" in t                  # 013: 개인정보 해당 여부는 전문가 확인, 법률 자문 아님
     assert "재계산" in t                                       # 014: DB 소유자 재계산 미탐지
     if key != "readme":
-        for need in ("선생님이 지금 할 일", "M2 착수 전", "다중 사용자", "외부 접속", "30일"):
+        for need in ("선생님이 지금 할 일", "구글에 연결하기 전", "다중 사용자", "외부 접속", "30일"):
             assert need in t, (key, need)
 
 

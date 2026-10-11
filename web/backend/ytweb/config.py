@@ -28,7 +28,7 @@ class WebSettings:
     mode: str
     database_url: str
     base_dir: Path                      # 유튜브 제목 코어의 정책 설정(config/settings.yaml)을 찾는 프로젝트 기준 폴더
-    secrets_dir: Path                   # 승인·감사 HMAC 키 등을 두는 폴더(명명 볼륨, 이미지 밖)
+    secrets_dir: Path                   # 승인 HMAC 키·구글 토큰 등을 두는 폴더(명명 볼륨, 이미지 밖). 감사 기록에는 키가 없다(해시 체인만)
     allowed_hosts: tuple[str, ...]
     port: int = 8080
     session_ttl_hours: int = 12
