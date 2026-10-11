@@ -249,3 +249,50 @@
 ## 6. 근거 파일 목록(진실의 원천)
 
 `web/frontend/src/i18n/ko.ts`, `web/frontend/src/pages/*.tsx`, `web/frontend/src/app/Layout.tsx`, `web/frontend/src/lib/labels.ts`, `web/frontend/src/api/endpoints.ts`, `web/backend/ytweb/{config.py,app.py,core/*,domain/*,routers/*,youtube/*}`, `src/youtube_title/{config.py,limits.py,updater.py,report.py}`, `config/settings.yaml`, `web/compose.yaml`, `web/compose.online.yaml`, `web/.env.example`, `web/docker/nginx/nginx.conf`, `web/scripts/*.ps1`, `docs/harness/decisions.md`(2026-10-11 결정 4건: 면책·A/B·필수 수정 묶음 / 수정 단위 질문 처리 / M2 설계 / 실제 모드 롤백 보수적 기본), `docs/harness/STATE.md`.
+
+---
+
+## 7. 2차 대조 (1차 이후 변경분만, 2026-10-11)
+
+> 범위: 1차 이후 커밋(7e594ae 화면 서버 모드 반영·한도 문구, 96a970d DEC-049 롤백, 74a7241 DEF-8-001 조치·8단계 결과)만 반영. `docs/` 문서만 수정, 소스·설정·시험·git 변경 없음. 새 명령 실행·Windows 실행·실제 구글 접속 없음(코드 정독 + grep). 검증 로그 `docs/harness/verify-logs/verify-log_doc-reconcile-web-2.md`(2회).
+
+### 7-1. 한 줄 결론
+- **수정 23건**(WEB_USER_MANUAL 10, WEB_FAQ 1, WEB_RUNBOOK 12). WEB_INSTALL·WEB_LEGAL_NOTICE 는 변경 없음(8장 순서 일치 확인, 새 불일치 없음). 5절의 X-01·X-02·X-03·X-05 와 X-04 는 해결, X-08 은 일부 해결.
+
+### 7-2. 수정 내역
+| ID | 문서 | 항목 | 근거 | 조치 |
+|---|---|---|---|---|
+| U34 | USER_MANUAL 4-1 | 홈 "연결 상태" ①줄 "알려진 표시 제한" 삭제(로그인 전 "구글 연결 안 됨") | HomePage.tsx:190-196, ko.ts:268 | 수정 |
+| U35 | USER_MANUAL 4-1 | 기준일 문구 "미국 태평양 시간 기준 — 한국 시간 오후 4~5시에 하루가 바뀝니다" | ko.ts:259 | 수정 |
+| U36 | USER_MANUAL 4-3 | 3회 한도 사유 문장이 쉬운 말로 바뀜(설정 이름은 괄호로 1회 남음) | limits.py:147 | 수정 |
+| U37 | USER_MANUAL 4-4 ③ | 실행 확인 안내문: 데모/실제 수정 모드 문구 구분, 실제 모드 입력 문구 `실제 실행 N건` | ko.ts confirmBodyLive, BatchDetailPage.tsx | 수정 |
+| U38 | USER_MANUAL 4-5 | 이력 모드 칸 "실제" 표기(영어 live 제한 삭제) | HistoryPage.tsx, ko.ts modeLive | 수정 |
+| U39 | USER_MANUAL 4-5 6번 | 실제 모드 롤백 거부(`live_changed_since_apply`)를 쉬운 말로 추가 | domain/changes.py(반영 뒤 유튜브에서 바뀌면 409) | 수정 |
+| U40 | USER_MANUAL 4-7 | 설정 "실행 모드" 칸이 서버 실제 상태를 따름(제한 삭제) | SettingsPage.tsx, useServerMode.ts, ko.ts sessionModeLive | 수정 |
+| U41 | USER_MANUAL 9-5 | 이력 모드 칸 표기 "실제"/"데모" | 동일 | 수정 |
+| U42 | USER_MANUAL 5장 | 알려진 제한 9개 → 5개로 축소(해결 4건 제외, 1건 부분해소) | 위 근거 | 수정 |
+| U43 | USER_MANUAL 5장 | "고쳐진 것" 목록에 서버 모드 반영 4건 추가 | 위 근거 | 수정 |
+| F20 | FAQ Q13 | 영어 표시 목록에서 이력 `live` 제거(감사 로그 `google.*`·오류 코드만 남음) | HistoryPage.tsx | 수정 |
+| R33 | RUNBOOK 13-1 | 표 머리말을 2차 기준으로 | — | 수정 |
+| R34 | RUNBOOK 13-1 | 쿼터 기준일 표시 "고쳐짐" 행 추가 | ko.ts:259 | 수정 |
+| R35 | RUNBOOK 13-1 | 하루 한도 사유 "태평양 시간 기준" 행: 남은 제한으로 범위 좁힘(limits.py:163,165 에 문구 잔존) | limits.py | 수정 |
+| R36 | RUNBOOK 13-1 | 3회 사유 개발자 문장 → 부분 해소 | limits.py:147 | 수정 |
+| R37 | RUNBOOK 13-1 | 설정 "실행 모드"·"실제 반영(라이브)" → 고쳐짐 | SettingsPage.tsx | 수정 |
+| R38 | RUNBOOK 13-1 | 실행 확인 안내문 → 고쳐짐 | BatchDetailPage.tsx | 수정 |
+| R39 | RUNBOOK 13-1 | 이력 `live` → 고쳐짐, 감사 로그 `google.*` 는 남음(행 분리) | HistoryPage.tsx | 수정 |
+| R40 | RUNBOOK 13-1 | 홈 ①줄 제한 → 해소 | HomePage.tsx | 수정 |
+| R41 | RUNBOOK 10장 | DB 재시작·연결 끊김 시 반영 항목이 실패가 아니라 "대기"로 돌아가 다음 차례에 처리됨(쓰기 전 단계만, 쓰기 시작 후 끊김은 기존 "예정" 규칙) | domain/batches.py:369-372 | 수정(추가) |
+| R42 | RUNBOOK 15-3 6번 | 실제 모드 롤백 거부는 정상 동작이라는 쉬운 설명 | changes.py | 수정 |
+| R43 | RUNBOOK 13 | 8단계 결과·성능 참고값·429 설명 추가(DEC/DEF 번호 없이) | docs/harness/system-web-m1-test.md | 수정(추가) |
+| R44 | RUNBOOK 15-2·15-5 | 이력 `live` → "실제" 표기 2곳 | HistoryPage.tsx | 수정 |
+
+### 7-3. 자동 대조 결과
+- 사용자용 5종 DEC-/DEF- 번호: `grep -nE "DEC-|DEF-"` **0건**(수정 전·후 모두). (참고: API.md·WEB_DESIGN.md 는 개발자용이라 번호를 유지.)
+- WEB_INSTALL 8장 순서(구글 파일 → start.ps1 → [구글 계정 연결] → [제목 수정 권한 연결] → `web\.env` → start.ps1 재실행 → 띠·카드 확인)는 `web/.env.example`(두 값, 화면에서 권한 연결까지 필요, 값을 바꾸면 start.ps1 재실행)과 `web/compose.online.yaml`(api·worker 에만 `YTWEB_LIVE_WRITE`·`YTWEB_LIVE_ALLOWED_VIDEOS`, 기본 0·빈 값, google_client.json 있을 때만 사용)에 **일치**. 수정 없음.
+
+### 7-4. 확인 필요 (이 2차로 닫지 못한 것)
+- **아직 한 번도 안 한 것**: 선생님 Windows PC 에서 `start.ps1` 등 실행 / `web\.env` 가 PC 에서 실제로 컨테이너에 전달되는지 / 실제 구글 서버 접속·실제 영상 읽기·실제 제목 변경 / 구글이 복귀 주소 `http://127.0.0.1:8080/api/v1/google/callback` 을 받는지 / 이번에 고친 화면 문구(띠 3종, 설정 칸, 실행 확인 안내문, 이력 "실제")를 **화면에서 눌러 캡처 확인한 것은 아님**(코드 정독만).
+- 하루 반영 한도 사유의 "오늘(태평양 시간 기준)" 문장(limits.py:163,165)은 코드에 남아 있고, 실제로 어느 시간대로 세는지 문서(1차: 한국 시간 하루)와 `limits.py` 주석 11행(태평양 날짜)이 어긋나 보임 — **개발 담당 확인 필요**(문서는 1차 판단 유지, 단정하지 않음).
+- DEF-8-001 조치 후 8단계 재실행 결과(통과 여부)는 결과서에서 확인하지 못함 — RUNBOOK 에 "조치됨, 재실행 결과 확인 필요"로 적음.
+- 구글 쿼터 공식 수치, 구글 화면 이름, 보안 수용 3건의 재평가 기록 부재, 운영 담당·응답 시간 "미정", 법적 충분성(전문가 확인) — 1차 5-1·5-3 그대로 유지.
+- X-06(직접 고친 제목의 "AI 제안" 배지), X-07(A/B 확인 서버 미검사), X-10(데모 리포트) — 여전히 코드 변경이 필요한 제한.
