@@ -6,9 +6,21 @@ services:
   api:
     networks:
       egress: {}
+    environment:
+      YTWEB_GOOGLE_CLIENT_FILE: /run/secrets/google_client
+    secrets:
+      - google_client
   worker:
     networks:
       egress: {}
+    environment:
+      YTWEB_GOOGLE_CLIENT_FILE: /run/secrets/google_client
+    secrets:
+      - google_client
+
+secrets:
+  google_client:
+    file: ./secrets/google_client.json
 
 networks:
   egress:

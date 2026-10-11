@@ -11,6 +11,8 @@ try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::
 
 $YtwebWebDir      = Split-Path -Parent $PSScriptRoot
 $YtwebComposeFile = Join-Path $YtwebWebDir 'compose.yaml'
+$YtwebOnlineFile = Join-Path $YtwebWebDir 'compose.online.yaml'
+$YtwebGoogleClient = Join-Path $YtwebWebDir 'secrets\google_client.json'
 $YtwebSecretsDir  = Join-Path $YtwebWebDir 'secrets'
 $YtwebBackupDir   = Join-Path $YtwebWebDir 'backups'
 $YtwebPort        = 8080
@@ -64,7 +66,10 @@ function Invoke-Native {
 
 function Invoke-Compose {
     param([string[]]$ArgList, [switch]$Capture, [switch]$StdoutOnly, [switch]$Quiet)
-    $all = @('compose', '-p', $YtwebProject, '-f', $YtwebComposeFile) + $ArgList
+    # 구글 연결 파일(web\secrets\google_client.json)이 있으면 구글 통신 경로(덧씌우기 파일)를 함께 쓴다(M2). 없으면 데모 모드 그대로.
+    $files = @('-f', $YtwebComposeFile)
+    if (Test-Path $YtwebGoogleClient) { $files += @('-f', $YtwebOnlineFile) }
+    $all = @('compose', '-p', $YtwebProject) + $files + $ArgList
     return Invoke-Native -FilePath 'docker' -ArgList $all -Capture:$Capture -StdoutOnly:$StdoutOnly -Quiet:$Quiet
 }
 

@@ -259,9 +259,11 @@ class DashboardOut(BaseModel):
 
 
 class GoogleStatusOut(BaseModel):
-    mode: Literal["demo"]
+    mode: Literal["demo", "read"]
     connected: bool
     message: str
+    client_ready: bool = False
+    last_error: str | None = None
 
 
 # ───────────── 요청 ─────────────
