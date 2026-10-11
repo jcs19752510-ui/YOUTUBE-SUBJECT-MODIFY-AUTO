@@ -310,6 +310,161 @@
 - 2차 검증 결과 요약: "8단계에서 문제가 생길 곳"을 의심해 재검토하고 실제 재확인 수행 — IT-436 을 시험이 아니라 `curl` 로도 직접 재확인, 보조 트랙에서 IT-436·437 이 XPASS 가 되는 것을 확인해 nginx 계층 결함임을 입증, 인프라 시험 7건 실패를 하네스 원인으로 분리·재실행해 6건 통과 확인, IT-421 의 파서 문제를 API.md 원문 grep 으로 결함이 아님을 확인. 시험 수치는 JUnit 원본에서 다시 집계
 - 검증 로그 파일 경로: `docs/harness/verify-log_web-m1-integration.md`
 
+## 부록 S. 화면 캡처 증빙 (화면 이미지 포함)
+
+> 이 부록은 이미지 파일을 직접 보고 작성했다. 모든 항목은 저장소의 `docs/harness/evidence/web-m1-screens/` 에 이미지가 있고, 아래 표의 경로로 바로 열 수 있다. **글만으로 화면을 증명하지 않는다.**
+
+### S-0. 촬영 조건과 한계
+| 구분 | 수정 후 캡처(S-01~S-15) | 7단계 시점 원본 캡처(O-01~O-10) |
+|---|---|---|
+| 촬영 시점 | 2026-10-11, 최신 소스(W-FIX-BE·FE·INF 반영 후, 커밋 8bd48ab 기준) | 2026-10-11, 7단계 통합 시험 실행 중(W-FIX 반영 전) |
+| 환경 | 클라우드 Linux, Chromium(headless) 1280px 폭, 임시 SQLite 백엔드+워커+이 소스에서 새로 빌드한 프런트(데모 모드), 호스트 포트 8080 | 클라우드 Linux Docker 스택(`harness-tmp-int`), Chromium 1280px |
+| 재현 방법 | `web/tests_integration/tools/capture_screens.mjs` (백엔드·워커·빌드한 프런트를 띄운 뒤 `node capture_screens.mjs`) | 7단계 시험 하네스 |
+| 한계 | Docker 스택이 아니라 임시 SQLite로 촬영(화면 동작 확인용). Windows 브라우저·Docker Desktop·375px 폭·다크 모드는 촬영하지 않음. 롤백을 실제 실행한 뒤의 화면, 검증 "차단" 제안 카드(C-1), 초안 버리기 확인창은 촬영하지 않음(W-FIX-FE 독립 검증에서 촬영 예정) | 위 수정 전 상태이므로 면책·AI 고지·A/B 확인란이 없는 것이 정상(결함 DEF-9-007·008 증거). 2장은 로딩 중이라 무효 |
+
+### S-1. 수정 후 화면 캡처 표 (최신 소스, 화면 8종 전부 포함)
+| 번호 | 화면 | 확인한 내용 | 이미지 경로 |
+|---|---|---|---|
+| S-01 | 홈(빈 상태) | 상단 "데모 모드 — 유튜브에 아무것도 전송되지 않습니다" 배지와 "서버 연결됨", 오늘 반영 0/10건, 남은 API 사용량 6,000단위, 반영 대기열 비어 있음, 연결 상태 "구글 연결: 데모 모드(실제 유튜브와 연결되지 않음)"와 "실제 반영(라이브): 꺼짐", 영상 현황 전부 0, [데모 영상 불러오기] 버튼 | [`evidence/web-m1-screens/after-fix/01-home-empty.png`](evidence/web-m1-screens/after-fix/01-home-empty.png) |
+| S-02 | 홈(영상 불러온 뒤) | 전체 영상 200, 제외된 영상 37, 토스트 "데모 영상 불러오기를 시작했습니다." | [`evidence/web-m1-screens/after-fix/02-home-synced.png`](evidence/web-m1-screens/after-fix/02-home-synced.png) |
+| S-03 | 영상 목록 | 전체 200개, 검색창·진행 상태·제외 여부 필터와 [검색], 제목·길이·조회수 정렬 표시, 행별 체크박스, 상태 배지 "제안 없음", 공개 상태 표시 | [`evidence/web-m1-screens/after-fix/03-videos.png`](evidence/web-m1-screens/after-fix/03-videos.png) |
+| S-04 | AI 제안 생성 대화상자 | 영상 2개 선택 후 "AI 제안 생성" 대화상자에 진행 막대 가득, "2 / 2 처리됨 · 완료", [닫기], 토스트 "2개 영상의 제안 생성이 끝났습니다.", 하단 "2개 선택됨" 바 | [`evidence/web-m1-screens/after-fix/04-generate-dialog.png`](evidence/web-m1-screens/after-fix/04-generate-dialog.png) |
+| S-05 | 영상 상세(제안 3건) | 현재 제목·상태 배지·공개 상태·길이·조회수, 변경 한도 "지금 이 영상의 제목을 바꿀 수 있습니다.", 제안 3건(경고 1: 55자로 권장 길이 40자 초과 사유 표시 / 통과 2), 제안마다 "AI 제안" 배지·주제·영상 내용 일치율, 제안마다 AI 생성 고지 2문장, 목록 상단에 면책 문구 "이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.", 변경 전/후 비교 강조, [제목 수정]·[승인]·[반려] | [`evidence/web-m1-screens/after-fix/05-detail.png`](evidence/web-m1-screens/after-fix/05-detail.png) |
+| S-06 | 승인 대화상자 | 변경 전/후 비교, AI 고지·사실 및 법령 적합성 비보장·면책 문구 3문장, 경고 사유와 "경고 사유를 모두 읽고 확인했습니다." 체크, 승인자 이름 입력("검증자"), [취소]·[승인] | [`evidence/web-m1-screens/after-fix/06-approve-dialog.png`](evidence/web-m1-screens/after-fix/06-approve-dialog.png) |
+| S-07 | 영상 상세(승인 후) | 첫 제안에 "승인됨" 배지와 "검증자 승인 · 만료 2026-10-12 22:51", 승인된 제안에는 [승인] 버튼이 사라지고 [제목 수정]·[반려]만 남음, 토스트 "승인했습니다."(화면 상단 일부는 스크롤로 잘려 있음) | [`evidence/web-m1-screens/after-fix/07-detail-approved.png`](evidence/web-m1-screens/after-fix/07-detail-approved.png) |
+| S-08 | 배치(승인 항목 고르기) | 승인된 제안 1건(경고 배지 포함) 선택됨, "한 배치에는 최대 50건", 메모 입력, [사전 점검 만들기], 지난 배치 없음, 하단 상시 푸터에 면책·AI 고지 문구 | [`evidence/web-m1-screens/after-fix/08-batches-select.png`](evidence/web-m1-screens/after-fix/08-batches-select.png) |
+| S-09 | 배치 #1 초안 — 사전 점검(미리보기) | [초안 버리기] 버튼, 반영 대상 1건·예상 52단위·하루 반영 상한 10건·남은 API 한도 6,000단위, 날짜별 일정(2026-10-11 1건), 경고 2개(경고 판정 포함, A/B 테스트 확인), 제외된 항목 없음, AI 한계·면책 문구, 포함된 항목 상태 "대기", 실행 확인: A/B 확인란이 미체크이고 확인 문구 "실행 1건" 입력란이 비어 있어 [실행] 버튼이 비활성(옅은 색)이며 "위 확인란을 선택해야 실행할 수 있습니다." 표시 | [`evidence/web-m1-screens/after-fix/09-precheck.png`](evidence/web-m1-screens/after-fix/09-precheck.png) |
+| S-10 | 배치 #1 — 실행 확인 입력 완료 | A/B 확인란 체크, 확인 문구 "실행 1건" 입력 후 "문구가 일치합니다.", [실행] 버튼이 활성(진한 색)으로 바뀜 | [`evidence/web-m1-screens/after-fix/10-confirm-ready.png`](evidence/web-m1-screens/after-fix/10-confirm-ready.png) |
+| S-11 | 배치 #1 — 실행 완료 | 상태 "완료", 항목 상태 "성공", 진행 막대 가득 "1 / 1건 처리됨", 대기 0·진행 중 0·성공 1·실패 0·건너뜀 0·취소됨 0, "이력에서 결과 보기" 링크, 토스트 "실행을 시작했습니다." | [`evidence/web-m1-screens/after-fix/11-executed.png`](evidence/web-m1-screens/after-fix/11-executed.png) |
+| S-12 | 이력·롤백 | 변경 기록 1건(구분 "반영 데모", 결과 "성공", 승인자 "검증자", 이전 제목→새 제목), [롤백] 버튼, 영상 ID 검색과 결과 필터, 상단 "이 기록은 사람이 승인해 반영한 제목의 변화입니다."와 AI 고지, 하단 푸터 면책 | [`evidence/web-m1-screens/after-fix/12-history.png`](evidence/web-m1-screens/after-fix/12-history.png) |
+| S-13 | 롤백 확인 대화상자 | "이 변경을 되돌릴까요?", 현재 제목과 되돌릴 제목, "확인을 위해 영상 ID 를 그대로 입력하세요: demoVid0001"와 입력값, "복사하지 않고 직접 입력해 주세요.", 승인자 이름, [취소]·[롤백 실행](롤백을 실제로 실행한 뒤의 화면은 촬영하지 않음) | [`evidence/web-m1-screens/after-fix/13-rollback-dialog.png`](evidence/web-m1-screens/after-fix/13-rollback-dialog.png) |
+| S-14 | 성과 리포트 | "읽기 전에 꼭 확인하세요" 안내(법률 자문 아님, 순차 비교는 원인을 단정할 수 없음, 데이터 부족 시 결론 없이 이유만 표시, 데모 수치는 가상 데이터), [CSV 내보내기], 영상 ID 검색, 영상 카드에 "데이터 부족" 배지와 "비교하지 않는 이유: 변경 후 지표가 아직 없습니다.", 변경 후 지표 수집 예정일 2026-10-25 | [`evidence/web-m1-screens/after-fix/14-reports.png`](evidence/web-m1-screens/after-fix/14-reports.png) |
+| S-15 | 설정 | 탭 4개(안전 설정·PIN·세션·연결·감사 로그), 하루 반영 건수 상한 10(1~20), 영상당 제안 개수 3(1~5), 제목 말투(최대 5개·각 20자), 저장 버튼, "이 화면에서는 켤 수 없는 설정" 안내(실제 반영과 허용 영상 목록은 서버 설정 파일에서만 변경)(화면 아래쪽은 잘려 있음) | [`evidence/web-m1-screens/after-fix/15-settings.png`](evidence/web-m1-screens/after-fix/15-settings.png) |
+
+화면 8종 대응: 홈(S-01·S-02), 영상 목록(S-03·S-04), 영상 상세(S-05·S-06·S-07), 배치(S-08·S-09·S-10·S-11), 이력·롤백(S-12·S-13), 성과 리포트(S-14), 설정(S-15), 구글 상태 배지(모든 화면 상단 "데모 모드" 배지와 S-01 "연결 상태" 카드).
+
+### S-2. 7단계 시점 원본 캡처 표 (수정 전)
+| 번호 | 화면 | 확인한 내용 | 판정 | 이미지 경로 |
+|---|---|---|---|---|
+| O-01 | 홈(빈 상태) | S-01과 같은 화면. 새로고침 버튼 등 일부 표시가 현재 소스와 다름 | 유효 | [`evidence/web-m1-screens/int-original/01-home-empty.png`](evidence/web-m1-screens/int-original/01-home-empty.png) |
+| O-02 | 홈(영상 불러온 뒤) | 전체 200·제외 37, 토스트 표시 | 유효 | [`evidence/web-m1-screens/int-original/02-home-synced.png`](evidence/web-m1-screens/int-original/02-home-synced.png) |
+| O-03 | 영상 목록 + AI 제안 생성 완료(전체 페이지) | 제외 영상 사유 표시(Shorts 가능성 180초 이하, 비공개 영상, 아동용 영상, 비공개·예약·프리미어 중)와 체크박스 비활성, 2개 선택, 생성 대화상자 "2 / 2 처리됨 · 완료". 전체 페이지 캡처라 고정 사이드바·대화상자가 아래쪽에 겹쳐 보이는 촬영 부작용이 있음 | 유효(겹침 있음) | [`evidence/web-m1-screens/int-original/03-generate-done.png`](evidence/web-m1-screens/int-original/03-generate-done.png) |
+| O-04 | 영상 상세 | 로딩 스켈레톤(회색 막대)만 찍힘. 화면 내용이 로드되기 전에 촬영된 것이라 **증빙으로 인정하지 않음**. S-05가 대체 | 무효(로딩 중) | [`evidence/web-m1-screens/int-original/04-detail.png`](evidence/web-m1-screens/int-original/04-detail.png) |
+| O-05 | 영상 상세(승인 후, 전체 페이지) | "승인됨" 배지, "통합시험자 승인 · 만료 2026-10-12 16:43", 제안 3건, 경고 사유. **AI 고지·면책 문구가 없음**(DEF-9-007·008의 증거). 전체 페이지 캡처의 겹침 있음 | 유효(겹침 있음) | [`evidence/web-m1-screens/int-original/05-approved.png`](evidence/web-m1-screens/int-original/05-approved.png) |
+| O-06 | 배치 목록 | 로딩 스켈레톤만 찍힘. **증빙으로 인정하지 않음**. S-08이 대체 | 무효(로딩 중) | [`evidence/web-m1-screens/int-original/06-batches.png`](evidence/web-m1-screens/int-original/06-batches.png) |
+| O-07 | 배치 #1 사전 점검 | 사전 점검 수치, 경고·A/B 한 줄 경고(서버 사전 점검 문구), 확인 문구 입력란. A/B 확인란·면책 문구가 없음. 토스트가 "제외된 항목" 칸을 일부 가림 | 유효 | [`evidence/web-m1-screens/int-original/07-precheck.png`](evidence/web-m1-screens/int-original/07-precheck.png) |
+| O-08 | 배치 #1 실행 완료 | 완료·성공 1·1/1건 처리됨 | 유효 | [`evidence/web-m1-screens/int-original/08-executed.png`](evidence/web-m1-screens/int-original/08-executed.png) |
+| O-09 | 이력·롤백 | 기록 1건과 [롤백] 버튼. 안내 문구·면책 없음 | 유효 | [`evidence/web-m1-screens/int-original/09-history.png`](evidence/web-m1-screens/int-original/09-history.png) |
+| O-10 | 설정 | 안전 설정과 "켤 수 없는 설정"(실제 반영 꺼짐, 허용 영상 목록 없음) | 유효 | [`evidence/web-m1-screens/int-original/10-settings.png`](evidence/web-m1-screens/int-original/10-settings.png) |
+
+### S-3. 수정 전과 후를 비교해 확인한 것
+- 상시 푸터의 면책·AI 고지 문구: 수정 전(O-05·O-07·O-09)에는 없고 수정 후(S-05·S-06·S-08·S-09·S-12)에는 있다 → DEF-9-007·008의 화면 쪽 조치가 반영된 것을 이미지로 확인. **문구의 법적 충분성은 판단하지 않았다(전문가 확인 필요).**
+- 배치 실행 전 A/B 확인란: 수정 전(O-07)에는 없고 수정 후(S-09·S-10)에는 있으며, 체크와 확인 문구가 모두 맞아야 [실행]이 활성화되는 것을 S-09(비활성)·S-10(활성)으로 확인 → DEF-7-011.
+- 초안 배치 [초안 버리기] 버튼: 수정 후(S-09)에만 있음 → DEF-7-009(C-2)의 화면 쪽 조치. 버리기 동작 자체의 시험은 W-FIX-FE 독립 검증 몫.
+- 이 부록의 판정은 이 결과서의 9절 판정(CONDITIONAL PASS)을 바꾸지 않는다. 수정 후 화면의 정식 독립 검증은 `web-WU-FIX-FE-test.md`(재개 예정)에서 한다.
+
+### S-4. 이미지 본문 (수정 후)
+**S-01 홈(빈 상태)** — `evidence/web-m1-screens/after-fix/01-home-empty.png`
+
+![S-01 홈(빈 상태)](evidence/web-m1-screens/after-fix/01-home-empty.png)
+
+**S-02 홈(영상 불러온 뒤)** — `evidence/web-m1-screens/after-fix/02-home-synced.png`
+
+![S-02 홈(영상 불러온 뒤)](evidence/web-m1-screens/after-fix/02-home-synced.png)
+
+**S-03 영상 목록** — `evidence/web-m1-screens/after-fix/03-videos.png`
+
+![S-03 영상 목록](evidence/web-m1-screens/after-fix/03-videos.png)
+
+**S-04 AI 제안 생성 대화상자** — `evidence/web-m1-screens/after-fix/04-generate-dialog.png`
+
+![S-04 AI 제안 생성 대화상자](evidence/web-m1-screens/after-fix/04-generate-dialog.png)
+
+**S-05 영상 상세(제안 3건)** — `evidence/web-m1-screens/after-fix/05-detail.png`
+
+![S-05 영상 상세(제안 3건)](evidence/web-m1-screens/after-fix/05-detail.png)
+
+**S-06 승인 대화상자** — `evidence/web-m1-screens/after-fix/06-approve-dialog.png`
+
+![S-06 승인 대화상자](evidence/web-m1-screens/after-fix/06-approve-dialog.png)
+
+**S-07 영상 상세(승인 후)** — `evidence/web-m1-screens/after-fix/07-detail-approved.png`
+
+![S-07 영상 상세(승인 후)](evidence/web-m1-screens/after-fix/07-detail-approved.png)
+
+**S-08 배치(승인 항목 고르기)** — `evidence/web-m1-screens/after-fix/08-batches-select.png`
+
+![S-08 배치(승인 항목 고르기)](evidence/web-m1-screens/after-fix/08-batches-select.png)
+
+**S-09 배치 #1 초안 — 사전 점검(미리보기)** — `evidence/web-m1-screens/after-fix/09-precheck.png`
+
+![S-09 배치 #1 초안 — 사전 점검(미리보기)](evidence/web-m1-screens/after-fix/09-precheck.png)
+
+**S-10 배치 #1 — 실행 확인 입력 완료** — `evidence/web-m1-screens/after-fix/10-confirm-ready.png`
+
+![S-10 배치 #1 — 실행 확인 입력 완료](evidence/web-m1-screens/after-fix/10-confirm-ready.png)
+
+**S-11 배치 #1 — 실행 완료** — `evidence/web-m1-screens/after-fix/11-executed.png`
+
+![S-11 배치 #1 — 실행 완료](evidence/web-m1-screens/after-fix/11-executed.png)
+
+**S-12 이력·롤백** — `evidence/web-m1-screens/after-fix/12-history.png`
+
+![S-12 이력·롤백](evidence/web-m1-screens/after-fix/12-history.png)
+
+**S-13 롤백 확인 대화상자** — `evidence/web-m1-screens/after-fix/13-rollback-dialog.png`
+
+![S-13 롤백 확인 대화상자](evidence/web-m1-screens/after-fix/13-rollback-dialog.png)
+
+**S-14 성과 리포트** — `evidence/web-m1-screens/after-fix/14-reports.png`
+
+![S-14 성과 리포트](evidence/web-m1-screens/after-fix/14-reports.png)
+
+**S-15 설정** — `evidence/web-m1-screens/after-fix/15-settings.png`
+
+![S-15 설정](evidence/web-m1-screens/after-fix/15-settings.png)
+
+### S-5. 이미지 본문 (7단계 시점 원본)
+**O-01 홈(빈 상태)** (유효) — `evidence/web-m1-screens/int-original/01-home-empty.png`
+
+![O-01 홈(빈 상태)](evidence/web-m1-screens/int-original/01-home-empty.png)
+
+**O-02 홈(영상 불러온 뒤)** (유효) — `evidence/web-m1-screens/int-original/02-home-synced.png`
+
+![O-02 홈(영상 불러온 뒤)](evidence/web-m1-screens/int-original/02-home-synced.png)
+
+**O-03 영상 목록 + AI 제안 생성 완료(전체 페이지)** (유효(겹침 있음)) — `evidence/web-m1-screens/int-original/03-generate-done.png`
+
+![O-03 영상 목록 + AI 제안 생성 완료(전체 페이지)](evidence/web-m1-screens/int-original/03-generate-done.png)
+
+**O-04 영상 상세** (무효(로딩 중)) — `evidence/web-m1-screens/int-original/04-detail.png`
+
+![O-04 영상 상세](evidence/web-m1-screens/int-original/04-detail.png)
+
+**O-05 영상 상세(승인 후, 전체 페이지)** (유효(겹침 있음)) — `evidence/web-m1-screens/int-original/05-approved.png`
+
+![O-05 영상 상세(승인 후, 전체 페이지)](evidence/web-m1-screens/int-original/05-approved.png)
+
+**O-06 배치 목록** (무효(로딩 중)) — `evidence/web-m1-screens/int-original/06-batches.png`
+
+![O-06 배치 목록](evidence/web-m1-screens/int-original/06-batches.png)
+
+**O-07 배치 #1 사전 점검** (유효) — `evidence/web-m1-screens/int-original/07-precheck.png`
+
+![O-07 배치 #1 사전 점검](evidence/web-m1-screens/int-original/07-precheck.png)
+
+**O-08 배치 #1 실행 완료** (유효) — `evidence/web-m1-screens/int-original/08-executed.png`
+
+![O-08 배치 #1 실행 완료](evidence/web-m1-screens/int-original/08-executed.png)
+
+**O-09 이력·롤백** (유효) — `evidence/web-m1-screens/int-original/09-history.png`
+
+![O-09 이력·롤백](evidence/web-m1-screens/int-original/09-history.png)
+
+**O-10 설정** (유효) — `evidence/web-m1-screens/int-original/10-settings.png`
+
+![O-10 설정](evidence/web-m1-screens/int-original/10-settings.png)
+
 ## 공유 문서 갱신 요청 (오케스트레이터가 반영 — 이 단계는 traceability·decisions 를 직접 수정하지 않음)
 - `docs/harness/traceability.md`: feature `web-m1` 의 웹 요구사항 중 이 결과서가 검증한 것(W-001~W-017, S-W02~S-W16, NFR-W03~W10, EVT-W01~W31, D-01~D-14)의 "통합테스트" 컬럼에 `IT-INT-001~113`(시험 코드 `IT-xxx` 병기)과 판정 `CONDITIONAL PASS` 기록. 화면 문구 요구(면책·AI 고지, POL 계열)는 "미충족(DEF-7-011)"로 표기
 - `docs/harness/decisions.md`: (제안) DEC — "7단계 통합 시험은 pwsh 7.4(Linux)로 운영 스크립트를 실행했고 Windows PowerShell 5.1 은 미수행", "시험 하네스는 포트 18080 허용을 위해 nginx.conf 사본을 읽기 전용 덧마운트(운영 구성과 다름)", "High C-1·C-2 처리 방침 결정 필요(Q-11-09)"
