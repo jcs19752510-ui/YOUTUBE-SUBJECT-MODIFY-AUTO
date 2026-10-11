@@ -18,6 +18,37 @@
 - 작업이 끝나거나 사용자만 할 수 있는 일이 생기면 반드시 PushNotification으로 알린다(사용자 지시, 2026-10-10).
 - git: 사용자가 클라우드→GitHub의 `git add / commit / push`를 허용했다(DEC-027, 이전 금지 DEC-006 대체). 현재 브랜치 `PROD_SCH`에만, 작업 단위·단계가 끝날 때마다 푸시한다. 강제 푸시·이력 재작성·PR 생성은 사용자 지시가 있을 때만. 커밋 전에 비밀·토큰·`data/`·`.harness-tmp/` 미포함을 확인한다.
 
+## 프로젝트 현황과 앞으로의 계획 (2026-10-11 기준, 새 세션은 이 절과 `docs/harness/STATE.md`를 먼저 읽는다)
+
+**프로젝트**: "시니어 생활팁" 유튜브 채널의 영상 제목을 AI가 제안하고, 사람이 승인한 것만 하루 한도 안에서 나눠 바꾸고, 기록·롤백하는 도구. 기존 파이썬 CLI(`src/ytitle`)를 **Docker 기반 로컬 웹 프로그램**(FastAPI·React·PostgreSQL·nginx, `127.0.0.1:8080` 한정)으로 전환 중이다(DEC-032~045). 화면·문서에서 쓰는 이름은 "유튜브 제목"이다(코드 이름 `ytitle`, `src/ytitle`, `python -m ytitle`, 파일명 `ytitle-report.csv`는 식별자라 바꾸지 않는다).
+
+### 지금까지 한 일
+- **0~1단계**: 질문·답변·결정 기록(`docs/harness/decisions.md`, 추가만 하는 로그), 조사 4축(`docs/harness/_parallel/01-axis*.md`, 공식 문서 도메인이 막혀 원문 미열람이라 "조건부").
+- **2~4단계 문서**: 기획서·위험·STRIDE 위협 모델·설계서(`docs/yt/DESIGN.md`, `WEB_DESIGN.md`)·API 명세(`openapi.json`, `API.md`)·디자인서(`04_ux_design.md`) 개정. 요구사항 추적표 61행(`docs/harness/traceability.md`, 시험 연결 88.5%).
+- **5단계 구현(M1 데모 모드, 완료)**: 백엔드 기반(`web/backend/ytweb/core`, 세션·CSRF·감사 해시 체인·멱등성·작업 큐), 백엔드 도메인(`domain/ai/youtube/routers`, 모의 AI·모의 유튜브·승인·배치·롤백·리포트), 프런트(`web/frontend`, 화면 6개와 상태 화면), 인프라(`web/compose.yaml`, `web/docker`, `web/scripts/*.ps1`). 구글·AI 실호출 코드는 **연결돼 있지 않다**(실제 제목이 바뀔 일 없음).
+- **6단계 독립 검증**: 백엔드 기반 PASS, 백엔드 도메인 PASS, 프런트 조건부 PASS, 인프라 조건부 PASS(결과서 `docs/harness/units/web-WU-*-test.md`). 변이 점검 134·91·99·113곳. 백엔드 전체 605·프런트 505 시험 통과(PostgreSQL 실측 포함).
+- **후속 조치**: 네트워크 3분리(`front`/`back`/`edge`, web은 DB에 도달 불가, DEC-045), nginx 오류 로그 쿼리 문자열 억제(부분), 프런트 운영 빌드에서 테스트 파일 제외(`tsconfig.build.json`, DEC-044), 데모 모드 재변경 최소 노출수 0(`Env.build`), 화면 문구 "ytitle"→"유튜브 제목".
+- **11단계 문서 초안**: `docs/yt/WEB_{USER_MANUAL,FAQ,RUNBOOK,INSTALL,LEGAL_NOTICE}.md`(7~10단계 후 대조 필요). 결정 대기 질문서 63개 항목 `docs/harness/USER_DECISIONS_WEB.md`(추천안 포함).
+- **프로젝트 아티팩트(진행률·구조·구성·장점·사용법)**: https://claude.ai/artifact/QSbGzRqb2kdPMFGS3Do3y4 (현황이 바뀌면 같은 주소로 갱신).
+- **진행률(추정, 측정값 아님)**: 전체 약 78%, M1 약 97%.
+
+### 앞으로 할 일 (순서)
+1. **7단계 전체 스택 통합 시험(중단됨, 최우선)**: `docker compose -p harness-tmp-int`, 포트 127.0.0.1:18080, 이전 세션의 보조 라이브러리 `web/tests_integration/itlib.py` 재사용. 확인 대상: 컨테이너 전체 기동, API 시나리오(세션→영상 불러오기→제안→승인→배치→워커→롤백→리포트→감사 로그), 경계 시험(재시작 중 이중 반영 없음, DB 재시작, 멱등키, 백업·복원, 마이그레이션 0001→0002), Chromium 화면 확인, 프런트·인프라 조건부 PASS 닫기, 실가동 시험 TC-VI-055·106 xfail 재평가. 결과서 `docs/harness/feature-web-m1-integration-test.md`와 검증 로그.
+2. **8단계 전체 시험 → 9단계 보안 검증(이미지 취약점·SBOM·의존성) → 10단계 구동 검증(선생님 PC) → 11단계 문서 대조**. 8~10단계는 7단계 PASS 후에만 시작한다.
+3. **선생님 PC에서 첫 화면 확인**: Docker Desktop 실행·WSL2, 포트 8080, `web\scripts\start.ps1 -OpenBrowser`(절차는 `web/README.md`, `docs/yt/WEB_INSTALL.md`). 통합 시험이 끝나면 PushNotification으로 알린다.
+4. **M2 구글 읽기 연동(선생님 승인 Q-20 필요)**: 웹 방식 OAuth(OAuth "웹 애플리케이션" 클라이언트, 리디렉션 `http://127.0.0.1:포트/...`, state·PKCE, 읽기/쓰기 토큰 분리). 기존 CLI(`src/ytitle/auth.py`, `youtube_read.py`)는 데스크톱 로그인 방식이라 웹용으로 새로 만들어야 한다. 선생님이 먼저 구글 클라우드 프로젝트 1개·API 2개·동의 화면·클라이언트 ID를 만들어야 한다(`docs/yt/03_manual_setup.md`).
+5. **M3 AI·실제 반영(선생님 승인 Q-33 필요)**: AI 서비스 확정(Q-1 미정, 어댑터 인터페이스 `TitleSuggester`만 있음), 쓰기 로그인, `live_guard` 14단계 게이트 이식, 테스트 영상 1개로 먼저 실제 반영. **실제 제목 변경과 배포(12단계)는 선생님의 명시적 승인 없이는 절대 실행하지 않는다.**
+6. **M4**: 풀 문서 대조·위협 모델 확정 후 12단계 직전까지 정리.
+
+### 사용자 결정 대기 (진행을 막는 것은 M1 전 PC 확인 3가지뿐)
+Q-1 Docker Desktop·WSL2 확인, Q-2 포트 8080, Q-3 `start.ps1` 실행 결과. 나머지 60개(M2 4, M3 11, 운영·정책 16, 위험 수용 8 등)는 `USER_DECISIONS_WEB.md`에서 "모두 추천안대로" 또는 항목별로 답을 받는다. DEF-VI-001은 네트워크 3분리로 해결(웹 외부 접근은 수용, DEC-045), DEF-VI-003은 부분 조치(M2 OAuth 콜백 설계 때 재평가).
+
+### 작업 규칙 (이 프로젝트에서 실제로 쓰는 방식)
+- 구현 단위마다 **독립 검증 에이전트**를 따로 두고(구현자 자기 보고를 믿지 않음), 변이 점검·결과서(`templates/test-report-template.md` 전 섹션)·검증 로그(최소 2회)를 남긴다. 수행하지 못한 것은 "미수행(사유)"로 쓰고 PASS로 세지 않는다.
+- 에이전트마다 **전용 테스트 DB**를 쓴다(공유하면 동시성 시험이 서로 깨진다). 클라우드 임시 PostgreSQL 16(`127.0.0.1:54329`, DB `ytweb_test_a`~`_e`)과 `dockerd`는 `.harness-tmp/`에서 수동 기동하며 저장소에는 포함되지 않는다. 임시 컨테이너·이미지는 `harness-tmp-*` 접두사, 끝나면 정리(규칙 K, 사용자 삭제 승인 대기 중인 잔여물이 있다).
+- 다른 에이전트·세션과 겹치지 않게 `pkill` 패턴 종료를 쓰지 않고 자기 PID만 종료한다. 같은 브랜치에 여러 곳이 푸시할 수 있으니 푸시 전에 `git fetch --depth=50 origin +PROD_SCH:refs/remotes/origin/PROD_SCH`로 원격을 갱신하고, 충돌 시 원격의 문서를 우선한다(훅이 "미푸시 N개"라고 해도 추적 정보가 낡은 경우가 많으니 `git rev-list --count origin/PROD_SCH..HEAD`로 확인).
+- 보고마다 맨 위에 전체·M1 진행률과 세션 사용량(읽을 수 없으면 "읽을 수 없음"과 컨텍스트 사용량)을 적는다. 선생님이 확인할 일이 생기면 알림을 보낸다.
+
 ## 새 업무를 시작할 때 (가장 먼저, 1단계 전)
 **적용할 업무가 무엇인지(그리고 신규 개발/기능 추가/버그 수정/리팩터링/감사 중 어떤 유형인지)를 가장 먼저 묻는다.** 이어서 MCP·위험도 등급·병렬 모드·레퍼런스·법규 기준(기본 대한민국)을 **한 메시지에 모아** 묻는다(ORCHESTRATOR.md 4장 2-1, 3~3-5번). 요청에 이미 답이 있으면 다시 묻지 않고 "확정"으로 알린다. 업무 유형별 적용 단계는 4장 부록 A, 세션 재개는 부록 B(`docs/harness/STATE.md`), 브랜치·버전 규정은 부록 C.
 
