@@ -148,7 +148,21 @@ curl -b jar.txt -X POST -H 'Origin: http://127.0.0.1:8080' -H 'X-CSRF-Token: uQo
 오류: 404 `job_not_found`, 422(UUID 형식 아님). **작업 핸들러가 실패해도 자동 재시도하지 않는다**(배치 부작용 중복 방지). 폴링은 화면이 2초 간격으로 한다.
 
 ### EVT-W31 `GET /api/v1/google/status`
-M1 고정 응답 200: `{"mode":"demo","connected":false,"message":"데모 모드입니다. 구글(유튜브)에 연결되어 있지 않고, 아래 영상은 모두 시연용 가상 데이터입니다."}`. M2부터 연결 상태를 돌려줄 자리.
+구글(유튜브) 연결 상태. 응답 200: `{mode: "demo"|"read", connected, client_ready, message, last_error, write_connected, live_write_enabled, live_allowed_count, live_write_ready}`.
+- `mode`: 연결 파일(`google_client.json`)이 없으면 `demo`, 있으면 `read`. `connected`: 읽기 로그인 완료 여부. `last_error`: 구글에서 돌아올 때 난 오류 안내(한 번만 보여 줌).
+- M3 필드: `write_connected`(제목 수정 권한 로그인 여부), `live_write_enabled`(서버 설정 `YTWEB_LIVE_WRITE=1`), `live_allowed_count`(`YTWEB_LIVE_ALLOWED_VIDEOS` 영상 수), `live_write_ready`(셋이 모두 맞아 **실제 수정이 가능한** 상태).
+
+### EVT-W32 `POST /api/v1/google/connect`, EVT-W33 `POST /api/v1/google/connect-write`
+CSRF 필요. 응답 200 `{auth_url}` — 구글 로그인 주소(state 1회용·10분 만료, PKCE S256). `connect` 는 읽기 전용 범위(`youtube.readonly`), `connect-write` 는 제목 수정 범위(`youtube.force-ssl`)이며 **토큰을 별도 파일**(`google_write_token.json`)에 저장한다. 쓰기 권한만으로는 제목이 바뀌지 않는다(`live_write_ready` 조건 참고). 연결 파일 문제는 409 `google_client_missing`/`google_client_invalid`(+ hint).
+
+### EVT-W34 `GET /api/v1/google/callback` (OpenAPI 제외)
+구글에서 돌아오는 브라우저 이동. 세션 쿠키 대신 state 로 요청을 묶는다. 성공·실패 모두 303 `/#/`. 토큰은 응답·주소·로그에 싣지 않는다.
+
+### EVT-W35 `POST /api/v1/google/disconnect`
+CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:false}`.
+
+### 실제 모드(M3) 동작 요약
+실제 수정은 ①`YTWEB_LIVE_WRITE=1` ②쓰기 토큰 연결 ③`YTWEB_LIVE_ALLOWED_VIDEOS` 1개 이상, 세 조건이 모두 맞을 때만 일어난다. 이때 배치 사전 점검의 `confirm_text` 는 `실제 실행 N건`(데모는 `실행 N건`)이고, 허용 목록에 없는 영상은 초안 단계에서 막히며(`blocked`에 `live_not_allowed`), 롤백도 같은 목록을 적용한다(409 `live_not_allowed`). 변경 기록의 `mode` 는 `live`/`demo` 로 구분한다.
 
 ### EVT-W01~W04 `GET /healthz`, `/api/healthz`, `/readyz`, `/api/readyz`
 세션·CSRF·Host 검사 없음(컨테이너 헬스체크용). `healthz` → 200 `{"status":"ok"}`. `readyz` → 200 `{"status":"ok","db":"ok","mode":"demo"}`, DB 연결 실패 시 **503** `{"status":"degraded","db":"down","mode":"demo"}`(이 503은 `openapi.json`에 없음). 구글·AI 연결 상태는 아직 포함하지 않는다(M2·M3).

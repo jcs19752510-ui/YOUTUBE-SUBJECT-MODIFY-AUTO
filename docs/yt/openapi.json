@@ -739,6 +739,148 @@
         }
       }
     },
+    "/api/v1/google/connect": {
+      "post": {
+        "tags": [
+          "google"
+        ],
+        "summary": "Google Connect",
+        "operationId": "google_connect_api_v1_google_connect_post",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/google/connect-write": {
+      "post": {
+        "tags": [
+          "google"
+        ],
+        "summary": "Google Connect Write",
+        "description": "제목 수정(쓰기) 권한 로그인. 읽기 로그인과 별도 토큰 파일에 저장하며, 이 권한만으로는 실제 수정이 되지 않는다\n(YTWEB_LIVE_WRITE=1 과 허용 영상 목록이 모두 있어야 한다).",
+        "operationId": "google_connect_write_api_v1_google_connect_write_post",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/google/disconnect": {
+      "post": {
+        "tags": [
+          "google"
+        ],
+        "summary": "Google Disconnect",
+        "operationId": "google_disconnect_api_v1_google_disconnect_post",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/healthz": {
       "get": {
         "tags": [
@@ -2358,7 +2500,10 @@
         "properties": {
           "mode": {
             "type": "string",
-            "const": "demo",
+            "enum": [
+              "demo",
+              "read"
+            ],
             "title": "Mode"
           },
           "connected": {
@@ -2368,6 +2513,42 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "client_ready": {
+            "type": "boolean",
+            "title": "Client Ready",
+            "default": false
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "write_connected": {
+            "type": "boolean",
+            "title": "Write Connected",
+            "default": false
+          },
+          "live_write_enabled": {
+            "type": "boolean",
+            "title": "Live Write Enabled",
+            "default": false
+          },
+          "live_allowed_count": {
+            "type": "integer",
+            "title": "Live Allowed Count",
+            "default": 0
+          },
+          "live_write_ready": {
+            "type": "boolean",
+            "title": "Live Write Ready",
+            "default": false
           }
         },
         "type": "object",
