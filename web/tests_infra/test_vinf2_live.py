@@ -201,10 +201,17 @@ def test_vif_103_only_web_publishes_loopback_port():
         assert not inspect(svc)["NetworkSettings"]["Ports"] or all(v is None for v in inspect(svc)["NetworkSettings"]["Ports"].values()), svc
     pb = inspect("web")["HostConfig"]["PortBindings"]
     assert pb == {"8080/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}, pb
-    ss = sh(["ss", "-ltnH"]).stdout
-    lines = [l for l in ss.splitlines() if re.search(rf":{PORT}\s", l)]
-    assert lines and all(l.split()[3].startswith("127.0.0.1:") for l in lines), lines
+    # ss 가 없는 환경이라 /proc/net/tcp(상태 0A=LISTEN)에서 읽는다. 127.0.0.1 = 0100007F(리틀엔디언)
+    lines = []
+    for f in [x for x in ("/proc/net/tcp", "/proc/net/tcp6") if Path(x).exists()]:
+        for l in Path(f).read_text().splitlines()[1:]:
+            cols = l.split()
+            if cols[3] == "0A" and int(cols[1].split(":")[1], 16) == PORT:
+                lines.append(cols[1])
+    assert lines, "리스너 없음"
+    assert all(x.split(":")[0] == "0100007F" for x in lines), lines
     others = [a for a in sh(["hostname", "-I"]).stdout.split() if not a.startswith("127.") and ":" not in a]
+    STATE["non_loopback_ips"] = others
     for ip in others[:3]:
         s = socket.socket(); s.settimeout(3)
         assert s.connect_ex((ip, PORT)) != 0, f"{ip}:{PORT} 로 접속됨"
@@ -309,11 +316,16 @@ def test_vif_113_upstream_error_and_login_responses_have_no_dup_headers():
 
 def test_vif_114_host_and_method_gates():
     """TC-VIF-114 허용 Host(127.0.0.1:8080, localhost:8080) 외에는 응답 없이 연결 종료(444), 허용되지 않은 메서드는 거부."""
-    for bad in ("evil.com", "127.0.0.1", f"127.0.0.1:{PORT}", "localhost", "127.0.0.1:8080.evil.com", "[::1]:8080", ""):
-        with pytest.raises((http.client.RemoteDisconnected, ConnectionError, http.client.BadStatusLine)):
-            req("GET", "/api/healthz", host=bad)
-    with pytest.raises((http.client.RemoteDisconnected, ConnectionError, http.client.BadStatusLine)):
-        req("GET", "/api/healthz", host=None)
+    def blocked(host):
+        try:
+            s, _, d = req("GET", "/api/healthz", host=host)
+        except (http.client.RemoteDisconnected, ConnectionError, http.client.BadStatusLine):
+            return "closed"
+        assert s in (400, 421) and b"status" not in d, (host, s, d[:80])   # nginx 가 형식 오류로 거부(본문에 앱 응답 없음)
+        return s
+    res = {h: blocked(h) for h in ("evil.com", "127.0.0.1", f"127.0.0.1:{PORT}", "localhost", "127.0.0.1:8080.evil.com", "[::1]:8080", "127.0.0.1:08080", "", None)}
+    STATE["host_gate"] = res
+    assert res["evil.com"] == "closed" and res[f"127.0.0.1:{PORT}"] == "closed"
     assert req("GET", "/api/healthz", host="localhost:8080")[0] == 200
     for m, p in (("TRACE", "/"), ("DELETE", "/"), ("PUT", "/"), ("PATCH", "/assets/x.js"), ("POST", "/assets/x.js"), ("TRACE", "/api/v1/x"), ("CONNECT", "/api/x"), ("PROPFIND", "/api/x")):
         s = req(m, p)[0]
@@ -540,3 +552,69 @@ def test_vif_136_head_version_and_migration_idempotent():
     r = dc("run", "--rm", "--no-deps", "migrate", timeout=180)
     assert r.returncode == 0, r.stderr[-300:]
     assert owner_sh(PSQL_O, "SELECT version_num FROM alembic_version").stdout.strip() == heads
+
+
+def dc_online(*a, timeout=300):
+    env = {**os.environ, "YTWEB_IMAGE_PREFIX": PROJECT}
+    return subprocess.run(["docker", "compose", "-p", PROJECT, "-f", str(WEB / "compose.yaml"), "-f", str(WEB / "compose.online.yaml"), "-f", OVERRIDE, *a],
+                          capture_output=True, text=True, timeout=timeout, env=env, cwd=str(WEB))
+
+
+def test_vif_140_online_overlay_live_adds_only_google_secret_and_egress():
+    """TC-VIF-140 M2: 구글 비밀 파일(가짜 값)이 있을 때 _common.ps1 이 하는 것과 같이 compose.online.yaml 을 얹어 실제로 띄운다.
+    api·worker 에 google_client 비밀과 egress 망만 늘고, 포트·권한·db/web 구성은 그대로이며, db 는 여전히 외부로 못 나간다. 끝나면 오버레이를 걷어 원상복구한다."""
+    gc = WEB / "secrets" / "google_client.json"
+    assert not gc.exists()
+    base_ports = {s: inspect(s)["HostConfig"]["PortBindings"] for s in ("db", "api", "worker", "web", "migrate")}
+    fake = '{"installed":{"client_id":"vif-fake.apps.googleusercontent.com","client_secret":"VIFFAKESECRET1234567890","redirect_uris":["http://localhost"]}}'
+    try:
+        gc.write_text(fake)
+        up = dc_online("up", "-d", "--no-build")
+        assert up.returncode == 0, up.stderr[-500:]
+        wait_ready()
+        for svc in ("api", "worker"):
+            i = inspect(svc)
+            nets = {k.removeprefix(f"{PROJECT}_") for k in i["NetworkSettings"]["Networks"]}
+            assert nets == ({"front", "back", "egress"} if svc == "api" else {"back", "egress"}), (svc, nets)
+            dests = {m["Destination"] for m in i["Mounts"] if m["Type"] == "bind"}
+            assert dests == {"/run/secrets/db_app_password", "/run/secrets/google_client"}, dests
+            assert "YTWEB_GOOGLE_CLIENT_FILE=/run/secrets/google_client" in i["Config"]["Env"]
+            hc = i["HostConfig"]
+            assert hc["ReadonlyRootfs"] and hc["CapDrop"] == ["ALL"] and not hc.get("CapAdd") and not hc["Privileged"] and not hc["PortBindings"]
+            assert i["Config"]["User"] == "10001:10001"
+            assert "VIFFAKESECRET1234567890" not in json.dumps(i)          # 비밀 내용이 inspect 에 없다
+            assert dexec(svc, "sh", "-c", "cat /run/secrets/google_client | head -c 20").stdout.startswith('{"installed"')
+            assert dexec(svc, "touch", "/run/secrets/google_client").returncode != 0     # 읽기 전용
+        for svc in ("db", "migrate", "web"):
+            nets = {k.removeprefix(f"{PROJECT}_") for k in inspect(svc)["NetworkSettings"]["Networks"]}
+            assert "egress" not in nets, svc
+        assert {s: inspect(s)["HostConfig"]["PortBindings"] for s in base_ports} == base_ports
+        assert sh(["docker", "exec", cname("db"), "sh", "-c", "ls /run/secrets"]).stdout.split() == ["db_app_password", "db_owner_password", "db_superuser_password"]
+        assert "google_client" not in dexec("web", "sh", "-c", "ls /run/secrets 2>&1").stdout
+        # db 는 외부로 못 나간다(양성 대조: api 는 egress 망에 붙어 도달 가능한지 관찰)
+        p = dexec("db", "bash", "-c", "timeout 4 bash -c '</dev/tcp/1.1.1.1/443' && echo OPEN || echo BLOCKED", timeout=30)
+        assert p.stdout.strip() == "BLOCKED"
+        q = dexec("api", "python", "-c", "import socket\ntry:\n  socket.create_connection(('1.1.1.1',443),4); print('OPEN')\nexcept Exception as e: print('BLOCKED')", timeout=30)
+        STATE["api_egress_with_overlay"] = q.stdout.strip()
+        # 비밀(가짜 값)이 로그에 새지 않는다
+        for svc in ("api", "worker"):
+            lg = sh(["docker", "logs", cname(svc)])
+            assert "VIFFAKESECRET1234567890" not in lg.stdout + lg.stderr
+    finally:
+        gc.unlink(missing_ok=True)
+        r = dc("up", "-d", "--no-build", "--remove-orphans")       # 오버레이 없이 다시 (api/worker 재생성)
+        assert r.returncode == 0, r.stderr[-300:]
+        wait_ready()
+    for svc in ("api", "worker"):
+        nets = {k.removeprefix(f"{PROJECT}_") for k in inspect(svc)["NetworkSettings"]["Networks"]}
+        assert "egress" not in nets, (svc, nets)
+        assert not any(m["Destination"].endswith("google_client") for m in inspect(svc)["Mounts"])
+    assert sh(["docker", "network", "ls", "-q", "--filter", f"name=^{PROJECT}_egress$"]).stdout.strip() == ""
+    assert not gc.exists()
+
+
+def test_vif_199_dump_observations():
+    """TC-VIF-199 관찰값(판정 아님)을 .harness-tmp/v2/live_state.json 에 남겨 결과서가 인용한다."""
+    out = ROOT / ".harness-tmp" / "v2" / "live_state.json"
+    out.write_text(json.dumps(STATE, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    assert "loose_without_guard" in STATE

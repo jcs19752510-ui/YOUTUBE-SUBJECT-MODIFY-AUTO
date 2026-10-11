@@ -47,7 +47,7 @@ class FakeGoogle:
     access: dict = field(default_factory=dict)          # access token -> scope
     refresh: dict = field(default_factory=dict)         # refresh token -> scope
     seq: int = 0
-    update_mode: str = "ok"      # ok | wrong_title | http_4xx:<code> | http_5xx_applied | http_5xx_not_applied | timeout_applied | timeout_not_applied | empty_json
+    update_mode: str = "ok"      # ok | empty_not_applied | wrong_title | http_4xx:<code> | http_5xx_applied | http_5xx_not_applied | timeout_applied | timeout_not_applied | empty_json
     token_error: str | None = None
     omit_refresh: bool = False
     pages: list | None = None    # playlistItems 페이지: [[ids...], ...]
@@ -182,6 +182,8 @@ class FakeGoogle:
             if m == "wrong_title":
                 self.videos[vid] = copy.deepcopy(sn)
                 return self._json({"snippet": {**sn, "title": sn["title"] + "?"}})
+            if m == "empty_not_applied":
+                return self._json({})
             if m == "empty_json":
                 self.videos[vid] = copy.deepcopy(sn)
                 return self._json({})
