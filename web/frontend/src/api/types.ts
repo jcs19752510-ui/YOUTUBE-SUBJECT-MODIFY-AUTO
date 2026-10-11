@@ -266,6 +266,8 @@ export interface GoogleStatus {
   mode: string;
   connected: boolean;
   message: string;
+  client_ready?: boolean;
+  last_error?: string | null;
 }
 
 export interface VideoListQuery {

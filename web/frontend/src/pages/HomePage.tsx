@@ -17,6 +17,7 @@ import {
 import { ko } from '../i18n/ko';
 import { jobTypeLabel } from '../lib/labels';
 import { fmtDate, fmtNum } from '../lib/format';
+import { GoogleCard } from './GoogleCard';
 import { JobPanel } from './JobPanel';
 
 const COUNT_LINK = {
@@ -181,6 +182,7 @@ export function HomePage() {
                 </Card>
               </div>
               <div className="grid-cards">
+                <GoogleCard />
                 <Card title={ko.home.statusTitle}>
                   <ul className="item-list">
                     <li>

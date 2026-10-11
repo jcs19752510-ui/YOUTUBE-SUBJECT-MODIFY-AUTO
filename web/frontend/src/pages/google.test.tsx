@@ -1,0 +1,96 @@
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { dashboard } from '../test/fixtures';
+import { connectedClient, json, renderWithApp, route } from '../test/utils';
+import { HomePage } from './HomePage';
+
+vi.mock('../lib/navigate', () => ({ navigateTo: vi.fn() }));
+import { navigateTo } from '../lib/navigate';
+
+const base = {
+  mode: 'read',
+  connected: false,
+  client_ready: true,
+  last_error: null,
+  message: '구글 연결 준비가 됐습니다.',
+};
+const dash = route('GET', '/api/v1/dashboard', () => json(200, dashboard()));
+
+beforeEach(() => vi.mocked(navigateTo).mockClear());
+
+describe('구글 연결 카드', () => {
+  it('TC-WF-200 연결 파일이 없으면 준비 방법을 안내하고 연결 버튼은 없다', async () => {
+    const { client } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () =>
+        json(200, { ...base, mode: 'demo', client_ready: false, message: '데모 모드입니다.' }),
+      ),
+    ]);
+    renderWithApp(<HomePage />, client);
+    expect(await screen.findByText(/google_client\.json 을 저장한 뒤/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '구글 계정 연결' })).not.toBeInTheDocument();
+  });
+
+  it('TC-WF-201 준비됐으면 [구글 계정 연결]이 보이고 누르면 구글 로그인 주소로 이동한다(읽기 전용 안내 포함)', async () => {
+    const user = userEvent.setup();
+    const { client, calls } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () => json(200, base)),
+      route('POST', '/api/v1/google/connect', () =>
+        json(200, { auth_url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1' }),
+      ),
+    ]);
+    renderWithApp(<HomePage />, client);
+    expect(await screen.findByText(/읽기 전용입니다/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '구글 계정 연결' }));
+    await waitFor(() =>
+      expect(navigateTo).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?x=1'),
+    );
+    expect(calls.some((c) => c.method === 'POST' && c.path === '/api/v1/google/connect')).toBe(
+      true,
+    );
+  });
+
+  it('TC-WF-202 연결됐으면 [내 영상 불러오기]와 [연결 해제]가 보이고, 해제는 한 번 더 확인한다', async () => {
+    const user = userEvent.setup();
+    let connected = true;
+    const { client, calls } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () =>
+        json(200, { ...base, connected, message: '구글(유튜브)에 읽기 전용으로 연결돼 있습니다.' }),
+      ),
+      route('POST', '/api/v1/videos/sync', () =>
+        json(202, { id: 'j1', type: 'videos.sync', status: 'queued', progress: 0, total: 0 }),
+      ),
+      route('POST', '/api/v1/google/disconnect', () => {
+        connected = false;
+        return json(200, { connected: false });
+      }),
+    ]);
+    renderWithApp(<HomePage />, client);
+    await user.click(await screen.findByRole('button', { name: '내 영상 불러오기' }));
+    await waitFor(() => expect(calls.some((c) => c.path === '/api/v1/videos/sync')).toBe(true));
+    await user.click(screen.getByRole('button', { name: '연결 해제' }));
+    expect(screen.getByText(/저장된 로그인 정보가 지워집니다/)).toBeInTheDocument();
+    expect(calls.some((c) => c.path === '/api/v1/google/disconnect')).toBe(false); // 확인 전에는 호출하지 않음
+    await user.click(screen.getByRole('button', { name: '해제' }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.path === '/api/v1/google/disconnect')).toBe(true),
+    );
+  });
+
+  it('TC-WF-203 구글에서 온 오류 안내를 사용자에게 보여 준다', async () => {
+    const { client } = await connectedClient([
+      dash,
+      route('GET', '/api/v1/google/status', () =>
+        json(200, {
+          ...base,
+          last_error: '로그인 요청이 만료됐거나 올바르지 않습니다. 처음부터 다시 시도해 주세요.',
+        }),
+      ),
+    ]);
+    renderWithApp(<HomePage />, client);
+    expect(await screen.findByText(/로그인 요청이 만료됐거나/)).toBeInTheDocument();
+  });
+});

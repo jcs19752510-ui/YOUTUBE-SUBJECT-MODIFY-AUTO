@@ -88,6 +88,10 @@ export function createEndpoints(c: ApiClient) {
     patchSettings: (patch: SettingsPatch) =>
       c.request<SettingsData>('PATCH', `${V1}/settings`, { body: patch }),
     google: () => c.request<GoogleStatus>('GET', `${V1}/google/status`),
+    googleConnect: () =>
+      c.request<{ auth_url: string }>('POST', `${V1}/google/connect`, { body: {} }),
+    googleDisconnect: () =>
+      c.request<{ connected: boolean }>('POST', `${V1}/google/disconnect`, { body: {} }),
   };
 }
 

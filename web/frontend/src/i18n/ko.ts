@@ -189,6 +189,28 @@ export const ko = {
   } as Record<string, string>,
 
   // ---- 홈 ----
+  // ---- 구글(유튜브) 연결 ----
+  google: {
+    title: '구글(유튜브) 연결',
+    connect: '구글 계정 연결',
+    connecting: '구글로 이동 중…',
+    disconnect: '연결 해제',
+    disconnectAsk: '구글 연결을 해제할까요? 저장된 로그인 정보가 지워집니다.',
+    disconnectYes: '해제',
+    disconnectNo: '취소',
+    disconnected: '구글 연결을 해제했습니다.',
+    syncReal: '내 영상 불러오기',
+    syncStarted: '내 영상 불러오기를 시작했습니다.',
+    readOnly:
+      '읽기 전용입니다. 이 프로그램은 구글에서 영상 정보를 읽기만 하고, 영상 제목을 바꾸지 않습니다.',
+    needFile:
+      '실제 유튜브에 연결하려면 web\\secrets\\google_client.json 을 저장한 뒤 .\\web\\scripts\\start.ps1 을 다시 실행하세요.',
+    checking: '구글 연결 상태를 확인하는 중…',
+    checkFail: '구글 연결 상태를 확인하지 못했습니다.',
+    errorTitle: '구글 연결에 문제가 있습니다',
+    resetHint: '데모 기록이 있으면 .\\web\\scripts\\reset-demo.ps1 로 초기화한 뒤 불러오세요.',
+  },
+
   home: {
     title: '홈',
     subtitle: '오늘 해야 할 일과 남은 사용량을 한눈에 확인합니다.',
