@@ -27,7 +27,7 @@ def _non_negative_int(env: dict[str, str], name: str, default: int) -> int:
 class WebSettings:
     mode: str
     database_url: str
-    base_dir: Path                      # ytitle 정책 설정(config/settings.yaml)을 찾는 프로젝트 기준 폴더
+    base_dir: Path                      # 유튜브 제목 코어의 정책 설정(config/settings.yaml)을 찾는 프로젝트 기준 폴더
     secrets_dir: Path                   # 승인·감사 HMAC 키 등을 두는 폴더(명명 볼륨, 이미지 밖)
     allowed_hosts: tuple[str, ...]
     port: int = 8080

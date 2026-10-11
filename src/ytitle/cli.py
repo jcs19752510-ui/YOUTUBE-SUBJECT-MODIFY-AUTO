@@ -80,7 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=footer(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version=f"ytitle {__version__}")
+    parser.add_argument("--version", action="version", version=f"유튜브 제목 {__version__}")
     parser.set_defaults(plain=False, color=False, base_dir=None)
     sub = parser.add_subparsers(dest="command", metavar="<명령>", title="사용할 수 있는 명령")
     for info in pkgutil.iter_modules(commands_pkg.__path__):

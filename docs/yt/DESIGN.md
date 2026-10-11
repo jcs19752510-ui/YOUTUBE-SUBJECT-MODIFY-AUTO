@@ -754,7 +754,7 @@ erDiagram
 | ADR-021 | DEC-020 계승 | 쿼터 3행 일괄 선예약(전부/전무), 실패 호출 차감 유지 | 쓰기 뒤 검증할 쿼터가 없는 상황 방지 | 호출 시점 차감(상한 초과 위험) | 쉬움 |
 | ADR-022 | DEC-018 계승 | KST 하루 상한, PT 쿼터 날짜, DB는 UTC | W6 | 서버 로컬 시간(컨테이너 UTC와 어긋남) | 쉬움 |
 | ADR-023 | (DEC 없음 → 기록 요청) | 네트워크: `app`(internal) + `edge`(web만 게시), 외부 통신은 `compose.online.yaml` 덧씌우기 | internal 전용 컨테이너는 호스트 게시 불가로 알려져 있어 분리. profiles는 네트워크에 적용되지 않음 | 모든 서비스를 기본 네트워크에(외부 통신 가능 → 기각) | 쉬움 |
-| ADR-024 | (DEC 없음 → 기록 요청) | 코어는 복사 없이 `PYTHONPATH=/app/backend:/app/src`로 공유, ytitle 런타임 의존성은 별도 해시 잠금(`requirements-ytitle.txt`) | 코어 사본 분기 방지, 빌드 격리(미잠금 setuptools 다운로드 회피) | `pip install -e`(빌드 단계 네트워크), 코어 복사(분기) | 쉬움 |
+| ADR-024 | (DEC 없음 → 기록 요청) | 코어는 복사 없이 `PYTHONPATH=/app/backend:/app/src`로 공유, 유튜브 제목 코어 런타임 의존성은 별도 해시 잠금(`requirements-ytitle.txt`) | 코어 사본 분기 방지, 빌드 격리(미잠금 setuptools 다운로드 회피) | `pip install -e`(빌드 단계 네트워크), 코어 복사(분기) | 쉬움 |
 | ADR-025 | (DEC 없음 → 기록 요청) | DB 마이그레이션은 owner 계정의 1회성 `migrate` 서비스, 앱은 DDL 불가 | 최소 권한, 마이그레이션 실패 시 앱 미기동 | 앱 기동 시 자동 마이그레이션(앱이 DDL 권한 필요) | 쉬움 |
 | ADR-026 | (DEC 없음 → 기록 요청) | 린트·타입: ESLint 9 고정, vitest-axe 대신 axe-core 직접, 백엔드 ruff(임시 점검) | jsx-a11y peer 범위, 유지 상태 | ESLint 10(접근성 린트 상실) | 쉬움 |
 참고: ADR-011~022의 DEC 근거는 `decisions.md` DEC-035/040/041/042에 흩어져 있어 **번호 매핑을 traceability에 등록**해야 한다. ADR-023~026과 BE-B 해석 D2·D5~D9, FE의 HashRouter·ESLint 9·axe-core는 아직 decisions.md에 기록이 없다(공유 문서 갱신 요청 참고).

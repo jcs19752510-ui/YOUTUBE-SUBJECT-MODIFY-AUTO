@@ -1,4 +1,4 @@
-# ytitle 코어(src/ytitle) 런타임 의존성 중 web/backend/requirements.txt 에 없는 것의 해시 잠금.
+# 유튜브 제목 코어(src/ytitle) 런타임 의존성 중 web/backend/requirements.txt 에 없는 것의 해시 잠금.
 # 생성: PyPI JSON(https://pypi.org/pypi/<name>/<ver>/json)의 sha256, cp312 리눅스 휠 + 순수 파이썬 휠 + sdist.
 # 갱신 절차: web/README.md '의존성 갱신' 참고. api.Dockerfile 이 --require-hashes 로 설치한다.
 

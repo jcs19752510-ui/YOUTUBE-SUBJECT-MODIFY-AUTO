@@ -8,7 +8,7 @@ from ytweb.db.models import Video
 
 
 def exclusion_reasons(video: Video, policy: Settings) -> list[str]:
-    # 메시지는 CLI 와 같아야 하므로 ytitle 의 규칙 함수를 그대로 쓴다(행 대신 같은 키의 dict 를 넘김).
+    # 메시지는 CLI 와 같아야 하므로 유튜브 제목 코어의 규칙 함수를 그대로 쓴다(행 대신 같은 키의 dict 를 넘김).
     row = {
         "privacy_status": video.privacy_status,
         "made_for_kids": video.made_for_kids,

@@ -40,7 +40,7 @@ def test_python_dash_m_entrypoint_works():
     """TC-074: `python -m ytitle --version`이 실제로 실행되어 버전을 출력한다. [FR-017]"""
     src = str(Path(__file__).resolve().parent.parent / "src")
     r = subprocess.run([sys.executable, "-m", "ytitle", "--version"], capture_output=True, text=True, encoding="utf-8", env=dict(os.environ, PYTHONPATH=src))
-    assert r.returncode == 0 and r.stdout.startswith("ytitle ")
+    assert r.returncode == 0 and r.stdout.startswith("유튜브 제목 ")
 
 
 def test_empty_yaml_and_wrong_section_type(project):

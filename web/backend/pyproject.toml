@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ytweb"
 version = "0.1.0"
-description = "ytitle 웹 백엔드(데모 모드 M1)"
+description = "유튜브 제목 웹 백엔드(데모 모드 M1)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.143.0",
