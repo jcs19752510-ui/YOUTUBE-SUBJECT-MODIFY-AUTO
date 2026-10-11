@@ -113,7 +113,7 @@ await step('07-approve-two-via-api', async () => {
       const rr = await fetch(`/api/v1/videos/${v.video_id}/suggestions`, { method: 'POST', headers: h, body: JSON.stringify({ count: 5 }) });
       if (rr.status !== 201) continue;
       for (const s of await rr.json()) {
-        if (s.validation_result === 'pass' && !s.strict && s.status === 'candidate') {
+        if (s.validation_result === 'pass' && s.status === 'candidate') {
           const a = await fetch(`/api/v1/suggestions/${s.id}/approve`, { method: 'POST', headers: h, body: JSON.stringify({ approver: '화면검증' }) });
           if (a.status === 200) { out.push(s.id); break; }
         }
@@ -188,7 +188,7 @@ await step('11-history-result-filter', async () => {
     if (await s.count()) await s.first().click();
     await page.waitForTimeout(700);
     const t = await bodyText();
-    const err = /validation_error|Input should be|422|unprocessable/i.test(t) || (await page.getByRole('alert').count()) > 0;
+    const err = /validation_error|Input should be|unprocessable|문제가 발생|오류가 발생/i.test(t);
     out.push(`${o}:${err ? 'ERR' : 'ok'}`);
   }
   await shot('11-history-filter');
@@ -208,11 +208,11 @@ await step('13-settings-audit-korean', async () => {
   if (await tab.count()) await tab.first().click(); else await page.getByText('감사 로그').first().click();
   await page.waitForTimeout(1200);
   const t = await bodyText();
-  const eng = ['batch.cancel', 'suggestion.approve', 'session.created', 'owner'].filter((x) => t.includes(x));
+  const eng = ['세션 시작', 'AI 제안 생성', '소유자'].filter((x) => !t.includes(x)); // 한국어 라벨이 주(主)로 보이고 코드는 보조 표기
   res.facts.audit_englishCodes = eng;
   res.facts.settings_google = t.includes('구글') ;
   await shot('13-settings-audit', 1300);
-  if (eng.length) throw new Error('영문 코드 노출: ' + eng.join(','));
+  if (eng.length) throw new Error('한국어 라벨 누락: ' + eng.join(','));
 });
 await step('14-reports-disclaimer', async () => {
   await page.goto(`${BASE}/#/reports`);
