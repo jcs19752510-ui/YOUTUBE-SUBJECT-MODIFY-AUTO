@@ -135,67 +135,93 @@
 
 | ID | 유형 | 요구사항/기능 (출처 문서 §) | 설계 매핑 (WEB_DESIGN §) | 작업 단위 | 구현 상태 | 단위테스트 (TC-ID) | 통합테스트 (IT-ID) | 전체테스트 (UAT-ID) | 비고 |
 |----|------|------|------|------|------|------|------|------|------|
-| W-001 | W | compose 한 번(start.ps1)으로 시작·종료·재시작·상태·로그, 127.0.0.1 접속 (요청 §6-1) | 1, 7 | W-INF | In Progress | | | | M1=데모 모드 |
-| W-002 | W | 구글 로그인(읽기→쓰기 분리)을 웹에서 시작·확인·해제 — M2 (요청 §6-1) | 3 /google | W-BE-B(M2) | In Progress | | | | M1=데모 모드 |
-| W-003 | W | 영상 목록(200개) 표, 검색·정렬·필터 (요청 §6-1) | 3 /videos | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-004 | W | 영상별 AI 제목 후보 생성(어댑터, 모의 AI는 M1) (요청 §6-1) | 3 /suggestions, 4 | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-005 | W | 후보 자동 검증(통과/경고/차단), 차단은 반영 불가 (요청 §6-1) | 3·4 | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-006 | W | 변경 전/후 제목·유지 항목 비교(diff) (요청 §6-1) | 6 | W-FE | In Progress | | | | M1=데모 모드 |
-| W-007 | W | 후보 선택·수정·승인·반려, 일괄 선택 (요청 §6-1) | 3 /suggestions | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-008 | W | 승인 항목을 배치로 묶어 하루 한도 내 반영, 초과분 다음 날 예약, 놓친 예약 몰아서 실행 금지 (요청 §6-1) | 3 /batches, 4 | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-009 | W | 배치 사전 점검 요약과 확인 문구(`실행 {n}건`) (요청 §6-1) | 3 /batches | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-010 | W | 반영 진행 상황·중지, 재시작·실패에도 이중 반영 없음 (요청 §6-1) | 4, 2 | W-BE-A, W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-011 | W | 개별/배치 롤백(영상 ID 직접 입력) (요청 §6-1) | 3 /changes | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-012 | W | 변경 이력·감사 로그 조회 (요청 §6-1) | 3 /changes /audit | W-BE-A, W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-013 | W | 전후 성과 비교 리포트(화면·CSV, 데이터 부족 명시) (요청 §6-1) | 3 /reports | W-BE-B, W-FE | In Progress | | | | M1=데모 모드 |
-| W-014 | W | 설정 화면(안전 설정만, 라이브 허용은 API로 변경 불가) (요청 §6-1) | 3 /settings | W-BE-A, W-FE | In Progress | | | | M1=데모 모드 |
-| W-015 | W | 기존 CLI 유지(회귀·비상용, DEC-034 Q-4) (요청 §6-1) | 1 | (기존 src/ytitle) | In Progress | | | | M1=데모 모드 |
-| W-016 | W | 백업·복원(pg_dump), 복원 후 건수 검증 (요청 §6-1) | 7 | W-INF | In Progress | | | | M1=데모 모드 |
-| W-017 | W | /healthz·/readyz와 화면 상태 요약 (요청 §6-1) | 3 | W-BE-A, W-FE | In Progress | | | | M1=데모 모드 |
-| D-01 | D | compose 4서비스+migrate, healthy 순서, 프로필 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-02 | D | 호스트 게시 127.0.0.1 한정, 실측 테스트 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-03 | D | 비루트·read_only·cap_drop·no-new-privileges (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-04 | D | 이미지 다이제스트 고정·멀티 스테이지 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-05 | D | .dockerignore, 이미지에 비밀 없음 검사 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-06 | D | 비밀은 secrets 파일로 주입 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-07 | D | 데이터는 명명 볼륨, down -v 금지 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-07a | D | PostgreSQL 하드닝·역할 분리·pg_hba (요청 §7) | 1, 5 | W-INF, W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-07b | D | Alembic만으로 스키마 변경 (요청 §7) | 1, 5 | W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-08 | D | 헬스체크·재시작·우아한 종료·로그 제한 (요청 §7) | 1, 5 | W-INF, W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-09 | D | 시간대·로캘(UTC 저장, KST 표시) (요청 §7) | 1, 5 | W-INF, W-BE-A | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-10 | D | 외부 통신은 구글·AI만, internal 네트워크 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-11 | D | 이미지 취약점·SBOM, 의존성 잠금 (요청 §7) | 1, 5 | W-INF (9단계) | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-12 | D | Windows 스크립트(start/stop/backup/restore) (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-13 | D | 테스트용 임시 컨테이너 harness-tmp 접두사·정리 (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| D-14 | D | 자원 상한(메모리/CPU) (요청 §7) | 1, 5 | W-INF | In Progress | | | | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분 |
-| F-01 | F | React+TS strict+Vite, ESLint·Prettier·타입 검사 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-02 | F | API 타입은 계약에서 생성/동기화, TanStack Query (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-03 | F | 200행 목록 서버측 필터·정렬·페이지네이션, 선택 상태 유지 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-04 | F | 외부 CDN·원격 폰트·분석 금지 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-05 | F | dangerouslySetInnerHTML 금지, 외부 문자열은 텍스트 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-06 | F | CSRF·Idempotency-Key 자동 부착, 중복 클릭 방지 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-07 | F | 로딩·빈·오류·한도 초과·세션 만료·연결 끊김·새로고침 복구 화면 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-08 | F | 한국어 UI, 문구 한곳 관리, dry-run은 '미리보기' (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-09 | F | 접근성 WCAG 2.2 AA 목표(키보드·포커스·대비) (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-10 | F | PC 우선, 최신 Chrome/Edge (요청 §8) | 6 | W-FE | In Progress | | | | |
-| F-11 | F | 디자인 시스템(토큰·컴포넌트) 먼저 (요청 §8) | 6 | W-FE | In Progress | | | | |
-| S-W01 | SEC | 127.0.0.1에만 게시 (요청 §9) | 5 | W-INF | 구현 중 | | | | |
-| S-W02 | SEC | 세션 인증·CSRF·Host/Origin(+Sec-Fetch-Site) 검증 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
-| S-W03 | SEC | 상태 변경은 GET 금지, POST/PUT/PATCH/DELETE+CSRF+확인 (요청 §9) | 5 | W-BE-A, W-BE-B | 구현 중 | | | | |
-| S-W04 | SEC | 쿠키 속성·보안 헤더 (요청 §9) | 5 | W-BE-A, W-INF | 구현 중 | | | | |
-| S-W05 | SEC | XSS 방어(외부 문자열 텍스트 처리) (요청 §9) | 5 | W-FE | 구현 중 | | | | |
-| S-W06 | SEC | 프롬프트 인젝션 방어(입력 데이터 구분·응답 검증·권한 없음) (요청 §9) | 5 | W-BE-B | 구현 중 | | | | |
-| S-W07 | SEC | 외부 AI 전송 최소화·비용 상한(실서비스 M3) (요청 §9) | 5 | W-BE-B | M1 모의만 | | | | |
-| S-W08 | SEC | OAuth state·PKCE·비밀 보관(M2) (요청 §9) | 5 | W-BE-B | M2 대기 | | | | |
-| S-W09 | SEC | 로그 JSON·비밀 마스킹, 오류에 스택트레이스 없음 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
-| S-W10 | SEC | CSV 업로드 검증(M2) (요청 §9) | 5 | W-BE-B | M2 대기 | | | | |
-| S-W11 | SEC | 신규 의존성 실존·라이선스·취약점 확인 (요청 §9) | 5 | W-BE-A, W-FE, W-INF | 구현 중(9단계 확인) | | | | |
-| S-W12 | SEC | 동시성·멱등성·이중 반영 방지(트랜잭션·행 잠금·고유 제약) (요청 §9) | 5 | W-BE-A, W-BE-B | 구현 완료(A)/중(B) | | | | |
-| S-W13 | SEC | 요청 크기·속도 제한·SQL 바인딩 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
-| S-W13a | SEC | DB 보안(역할 최소 권한, 포트 미게시, 비밀번호 secrets) (요청 §9) | 5 | W-INF, W-BE-A | 구현 중 | | | | |
-| S-W14 | SEC | 컨테이너 격리(비루트·읽기 전용 등) (요청 §9) | 5 | W-INF | 구현 중 | | | | |
-| S-W15 | SEC | 위협 모델 STRIDE 웹·컨테이너 갱신 (요청 §9) | 5 | (M4 설계 문서) | 대기 | | | | |
-| S-W16 | SEC | 감사 로그 추가 전용·해시 체인 (요청 §9) | 5 | W-BE-A | 구현 완료(6단계 대기) | | | | |
+| W-001 | W | compose 한 번(start.ps1)으로 시작·종료·재시작·상태·로그, 127.0.0.1 접속 (요청 §6-1) | 1, 7 | W-INF | Done | TC-VI-001, 027, 031, 033, 102, 130, 131, 132, 133, 137 [I§4-3]; TC-WI-001~034 [I-note§4] |  |  | M1=데모 모드; I=COND.PASS[Open DEF-VI-001·002·003, C-02] (W-001과 결과서상 직접 연결된 열린 결함 없음). Windows Docker Desktop·PowerShell 5.1 미수행(사용자 PC, README 8절) |
+| W-002 | W | 구글 로그인(읽기→쓰기 분리)을 웹에서 시작·확인·해제 — M2 (요청 §6-1) | 3 /google | W-BE-B(M2) | Not Started(M2 대기) | TC-WB-134 [B-note§7]; TC-VB-222 [B§4] (M1 데모 구글 상태 읽기만) |  |  | M1=데모 모드; B=PASS(M1 범위). OAuth 시작·확인·해제는 미구현(BE-B 노트 §10 M2/M3). M1 은 GET google/status(connected=false)만. BE-B 결과서 부록 B 에 W-002 요청 없음(C-06) |
+| W-003 | W | 영상 목록(200개) 표, 검색·정렬·필터 (요청 §6-1) | 3 /videos | W-BE-B, W-FE | Done | TC-WB-113~116, 125 [B-note§7]; TC-VB-006, 321, 322 [B§4]; TC-VF-084~091, 151~157 [F부록B(F-03)]; TC-WF-027~030 [F-note§7] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-004 | W | 영상별 AI 제목 후보 생성(어댑터, 모의 AI는 M1) (요청 §6-1) | 3 /suggestions, 4 | W-BE-B, W-FE | Done | TC-WB-008~013, 018~023, 126, 128 [B-note§7]; TC-VB-010~017, 020~026, 030~032 [B§4]; TC-VF-084~095, 151~172, 184~188, 300~313 [F§4-1 AC-02(핵심 흐름 전체)] |  |  | M1=데모 모드; 모의 AI(M1) 한정, 실 AI 어댑터 M3 대기. B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-005 | W | 후보 자동 검증(통과/경고/차단), 차단은 반영 불가 (요청 §6-1) | 3·4 | W-BE-B, W-FE | Done | TC-WB-013, 024~026, 039 [B-note§7]; TC-VB-010~017, 020~026, 311, 312, 341 [B§4-1 AC2]; TC-VF-060~066, 190~193, 221, 307~308 [F§4-1 AC-08]; TC-WF-036~038 [F-note§7] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. DEF-VF-001(엄격 모드 경고=차단 표시) Fixed |
+| W-006 | W | 변경 전/후 제목·유지 항목 비교(diff) (요청 §6-1) | 6 | W-FE | Done | TC-WB-093, 118 [B-note§7]; TC-VB-220 [B§4]; TC-VF-107~116 [F§4 diff 시험] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-007 | W | 후보 선택·수정·승인·반려, 일괄 선택 (요청 §6-1) | 3 /suggestions | W-BE-B, W-FE | Done | TC-WB-027~038, 127 [B-note§7]; TC-VB-040~045, 050~065, 314 [B§4]; TC-VF-060~066, 084~091, 190~193 [F§4-1 AC-08·선택 유지]; TC-WF-036~038 [F-note§7] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-008 | W | 승인 항목을 배치로 묶어 하루 한도 내 반영, 초과분 다음 날 예약, 놓친 예약 몰아서 실행 금지 (요청 §6-1) | 3 /batches, 4 | W-BE-B, W-FE | Done | TC-WB-050, 051, 081~083 [B-note§7]; TC-VB-080~089, 097, 098, 251, 251B, 252, 303, 304, 316 [B§4]; TC-VF-309~312 [F§4-1 AC-02·AC-07·AC-09(배치 실행 흐름)] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. 하루 상한·예약 표시 전용 FE TC 는 근거 미확인. DEF-VB-01(상한 초과분 영구 skipped→다음 날 이월 deferred) Fixed. API.md 보완 요청 3건(B§8)의 반영 여부는 근거 미확인 |
+| W-009 | W | 배치 사전 점검 요약과 확인 문구(`실행 {n}건`) (요청 §6-1) | 3 /batches | W-BE-B, W-FE | Done | TC-WB-049, 052~061, 129, 130, 145~147 [B-note§7]; TC-VB-070~076, 120~124, 315, 319, 327 [B§4]; TC-VF-042~051, 231, 309~311 [F§4-1 AC-07] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-010 | W | 반영 진행 상황·중지, 재시작·실패에도 이중 반영 없음 (요청 §6-1) | 4, 2 | W-BE-A, W-BE-B, W-FE | Done | TC-WA-098~114 [A-note§4]; TC-VA-100~113, 124, 137, 142, 167, 172, 189 [A§4-1 AC-7]; TC-WB-062~080, 085, 086, 137~141, 148~156 [B-note§7]; TC-VB-130~143, 150~156, 250, 253, 300~302, 328 [B§4-1 AC5]; TC-VF-123, 163, 171, 172, 207, 208, 217~219, 228~230, 312 [F§4-1 AC-09] |  |  | M1=데모 모드; A=PASS, B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. DEF-VA-010(응답 전 commit, A§6) Fixed — F 결과서는 같은 결함을 DEF-VF-B01 Open 으로 기재(C-01) |
+| W-011 | W | 개별/배치 롤백(영상 ID 직접 입력) (요청 §6-1) | 3 /changes | W-BE-B, W-FE | Done | TC-WB-094~103, 132 [B-note§7]; TC-VB-160~178, 257, 287 [B§4-1 AC6]; TC-VF-052~059, 313 [F§4] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-012 | W | 변경 이력·감사 로그 조회 (요청 §6-1) | 3 /changes /audit | W-BE-A, W-BE-B, W-FE | Done | TC-WA-073~085 [A-note§4]; TC-VA-080~087, 121, 122 [A§4-1 AC-5]; TC-WB-093, 136 [B-note§7]; TC-VB-180, 181, 210~214, 259 [B§4]; TC-VF-313 [F§4(이력 계약)] |  |  | M1=데모 모드; A=PASS, B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. 감사 로그 탭 화면의 별도 TC 는 근거 미확인. 감사 꼬리 절단은 알려진 제한(TC-VA-084 특성화) |
+| W-013 | W | 전후 성과 비교 리포트(화면·CSV, 데이터 부족 명시) (요청 §6-1) | 3 /reports | W-BE-B, W-FE | Done | TC-WB-104~112, 133 [B-note§7]; TC-VB-190~200, 320 [B§4-1 AC7]; TC-VF-187, 319 [F§4]; TC-WF-064, 065 [F-note§7] |  |  | M1=데모 모드; B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| W-014 | W | 설정 화면(안전 설정만, 라이브 허용은 API로 변경 불가) (요청 §6-1) | 3 /settings | W-BE-A, W-FE | Done | TC-WA-059~072 [A-note§4]; TC-VA-056~065, 147~150, 176 [A§4-1 AC-3]; TC-VF-069~072, 238, 315, 316 [F§4-1 AC-05]; TC-WF-067, 069, 070, 094, 095 [F-note§7] |  |  | M1=데모 모드; A=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. 라이브 허용 변경 불가: TC-VA-056~058, TC-VF-316 |
+| W-015 | W | 기존 CLI 유지(회귀·비상용, DEC-034 Q-4) (요청 §6-1) | 1 | (기존 src/ytitle) | Partial(근거 미확인) | 근거 미확인(웹 4개 결과서에 CLI 회귀 시험 기록 없음) |  |  | M1=데모 모드; 기존 CLI 는 FR-001~020 행에서 Done. 웹 결과서(A·B·F·I)에 W-015 회귀 근거 없음(C-07) |
+| W-016 | W | 백업·복원(pg_dump), 복원 후 건수 검증 (요청 §6-1) | 7 | W-INF | Done | TC-VI-025, 026, 029, 030, 064, 131 [I§4-1 AC5] |  |  | M1=데모 모드; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 관찰 O-VI-03(-SkipSafetyBackup 실패 시 안내 문구 오류), O-VI-04 |
+| W-017 | W | /healthz·/readyz와 화면 상태 요약 (요청 §6-1) | 3 | W-BE-A, W-FE | Done | TC-WA-133~146 [A-note§4(헬스)]; TC-VA-007, 008, 094 [A§4]; TC-VI-046, 109, 120 [I§4-3]; TC-VB-222 [B§4]; TC-VF-029~031, 040, 136, 137, 189, 194~197, 214 [F§4-1 AC-04] |  |  | M1=데모 모드; A=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01], I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| D-01 | D | compose 4서비스+migrate, healthy 순서, 프로필 (요청 §7) | 1, 5 | W-INF | Partial(dev/test 프로필 미구현) | TC-VI-009, 100, 109, 123, 133 [I§4-2]; TC-WI-016 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 프로필 미구현은 노트 선언(M1 범위 밖, 테스트는 YTWEB_PROJECT 분리로 대체), 수용 여부는 I 질문 6 대기 |
+| D-02 | D | 호스트 게시 127.0.0.1 한정, 실측 테스트 (요청 §7) | 1, 5 | W-INF | Done | TC-VI-001, 040, 102, 132B [I§4-2]; TC-WI-001, 002, 030 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. Linux 엔진 실측, Docker Desktop 미수행 |
+| D-03 | D | 비루트·read_only·cap_drop·no-new-privileges (요청 §7) | 1, 5 | W-INF | Done | TC-VI-002, 003, 014, 100, 101 [I§4-2]; TC-WI-003~008, 032 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. Linux 엔진 실측 |
+| D-04 | D | 이미지 다이제스트 고정·멀티 스테이지 (요청 §7) | 1, 5 | W-INF | Done | TC-VI-013, 015, 016, 108, 136 [I§4-2]; TC-WI-022 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. TC-VI-136 은 공식 연속 실행에서 skipped, 단독 재실행 Pass(I§4) |
+| D-05 | D | .dockerignore, 이미지에 비밀 없음 검사 (요청 §7) | 1, 5 | W-INF | Done | TC-VI-018, 036, 037, 107, 108 [I§4-2]; TC-WI-021, 029 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 이미지 레이어 비밀 스캐너(Trivy 등) 미수행(9단계). I 노트는 '부분', I 결과서는 '충족(스캐너 미수행)' (C-04) |
+| D-06 | D | 비밀은 secrets 파일로 주입 (요청 §7) | 1, 5 | W-INF | Done | TC-VI-008, 036, 107, 137 [I§4-2]; TC-WI-009, 018, 026 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| D-07 | D | 데이터는 명명 볼륨, down -v 금지 (요청 §7) | 1, 5 | W-INF | Done | TC-VI-004, 027, 028, 132, 133, 134 [I§4-2]; TC-WI-004, 012, 020 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| D-07a | D | PostgreSQL 하드닝·역할 분리·pg_hba (요청 §7) | 1, 5 | W-INF, W-BE-A | Done | TC-VI-011, 021~023, 060~064, 110, 111, 113 [I§4-2]; TC-VA-114~120, 173, 193~196 [A§4]; TC-WI-017, 018, 025, 026 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; A=PASS, I=COND.PASS[Open DEF-VI-001·002·003, C-02]. I 결과서는 DEF-VI-002(alembic_version 앱 DML)를 Open·TC-VI-112 xfail 로 기재, A 결과서는 같은 결함을 DEF-VA-012(0002 마이그레이션)로 Fixed 기재(C-02). audit-guard.sql 추가 제안 반영 근거 미확인 |
+| D-07b | D | Alembic만으로 스키마 변경 (요청 §7) | 1, 5 | W-BE-A | Done | TC-VA-114~120, 173, 193~196 [A§4]; TC-VI-009, 123 [I§4-2]; TC-WI-016, 019 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; A=PASS, I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 실행 전 자동 백업은 미구현(노트 선언). I 노트는 '부분', I 결과서는 '충족(미구현 선언)' (C-04) |
+| D-08 | D | 헬스체크·재시작·우아한 종료·로그 제한 (요청 §7) | 1, 5 | W-INF, W-BE-A | Done | TC-VI-009, 010, 109, 121, 122 [I§4-2]; TC-VA-007, 113, 137 [A§4(헬스·SIGTERM 우아한 종료)]; TC-WI-014, 015 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; A=PASS, I=COND.PASS[Open DEF-VI-001·002·003, C-02]. api 종료 코드 143 관찰(O-VI-02) — I 노트의 '종료 시 exit 0' 과 불일치(C-04). 워커 헬스체크는 프로세스 생존만 |
+| D-09 | D | 시간대·로캘(UTC 저장, KST 표시) (요청 §7) | 1, 5 | W-INF, W-BE-A | Done | TC-VI-010, 060, 113 [I§4-2]; TC-VA-144~146 [A§4-1 AC-14(KST/PT 날짜)]; TC-WI-017 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; A=PASS, I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| D-10 | D | 외부 통신은 구글·AI만, internal 네트워크 (요청 §7) | 1, 5 | W-INF | Partial(DEF-VI-001 Open: web 컨테이너 외부 egress·db 도달) | TC-VI-005, 006, 103~106 [I§4-2]; TC-WI-010, 011, 031 [I-note§4] (TC-VI-106 은 xfail 로 결함 고정) |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 열린 결함 DEF-VI-001(Medium, 설계 변경·사용자 결정 대기, Deferred 로 DEC 기록 없음). api/worker/db 는 충족. I 노트는 D-10 '충족' (C-04) |
+| D-11 | D | 이미지 취약점·SBOM, 의존성 잠금 (요청 §7) | 1, 5 | W-INF (9단계) | Partial(취약점·SBOM 미수행, 9단계 대기) | TC-VI-017 [I§4-2(잠금 부분)] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; 의존성 해시 잠금만 시험됨. 취약점 스캔·SBOM 은 9단계. I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| D-12 | D | Windows 스크립트(start/stop/backup/restore) (요청 §7) | 1, 5 | W-INF | Done | TC-VI-027~034, 130~137, 130B [I§4-2]; TC-WI-027, 033 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. Linux pwsh 7.5.4 로만 실행, Windows·PS 5.1·ACL 경로 미수행 |
+| D-13 | D | 테스트용 임시 컨테이너 harness-tmp 접두사·정리 (요청 §7) | 1, 5 | W-INF | Done | TC-VI-100, 109, 131, 133, 137 [I§3(harness-tmp-vi 접두사 실가동 시험)] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 정리 확인은 I§7 |
+| D-14 | D | 자원 상한(메모리/CPU) (요청 §7) | 1, 5 | W-INF | Done | TC-VI-007, 100 [I§4-2]; TC-WI-013 [I-note§4] |  |  | 클라우드 Linux 엔진 실측 + 사용자 PC(Docker Desktop) 확인 구분; I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| F-01 | F | React+TS strict+Vite, ESLint·Prettier·타입 검사 (요청 §8) | 6 | W-FE | Done | TC-WF-081 [F-note§7] (정적 검사 tsc·ESLint·Prettier·build 는 F§4-2, TC-ID 없음) |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-02 | F | API 타입은 계약에서 생성/동기화, TanStack Query (요청 §8) | 6 | W-FE | Partial(OpenAPI 타입 생성 미적용: 계약 수동 전사) | TC-ID 없음(TanStack Query 는 화면 시험 전반, F-note§7) |  |  | F 부록 B 도 'F-02(타입 생성 제외)'. F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-03 | F | 200행 목록 서버측 필터·정렬·페이지네이션, 선택 상태 유지 (요청 §8) | 6 | W-FE | Partial(가상 스크롤 미적용, WEB_DESIGN §6 완화) | TC-VF-084~091, 151~157, 204, 211~213 [F부록B]; TC-WF-027~030 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-04 | F | 외부 CDN·원격 폰트·분석 금지 (요청 §8) | 6 | W-FE | Done | TC-WF-083 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-05 | F | dangerouslySetInnerHTML 금지, 외부 문자열은 텍스트 (요청 §8) | 6 | W-FE | Done | TC-VF-037, 038, 092, 097~102, 106, 114 [F§4-1 AC-12]; TC-WF-018, 081 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-06 | F | CSRF·Idempotency-Key 자동 부착, 중복 클릭 방지 (요청 §8) | 6 | W-FE | Done | TC-VF-001~022, 035, 036, 227, 309, 317 [F§4-1 AC-11]; TC-WF-001, 005~008, 012, 044, 046, 050, 051, 055, 060 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-07 | F | 로딩·빈·오류·한도 초과·세션 만료·연결 끊김·새로고침 복구 화면 (요청 §8) | 6 | W-FE | Done | TC-VF-104, 105, 148~150, 158, 180, 181, 185, 186, 188, 189, 194~197, 206 [F§4-1 AC-15·AC-04]; TC-WF-031~033, 041~043, 048, 052~054, 059, 063, 065, 072, 073, 076~079 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| F-08 | F | 한국어 UI, 문구 한곳 관리, dry-run은 '미리보기' (요청 §8) | 6 | W-FE | Partial(AC-14 일부 관찰: OBS-2 용어 혼용, OBS-4 문구 7곳 ko.ts 밖) | TC-VF-164~166, 225, 239 [F§4-1 AC-14]; TC-WF-049, 084 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01]. 사용자 질문 Q1 대기. 결함이 아니라 관찰로 분류됨 |
+| F-09 | F | 접근성 WCAG 2.2 AA 목표(키보드·포커스·대비) (요청 §8) | 6 | W-FE | Done | TC-VF-117~119, 124~145 [F§4-1 AC-13]; TC-WF-019~021, 024, 086~093 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01]. 실브라우저 axe 34화면 위반 0. 스크린리더·Edge·실기기 미수행 |
+| F-10 | F | PC 우선, 최신 Chrome/Edge (요청 §8) | 6 | W-FE | Done | TC-ID 없음(F§4-3 실브라우저 1024·1280px 가로 넘침 없음) |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01]. Chromium 1194 만 시험, Edge 미수행. 375px 가로 넘침은 설계 비대상으로 관찰 OBS-3 |
+| F-11 | F | 디자인 시스템(토큰·컴포넌트) 먼저 (요청 §8) | 6 | W-FE | Done | TC-ID 없음(F-note§6 토큰·F§4-3 axe 라이트/다크) |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| S-W01 | SEC | 127.0.0.1에만 게시 (요청 §9) | 5 | W-INF | Done | TC-VI-001, 012, 019, 040, 049, 102 [I§4-3]; TC-WI-001, 002, 030 [I-note§4] |  |  | I=COND.PASS[Open DEF-VI-001·002·003, C-02]. Linux 엔진 실측, Docker Desktop 미수행 |
+| S-W02 | SEC | 세션 인증·CSRF·Host/Origin(+Sec-Fetch-Site) 검증 (요청 §9) | 5 | W-BE-A | Done | TC-VA-001~015, 033, 034, 039~042, 074 [A§4-1 AC-1]; TC-WA-001~004, 024~058 [A-note§4]; TC-VF-001~022, 317 [F§4-1 AC-11] |  |  | A=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01]. 실제 Chrome/Edge 에서 쿠키·Sec-Fetch-Site 동작(Q-WA-1) 미수행 |
+| S-W03 | SEC | 상태 변경은 GET 금지, POST/PUT/PATCH/DELETE+CSRF+확인 (요청 §9) | 5 | W-BE-A, W-BE-B | Done | TC-VA-010, 012, 014, 036, 039~042, 056~061, 074 [A§4-1 AC-1·AC-3]; TC-WA-024~072 [A-note§4]; TC-WB-123 [B-note§7]; TC-VB-231, 233, 279 [B§12]; TC-VF-002, 003, 317 [F§4] |  |  | A=PASS, B=PASS, F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| S-W04 | SEC | 쿠키 속성·보안 헤더 (요청 §9) | 5 | W-BE-A, W-INF | Done | TC-VA-025, 027, 029, 030 [A§4]; TC-WA-012, 013 [A-note§4]; TC-VI-019, 020, 041~047, 050, 051 [I§4-3]; TC-WF-081 [F-note§7] |  |  | A=PASS, I=COND.PASS[Open DEF-VI-001·002·003, C-02]. 열린 결함 DEF-VI-003(Low, nginx 오류 로그에 쿼리 문자열; TC-VI-055 xfail 이 S-W04 로 표기), DEF-VI-004 Fixed. 브라우저 CSP 동작 미수행 |
+| S-W05 | SEC | XSS 방어(외부 문자열 텍스트 처리) (요청 §9) | 5 | W-FE | Done | TC-VF-037, 038, 092, 097~102, 106, 114 [F§4-1 AC-12]; TC-WF-018, 081 [F-note§7] |  |  | F=COND.PASS[Open DEF-VF-B01·B02, C-01] |
+| S-W06 | SEC | 프롬프트 인젝션 방어(입력 데이터 구분·응답 검증·권한 없음) (요청 §9) | 5 | W-BE-B | Done | TC-WB-008~011, 023, 024, 070 [B-note§7]; TC-VB-010~017, 020~026, 306, 340, 341 [B§4] |  |  | B=PASS. 모의 AI(M1) 한정 — 실 AI 응답 검증은 M3 에서 재확인 필요 |
+| S-W07 | SEC | 외부 AI 전송 최소화·비용 상한(실서비스 M3) (요청 §9) | 5 | W-BE-B | Partial(M1 모의 AI 한정, 실서비스 M3 대기) | TC-WB-011, 018 [B-note§7]; TC-VB-030~032 [B§12] |  |  | B=PASS. 비용 상한 시험 근거 미확인 |
+| S-W08 | SEC | OAuth state·PKCE·비밀 보관(M2) (요청 §9) | 5 | W-BE-B | Not Started(M2 대기) | OAuth state·PKCE 시험 없음 |  |  | A 결과서는 S-W08 을 세션·PIN 보안 TC(TC-VA-031~038, 043~055 등)의 요구 ID 로 표기 — 정의 불일치(C-03), 이 행의 TC 로는 세지 않음 |
+| S-W09 | SEC | 로그 JSON·비밀 마스킹, 오류에 스택트레이스 없음 (요청 §9) | 5 | W-BE-A | Done | TC-VA-007, 026, 041, 064, 088~099 [A§4-1 AC-4·AC-13]; TC-WA-017~023, 126~132 [A-note§4] |  |  | A=PASS |
+| S-W10 | SEC | CSV 업로드 검증(M2) (요청 §9) | 5 | W-BE-B | Not Started(M2 대기) | 시험 없음 |  |  | CSV 업로드(M2). 내보내기(W-013)와 별개 |
+| S-W11 | SEC | 신규 의존성 실존·라이선스·취약점 확인 (요청 §9) | 5 | W-BE-A, W-FE, W-INF | Partial(9단계 확인 대기, A 라이선스 개별 확인 미수행) | TC-VI-017 [I§4-2(잠금)] (F: npm audit 취약점 0, F§4-2·F-note§11 — TC-ID 없음) |  |  | A 노트 §5: PyPI 실존·버전 확인, 라이선스 미확인. I: 취약점·SBOM 9단계. I=COND.PASS[Open DEF-VI-001·002·003, C-02] |
+| S-W12 | SEC | 동시성·멱등성·이중 반영 방지(트랜잭션·행 잠금·고유 제약) (요청 §9) | 5 | W-BE-A, W-BE-B | Done | TC-VA-066~079, 100~113, 124, 137 [A§4-1 AC-6·AC-7]; TC-WA-086~114 [A-note§4]; TC-WB-064, 129~132, 137~143 [B-note§7]; TC-VB-130~143, 250, 253, 255, 256, 258, 260, 261 [B§4] |  |  | A=PASS, B=PASS. DEF-VA-009(PIN 실패 카운터 동시성, High) Fixed. 권고 R-3(complete() 펜싱 없음) |
+| S-W13 | SEC | 요청 크기·속도 제한·SQL 바인딩 (요청 §9) | 5 | W-BE-A | Done | TC-VA-016~024, 151~158, 168, 169 [A§4-1 AC-12]; TC-WA-005~011 [A-note§4]; TC-WB-114, 122, 125, 127 [B-note§7]; TC-VB-237~239 [B§12] |  |  | A=PASS, B=PASS |
+| S-W13a | SEC | DB 보안(역할 최소 권한, 포트 미게시, 비밀번호 secrets) (요청 §9) | 5 | W-INF, W-BE-A | Done | TC-VI-011, 021~023, 060~064, 110, 111, 113 [I§4-2]; TC-VA-118~120, 193~196 [A§4-1 AC-8]; TC-WA-147~157 [A-note§4] |  |  | A=PASS, I=COND.PASS[Open DEF-VI-001·002·003, C-02]. I 결과서 부록 D 에 S-W13a 표기 없음(C-05); DEF-VI-002 Open ↔ DEF-VA-012 Fixed(C-02) |
+| S-W14 | SEC | 컨테이너 격리(비루트·읽기 전용 등) (요청 §9) | 5 | W-INF | Done | TC-VI-002, 003, 100, 101 [I§4-2(D-03 시험 재사용)]; TC-WI-003~008, 032 [I-note§4] |  |  | I=COND.PASS[Open DEF-VI-001·002·003, C-02]. I 결과서에 S-W14 직접 표기 없음, D-03 시험으로 간접 연결(C-05) |
+| S-W15 | SEC | 위협 모델 STRIDE 웹·컨테이너 갱신 (요청 §9) | 5 | (M4 설계 문서) | Not Started(M4 설계 문서 대기) | 시험 대상 아님(설계 문서 갱신) |  |  | 근거: 작업 단위가 (M4 설계 문서) |
+| S-W16 | SEC | 감사 로그 추가 전용·해시 체인 (요청 §9) | 5 | W-BE-A | Done | TC-VA-080~087, 118, 121, 122, 143, 174, 175, 180 [A§4-1 AC-5]; TC-WA-073~085, 147~157 [A-note§4]; TC-VB-210~214, 259 [B§4] |  |  | A=PASS, B=PASS. 꼬리 절단·전체 재작성은 체인으로 탐지 불가(알려진 제한, TC-VA-084), 방어선은 DB 권한 회수(TC-VA-118) |
+
+### 웹 전환 요구사항 시험 연결 요약 (v3, 2026-10-11)
+
+약어(구현 상태·단위테스트·비고 컬럼): `A`=`units/web-WU-BE-A-test.md`, `B`=`web-WU-BE-B-test.md`, `F`=`web-WU-FE-test.md`, `I`=`web-WU-INF-test.md`, `X-note`=해당 단위 `web-WU-*-note.md`, `§n`=문서 절/부록. `TC-WA/WB/WF/WI`=구현자 시험, `TC-VA/VB/VF/VI`=6단계 독립 검증 시험. `C-nn`=`docs/harness/verify-log_web-traceability.md` 의 모순·누락 목록 번호. 단위 판정: A=PASS, B=PASS, F=CONDITIONAL PASS, I=CONDITIONAL PASS. TC-ID 는 `web/backend/tests`, `web/frontend/{src,verify}`, `web/tests_infra` 에서 실제 존재를 확인했다(1410개 참조 전부 존재, 검증 로그 1차).
+
+| 구분 | 요구사항 수 | TC 연결 | TC 미연결 | 비고 |
+|---|---|---|---|---|
+| W (기능) | 17 | 16 | 1 | W-015 |
+| D (배포) | 16 | 16 | 0 | - |
+| F (프런트) | 11 | 8 | 3 | F-02, F-10, F-11 |
+| S-W (보안) | 17 | 14 | 3 | S-W08, S-W10, S-W15 |
+| **합계** | **61** | **54** | **7** | 연결률 88.5% |
+
+구현 상태 분포: Done 48, Not Started 4, Partial 9 (Deferred·Blocked 는 0건: 결과서에 해당 DEC-ID·차단 기록 없음).
+
+| 미연결 ID | 구현 상태 | 사유 |
+|---|---|---|
+| W-015 | Partial(근거 미확인) | 웹 4개 결과서에 CLI 회귀 시험 기록 없음(근거 미확인, C-07) |
+| F-02 | Partial(OpenAPI 타입 생성 미적용: 계약 수동 전사) | OpenAPI 타입 생성 미적용(계약 수동 전사), TC-ID 없음 |
+| F-10 | Done | 실브라우저 점검(F§4-3)만 있고 TC-ID 없음 |
+| F-11 | Done | 토큰·axe 점검만 있고 TC-ID 없음 |
+| S-W08 | Not Started(M2 대기) | M2 대기(OAuth). 기존 TC-VA 의 S-W08 표기는 정의 불일치(C-03) |
+| S-W10 | Not Started(M2 대기) | M2 대기(CSV 업로드) |
+| S-W15 | Not Started(M4 설계 문서 대기) | M4 설계 문서 대기(시험 대상 아님) |
+
+통합테스트(IT)·전체테스트(UAT) 컬럼은 이번 갱신 범위가 아니어서 비워 두었다.
 
 ## 변경 이력
 | 일시 | 버전 | 변경 내용 | 사유 |
@@ -203,3 +229,4 @@
 | 2026-10-10 | v0 | 2단계 초기 생성 | 규칙 H |
 | 2026-10-10 | v1 | 3·4단계: 설계 매핑, EVT·UX·SCR·ADR·신규 NFR/SEC 등록 | 규칙 H |
 | 2026-10-10 | v2 | 웹 전환 요구사항(W/D/F/S-W) 등록 | 규칙 H, DEC-038 |
+| 2026-10-11 | v3 | 웹 요구사항(W/D/F/S-W 61행) 구현 상태·단위테스트·비고를 4개 단위 결과서(A·B·F·I)와 구현 노트로 채움, 시험 연결 요약 표 추가, 모순·누락 목록은 verify-log_web-traceability.md | 규칙 H, 규칙 B |
