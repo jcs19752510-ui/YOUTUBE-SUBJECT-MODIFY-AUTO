@@ -37,26 +37,20 @@
 
 **프로젝트**: "시니어 생활팁" 유튜브 채널의 영상 제목을 AI가 제안하고, 사람이 승인한 것만 하루 한도 안에서 나눠 바꾸고, 기록·롤백하는 도구. 기존 파이썬 CLI(`src/youtube_title`)를 **Docker 기반 로컬 웹 프로그램**(FastAPI·React·PostgreSQL·nginx, `127.0.0.1:8080` 한정)으로 전환 중이다(DEC-032~045). 화면·문서에서 쓰는 이름은 "유튜브 제목"이고, 코드의 폴더·패키지·명령 이름은 영어 `youtube_title`이다(2026-10-11에 옛 이름 `ytitle`에서 전부 바꿈: `src/youtube_title`, `python -m youtube_title`, `youtube-title-report.csv`, `requirements-youtube-title.txt`, 토큰 폴더 `%LOCALAPPDATA%\youtube-title\tokens`, 로그 `data/logs/youtube-title.log`). `decisions.md`의 옛 기록에는 `ytitle`가 남아 있다(수정 금지 기록).
 
-### 지금까지 한 일
-- **0~1단계**: 질문·답변·결정 기록(`docs/harness/decisions.md`, 추가만 하는 로그), 조사 4축(`docs/harness/_parallel/01-axis*.md`, 공식 문서 도메인이 막혀 원문 미열람이라 "조건부").
-- **2~4단계 문서**: 기획서·위험·STRIDE 위협 모델·설계서(`docs/yt/DESIGN.md`, `WEB_DESIGN.md`)·API 명세(`openapi.json`, `API.md`)·디자인서(`04_ux_design.md`) 개정. 요구사항 추적표 61행(`docs/harness/traceability.md`, 시험 연결 88.5%).
-- **5단계 구현(M1 데모 모드, 완료)**: 백엔드 기반(`web/backend/ytweb/core`, 세션·CSRF·감사 해시 체인·멱등성·작업 큐), 백엔드 도메인(`domain/ai/youtube/routers`, 모의 AI·모의 유튜브·승인·배치·롤백·리포트), 프런트(`web/frontend`, 화면 6개와 상태 화면), 인프라(`web/compose.yaml`, `web/docker`, `web/scripts/*.ps1`). 구글·AI 실호출 코드는 **연결돼 있지 않다**(실제 제목이 바뀔 일 없음).
-- **6단계 독립 검증**: 백엔드 기반 PASS, 백엔드 도메인 PASS, 프런트 조건부 PASS, 인프라 조건부 PASS(결과서 `docs/harness/units/web-WU-*-test.md`). 변이 점검 134·91·99·113곳. 백엔드 전체 605·프런트 505 시험 통과(PostgreSQL 실측 포함).
-- **후속 조치**: 네트워크 3분리(`front`/`back`/`edge`, web은 DB에 도달 불가, DEC-045), nginx 오류 로그 쿼리 문자열 억제(부분), 프런트 운영 빌드에서 테스트 파일 제외(`tsconfig.build.json`, DEC-044), 데모 모드 재변경 최소 노출수 0(`Env.build`), 화면 문구 "youtube_title"→"유튜브 제목".
-- **11단계 문서 초안**: `docs/yt/WEB_{USER_MANUAL,FAQ,RUNBOOK,INSTALL,LEGAL_NOTICE}.md`(7~10단계 후 대조 필요). 결정 대기 질문서 63개 항목 `docs/harness/USER_DECISIONS_WEB.md`(추천안 포함).
-- **프로젝트 아티팩트(진행률·구조·구성·장점·사용법)**: https://claude.ai/artifact/QSbGzRqb2kdPMFGS3Do3y4 (현황이 바뀌면 같은 주소로 갱신).
-- **진행률(추정, 측정값 아님)**: 전체 약 78%, M1 약 97%.
+### 지금까지 한 일 (2026-10-11 23:40 UTC 기준, 상세는 `docs/harness/STATE.md` 맨 아래)
+- **0~4단계 문서**: 완료(기획서·위험·STRIDE 위협 모델 `docs/yt/threat_model.md`(W9 절 구글 연결·제목 수정 위협 TW-37~44)·설계서·API 명세 `API.md`/`openapi.json`(재생성)·디자인서). 결정 기록 `decisions.md` DEC-001~049(추가만).
+- **5단계 구현**: M1 데모 모드(FastAPI·React·PostgreSQL·nginx) 완료. **M2**(구글 읽기 연동: 데스크톱 앱 OAuth, `web/backend/ytweb/youtube/google_oauth.py`·`live_read.py`, 홈 "구글(유튜브) 연결" 카드) 완료. **M3**(제목 수정: `live_write.py`·`domain/live_gateway.py`, 쓰기 권한 별도 로그인 `connect-write`, 실제 모드 안전장치 = 허용 영상 목록·"실제 실행 N건" 확인 문구·모드 전환 시 반영/롤백 중단·실제 모드 롤백은 반영 뒤 유튜브가 바뀌었으면 거부(DEC-049)) 완료. 실제 수정은 `web/.env`의 `YTWEB_LIVE_WRITE=1`·`YTWEB_LIVE_ALLOWED_VIDEOS`(+쓰기 로그인) 3조건이 모두 맞을 때만 일어난다(`web/.env.example`, `compose.online.yaml`). **AI 서비스는 미정이라 모의 AI만 있다.**
+- **검증(전부 실제로 실행, 결과서 `docs/harness/`)**: 6단계 독립 검증(백엔드·프런트·인프라 조건부 PASS → 결함 조치), 7단계 통합 재시험은 8단계로 흡수, **8단계 전체 시험 조건부 PASS**(데모 E2E·화면 캡처 14/15·성능 스모크·DB 재시작 복구 조치 후 실스택 재확인 합격), **9단계 보안 재검증 조건부**(Critical/High 0건, 사용자 결정 5건 대기), 11단계 문서 최종 대조 1·2차(165곳 수정). 최근 시험: 백엔드 1844 통과·프런트 728 통과·인프라 197 통과, 실패 0.
+- **한 번도 안 한 것(정확히)**: 선생님 Windows PC에서의 새 기능 확인, 실제 구글 접속, 실제 제목 변경, 이미지 취약점 스캔(도구 없음), 조치 후 변이 점검 재실행.
+- **진행률(추정)**: 전체 약 97%, M1 약 98%, M2·M3 구현 약 95%.
 
-### 앞으로 할 일 (순서)
-1. **7단계 전체 스택 통합 시험(중단됨, 최우선)**: `docker compose -p harness-tmp-int`, 포트 127.0.0.1:18080, 이전 세션의 보조 라이브러리 `web/tests_integration/itlib.py` 재사용. 확인 대상: 컨테이너 전체 기동, API 시나리오(세션→영상 불러오기→제안→승인→배치→워커→롤백→리포트→감사 로그), 경계 시험(재시작 중 이중 반영 없음, DB 재시작, 멱등키, 백업·복원, 마이그레이션 0001→0002), Chromium 화면 확인, 프런트·인프라 조건부 PASS 닫기, 실가동 시험 TC-VI-055·106 xfail 재평가. 결과서 `docs/harness/feature-web-m1-integration-test.md`와 검증 로그.
-2. **8단계 전체 시험 → 9단계 보안 검증(이미지 취약점·SBOM·의존성) → 10단계 구동 검증(선생님 PC) → 11단계 문서 대조**. 8~10단계는 7단계 PASS 후에만 시작한다.
-3. **선생님 PC에서 첫 화면 확인**: Docker Desktop 실행·WSL2, 포트 8080, `web\scripts\start.ps1 -OpenBrowser`(절차는 `web/README.md`, `docs/yt/WEB_INSTALL.md`). 통합 시험이 끝나면 PushNotification으로 알린다.
-4. **M2 구글 읽기 연동(선생님 승인 Q-20 필요)**: 웹 방식 OAuth(OAuth "웹 애플리케이션" 클라이언트, 리디렉션 `http://127.0.0.1:포트/...`, state·PKCE, 읽기/쓰기 토큰 분리). 기존 CLI(`src/youtube_title/auth.py`, `youtube_read.py`)는 데스크톱 로그인 방식이라 웹용으로 새로 만들어야 한다. 선생님이 먼저 구글 클라우드 프로젝트 1개·API 2개·동의 화면·클라이언트 ID를 만들어야 한다(`docs/yt/03_manual_setup.md`).
-5. **M3 AI·실제 반영(선생님 승인 Q-33 필요)**: AI 서비스 확정(Q-1 미정, 어댑터 인터페이스 `TitleSuggester`만 있음), 쓰기 로그인, `live_guard` 14단계 게이트 이식, 테스트 영상 1개로 먼저 실제 반영. **실제 제목 변경과 배포(12단계)는 선생님의 명시적 승인 없이는 절대 실행하지 않는다.**
-6. **M4**: 풀 문서 대조·위협 모델 확정 후 12단계 직전까지 정리.
+### 앞으로 할 일 (선생님 몫 먼저)
+1. **선생님 결정·준비**: AI 서비스(Q-1)·보안 결정 5건(`security-web-m1-test.md` R-Q: 롤백 방식 확인, A/B 서버 확인, 쓰기 토큰 평문·revoke, egress 제한, 시험 자산 담당)·`web\secrets\google_client.json`(데스크톱 앱 유형, 절차 `docs/yt/WEB_INSTALL.md` 8장)·비공개 테스트 영상 ID 1개·선생님 PC 확인 5건(README §8 2~6)·관리자 로그인 질문 8개.
+2. **그 뒤 내가 하는 일**: AI 어댑터 연결, 선생님 PC용 한 줄 시험 스크립트, 테스트 영상 1개로 **선생님이 "실행"이라고 명시한 뒤에만** 실제 제목 변경(12단계), 관리자 로그인(승인 후), 13단계 배포 후 검증.
+3. **실제 제목 변경과 배포(12단계)는 선생님의 명시적 승인 없이는 절대 실행하지 않는다.**
 
-### 사용자 결정 대기 (진행을 막는 것은 M1 전 PC 확인 3가지뿐)
-Q-1 Docker Desktop·WSL2 확인, Q-2 포트 8080, Q-3 `start.ps1` 실행 결과. 나머지 60개(M2 4, M3 11, 운영·정책 16, 위험 수용 8 등)는 `USER_DECISIONS_WEB.md`에서 "모두 추천안대로" 또는 항목별로 답을 받는다. DEF-VI-001은 네트워크 3분리로 해결(웹 외부 접근은 수용, DEC-045), DEF-VI-003은 부분 조치(M2 OAuth 콜백 설계 때 재평가).
+### 사용자 결정 대기
+`docs/harness/USER_DECISIONS_WEB.md`(63개 항목, 추천안 포함)와 위 1번. 진행을 막는 것은 AI 서비스·구글 파일·테스트 영상 ID·실제 변경 승인뿐이다.
 
 ### 작업 규칙 (이 프로젝트에서 실제로 쓰는 방식)
 - 구현 단위마다 **독립 검증 에이전트**를 따로 두고(구현자 자기 보고를 믿지 않음), 변이 점검·결과서(`templates/test-report-template.md` 전 섹션)·검증 로그(최소 2회)를 남긴다. 수행하지 못한 것은 "미수행(사유)"로 쓰고 PASS로 세지 않는다.
