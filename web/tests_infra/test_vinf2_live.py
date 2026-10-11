@@ -668,6 +668,31 @@ def test_vif_150_live_sensitivity_header_dup_detected_on_mutated_proxy_conf(tmp_
         sh(["docker", "rm", "-f", name])
 
 
+def test_vif_116_error_paths_keep_headers_and_rate_limit_works():
+    """TC-VIF-116 (2차 검증에서 추가) nginx 자체 오류(414 긴 주소, 400 긴 헤더)와 속도 제한 429 에도 보안 7헤더 1벌이 붙고 Cache-Control 중복이 없다. 429 가 실제로 발생한다."""
+    def chk(s, hs, want_cc):
+        for h in SEC:
+            assert len(hdr(hs, h)) == 1, (s, h)
+        assert len(hdr(hs, "Cache-Control")) == want_cc, (s, hdr(hs, "Cache-Control"))
+    s, hs, _ = req("GET", "/" + "a" * 9000)
+    assert s == 414
+    chk(s, hs, 0)
+    s, hs, _ = req("GET", "/", {"X-Big": "b" * 9000})
+    assert s == 400
+    chk(s, hs, 0)
+    got = None
+    for _ in range(150):
+        s, hs, _ = req("GET", "/api/healthz")
+        if s == 429:
+            got = (s, hs)
+            break
+    assert got, "버스트 한도를 넘겼는데 429 가 없다"
+    chk(got[0], got[1], 1)
+    assert hdr(got[1], "Content-Security-Policy")[0].startswith("default-src 'none'")
+    time.sleep(3)                                                        # 이후 시험이 한도에 걸리지 않게 회복
+    assert req("GET", "/api/healthz")[0] == 200
+
+
 def test_vif_199_dump_observations():
     """TC-VIF-199 관찰값(판정 아님)을 .harness-tmp/v2/live_state.json 에 남겨 결과서가 인용한다."""
     out = ROOT / ".harness-tmp" / "v2" / "live_state.json"
