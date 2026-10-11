@@ -97,7 +97,9 @@ def reset_demo_db() -> None:
 class Api:
     """세션 쿠키·CSRF·Origin·멱등성 키를 자동으로 붙이는 얇은 HTTP 클라이언트(nginx 경유)."""
 
-    def __init__(self, host: str = HOST_OK, origin: str | None = ORIGIN_OK, timeout: float = 30.0):
+    def __init__(self, host: str = HOST_OK, origin: str | None = ORIGIN_OK, timeout: float = 30.0, throttle: float = 0.045):
+        self.throttle = throttle  # nginx /api/ 는 초당 30건(버스트 60)이라 순차 호출도 간격을 둔다(0 이면 제한 없이 보냄)
+        self._last = 0.0
         self.host = host
         self.origin = origin
         self.c = httpx.Client(base_url=BASE, headers={"Host": host}, timeout=timeout)
@@ -105,6 +107,13 @@ class Api:
 
     def close(self) -> None:
         self.c.close()
+
+    def _pace(self) -> None:
+        if self.throttle:
+            d = self._last + self.throttle - time.monotonic()
+            if d > 0:
+                time.sleep(d)
+            self._last = time.monotonic()
 
     def _h(self, write: bool, extra: dict | None = None, idem: str | bool | None = None) -> dict:
         h: dict[str, str] = {}
@@ -120,22 +129,40 @@ class Api:
             h.update(extra)
         return h
 
-    def login(self, pin: str | None = None) -> httpx.Response:
-        r = self.c.post("/api/v1/auth/session", json=({"pin": pin} if pin else {}), headers=self._h(False))
-        if r.status_code == 200:
-            self.csrf = r.json()["csrf_token"]
+    def login(self, pin: str | None = None, patient: bool = True) -> httpx.Response:
+        """세션 발급. patient=True 이면 속도 제한(429)을 만났을 때 Retry-After 만큼 기다렸다 다시 시도한다(시험 사이 한도 공유 때문)."""
+        for attempt in range(14):
+            self._pace()
+            r = self.c.post("/api/v1/auth/session", json=({"pin": pin} if pin else {}), headers=self._h(False))
+            if r.status_code == 429 and patient and attempt < 13:
+                code = ""
+                try:
+                    code = r.json().get("code", "")
+                except Exception:
+                    pass
+                if code == "pin_locked":
+                    return r
+                time.sleep(min(float(r.headers.get("retry-after", "6") or 6), 30) + 0.5)
+                continue
+            if r.status_code == 200:
+                self.csrf = r.json()["csrf_token"]
+            return r
         return r
 
     def get(self, path: str, **kw: Any) -> httpx.Response:
+        self._pace()
         return self.c.get(path, headers=self._h(False, kw.pop("headers", None)), **kw)
 
     def post(self, path: str, json: Any = None, idem: str | bool | None = None, headers: dict | None = None, **kw: Any) -> httpx.Response:
+        self._pace()
         return self.c.post(path, json=json, headers=self._h(True, headers, idem), **kw)
 
     def patch(self, path: str, json: Any = None, headers: dict | None = None) -> httpx.Response:
+        self._pace()
         return self.c.patch(path, json=json, headers=self._h(True, headers))
 
     def delete(self, path: str, headers: dict | None = None) -> httpx.Response:
+        self._pace()
         return self.c.delete(path, headers=self._h(True, headers))
 
     # --- 업무 도우미 ---
@@ -211,3 +238,127 @@ def approved_suggestion(api: Api, video_id: str, who: str = "통합시험자") -
 
 
 SECRET_RE = re.compile(r"[0-9a-f]{64}")
+
+
+def raw_request(data: bytes, timeout: float = 6.0, port: int = PORT) -> bytes:
+    """소켓으로 원문 HTTP 요청을 보내고 응답 전체(또는 연결 종료까지)를 돌려준다. 빈 bytes 는 '응답 없이 연결 종료'(nginx 444)."""
+    import socket
+
+    s = socket.create_connection(("127.0.0.1", port), timeout=timeout)
+    try:
+        s.sendall(data)
+        chunks = []
+        while True:
+            try:
+                b = s.recv(65536)
+            except (TimeoutError, socket.timeout):
+                break
+            if not b:
+                break
+            chunks.append(b)
+        return b"".join(chunks)
+    finally:
+        s.close()
+
+
+def parse_raw(resp: bytes) -> tuple[int, dict[str, list[str]], bytes]:
+    if not resp:
+        return 0, {}, b""
+    head, _, body = resp.partition(b"\r\n\r\n")
+    lines = head.decode("latin-1").split("\r\n")
+    status = int(lines[0].split()[1])
+    hdrs: dict[str, list[str]] = {}
+    for ln in lines[1:]:
+        k, _, v = ln.partition(":")
+        hdrs.setdefault(k.strip().lower(), []).append(v.strip())
+    return status, hdrs, body
+
+
+def inside_api_python(script: str, timeout: int = 600, service: str = "api") -> subprocess.CompletedProcess:
+    """api 컨테이너 안(같은 이미지·같은 DB)에서 파이썬 스크립트를 stdin 으로 실행한다(이미지 읽기 전용 루트에 파일을 쓰지 않는다)."""
+    return dc("exec", "-T", service, "python", "-", timeout=timeout, input_=script)
+
+
+def forge_approval_expiry(suggestion_id: int, hours_back: float = 25.0, expires_in_seconds: float | None = None) -> None:
+    """'24시간이 지났다'를 시늉한다: 승인의 expires_at 을 과거로 옮기고, 제품 자신의 compute_mac 으로 서명을 다시 계산해 넣는다
+    (서명이 어긋나면 만료가 아니라 변조로 판정되므로). api 컨테이너 안에서 앱 계정(ytweb_app, approvals UPDATE 권한 있음)으로 실행."""
+    script = f'''
+from datetime import timedelta
+from sqlalchemy import select
+from ytweb.config import load_web_settings
+from ytweb.db.session import make_engine, make_session_factory
+from ytweb.db.models import Approval, Suggestion
+from ytweb.domain.suggestions import _load_key, compute_mac
+st = load_web_settings(); eng = make_engine(st.database_url); f = make_session_factory(eng)
+with f() as s:
+    ap = s.execute(select(Approval).where(Approval.suggestion_id == {suggestion_id})).scalar_one()
+    sug = s.get(Suggestion, {suggestion_id})
+    key = _load_key(st.secrets_dir, create=False)
+    from datetime import datetime, timezone
+    ap.expires_at = (datetime.now(timezone.utc) + timedelta(seconds={expires_in_seconds})) if {expires_in_seconds!r} is not None else ap.expires_at - timedelta(hours={hours_back})
+    ap.mac = compute_mac(key, suggestion_id=sug.id, video_id=sug.video_id, plan_hash=ap.plan_hash, approver=ap.approver, approved_at=ap.approved_at, expires_at=ap.expires_at)
+    s.commit()
+print("forged")
+'''
+    p = inside_api_python(script)
+    assert p.returncode == 0 and "forged" in p.stdout, p.stderr[-600:]
+
+
+def worker_stop() -> None:
+    p = dc("stop", "-t", "30", "worker")
+    assert p.returncode == 0, p.stderr
+
+
+def worker_start() -> None:
+    p = dc("start", "worker")
+    assert p.returncode == 0, p.stderr
+    t0 = time.time()
+    while time.time() - t0 < 60:
+        out = sh(["docker", "inspect", "-f", "{{.State.Running}}", cid("worker")]).stdout.strip()
+        if out == "true":
+            return
+        time.sleep(1)
+    raise TimeoutError("worker 시작 실패")
+
+
+def set_cap(api: "Api", n: int) -> None:
+    r = api.patch("/api/v1/settings", json={"daily_apply_cap": n})
+    assert r.status_code == 200, r.text
+
+
+def approve_many(api: "Api", videos: list[dict], who: str = "통합시험자") -> list[dict]:
+    return [approved_suggestion(api, v["video_id"], who) for v in videos]
+
+
+def shift_days(days: int = 1) -> None:
+    """'하루가 지났다'를 시늉한다: 반영 예약일·변경 시각을 하루 앞으로 당긴다(DB 직접 수정, 소유자 계정). 시계를 바꿀 수 없는 컨테이너 환경의 대체 수단."""
+    psql_owner(
+        f"update batch_items set scheduled_date = scheduled_date - {days} where status='pending' and scheduled_date is not null; "
+        f"update changes set applied_at = applied_at - interval '{days} day', created_at = created_at - interval '{days} day' where applied_at is not null; "
+        f"update quota_usage set pt_date = pt_date - {days}"
+    )
+
+
+def two_pass_suggestions(api: "Api", vids: list[dict], n: int = 2) -> list[dict]:
+    """같은 영상에서 '통과'(비엄격) 제안이 n개 이상 나오는 영상을 찾아 그 제안들을 돌려준다(모의 제안기는 영상마다 결과가 정해져 있다)."""
+    for v in vids:
+        got = [x for x in api.make_suggestion(v["video_id"], 5) if x["validation_result"] == "pass" and not x["strict"]]
+        if len(got) >= n:
+            return got[:n]
+    raise AssertionError("통과 제안이 %d개 이상인 영상을 찾지 못함" % n)
+
+
+def ps(script: str, *args: str, timeout: int = 900) -> subprocess.CompletedProcess:
+    """운영 PowerShell 스크립트(사본 폴더의 원본 스크립트)를 pwsh 7 로 실행한다. 프로젝트·이미지 접두사는 환경변수로 시험용에 맞춘다."""
+    assert PWSH and Path(PWSH).exists(), "IT_PWSH(pwsh 7 실행 파일)가 필요합니다"
+    env = {**os.environ, "YTWEB_PROJECT": PROJECT, "YTWEB_IMAGE_PREFIX": PROJECT}
+    return subprocess.run([PWSH, "-NoProfile", "-File", str(STACK_DIR / "scripts" / script), *args], env=env, capture_output=True, text=True, timeout=timeout)
+
+
+def secret_values() -> dict[str, str]:
+    return {n: (STACK_DIR / "secrets" / n).read_text().strip() for n in ("db_superuser_password", "db_owner_password", "db_app_password")}
+
+
+def counts() -> dict[str, int]:
+    out = dc("exec", "-T", "db", "ytweb-db", "counts").stdout.strip().splitlines()
+    return {ln.split()[0]: int(ln.split()[1]) for ln in out if ln.strip()}
