@@ -371,7 +371,7 @@ def test_tc_it_531_db_roles_and_grants_as_deployed():
     assert psql_app("show password_encryption") == "scram-sha-256" and psql_app("show timezone") == "UTC"
     # public 스키마: PUBLIC 에게 주어진 권한이 없고(초기화 SQL 의 REVOKE ALL FROM PUBLIC), 소유자는 ytweb_owner
     acl = psql_owner("select coalesce(nspacl::text,'') || '|' || nspowner::regrole::text from pg_namespace where nspname='public'")
-    assert "=U/" not in acl.split("|")[0] and "=C/" not in acl.split("|")[0] and acl.endswith("|ytweb_owner"), acl
+    assert not re.search(r"[{,]=", acl.split("|")[0]) and acl.endswith("|ytweb_owner"), acl      # '=U/..' 처럼 역할 이름이 빈 항목이 PUBLIC
     assert psql_app("show data_checksums") == "on"
     r = dexec("db", "bash", "-c", "PGPASSWORD=$(cat /run/secrets/db_app_password) psql -h 127.0.0.1 -U ytweb_app -d postgres -c 'select 1' 2>&1 | head -1")
     assert "pg_hba.conf rejects" in r.stdout, r.stdout     # app 계정은 postgres DB 에 접속 자체가 거부(루프백 평문 포함)

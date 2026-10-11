@@ -564,3 +564,40 @@ def test_tc_it_060_real_browser_core_flow_no_console_csp_or_http_errors():
     assert a.login().status_code == 200
     assert a.get("/api/v1/audit", params={"page_size": 1}).json()["chain_ok"] is True
     a.close()
+
+
+# ─────────────────────────── W-FE 실서버 계약 시험을 nginx 주소로 ───────────────────────────
+
+@pytest.mark.slow
+@pytest.mark.destructive
+def test_tc_it_061_frontend_live_contract_suite_through_nginx_three_runs_zero_settle():
+    """TC-IT-061: W-FE 의 실서버 계약 시험(verify/live.verify.test.ts, 21건)을 nginx 주소(Host/Origin 이 127.0.0.1:8080 이 되도록 호스트 8080 → 게시 포트 바이트 중계)로,
+    변경 직후 대기 0ms(VF_LIVE_SETTLE_MS=0: DEF-VF-B01 경합 재현 조건)로 3회 연속 돌려 매번 21건 전부 통과한다(조건부 PASS 조건 ① 해소 유지 확인).
+    검증: W-FE 계약, DEF-VF-B01/005, S-W03. IT_FE_DIR 은 `npm ci --ignore-scripts` 를 마친 프런트 사본."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    from itlib import reset_demo_db
+    fe = os.environ.get("IT_FE_DIR")
+    if not fe or not (Path(fe) / "node_modules").is_dir():
+        pytest.skip("IT_FE_DIR(npm ci 한 프런트 사본)가 없음 — 미수행으로 센다")
+    here = Path(__file__).resolve().parent
+    reset_demo_db()
+    relay = subprocess.Popen([sys.executable, str(here / "tools" / "relay.py"), "8080", str(PORT)])
+    try:
+        time.sleep(1.0)
+        assert relay.poll() is None, "호스트 8080 중계를 띄울 수 없음(포트 사용 중)"
+        outs = []
+        for i in range(3):
+            if i:
+                reset_demo_db()      # 이 시험은 빈 DB 에서 시작한다고 가정한다(재실행하면 상태가 남아 실패 — 시험의 전제이지 결함 아님)
+            env = {**os.environ, "VF_LIVE_API": "http://127.0.0.1:8080", "VF_LIVE_SETTLE_MS": "0"}
+            p = subprocess.run(["npx", "vitest", "run", "verify/live.verify.test.ts"], cwd=fe, env=env, capture_output=True, text=True, timeout=300)
+            out = p.stdout + p.stderr
+            outs.append(out)
+            m = re.search(r"Tests\s+(\d+) passed \((\d+)\)", out)
+            assert p.returncode == 0 and m and m.group(1) == "21" and m.group(2) == "21", (i, out[-1500:])
+    finally:
+        relay.terminate()
+        relay.wait(timeout=10)
