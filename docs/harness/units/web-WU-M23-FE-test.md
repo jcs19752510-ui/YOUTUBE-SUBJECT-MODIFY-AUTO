@@ -244,3 +244,56 @@
 - **시험 수정 사유**: TC-VMF-142 의 모의 서버 응답은 "대시보드는 항상 demo·live_enabled=false"라는 옛 서버를 전제로 해서, 조치 후 서버 모양(mode=live, live_enabled=true)으로 바꿨다(원래 실패는 위 본문에 남아 있음). TC-VMF-023 은 문구 생성 함수의 인자가 바뀌어 호출만 맞췄다(검증 내용은 같음).
 - **재실행(프런트 전체)**: 727 통과 · 21 건너뜀 · 1 예상 실패 · 실패 0. `tsc` 오류 0, `eslint` 오류·경고 0, 운영 빌드 통과.
 - **안 한 것**: 조치 후 변이 점검 재실행, Chromium 화면 캡처 재촬영, 별도 독립 검증자 재검증(9단계 재검증·8단계에서 함께 확인 예정).
+
+
+## 부록 C. 조치 후 변이 점검 (프런트, 2026-10-11)
+
+한 줄 결론: 39곳 변이 중 39곳 killed, survived 0(공백 0, 동등 0). 추가 시험 없음. 소스 무변경(`git diff --stat -- web/frontend/src` 0줄).
+
+방법: `.harness-tmp/mut_fe/w<n>/` 에 web/frontend 사본(node_modules 심볼릭 링크)을 매번 새로 만들고 사본에서만 1곳 변이 후 `npx vitest run --bail=1 <관련 시험>`. 시험 집합: src/pages/google.test, src/a11y.test, src/app/app.test, src/pages/batches.test, src/pages/detail.test, verify_m23/*, verify/confirm, settings, live, lists, screens. 대조군(변이 없음) 사본은 survived(통과)로 환경 유효성 확인.
+
+첫 실행 결과(그대로 기록): 첫 두 번의 전체 실행은 39/39 killed 였으나, 대조군을 돌리자 verify_fix/notice.verify.test.tsx 가 사본 경로(.harness-tmp 하위)에서 `../../` 상대 경로로 서버 파일을 읽지 못해(ENOENT) 변이와 무관하게 실패하고 있었다(무효 실행). 이 시험(면책 문장 원문 대조)은 변이 대상과 무관하여 시험 집합에서 제외하고 재실행했다. 재실행 결과 39/39 killed, 대조군 survived.
+
+| # | 파일 | 변이 | 결과 | 동등 판정 |
+|---|---|---|---|---|
+| 1 | Layout.tsx | `d?.mode === 'live'` → `d?.mode !== 'live'` | killed | - |
+| 2 | Layout.tsx | `d?.mode === 'live'` → `false` | killed | - |
+| 3 | Layout.tsx | `d?.google.connected) {` → `!d?.google.connected) {` | killed | - |
+| 4 | Layout.tsx | `{ko.app.readBadge}` → `{ko.app.demoBadge}` | killed | - |
+| 5 | Layout.tsx | `{ko.app.liveBadge}` → `{ko.app.readBadge}` | killed | - |
+| 6 | useServerMode.ts | `d?.mode === 'live'` → `d?.mode !== 'live'` | killed | - |
+| 7 | useServerMode.ts | `d?.google.connected ?? false` → `true` | killed | - |
+| 8 | GoogleCard.tsx | `(g.connected || g.write_connected) && (` → `(g.connected && g.write_connected) && (` | killed | - |
+| 9 | GoogleCard.tsx | `(g.connected || g.write_connected) && (` → `g.connected && (` | killed | - |
+| 10 | GoogleCard.tsx | `{g.live_write_ready ? (` → `{!g.live_write_ready ? (` | killed | - |
+| 11 | GoogleCard.tsx | `) : g.write_connected ? (` → `) : !g.write_connected ? (` | killed | - |
+| 12 | GoogleCard.tsx | `g.client_ready && !g.write_connected && !g.live_wr` → `g.client_ready && !g.write_connected && g.live_wri` | killed | - |
+| 13 | GoogleCard.tsx | `g.live_write_enabled ?? false` → `!(g.live_write_enabled ?? false)` | killed | - |
+| 14 | GoogleCard.tsx | `g.live_allowed_count ?? 0,                     )` → `0,                     )` | killed | - |
+| 15 | GoogleCard.tsx | `ko.google.liveWarn(g.live_allowed_count ?? 0)` → `ko.google.liveWarn(0)` | killed | - |
+| 16 | GoogleCard.tsx | `{g.connected && asking && (` → `{g.connected && !asking && (` | killed | - |
+| 17 | HomePage.tsx | `d.google.mode === 'demo'` → `d.google.mode !== 'demo'` | killed | - |
+| 18 | HomePage.tsx | `{d.live_enabled ? ko.home.liveOn : ko.home.liveOff` → `{!d.live_enabled ? ko.home.liveOn : ko.home.liveOf` | killed | - |
+| 19 | HomePage.tsx | `{d.google.connected ? ko.home.googleConnected : ko` → `{!d.google.connected ? ko.home.googleConnected : k` | killed | - |
+| 20 | HomePage.tsx | `? ko.home.googleDemo` → `? ko.home.googleConnected` | killed | - |
+| 21 | SettingsPage.tsx | `serverLive || data.read_only.enable_live` → `data.read_only.enable_live` | killed | - |
+| 22 | SettingsPage.tsx | `serverLive || data.read_only.enable_live` → `serverLive && data.read_only.enable_live` | killed | - |
+| 23 | SettingsPage.tsx | `{live ? T.sessionModeLive : T.sessionModeDemo}` → `{live ? T.sessionModeDemo : T.sessionModeLive}` | killed | - |
+| 24 | SettingsPage.tsx | `{live ? T.liveOn : T.liveOff}` → `{live ? T.liveOff : T.liveOn}` | killed | - |
+| 25 | SettingsPage.tsx | `tone={live ? 'danger' : 'success'}` → `tone={live ? 'success' : 'danger'}` | killed | - |
+| 26 | BatchDetailPage.tsx | `expected.startsWith('실제 실행')` → `!expected.startsWith('실제 실행')` | killed | - |
+| 27 | BatchDetailPage.tsx | `expected.startsWith('실제 실행')` → `expected.startsWith('데모 실행')` | killed | - |
+| 28 | BatchDetailPage.tsx | `expected.startsWith('실제 실행')` → `expected.includes('실제')` | killed | - |
+| 29 | HistoryPage.tsx | `c.mode === 'demo' ?` → `c.mode !== 'demo' ?` | killed | - |
+| 30 | SuggestionCard.tsx | `s.source.endsWith('+edited')` → `!s.source.endsWith('+edited')` | killed | - |
+| 31 | SuggestionCard.tsx | `s.source.endsWith('+edited')` → `s.source.startsWith('+edited')` | killed | - |
+| 32 | SuggestionCard.tsx | `s.source === 'manual'` → `s.source !== 'manual'` | killed | - |
+| 33 | ko.ts | `aiEdited: 'AI 제안(직접 고침)'` → `aiEdited: 'AI 제안'` | killed | - |
+| 34 | ko.ts | `modeLive: '실제'` → `modeLive: '라이브'` | killed | - |
+| 35 | ko.ts | `liveBadge: '실제 수정 모드 —` → `liveBadge: '데모 모드 —` | killed | - |
+| 36 | ko.ts | `readBadge: '구글 연결됨(읽기) — 제목은 바뀌지 않습니다'` → `readBadge: '구글 연결됨(읽기)'` | killed | - |
+| 37 | ko.ts | `? ''           : ' web\\.env` → `? ' x'           : ' web\\.env` | killed | - |
+| 38 | ko.ts | `'실제 수정 모드입니다. 실행하면` → `'실행하면` | killed | - |
+| 39 | ko.ts | `sessionModeLive: '실제 수정 모드(` → `sessionModeLive: '데모 모드(` | killed | - |
+
+총 killed/총 변이 = 39/39. 미수행: Layout/Home 외 `useServerMode` 통합 경로의 전 시험 집합(verify_fix/notice)은 사본 경로 제약으로 제외. 추가 시험 파일(mutation-gaps.verify.test.tsx): 공백이 없어 미작성.
