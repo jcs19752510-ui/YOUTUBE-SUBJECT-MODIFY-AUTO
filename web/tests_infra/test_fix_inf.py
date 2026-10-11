@@ -159,6 +159,11 @@ DOC_FILES = {
 @pytest.mark.parametrize("key", ["install", "runbook", "readme"])
 def test_tc_wix_010_docs_state_security_decisions_in_plain_words(key):
     t = read(DOC_FILES[key])
+    marker = {"install": "## 7. 알려진 보안 사항", "runbook": "### 13-2. 보안 결정", "readme": "## 10. 보안 결정 요약"}[key]
+    assert marker in t, key
+    t = t[t.index(marker):]                 # 다른 장에 우연히 있는 문구로 통과하지 못하게 해당 절 안에서만 찾는다
+    if key == "runbook":
+        t = t[:t.index("## 14.")]
     for need in ("DEF-9-011", "DEF-9-013", "DEF-9-014", "DEC-046"):
         assert need in t, (key, need)
     assert "방화벽" in t and "실측" in t                      # 011: 호스트 서비스 점검 + Docker Desktop 실측 필요

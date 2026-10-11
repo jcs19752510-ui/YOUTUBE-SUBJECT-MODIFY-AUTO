@@ -43,7 +43,7 @@
 
 | 메서드 경로 | 설명 | 응답 |
 |---|---|---|
-| GET `/healthz` `/readyz` 및 `/api/healthz` `/api/readyz` (Host·세션 검사 없음, 컨테이너 헬스체크용) | 생존/준비(DB 연결만 — 구글·AI 상태는 M2·M3) | `{status:"ok"}` / `{status, db:"ok"\|"down", mode}` (DB 불가 시 503) |
+| GET `/api/healthz` `/api/readyz` (nginx 경유, Host·세션 검사 없음) · api 컨테이너 내부는 `/healthz` `/readyz`도 응답(루트 경로는 nginx에서 404, DEF-7-006 조치) | 생존/준비(DB 연결만 — 구글·AI 상태는 M2·M3) | `{status:"ok"}` / `{status, db:"ok"\|"down", mode}` (DB 불가 시 503) |
 | GET `/api/v1/auth/me` | 세션 확인(쿠키 없이도 호출 가능) | `{authenticated, pin_required, csrf_token\|null}` |
 | POST `/api/v1/auth/session` | 세션 발급(Host·Origin·`Sec-Fetch-Site` 검증, PIN 설정 시 `{pin}`, 5회 실패 시 429 `pin_locked`) | `{csrf_token}` + `Set-Cookie ytw_session`(HttpOnly, SameSite=Strict, Path=/api, `Secure` 없음) |
 | DELETE `/api/v1/auth/session` | 로그아웃 | 204 |

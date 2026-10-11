@@ -95,7 +95,7 @@ PC를 껐다 켜면 Docker Desktop을 다시 실행하고 `start.ps1` 을 실행
 - 의존성: `web/backend/requirements.txt`(해시 잠금) + `web/docker/requirements-ytitle.txt`(코어 `src/ytitle` 런타임 의존성 PyYAML·python-dotenv·tzdata, 해시 잠금)을 `--require-hashes --only-binary` 로 설치합니다. 코어 소스는 복사본 없이 `PYTHONPATH` 로 같은 소스를 씁니다.
 - 프런트 빌드는 `npm ci --ignore-scripts`(설치 스크립트 미실행)이며 `web/frontend/package-lock.json` 이 필요합니다. 최종 이미지에는 소스맵이 없습니다.
 - 테스트용 별도 환경: `YTWEB_PROJECT=harness-tmp-xxx`, `YTWEB_IMAGE_PREFIX=harness-tmp-xxx` 환경변수로 운영 데이터·이미지와 분리해 실행합니다(규칙 K, D-13).
-- 정적 점검: `python -m pytest web/tests_infra` (도커 데몬 불필요, docker CLI 가 있으면 `compose config` 검사도 수행). 2026-10-11 클라우드 Linux(파이썬 3.13 임시 가상환경)에서 실행: 244건 중 76 통과·168 건너뜀(PowerShell·컨테이너 기동 필요 시험)·실패 0. Windows에서는 실행하지 않았습니다.
+- 정적 점검: `python -m pytest web/tests_infra` (도커 데몬 불필요, docker CLI 가 있으면 `compose config` 검사도 수행). 2026-10-11 클라우드 Linux(파이썬 3.13 임시 가상환경)에서 실행: 244건 중 76 통과·168 건너뜀(PowerShell·컨테이너 기동 필요 시험)·실패 0. Windows에서는 실행하지 않았습니다. 2026-10-11 수정 단위(W-FIX-INF)의 시험은 `web/tests_infra/test_fix_inf.py`(TC-WIX-001~011 정적, TC-WIX-030~033 실가동: `WIX_LIVE=1`, 임시 스택 `harness-tmp-*` 에서만).
 
 ## 8. 내 PC에서 확인하는 체크리스트 (클라우드에서 못 해 본 것)
 

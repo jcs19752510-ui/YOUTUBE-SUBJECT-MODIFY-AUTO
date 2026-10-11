@@ -18,7 +18,7 @@
 | 항목 | 값 |
 |---|---|
 | 주소 | `http://127.0.0.1:8080`(또는 `http://localhost:8080`). 호스트의 이 한 포트만 열려 있고 nginx(`web`)가 `/api/`를 api 컨테이너로 넘긴다 |
-| 기본 경로 | `/api/v1/...`. 상태 점검만 `/healthz`, `/readyz`(+`/api/healthz`, `/api/readyz`) |
+| 기본 경로 | `/api/v1/...`. 상태 점검만 `/api/healthz`, `/api/readyz`(nginx 경유). api 컨테이너 내부 헬스체크는 `/healthz`, `/readyz`도 응답한다(nginx는 루트 `/healthz`·`/readyz`를 404로 닫음, DEF-7-006 조치) |
 | 형식 | 요청·응답 JSON(UTF-8). 예외: `reports/export.csv`(CSV). 메시지는 한국어 |
 | Host 헤더 | `127.0.0.1:8080` 또는 `localhost:8080`만 허용(DNS 리바인딩 방어). 다르면 `403 host_not_allowed`(nginx 단계에서는 응답 없이 연결 종료 444). 헬스 경로는 백엔드 Host 검사 면제 |
 | 요청 크기 | 본문 1MB 초과 → `413 payload_too_large` |

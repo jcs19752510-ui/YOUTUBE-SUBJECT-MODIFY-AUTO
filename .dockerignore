@@ -42,3 +42,20 @@ web/frontend/dist/
 venv/
 .coverage
 *.sqlite3
+
+# 비밀형 파일·개발 캐시(DEF-9-017): 위 목록이 거부 목록이라 빠지기 쉬운 것을 하위 폴더까지 막는다.
+# api 이미지는 추가로 COPY 단위를 web/backend/{ytweb,alembic,alembic.ini} 로 좁혀 두었다(web/docker/api.Dockerfile).
+*.pem
+**/*.pem
+*.key
+**/*.key
+credentials*.json
+**/credentials*.json
+**/client_secret*.json
+**/*.p12
+**/id_rsa*
+**/.ruff_cache
+**/.mypy_cache
+**/.coverage
+**/.coverage.*
+**/htmlcov/

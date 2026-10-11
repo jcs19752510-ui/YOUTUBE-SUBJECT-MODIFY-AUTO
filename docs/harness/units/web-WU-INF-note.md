@@ -133,3 +133,94 @@
 
 - traceability: D-01~D-14, D-07a/b, S-W01, S-W13a, S-W14, W-001, W-016 의 작업 단위 = W-INF, 구현 상태 = 구현됨(위 표의 "부분/미충족" 항목 제외: D-01 프로필, D-05 레이어 스캔, D-07b 자동 사전 백업, D-11).
 - decisions: (1) PostgreSQL 17 선택, (2) web만 edge 네트워크 추가(internal 게시 불가 실측), (3) egress는 overlay 파일, (4) 헬스체크 init 표식, (5) 코어는 PYTHONPATH 사용.
+
+
+---
+
+# 수정 단위 (2026-10-11) — W-FIX-INF
+
+| 항목 | 내용 |
+|---|---|
+| 근거 | DEC-046(사용자 승인), 7단계 통합 시험 결과서 `feature-web-m1-integration-test.md`(DEF-7-001·002·006·007), 9단계 `security-web-m1-test.md`(DEF-9-006·011·013·014·017) |
+| 속도 트랙 | 전달받은 표기 없음 -> L3(기본값). 구현 절차(게이트 1·2)는 트랙과 무관하게 동일 |
+| 병렬 실행 | 프런트(`web/frontend/`)·백엔드(`web/backend/`) 수정 담당과 동시 진행. 이 단위는 두 폴더를 수정하지 않았다(읽기만: 마이그레이션 0002 대조, 이미지 빌드 입력) |
+| 결과서·검증 로그 | 이후 독립 검증 에이전트가 쓴다. 이 절은 자체 결과서가 아님 |
+
+## A. 변경 파일
+
+| 구분 | 파일 | 내용 |
+|---|---|---|
+| DB | `web/docker/db/audit-guard.sql` | 복원 뒤 `alembic_version` 의 INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER 재회수 + 검증(SELECT 는 남아 있어야 함). 기존 `audit_log` 회수 유지. 파일 이름은 그대로(참조 시험·Dockerfile 영향 없음) |
+| DB | `web/docker/db/bin/ytweb-db` | 복원 완료 메시지 문구만 변경 |
+| DB | `web/docker/db/schema-grants.sql` | 주석만 갱신(0002 와 guard 의 역할) |
+| nginx | `web/docker/nginx/nginx.conf` | 루트 `/healthz`·`/readyz` 정확 일치 location 2개(404 text/plain, 보안 헤더·no-store). `/api/*` 4개 location 이 `security-headers-api.conf` 를 include |
+| nginx | `web/docker/nginx/security-headers-api.conf` (신규) | `/api` JSON 응답용 헤더 한 벌. CSP 만 `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`, 나머지 6줄은 페이지용과 동일 |
+| nginx | `web/docker/nginx/proxy.conf` | `proxy_hide_header Cache-Control;` 추가 |
+| 이미지 | `web/docker/web.Dockerfile` | 새 헤더 파일 COPY 1줄 |
+| 이미지 | `web/docker/api.Dockerfile` | `COPY web/backend` 를 `ytweb`·`alembic`·`alembic.ini` 3개 COPY 로 축소 |
+| 루트 | `.dockerignore`(추가만) | `*.pem`·`**/*.pem`·`*.key`·`**/*.key`·`credentials*.json`·`**/credentials*.json`·`**/client_secret*.json`·`**/*.p12`·`**/id_rsa*`·`**/.ruff_cache`·`**/.mypy_cache`·`**/.coverage`·`**/.coverage.*`·`**/htmlcov/` |
+| 루트 | `.gitignore`(추가만) | `client_secret*.json`·`*client_secret*.json`·`credentials*.json`·`*.pem`·`*.key`·`*.p12` (추적 중인 파일 중 해당 패턴 0건 확인) |
+| 문서 | `docs/yt/WEB_INSTALL.md` 7장, `docs/yt/WEB_RUNBOOK.md` 13-2, `web/README.md` 10장 | DEF-9-011·014·013 보안 결정(DEC-046)과 "선생님이 지금 할 일". RUNBOOK 에 상태 확인 경로 정리(DEF-7-006) 추가 |
+| 시험(신규) | `web/tests_infra/test_fix_inf.py` | TC-WIX-001~011(정적), TC-WIX-030~033(실가동) |
+| 시험(수정) | `web/tests_infra/test_compose_security.py` TC-WI-023, `test_vi_independent.py` TC-VI-020·042 및 nginx 하네스 마운트 | 새 설정에 맞게 기대 수정(아래 C) |
+| 시험(수정) | `web/tests_integration/test_it_01_nginx.py`·`test_it_04_contract.py`·`test_it_05_ops.py`, `web/tests_security/test_sec_03_static_repo.py`·`test_sec_06_live_known_limits.py` | 수정 완료된 결함의 `xfail(strict)` 표식 제거·기대 갱신(아래 C) |
+
+## B. 결함 ID <-> 변경 <-> TC
+
+| 결함 | 처리 | 변경 | TC / 실측 |
+|---|---|---|---|
+| DEF-7-002 (Medium) | 수정 | `audit-guard.sql` 확장 | TC-WIX-001·002(마이그레이션 0002 와 권한 목록 동일)·003, **TC-WIX-032 실가동**: 대조군(가드 없는 `pg_restore --clean`)에서 앱 계정 `alembic_version` INSERT/UPDATE/DELETE = t, `audit_log` UPDATE/DELETE = t 재현 -> `ytweb-db restore` 뒤 전부 f, SELECT t, 앱 계정 UPDATE/DELETE/TRUNCATE 는 `permission denied`, 두 번 실행(멱등)도 동일. IT-504 의 xfail 표식 제거 |
+| DEF-9-006 (Medium) | 수정 | `.gitignore` 추가 | TC-WIX-004, 기존 `test_gitignore_has_client_secret_pattern` xfail 표식 제거 |
+| DEF-9-017 (Low) | 수정(둘 다) | api.Dockerfile COPY 축소 + `.dockerignore` 패턴 추가. `.dockerignore` 의 전면 허용 목록(`*` 후 `!`) 전환은 하지 않음(알려진 제한 1) | TC-WIX-005·006, **TC-WIX-033 실가동**: 이미지 `/app` 에 `.ruff_cache`·`.coverage`·`pyproject.toml`·`requirements*`·`*.egg-info`·tests·`*.md`·`*.pem`·`*.key`·`credentials*`·`client_secret*`·`.env*`·`settings.local.yaml` 0건(`find` 출력 비어 있음). 작업 폴더에는 `web/backend/.ruff_cache`·`.coverage`·`.pytest_cache` 가 실제로 있어 시험이 공허하지 않음. 파일 199개, `/app` 최상위 = `backend config src`, `/app/backend` = `alembic alembic.ini ytweb`. 기존 xfail 2개(`test_sec_03`·`test_sec_06`) 표식 제거 후 통과 |
+| DEF-7-006 (Low) | 수정(닫기) | nginx `/healthz`·`/readyz` -> 404 | TC-WIX-007·030, IT-436 재작성, IT-030·IT-420 갱신. **문서 불일치 남음**: API.md 21·151행, WEB_DESIGN 46행, openapi.json 이 루트 경로도 열린다고 적음 -> 11단계 문서 정정 필요(이 단위 소유 문서 아님) |
+| DEF-7-007 (Low) | 수정(설정을 문서에 맞춤) | `security-headers-api.conf` | TC-WIX-008·009·031, IT-437·IT-432·IT-001 갱신 |
+| DEF-7-001 (Low) | 수정 | `proxy_hide_header Cache-Control` | TC-WIX-009·031, IT-053 xfail 표식 제거 |
+| DEF-9-011/013/014 | 문서화(DEC-046 M1 한정 수용) | INSTALL 7장·RUNBOOK 13-2·README 10장 | TC-WIX-010(절 안에서 필수 문구 확인) |
+
+## C. 판단 근거와 시험 수정 사유
+
+1. **루트 `/healthz`·`/readyz` 를 프록시하지 않고 404 로 닫은 이유**: 실제 결함은 "프로브가 HTML 200 을 받아 거짓 정상으로 오판"이다. 두 경로를 열면 같은 정보를 내는 경로가 둘이 되어 점검 면이 는다(`/api/readyz` 는 이미 `mode` 를 인증 없이 노출, OBS-10). 헬스 점검은 `status.ps1` 등 모든 소비자가 이미 `/api/` 경로를 쓴다(grep 확인). 컨테이너 내부 헬스체크는 백엔드 8000 포트를 직접 보므로 영향 없음. 대신 문서 3종(API.md·WEB_DESIGN·openapi.json)이 틀려진다 -> 질문으로 올림.
+2. **`/api` CSP 를 문서(`'none'`)에 맞춘 이유**: 보수적인 쪽(더 엄격). 단순 문서 정정은 이 단위 소유 문서가 아니기도 했다. 헤더 분기를 `map` 변수로 하지 않고 별도 snippet 파일로 한 이유: `security-headers.conf` 의 CSP 문자열 위치와 형식에 의존하는 기존 시험·변이 점검(`tests_security`, `mutate.py`)을 건드리지 않기 위해서. 6줄 중복은 TC-WIX-008 이 동일성을 강제한다. 오류 응답(413·429 등 `/api/` location 에서 nginx 가 직접 만드는 응답)도 같은 location 헤더를 쓰므로 `'none'` 이 된다.
+3. **시험 수정 사유(의도 유지, 기대만 새 설정에 맞춤)**: TC-WI-023(헤더 파일 include 확인에 api 변형 허용), TC-VI-020(location 수 7->9, proxy location 은 api 헤더 파일 include), TC-VI-042(`/api/` 경로 CSP 는 `'none'` 4 지시어), nginx 하네스에 api 헤더 파일 마운트(기존 이미지에 파일이 없어도 시험 가능), `test_sec_03::test_nginx_conf_rules`(api 변형 허용), IT-001/040/030/420/432 갱신, 수정 완료된 결함 고정 시험 6개(IT-053·436·437·504, `test_sec_03` 의 DEF-9-006·017, `test_sec_06` DEF-9-017)의 `xfail(strict)` 제거 — 수정 후에도 남기면 XPASS(strict)로 실패한다(`test_sec_03` 의 두 건은 수정 후 표식이 남아 있을 때 실제로 XPASS(strict) 실패가 나는 것을 확인한 뒤 제거).
+4. 새 외부 의존성 없음. 시험 실행용 임시 가상환경(`.harness-tmp/fixinf/venv`: pytest·httpx·jsonschema·pyyaml)만 PyPI 에서 설치(저장소 매니페스트 변경 없음).
+
+## D. 실가동 확인 요약 (클라우드 Linux 엔진, 프로젝트 `harness-tmp-fixinf`, 127.0.0.1:18480, 임시 CA 주입 복사본으로 이미지 3종 빌드: 저장소 Dockerfile 은 그대로)
+
+- 이미지 3종 빌드 성공(실제 프런트 포함), 5개 서비스 healthy, migrate 종료 0.
+- HTTP: `/healthz`·`/readyz` 404 text/plain, `/api/healthz` 200 `{"status":"ok"}`, `/api/readyz` 200, `/api/*` CSP `default-src 'none'...` 1개·`Cache-Control: no-store` 1개, 페이지 CSP 불변, 오류(404/413)에도 적용.
+- 복원 권한(위 B), 이미지 파일 목록(위 B).
+- 시험: `test_fix_inf.py` 정적 13 + 실가동 4 = 17 통과. `tests_infra` 전체(WIX_LIVE=1, VI_DOCKER=1): 176 통과·84 건너뜀·0 실패(1 XPASS = 기존 TC-VI-055). 기본 실행(도커 없음): 89 통과·172 건너뜀. 통합 `test_it_01_nginx.py` 전체 36 통과·1 건너뜀, IT-401·402·420·432·436·437 통과(합 19). 보안 `test_sec_03` 28 통과, `test_sec_04`(실스택) 84 통과(아래 제한 3 참고), `test_sec_06` DEF-9-017 시험 통과.
+- 시험의 실효성: 신규 정적 시험에 14곳 변이(권한 목록 축소·검사 제거·COPY 확대·CSP 완화·헤더 파일 교체·hide 제거·문서 문구 삭제 등)를 넣어 14/14 탐지(생존 0). 한 곳은 처음에 생존했고(문서 시험이 다른 장의 문구로 통과) 절 단위 검사로 보강 후 탐지.
+- 정리: 이 단위의 컨테이너·네트워크·볼륨·이미지 삭제 및 잔여 0건 확인은 최종 보고에 기재.
+
+## E. 알려진 제한·건너뛴 것
+
+1. `.dockerignore` 를 전면 허용 목록(`*` + `!경로`)으로 바꾸지 않았다. 세 Dockerfile 이 서로 다른 경로를 쓰고 기존 시험(TC-VI-018, `test_sec_03`)이 거부 목록 항목을 요구한다. 대신 api 이미지는 COPY 단위로 좁혔고 web 이미지는 최종 단계에 `dist` 만 복사한다. 허용 목록 전환은 후속 선택 사항.
+2. PowerShell 스크립트(`restore.ps1` 등)는 바꾸지 않았다. 이 클라우드에 pwsh 가 없어 **IT-504(restore.ps1 경유)는 실행하지 못했다** — 같은 `ytweb-db restore` 경로를 TC-WIX-032 가 직접 실행해 확인했다. IT-504 실행은 pwsh 가 있는 환경의 몫.
+3. 보안 `test_sec_04` 첫 실행에서 2건 실패: (a) `known_limit_app_role_can_modify_non_audit_tables`(TW-32)는 앞선 시험이 남긴 DB 상태 때문이며 스키마 초기화 후 통과, (b) `huge_integers_are_client_errors_on_postgres` 는 **XPASS(strict)** — 병렬 백엔드 수정 담당이 DEF-9-001 을 고쳐 xfail 표식이 낡았다(이 단위 소관 아님, 백엔드/보안 시험 담당이 표식 제거 필요).
+4. `VI_LIVE=1` 로 `test_vi_independent.py` 전체 실가동 묶음을 임시 스택에 돌리면 7건이 실패한다(TC-VI-100[db/migrate/api/worker]·107 은 비밀 마운트 원본 경로가 `…/web/secrets/` 라고 가정, 121·123 은 `VI_RUN` 사본 폴더 필요). 제품이 아니라 임시 스택 배치 차이이며 이 단위의 변경과 무관(확인: 실패 메시지가 경로/None). 6단계 담당이 정식 배치로 재실행해야 한다. 또 nginx 하네스 TC-VI-047 이 부하 상황에서 한 번 502 로 실패한 적이 있으나(stub 기동 경합) 단독 3회 재실행 통과.
+5. 게이트 1: 이 단위 파일에 대한 린트 설정 없음(셸/Dockerfile/nginx/SQL). 대체로 정적 시험 + 실제 nginx(`nginx -t` 와 동일하게 컨테이너 기동), `psql` 실행, 이미지 빌드로 확인. hadolint·shellcheck·PSScriptAnalyzer 는 미수행.
+6. Docker Desktop(WSL2)·Windows 방화벽 동작(DEF-9-011)은 이 단위에서 확인하지 못했고 문서에 "사용자 PC 실측 필요"로 명시.
+7. `traceability.md` 는 이 호출에서 갱신하지 않았다(병렬 규칙에 준해 아래 요청으로 남김).
+
+## F. 자체 코드 리뷰 체크리스트 (게이트 2)
+
+- [x] 지시(DEC-046 범위)와 구현 일치 — 편차: DEF-7-001 은 지시 항목 목록에는 없고 "읽을 것"에만 있었으나 같은 파일(`proxy.conf`)의 W-INF 몫 Open 결함이라 함께 수정(질문으로 올림)
+- [x] 에러 처리: guard SQL 은 회수 실패·SELECT 상실 시 `RAISE EXCEPTION` -> `psql ON_ERROR_STOP` + `set -e` 로 복원 명령 실패
+- [x] 경계 입력 검증: 변경 없음(백업 파일명 정규식 유지). nginx 새 location 은 입력을 쓰지 않는 고정 응답
+- [x] 하드코딩 비밀 없음(비밀 파일은 `.harness-tmp/fixinf/secrets`, 저장소 밖 임시 경로)
+- [x] 새 외부 의존성 없음(런타임). 시험용 임시 venv 의 패키지는 PyPI 에서 직접 설치되어 실존 확인
+- [x] 범위 외 변경 없음: 소유 범위 밖은 시험 기대 갱신뿐(C-3에 사유). 프런트·백엔드 소스 미수정
+
+## G. 6단계(독립 검증)를 위한 인수 조건
+
+1. `python -m pytest web/tests_infra` 통과(도커 없이 89 통과), 임시 스택에서 `WIX_LIVE=1`(`WIX_PROJECT`·`WIX_PORT` 지정) 로 TC-WIX-030~033 통과.
+2. 복원 후 `ytweb_app` 이 `alembic_version` 에서 SELECT 만 가능, `audit_log` 는 SELECT·INSERT 만 가능.
+3. `curl -H 'Host: 127.0.0.1:8080' http://127.0.0.1:<포트>/healthz` -> 404 text/plain, `/api/healthz` -> 200 JSON, `/api/*` 응답 CSP = `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`, Cache-Control 1개.
+4. api 이미지 `/app` 에 개발 캐시·비밀형 파일 0건.
+5. pwsh 가 있는 환경에서 IT-504, 전체 `test_vi_independent.py` 실가동 묶음 재실행.
+
+## H. 공유 문서 갱신 요청 (병렬 규칙)
+
+- traceability: DEF-7-001·002·006·007, DEF-9-006·017 = 수정(구현됨, 6단계 재검증 대기). DEF-9-011·013·014 = 문서화 수용(DEC-046).
+- decisions: (1) `/healthz`·`/readyz` 는 nginx 에서 404, 상태 확인은 `/api/*` 만(문서 3종 정정 필요), (2) `/api` 응답 CSP 는 `default-src 'none'` 별도 snippet, (3) api 이미지 COPY 단위 축소.

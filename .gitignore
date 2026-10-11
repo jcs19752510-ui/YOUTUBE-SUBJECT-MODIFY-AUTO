@@ -43,3 +43,11 @@ web/backups/
 web/frontend/dist/
 node_modules/
 *.dump
+
+# 구글 OAuth 클라이언트 비밀 파일·키 파일(DEF-9-006, M2 에서 내려받는 client_secret_*.json 이 저장소에 올라가지 않게)
+client_secret*.json
+*client_secret*.json
+credentials*.json
+*.pem
+*.key
+*.p12
