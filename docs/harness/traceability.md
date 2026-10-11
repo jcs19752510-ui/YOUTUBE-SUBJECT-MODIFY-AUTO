@@ -196,10 +196,34 @@
 | S-W14 | SEC | 컨테이너 격리(비루트·읽기 전용 등) (요청 §9) | 5 | W-INF | Done | TC-VI-002, 003, 100, 101 [I§4-2(D-03 시험 재사용)]; TC-WI-003~008, 032 [I-note§4] |  |  | I=COND.PASS[Open DEF-VI-001·002·003, C-02]. I 결과서에 S-W14 직접 표기 없음, D-03 시험으로 간접 연결(C-05) |
 | S-W15 | SEC | 위협 모델 STRIDE 웹·컨테이너 갱신 (요청 §9) | 5 | (M4 설계 문서) | Not Started(M4 설계 문서 대기) | 시험 대상 아님(설계 문서 갱신) |  |  | 근거: 작업 단위가 (M4 설계 문서) |
 | S-W16 | SEC | 감사 로그 추가 전용·해시 체인 (요청 §9) | 5 | W-BE-A | Done | TC-VA-080~087, 118, 121, 122, 143, 174, 175, 180 [A§4-1 AC-5]; TC-WA-073~085, 147~157 [A-note§4]; TC-VB-210~214, 259 [B§4] |  |  | A=PASS, B=PASS. 꼬리 절단·전체 재작성은 체인으로 탐지 불가(알려진 제한, TC-VA-084), 방어선은 DB 권한 회수(TC-VA-118) |
+| POL-005 | POL | 데모 모드 상시 표시: "데모 모드 — 유튜브에 아무것도 전송되지 않습니다" (02_planning §W7-1) | WEB_DESIGN 6(화면); DESIGN §W9-5 표에는 매핑 없음(갭) | W-FE | Done | TC-S9-079 [S9§4: test_demo_badge_is_always_rendered_in_layout, test_bundle_contains_demo_badge_and_ai_label] |  |  | S9=FAIL 판정 단위지만 이 행은 Pass(구현분 4건 통과). 구현 위치 `Layout.tsx` demoBadge·`ko.ts`, 번들 3회 확인(S9 부록 J). 브라우저 실표시는 7단계 대기 |
+| POL-006 | POL | AI 제안 표시: "AI가 생성한 제안입니다. 사람이 검토·승인한 제목만 반영됩니다."를 후보 목록·승인 화면·이력에 상시 노출 (02_planning §W7-1; 규칙 J) | WEB_DESIGN 6; threat_model Part W §W4 투명성 행(DESIGN.md 에는 해당 행 없음) | W-FE (W-FIX-4) | Not Started(고지 문장 없음; "AI 제안" 배지만 부분 존재) | TC-S9-079 [S9§4: test_ai_generated_notice_sentence_exists_and_is_on_suggestion_card, test_bundle_contains_ai_generated_notice — xfail(결함 고정)]; 배지 회귀: test_ai_label_and_strict_mode_hint_exist_on_suggestion_card |  |  | **DEF-9-007·008(Open, S9§6): 면책·AI 고지·표시광고/한계·A/B 확인 문구 미노출** — DEF-9-008(High; S9 Q-S9-10·13 은 Critical 상향 여부를 사용자 질의 중). 수정 후 xfail 표식 제거로 재검증 |
+| POL-007 | POL | 외부 전송 고지: 제목+설명 요약이 외부 AI(서비스명·서버 위치)로 전송됨, 자막·성과 제외, 설명의 이름·연락처 삭제 권고 (02_planning §W7-1) | DESIGN §W9-3 외부 전송 데이터, §W9-4 제3자 제공 | W-BE-B, W-FE (M3a) | Not Started(M3 대기; 전송 자체가 없음, 마스킹은 구현) | 시험 없음(M3). 마스킹 부분은 SEC-026 행 참조 |  |  | M3 대기(Q-1 AI 서비스 미정). 고지 UI 미구현은 S9 부록 J 에서 "M3 예정" |
+| POL-008 | POL | AI 한계 고지: 사실·법령 적합성 비보장, 건강·금융은 표시광고 규정 확인, 법률 자문 아님(POL-002와 병합 가능) (02_planning §W7-1) | WEB_DESIGN 6; threat_model Part W §W4 투명성·LLM09 | W-FE (W-FIX-4) | Not Started(미구현) | TC-S9-079 [S9§4: test_ai_limit_and_advertising_rule_notice_exists_and_is_on_suggestion_card, test_bundle_contains_advertising_rule_notice — xfail(결함 고정)] |  |  | **DEF-9-007·008(Open, S9§6): 면책·AI 고지·표시광고/한계·A/B 확인 문구 미노출** — DEF-9-008(High). 번들 검색 "표시광고" 0건 |
+| POL-009 | POL | 반영 한도: 하루 반영 건수 기본 10(최대 20)·배치당 50, 영상별 72시간 간격·영상당 3회 (02_planning §W7-1) | WEB_DESIGN 4-3(한도); DESIGN §W5(쓰기 안전 게이트) | W-BE-A, W-BE-B | Done | TC-VB-080~091, 097, 098 [B§4]; TC-VA-062, 147~150 [A§4-1]; TC-S9-027·028 [S9§4: 50건 초과 배치 불가, daily_cap_bounds] |  |  | M1=데모 모드. 구현 `routers/settings.py`(1~20)·`domain/common.py` MAX_BATCH_ITEMS=50·`config/settings.yaml`. Q-3 해석 대기(02_planning §W11). W-008 행과 같은 시험을 공유 |
+| POL-010 | POL | 라이브 반영 허용·허용 영상 목록은 설정 API로 변경 불가(별도 확인 절차는 M3에서 설계) (02_planning §W7-1) | DESIGN §W9-1 S-W03; WEB_DESIGN 4 | W-BE-A | Done | TC-VA-056~059 [A§4-1 AC-3]; TC-VF-316 [F§4-1 AC-05]; TC-S9-028 [S9§4: settings_cannot_enable_live…, live_mode_cannot…] |  |  | ALLOWED_KEYS 4개. 라이브 허용 확인 절차는 M3(W-M3b)에서 설계 필요 — 현재 해당 절차 없음이 설계 |
+| POL-011 | POL | 승인 정책: plan_hash·HMAC·1회용·TTL 24시간. 만료 판정 시각=배치 실행 확정 시각(DEC-042 D3 수용) — **M3에서 재정의 필요** (02_planning §W7-1) | WEB_DESIGN 4(2); DESIGN §W9-1 | W-BE-B | Done | TC-VB-050, 052, 053, 055~060, 062~064 [B§4-1]; TC-S9-027 [S9§4: 승인 변조·HMAC·1회용·만료 경계 ±1초] |  |  | M1 범위 Done. M3 재정의 필요(W-M3b). TC-S9-027 은 DB 직접 변조 시험까지 Pass |
+| POL-012 | POL | 데이터 보관·파기: 롤백용 원본 snippet·성과 스냅샷·구글 유래 데이터의 보관 상한과 구글 연결 해제 시 삭제 범위·기한(가정 7일) (02_planning §W7-1) | DESIGN §W9-4 보관·파기(보관 기간 미정 Q-W06) | W-M2 (연결 해제 화면) | Not Started(미구현, 정책 미정) | 시험 없음 |  |  | DEF-9-013(S9§6, Open): `purge_expired` 는 세션만. 정책 확정(Q-W2) 필요. M2(실데이터) 전 결정 필요(RISK-025) |
+| POL-013 | POL | Studio A/B 테스트 중인 영상은 사용자가 제외, 실행 확인 문구에 "A/B 테스트 중이 아님" 확인 포함(FR-C06) (02_planning §W7-1) | WEB_DESIGN 3 /batches; DESIGN §W9-5 표에는 매핑 없음(갭) | W-FE, W-BE-B (W-FIX-4) | Not Started(확인 문구 미구현; 서버 사전 점검 경고 1줄만 존재) | TC-S9-079 [S9§4: test_batch_execute_confirmation_mentions_ab_test — xfail(결함 고정)]; 경고 1줄: TC-VB-110 [B§4], test_ab_warning_exists_only_as_preflight_warning_line [S9§4] |  |  | **DEF-9-007·008(Open, S9§6): 면책·AI 고지·표시광고/한계·A/B 확인 문구 미노출** — DEF-9-008(High). 서버 사전 점검 경고(`domain/batches.py:184`)는 구현·시험됨이나 요구(확인 문구에 포함)는 미충족. WEB_LEGAL_NOTICE §A/B 도 "미구현"으로 명시 |
+| POL-014 | POL | 제외 영상(Shorts·비공개·아동용·예약)은 제안 생성·승인·배치·반영 4단계에서 모두 차단하고 사유 표시(DEC-042 D4) (02_planning §W7-1) | WEB_DESIGN 4; DESIGN §W9-5 (제외 영상은 같은 표에서 "POL-003"으로 표기 — ID 불일치, 아래 비고) | W-BE-B | Done | TC-VB-004, 005, 016, 113, 241 [B§4] |  |  | 구현 `domain/exclusions.py`. S9: 코드 정독으로 확인(동작은 6단계 시험 근거). ID 불일치: DESIGN §W9-5 는 같은 기능을 POL-003, 02_planning §W7-1 은 POL-014 로 표기(사용자 확인 질문) |
+| POL-015 | POL | 구글 클라우드 프로젝트 1개만 사용(테스트용 추가 프로젝트·쿼터 우회 금지). OAuth 게시 상태 선택은 사용자 결정 (02_planning §W7-1) | 03_manual_setup(매뉴얼); WEB_LEGAL_NOTICE §쿼터 | W-M2 | Not Started(M2 대기; 문서 정책만, 코드 없음) | 시험 대상 아님(문서 정책) |  |  | WEB_LEGAL_NOTICE 에 정책 문구 있음. M2 구글 클라우드 프로젝트 생성 시 적용 |
+| POL-016 | POL | 백업 정책: 백업 파일 암호화 여부·보관 위치·보관 기간, 서명 키 별도 보관 (02_planning §W7-1) | DESIGN §W7-4 백업·재해복구 | W-INF, W-BE-A (W-FIX-5) | Not Started(정책 미정) | 시험 없음 (백업·복원 동작 자체는 W-016 행) |  |  | DEF-9-013(S9§6, Open): 백업 무암호화(README 경고만). 사용자 결정 Q-W4 대기. 위협 TW-12·TW-19 |
+| SEC-021 | SEC | 영상 제목·설명은 비신뢰 입력: 정제(제어·방향·보이지 않는 문자 제거), 길이 상한, 지시/데이터 구획은 **보조일 뿐 보안 경계가 아님**을 설계서에 명시 (02_planning §W7-2) | DESIGN §W9-3 프롬프트 인젝션 방어 경계; threat_model LLM01 | W-BE-B (M3a: 구획) | Partial(정제·길이 상한 구현; 지시/데이터 구획은 실서비스 어댑터 없어 M3) | TC-S9-025 [S9§4]; TC-VB-020, 023 [B§4]; TC-WB-008~011 [B-note§7] |  |  | 구현 `ai/guard.py` clean_text, MAX_SUMMARY_CHARS=500. 요구 중 "지시/데이터 구획은 보안 경계가 아님을 설계서에 명시"는 DESIGN.md 에서 해당 문구를 찾지 못함(미충족 가능, 질문). S9 부록 F M3 진입 전 조건 |
+| SEC-022 | SEC | AI에 도구·함수·네트워크·파일·DB·YouTube API 권한 부여 금지(텍스트 생성만) (02_planning §W7-2) | DESIGN §W9-3 도구/함수 권한 최소화; threat_model LLM06 | W-BE-B | Done(구조; 실서비스 SDK 도구 기능 비활성은 M3) | TC-S9-020 [S9§4: full_flow_makes_no_network_calls]; TC-VB-340 [B§4]; TC-S9-025 [입력=영상 ID·제목·요약뿐] |  |  | `ai/base.py` TitleSuggester.suggest() 가 세션·게이트웨이를 받지 않음. 어댑터가 api 프로세스 안이라 샌드박스 없음(DESIGN §W9-3 명시) → M3 코드 리뷰 강제 |
+| SEC-023 | SEC | AI 응답은 스키마 검증 후 사용, 후보 수·길이 상한, `<` `>`·제어문자·줄바꿈·URL·연락처 후보 폐기 (02_planning §W7-2) | DESIGN §W9-3 출력 새니타이즈·렌더링; threat_model LLM05 | W-BE-B | Done | TC-S9-026 [S9§4: 악성 출력 11종]; TC-VB-021, 022, 023, 026 [B§4]; TC-WB-008~011 [B-note§7] |  |  | 구현 `sanitize_drafts`. `<` `>` 는 검증기(유튜브 제목)가 차단 판정하는 구조(02_planning 명시) |
+| SEC-024 | SEC | AI 후보도 기존 검증기 통과 필수(길이 100자, 금칙어, 영상 일치, 건강·금융 엄격 모드). 차단 후보는 반영 불가 (02_planning §W7-2) | DESIGN §W9-3·§W9-5(POL-001); threat_model LLM09 | W-BE-B | Done(키워드 목록 한계 있음) | TC-S9-026, 026b [S9§4]; TC-VB-013, 014, 015, 024 [B§4]; TC-WB-013, 024~026 [B-note§7] |  |  | TC-S9-026b: 엄격 모드는 25개 키워드 의존 — 목록 밖 건강 용어+AI topic=life 이면 엄격 모드가 꺼짐(재현, OBS-3). 해결은 사용자·설계 판단 Q-W10(USER_DECISIONS Q-27) |
+| SEC-025 | SEC | AI 후보는 사람 승인 없이 반영 불가(승인=plan_hash 묶음), 자동 반영 경로 금지 (02_planning §W7-2) | DESIGN §W9-3; WEB_DESIGN 4(2) | W-BE-B | Done | TC-S9-027 [S9§4]; TC-VB-025, 057 [B§4] |  |  | 구현 `check_approval`·확인 문구. 관련 POL-011 |
+| SEC-026 | SEC | 외부 전송 최소화: 제목+설명 요약만, 연락처·링크·주민번호 모양 마스킹, 토큰·키·자막·성과 제외 (02_planning §W7-2) | DESIGN §W9-3 외부 전송 데이터, §W9-4 | W-BE-B | Partial(마스킹·최소 전송 구현; 전송 미리보기·영상 단위 AI 제외 옵션 미구현) | TC-S9-025 [S9§4]; TC-VB-030, 032 [B§4] |  |  | 미구현분은 FR-C04. S9 부록 F M3 전 조건. 위협 TW-22. POL-007 과 함께 처리 |
+| SEC-027 | SEC | AI 호출 일/배치당 호출·토큰·비용 상한, 빈도 제한, 재시도 상한, 타임아웃 (02_planning §W7-2) | DESIGN §W9-3 레이트리밋·토큰 사용량(M3: NFR-W12 ③) | W-M3a | Not Started(M3 대기; 모의 AI라 상한 코드 없음) | 시험 없음 |  |  | M3 진입 차단 조건(S9 부록 F). 위협 LLM10·RISK-023. Q-1(AI 서비스·월 예산) 대기, USER_DECISIONS Q-24 |
+| SEC-028 | SEC | AI 키는 secrets로만 주입, 로그·DB·백업·화면 노출 금지, 프롬프트 원문 비저장 (02_planning §W7-2) | DESIGN §W9-3 시스템 프롬프트·내부 로직 유출 방지; threat_model LLM07 | W-BE-B, W-INF (M3a) | Partial(prompt_hash 저장·로그 마스킹 구현; 키 주입 경로는 M3) | TC-VB-031 [B§4: ai_run 은 해시만 저장]; TC-VA-098 [A§4: JSON 로그 마스킹] |  |  | 키 주입 경로 미구현(M3). 로그 마스킹은 S-W09 행과 공유 |
+| SEC-029 | SEC | AI 응답 문자열은 항상 텍스트로 렌더링 (02_planning §W7-2) | DESIGN §W9-3 출력 렌더링; F-05 | W-FE | Done | TC-S9-022 [S9§4]; TC-VF-037, 038, 092, 097~102, 106, 114 [F§4-1 AC-12]; TC-WF-018 [F-note§7] |  |  | F-05·S-W05 행과 같은 시험. 소스 grep 0·ESLint 규칙 근거(S9 부록 J) |
+| SEC-030 | SEC | 인젝션 시험 세트(지시 무시·형식 탈취·비밀 요구·다른 영상 제목·과장 후크)를 9단계에서 수행, 누락은 Critical (02_planning §W7-2) | threat_model LLM01·TW-15; 9단계 인계(Part W §W7) | W-BE-B (M3a: 실서비스) | Partial(M1 모의 AI 정제 시험만; 실서비스 어댑터 시험은 M3) | TC-S9-026 [S9§4]; TC-VB-020 [B§4]; TC-WB-008~011 [B-note§7] |  |  | S9 에서 인젝션·출력 기반 XSS 직접 재현 시도는 불성립. 실서비스 LLM 인젝션 시험은 M3(S9§2 제외 범위). 누락 시 Critical 규칙은 M3 착수 시 적용 |
 
-### 웹 전환 요구사항 시험 연결 요약 (v3, 2026-10-11)
+### 웹 전환 요구사항 시험 연결 요약 (v4, 2026-10-11)
 
-약어(구현 상태·단위테스트·비고 컬럼): `A`=`units/web-WU-BE-A-test.md`, `B`=`web-WU-BE-B-test.md`, `F`=`web-WU-FE-test.md`, `I`=`web-WU-INF-test.md`, `X-note`=해당 단위 `web-WU-*-note.md`, `§n`=문서 절/부록. `TC-WA/WB/WF/WI`=구현자 시험, `TC-VA/VB/VF/VI`=6단계 독립 검증 시험. `C-nn`=`docs/harness/verify-log_web-traceability.md` 의 모순·누락 목록 번호. 단위 판정: A=PASS, B=PASS, F=CONDITIONAL PASS, I=CONDITIONAL PASS. TC-ID 는 `web/backend/tests`, `web/frontend/{src,verify}`, `web/tests_infra` 에서 실제 존재를 확인했다(1410개 참조 전부 존재, 검증 로그 1차).
+약어(구현 상태·단위테스트·비고 컬럼): `S9`=`security-web-m1-test.md`(9단계 보안 결과서, `TC-S9-nnn`; 테스트 코드는 `web/tests_security/` 의 함수 이름으로 연결돼 있고 번호 자체는 결과서에만 있음), `A`=`units/web-WU-BE-A-test.md`, `B`=`web-WU-BE-B-test.md`, `F`=`web-WU-FE-test.md`, `I`=`web-WU-INF-test.md`, `X-note`=해당 단위 `web-WU-*-note.md`, `§n`=문서 절/부록. `TC-WA/WB/WF/WI`=구현자 시험, `TC-VA/VB/VF/VI`=6단계 독립 검증 시험. `C-nn`=`docs/harness/verify-log_web-traceability.md` 의 모순·누락 목록 번호. 단위 판정: A=PASS, B=PASS, F=CONDITIONAL PASS, I=CONDITIONAL PASS. TC-ID 는 `web/backend/tests`, `web/frontend/{src,verify}`, `web/tests_infra` 에서 실제 존재를 확인했다(v3 1410개 참조 전부 존재; v4 신규 POL/SEC 행 TC 88개 전부 존재, TC-S9 8개는 결과서 정의 및 `web/tests_security` 함수명 존재 확인, 검증 로그 v4 1차).
+
+v4 추가분(POL/SEC 22행)은 02_planning §W7-1(POL)·§W7-2(SEC)의 정의를 그대로 옮겼으며 새 ID 를 만들지 않았다. 구현 상태는 02_planning "구현 상태(웹)" 열과 9단계 결과서(부록 J) 대조 결과다. POL-006·008·013 은 9단계 결함 DEF-9-007·008 로 Open(Not Started)이며, 관련 xfail 시험이 결함을 고정한다.
 
 | 구분 | 요구사항 수 | TC 연결 | TC 미연결 | 비고 |
 |---|---|---|---|---|
@@ -207,9 +231,11 @@
 | D (배포) | 16 | 16 | 0 | - |
 | F (프런트) | 11 | 8 | 3 | F-02, F-10, F-11 |
 | S-W (보안) | 17 | 14 | 3 | S-W08, S-W10, S-W15 |
-| **합계** | **61** | **54** | **7** | 연결률 88.5% |
+| POL (정책, v4) | 12 | 8 | 4 | POL-007, 012, 015, 016. POL-006·008·013 은 xfail(결함 고정) 시험으로만 연결 |
+| SEC (AI 안전, v4) | 10 | 9 | 1 | SEC-027 |
+| **합계** | **83** | **71** | **12** | 연결률 85.5% (v3 88.5% 에서 신규 22행 반영으로 하락) |
 
-구현 상태 분포: Done 48, Not Started 4, Partial 9 (Deferred·Blocked 는 0건: 결과서에 해당 DEC-ID·차단 기록 없음).
+구현 상태 분포: Done 58, Not Started 12, Partial 13 (Deferred·Blocked 는 0건: 결과서에 해당 DEC-ID·차단 기록 없음). v4 신규 22행은 Done 10(POL-005·009·010·011·014, SEC-022·023·024·025·029), Partial 4(SEC-021·026·028·030), Not Started 8(POL-006·007·008·012·013·015·016, SEC-027). 근거 미확인 상태 행 0건.
 
 | 미연결 ID | 구현 상태 | 사유 |
 |---|---|---|
@@ -220,6 +246,11 @@
 | S-W08 | Not Started(M2 대기) | M2 대기(OAuth). 기존 TC-VA 의 S-W08 표기는 정의 불일치(C-03) |
 | S-W10 | Not Started(M2 대기) | M2 대기(CSV 업로드) |
 | S-W15 | Not Started(M4 설계 문서 대기) | M4 설계 문서 대기(시험 대상 아님) |
+| POL-007 | Not Started(M3 대기) | M3 대기(외부 AI 전송 자체가 없음) |
+| POL-012 | Not Started(미구현, 정책 미정) | 시험 없음, DEF-9-013 |
+| POL-015 | Not Started(M2 대기) | 문서 정책(시험 대상 아님) |
+| POL-016 | Not Started(정책 미정) | 시험 없음, DEF-9-013 |
+| SEC-027 | Not Started(M3 대기) | AI 호출·비용 상한 코드 없음(M3 진입 차단 조건) |
 
 통합테스트(IT)·전체테스트(UAT) 컬럼은 이번 갱신 범위가 아니어서 비워 두었다.
 
@@ -230,3 +261,4 @@
 | 2026-10-10 | v1 | 3·4단계: 설계 매핑, EVT·UX·SCR·ADR·신규 NFR/SEC 등록 | 규칙 H |
 | 2026-10-10 | v2 | 웹 전환 요구사항(W/D/F/S-W) 등록 | 규칙 H, DEC-038 |
 | 2026-10-11 | v3 | 웹 요구사항(W/D/F/S-W 61행) 구현 상태·단위테스트·비고를 4개 단위 결과서(A·B·F·I)와 구현 노트로 채움, 시험 연결 요약 표 추가, 모순·누락 목록은 verify-log_web-traceability.md | 규칙 H, 규칙 B |
+| 2026-10-11 | v4 | 웹 정책·AI 안전 요구 POL-005~016(12행)·SEC-021~030(10행) 정식 등록(총 83행). 정의는 02_planning §W7-1·§W7-2 에서 옮김(새 ID 없음), 구현 상태·TC 는 9단계 결과서와 단위 결과서 기준, 시험 연결 요약 표 갱신. POL-006·008·013 은 DEF-9-007·008 Open 으로 연결 | DEF-9-018 조치(규칙 H·I·J 추적성) |
