@@ -51,7 +51,8 @@ def _sync_live(factory: sessionmaker, job: Job, env, access, now) -> dict:
                          detail={"created": r.created, "updated": r.updated, "total": r.total, "demo_removed": r.demo_removed}, now=now)
             s.commit()
     except GatewayError as e:
-        raise ProblemError(502, "google_" + e.code, "구글(유튜브) 영상 목록을 불러오지 못했습니다", e.message) from None
+        raise ProblemError(502, "google_" + e.code, "구글(유튜브) 영상 목록을 불러오지 못했습니다", e.message,
+                           hint="잠시 뒤 다시 [내 영상 불러오기]를 누르세요. 계속 실패하면 구글 계정을 다시 연결하세요.") from None
     _progress(factory, job.id, r.total, r.total)
     return {"created": r.created, "updated": r.updated, "snapshots_created": 0, "total": r.total, "source": "youtube", "demo_removed": r.demo_removed}
 

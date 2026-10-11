@@ -83,7 +83,7 @@ def google_connect(info=Depends(require_csrf), ctx: GoogleCtx = Depends(get_goog
         client_id, _secret = oauth.load_client(ctx.client_file)
     except oauth.OAuthError as e:
         raise ProblemError(409, "google_client_" + e.code.removeprefix("client_"), "구글 연결 파일 문제", e.message,
-                           "web\\secrets\\google_client.json 을 확인한 뒤 start.ps1 을 다시 실행하세요.") from None
+                           hint="web\\secrets\\google_client.json 을 확인한 뒤 start.ps1 을 다시 실행하세요.") from None
     state, challenge = ctx.pending.start()
     audit.record(session, actor="owner", action="google.connect.start", detail={"scope": "readonly"}, now=clock())
     return {"auth_url": oauth.build_auth_url(client_id, ctx.redirect_uri, state, challenge)}
@@ -98,7 +98,7 @@ def google_connect_write(info=Depends(require_csrf), ctx: GoogleCtx = Depends(ge
         client_id, _secret = oauth.load_client(ctx.client_file)
     except oauth.OAuthError as e:
         raise ProblemError(409, "google_client_" + e.code.removeprefix("client_"), "구글 연결 파일 문제", e.message,
-                           "web\\secrets\\google_client.json 을 확인한 뒤 start.ps1 을 다시 실행하세요.") from None
+                           hint="web\\secrets\\google_client.json 을 확인한 뒤 start.ps1 을 다시 실행하세요.") from None
     state, challenge = ctx.pending.start()
     ctx.write_states.add(state)
     if len(ctx.write_states) > oauth.MAX_PENDING:

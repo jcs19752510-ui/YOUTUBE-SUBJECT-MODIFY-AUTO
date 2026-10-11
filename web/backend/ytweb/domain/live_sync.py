@@ -44,7 +44,7 @@ def purge_pristine_demo(session: Session) -> int:
     if used:
         raise ProblemError(409, "demo_data_in_use", "데모 기록이 있어 불러올 수 없습니다",
                            "데모 영상에 제안·배치·변경 기록이 있어 실제 영상과 섞이지 않게 막았습니다.",
-                           "PowerShell 에서 .\\web\\scripts\\reset-demo.ps1 로 데모 데이터를 초기화한 뒤 다시 불러오세요.")
+                           hint="PowerShell 에서 .\\web\\scripts\\reset-demo.ps1 로 데모 데이터를 초기화한 뒤 다시 불러오세요.")
     session.execute(delete(MetricsSnapshot).where(MetricsSnapshot.video_id.in_(demo_ids)))
     session.execute(delete(Video).where(Video.video_id.in_(demo_ids)))
     session.flush()
