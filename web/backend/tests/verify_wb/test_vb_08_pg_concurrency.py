@@ -112,11 +112,20 @@ def test_tc_vb_251_four_concurrent_ticks_never_exceed_daily_cap_3(pg, env, clock
         assert applied_today(s, clock()) == 3
         statuses = [i.status for i in s.get(Batch, bid).items]
     assert statuses.count("success") == 3 and statuses.count("running") == 0
-    assert statuses.count("pending") + statuses.count("skipped") == 7
-    # 관찰(DEF-VB-01): 경쟁에서 밀린 항목은 pending 으로 이월되지 않고 limit_daily 로 skipped(영구) 처리될 수 있다. 안전(상한)은 지켜짐.
-    with pg() as s:
-        reasons = {i.skip_reason[:13] for i in s.get(Batch, bid).items if i.status == "skipped"}
-    assert reasons <= {"[limit_daily]"}
+    # DEF-VB-01 수정 후: 경쟁에서 밀린 항목은 skipped 가 아니라 pending(다음 날 이월)으로 남는다
+    assert statuses.count("pending") == 7 and statuses.count("skipped") == 0
+
+
+def test_tc_vb_251b_skip_locked_lets_second_session_take_a_different_due_item(pg, env, clock):
+    """FOR UPDATE SKIP LOCKED: 첫 세션이 잡고 있는 항목을 기다리지 않고 다른 항목을 받는다(잠금 대기 2초 제한으로 대기를 오류로 드러냄)."""
+    from ytweb.domain.batches import _next_due_item
+    _make_queue(pg, env, clock, 3, cap=10)
+    today = clock().date()
+    with pg() as s1, pg() as s2:
+        first = _next_due_item(s1, today, None)
+        s2.execute(text("SET lock_timeout = '2s'"))
+        second = _next_due_item(s2, today, None)
+        assert first is not None and second is not None and first.id != second.id
 
 
 def test_tc_vb_252_concurrent_ticks_cap_5_two_batches(pg, env, clock):

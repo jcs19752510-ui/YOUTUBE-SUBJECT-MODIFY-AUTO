@@ -96,11 +96,13 @@ class GuardMiddleware:
 
         async def send_wrapped(message):
             if message["type"] == "http.response.start":
-                if message["status"] < 400:
-                    # 성공 응답이 나가기 전에 DB 변경을 확정한다(FastAPI 는 yield 의존성 종료를 응답 뒤에 실행 -> 다음 요청이 옛 상태를 읽는 경합).
-                    # 확정이 실패하면 예외가 올라가 아래 바깥 처리에서 500 이 된다(성공 응답 후 조용한 유실 방지). 4xx/5xx 는 기존대로 늦은 종료에서 rollback.
-                    for db_session in list(scope.get("ytweb_open_sessions", ())):
-                        await anyio.to_thread.run_sync(db_session.commit)
+                # 응답이 나가기 전에 DB 변경을 확정한다(FastAPI 는 yield 의존성 종료를 응답 뒤에 실행 -> 다음 요청이 옛 상태를 읽는 경합, DEF-VA-010).
+                # 예외로 끝난 요청은 의존성 종료에서 이미 rollback 되어 이 commit 은 아무것도 확정하지 않는다(상태 코드와 무관하게 안전).
+                # 확정이 실패하면 예외가 올라가 아래 바깥 처리에서 500 이 된다(성공 응답 후 조용한 유실 방지).
+                pending = list(scope.get("ytweb_open_sessions", ()))
+                scope["ytweb_open_sessions"] = []  # 실패 뒤 500 응답을 만들 때 같은 commit 을 되풀이하지 않게 비운다
+                for db_session in pending:
+                    await anyio.to_thread.run_sync(db_session.commit)
                 status_holder["status"] = message["status"]
                 headers = [(k, v) for k, v in message["headers"] if k.decode("latin-1").lower() not in extra]
                 headers += [(k.encode("latin-1"), v.encode("latin-1")) for k, v in extra.items()]

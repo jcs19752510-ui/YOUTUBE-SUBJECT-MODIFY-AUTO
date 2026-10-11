@@ -190,3 +190,14 @@ def test_error_response_after_write_is_rolled_back_but_success_is_committed(pcli
     assert pclient.post("/api/v1/_t/write-ok", headers=hdr(csrf), json={}).status_code == 200
     with engine.connect() as c:
         assert c.execute(text(q)).scalar_one() == 1
+
+
+def test_returned_4xx_response_commits_before_it_is_sent(pclient, engine):
+    """TC-VA-192 [S-W12] 예외 없이 '반환'된 4xx(예: 저장된 오류 응답 재생)의 쓰기도 응답이 나가기 전에 확정된다(상태 코드 때문에 경합이 남지 않는다)."""
+    from tests.verify_wa.helpers import login
+    csrf = login(pclient)
+    cookie = "; ".join(f"{c.name}={c.value}" for c in pclient.cookies.jar)
+    headers = H + [("x-csrf-token", csrf), ("cookie", cookie)]
+    seen = _call_with_probe(pclient.app, "POST", "/api/v1/_t/write-return-409", headers, b"{}",
+                            _count(engine, "select count(*) from settings_kv where key='probe_returned'"))
+    assert seen["status"] == 409 and seen["probe"] == 1

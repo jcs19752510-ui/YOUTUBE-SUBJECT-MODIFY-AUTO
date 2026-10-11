@@ -103,3 +103,11 @@ def write_ok(_=Depends(require_csrf), db: Session = Depends(get_session), clock=
     from ytweb.core.settings_store import set_web_setting
     set_web_setting(db, "probe_written", {"v": 2}, now=clock())
     return {"ok": True}
+
+
+@router.post("/write-return-409")
+def write_return_409(_=Depends(require_csrf), db: Session = Depends(get_session), clock=Depends(get_clock)):
+    """예외가 아니라 '반환'된 4xx 응답: 쓰기는 확정되며(기존 의미 유지) 그 확정도 응답이 나가기 전에 일어나야 한다."""
+    from ytweb.core.settings_store import set_web_setting
+    set_web_setting(db, "probe_returned", {"v": 3}, now=clock())
+    return JSONResponse({"code": "probe_returned_409"}, status_code=409)
