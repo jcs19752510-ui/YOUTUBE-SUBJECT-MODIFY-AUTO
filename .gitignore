@@ -53,3 +53,7 @@ credentials*.json
 *.p12
 web/e2e-results/
 web/frontend/.vitest/
+
+# 이름을 바꾼 구글 OAuth 클라이언트 비밀 파일(어느 폴더에 있어도 올라가지 않게, 2026-10-12)
+google_client*.json
+유튜브JSON-download/
