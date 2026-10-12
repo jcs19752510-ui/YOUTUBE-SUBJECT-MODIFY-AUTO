@@ -91,15 +91,23 @@ def test_tc_vm_304_remote_title_change_is_pulled_when_app_never_changed_it(db, e
     assert db.get(Video, vid(1)).title == "유튜브에서 바뀐 제목"
 
 
-def test_tc_vm_305_video_with_change_history_keeps_stored_title_and_snippet_but_views_refresh(db, env):
+def test_tc_vm_305_video_with_change_history_is_refreshed_unless_a_change_is_in_flight(db, env):
+    """2026-10-12 변경(선생님 PC 실측: Studio 에서 직접 바꾼 제목이 안 들어옴, DEC-051). 원래 기대값은 '바꾼 적 있는 영상은 저장된 제목·snippet 을 보존'이었다.
+    롤백 기준은 changes.backup_snippet 에 따로 있어 보존이 필요 없다. 반영이 진행 중(planned)인 영상만 보존한다."""
     sync_live(db, reader(raw(1, title="앱이 바꾼 후 제목", views="1")), NOW, env.policy)
     v = db.get(Video, vid(1))
     snap = copy.deepcopy(v.snippet)
-    db.add(Change(video_id=vid(1), change_type="apply", previous_title="x", new_title="앱이 바꾼 후 제목", result="success", mode="live", created_at=NOW))
+    ch = Change(video_id=vid(1), change_type="apply", previous_title="x", new_title="앱이 바꾼 후 제목", result="success", mode="live", created_at=NOW)
+    db.add(ch)
     db.flush()
     sync_live(db, reader(raw(1, title="다른 제목", views="999")), NOW, env.policy)
     v = db.get(Video, vid(1))
-    assert v.title == "앱이 바꾼 후 제목" and v.snippet == snap and v.views == 999
+    assert v.title == "다른 제목" and v.snippet["title"] == "다른 제목" and v.views == 999  # 성공한 변경 뒤 손으로 바꾼 제목도 들어온다
+    ch.result = "planned"
+    db.flush()
+    sync_live(db, reader(raw(1, title="또 다른 제목", views="1000")), NOW, env.policy)
+    v = db.get(Video, vid(1))
+    assert v.title == "다른 제목" and v.snippet != snap and v.views == 1000  # 진행 중에는 제목·snippet 을 건드리지 않는다(조회수만 갱신)
 
 
 def test_tc_vm_306_empty_channel_syncs_zero_and_is_not_an_error(db, env):

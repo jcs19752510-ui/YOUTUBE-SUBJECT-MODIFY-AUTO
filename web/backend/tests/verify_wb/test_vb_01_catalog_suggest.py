@@ -169,7 +169,8 @@ def test_tc_vb_012_count_invalid_rejected_422(seeded, db, env, clock, bad):
 
 def test_tc_vb_013_strict_mode_health_finance_warn_becomes_block_and_cannot_be_approved(seeded, db, env, clock):
     """인수2/POL-001: 건강·금융은 경고도 차단. 같은 경고(길이 권장 초과)가 생활 영상이면 승인 가능."""
-    long_title_suffix = " 처음이라도 쉽게 따라 하는 순서와 주의할 점 그리고 집에서 바로 해보는 방법까지 천천히"
+    # 2026-10-12: 권장 길이를 40→60자로 올려(사용자 요청) 접미사를 60자 초과가 되게 늘렸다. 시험 의도(길이 경고)는 그대로다.
+    long_title_suffix = " 처음이라도 쉽게 따라 하는 순서와 주의할 점 그리고 집에서 바로 해보는 방법까지 천천히 하나하나 자세하게 알려드립니다"
     health = next(v for v in db.execute(select(Video).order_by(Video.video_id)).scalars() if not v.exclusion_reasons and v.category_id == "27" and any(k in v.title for k in HEALTH_KW))
     life = db.get(Video, life_ids(db, 1)[0])
     for video, expect_strict in ((health, True), (life, False)):

@@ -213,3 +213,15 @@ def test_tc_wb_159_batch_status_running_only_while_an_item_is_running(seeded, en
     batch.items[1].status = "success"
     refresh_batch_status(batch, clock())
     assert batch.status == "done"
+
+
+def test_verify_snippet_ignores_cosmetic_youtube_normalisation_but_catches_real_changes():
+    before = {"title": "a", "description": "첫줄\r\n둘째줄  \n", "tags": ["가", "나 "], "categoryId": "26"}
+    after = {"title": "b", "description": "첫줄\n둘째줄", "tags": ["나", "가"], "categoryId": "26", "defaultAudioLanguage": "ko"}
+    ok = verify_snippet(before, after, "b")
+    assert ok["ok"] is True and ok["diff_fields"] == []                      # 줄바꿈 방식·끝 공백·태그 순서·언어 자동 채움은 합격
+    bad = verify_snippet(before, {**after, "description": "다른 내용", "categoryId": "27"}, "b")
+    assert bad["ok"] is False and bad["diff_fields"] == ["설명", "카테고리"]
+    lang = verify_snippet({**before, "defaultLanguage": "ko"}, {**after, "defaultLanguage": "en"}, "b")
+    assert lang["ok"] is False and lang["diff_fields"] == ["기본 언어"]      # 이미 있던 언어 값이 바뀌면 불합격
+    assert verify_snippet(before, {**after, "title": "c"}, "b")["diff_fields"] == ["제목"]

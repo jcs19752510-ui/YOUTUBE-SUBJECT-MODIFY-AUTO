@@ -29,6 +29,7 @@ def main(argv: list[str]) -> int:
             print(f"재조회 확인 여부: {v.get('checked')}  제목 일치: {v.get('title_ok')}")
             print("보존 항목 일치:", {k: ("같음" if ok else "다름") for k, ok in (v.get("preserved") or {}).items()})
             print("그 밖에 달라진 항목:", v.get("other_changed"))
+            print("달라진 항목 상세(길이·처음 달라진 위치·글자 코드):", v.get("diff_detail"))
             if v.get("reason"):
                 print("사유:", v["reason"])
             bs = c.backup_snippet or {}

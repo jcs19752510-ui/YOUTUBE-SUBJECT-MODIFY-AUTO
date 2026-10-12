@@ -95,7 +95,8 @@ def test_tc_vb_278_no_live_youtube_or_external_ai_code_in_m1():
     """M1 데모 한정(DEC-038): 도메인·AI·유튜브 모듈에 네트워크/외부 SDK 호출 코드가 없다(정적 점검: 임포트와 호출 이름)."""
     banned_imports = {"requests", "httpx", "urllib", "urllib3", "socket", "googleapiclient", "google", "openai", "anthropic", "aiohttp", "http", "smtplib", "ftplib"}
     # M2·M3(DEC-048, 사용자 승인)에서 구글 통신 전용 모듈 3개만 표준 라이브러리 네트워크 임포트를 허용한다. 그 외 모듈은 계속 금지.
-    network_allowed = {"google_oauth.py", "live_read.py", "live_write.py"}
+    # 2026-10-12(사용자 요청, DEC-051): Gemini 제안 어댑터(gemini.py) 1개만 추가로 허용한다. 키는 헤더로만 보내고 로그에 남기지 않는다(test_gemini_suggester.py).
+    network_allowed = {"google_oauth.py", "live_read.py", "live_write.py", "gemini.py"}
     for sub in ("domain", "ai", "youtube"):
         for path in (ROOT / sub).glob("*.py"):
             if path.name in network_allowed:

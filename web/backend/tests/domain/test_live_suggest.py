@@ -85,3 +85,36 @@ def test_live_video_uses_gemini_when_key_present_and_gemini_failure_is_reported(
     with __import__("pytest").raises(ProblemError) as e:
         _gen(seeded, env, clock, vid, 1)
     assert e.value.status == 502 and e.value.code == "ai_unavailable"
+
+
+def test_gemini_branch_tells_model_existing_titles_and_filters_duplicates(seeded, env, clock):
+    """변이 g(Gemini 분기 제거)를 잡는 시험: 이미 만든 제목은 모델에 알려 주고, 모델이 같은 제목을 또 내도 걸러낸다."""
+    from ytweb.ai.base import SuggestionDraft
+
+    vid = _live_video(seeded, eligible_video_ids(seeded, 1)[0])
+    seen = {}
+
+    class FakeGemini:
+        name, model = "gemini", "fake"
+
+        def __init__(self, avoid=()):
+            self.avoid = tuple(avoid)
+
+        def with_avoid(self, titles):
+            seen["avoid"] = set(titles)
+            return FakeGemini(titles)
+
+        def suggest(self, brief, *, count, tone):
+            return [SuggestionDraft("[시니어 필수] 해외여행 통역 앱 설치 및 실행 방법과 언어 선택하는 방법", "통역 앱 설치 및 실행 방법", "life"),
+                    SuggestionDraft("[시니어 필수] 해외여행 통역, 말로 바로 번역하는 방법과 상대방 음성 번역 듣는 방법", "말로 바로 번역하는 방법", "life")]
+
+    first = generate_for_video(seeded, vid, count=2, tone="t", now=clock(), env=env, suggester=FakeGemini())
+    assert len(first) == 2 and seen["avoid"] == set()
+    from ytweb.core.errors import ProblemError
+
+    with __import__("pytest").raises(ProblemError) as e:  # 모델이 같은 제목만 또 내면 새 후보가 없다고 알린다(중복 저장 안 함)
+        generate_for_video(seeded, vid, count=2, tone="t", now=clock(), env=env, suggester=FakeGemini())
+    assert e.value.code == "ai_no_candidates"
+    assert seen["avoid"] == {s.title for s in first}
+    titles = [t for (t,) in seeded.execute(select(Suggestion.title).where(Suggestion.video_id == vid))]
+    assert len(titles) == len(set(titles)) == 2

@@ -498,7 +498,7 @@ def test_tc_vb_111_precheck_warns_when_today_exceeds_remaining_quota(seeded, db,
 
 def test_tc_vb_112_warn_result_included_gets_warning(seeded, db, env, clock):
     vid = life_ids(db, 1)[0]
-    s = make_sug(db, env, clock(), vid, "냉장고 정리 처음이라도 쉽게 따라 하는 순서와 주의할 점 그리고 집에서 바로 해보는 방법까지 천천히")
+    s = make_sug(db, env, clock(), vid, "냉장고 정리 처음이라도 쉽게 따라 하는 순서와 주의할 점 그리고 집에서 바로 해보는 방법까지 천천히 하나하나 자세하게 알려드립니다")  # 권장 길이 60자 초과(2026-10-12 기준 변경)
     assert s.validation_result == "warn"
     approve(db, s.id, "검수자", now=clock(), env=env)
     b, pre = create_draft(db, [s.id], None, now=clock(), env=env)

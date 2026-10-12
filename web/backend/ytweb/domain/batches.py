@@ -327,14 +327,50 @@ class _State:
     keep_planned: bool = False
 
 
+_FIELD_LABEL = {"description": "설명", "tags": "태그", "categoryId": "카테고리", "defaultLanguage": "기본 언어", "defaultAudioLanguage": "오디오 언어"}
+
+
+def _canon(field: str, value: object) -> object:
+    """유튜브가 저장하면서 바꾸는 겉모습(줄바꿈 방식·끝 공백·태그 순서)과 '비어 있음'(없음·빈 문자열·빈 목록)을 같게 본다. 내용이 다르면 다르게 본다."""
+    if field == "description":
+        text = value if isinstance(value, str) else ""
+        return "\n".join(line.rstrip() for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")).strip()
+    if field == "tags":
+        return sorted(t.strip() for t in value if isinstance(t, str) and t.strip()) if isinstance(value, list) else []
+    return value
+
+
+def _same_field(field: str, before: dict, after: dict) -> bool:
+    b, a = before.get(field, _MISSING), after.get(field, _MISSING)
+    if field in ("defaultLanguage", "defaultAudioLanguage") and b is _MISSING and a is not _MISSING:
+        return True  # 반영 뒤 유튜브가 비어 있던 언어 값을 자동으로 채운 것은 내용이 바뀐 것이 아니다(이미 있던 값이 바뀌면 다르게 본다)
+    if field in ("description", "tags"):
+        return _canon(field, None if b is _MISSING else b) == _canon(field, None if a is _MISSING else a)
+    return b == a
+
+
 def verify_snippet(before: dict, after: dict | None, expected_title: str) -> dict:
-    """제목 반영과 설명·태그·카테고리·언어 보존을 비교한다(live_guard.compare_after 와 같은 규칙, SEC-010)."""
+    """제목 반영과 설명·태그·카테고리·언어 보존을 비교한다(live_guard.compare_after 와 같은 규칙, SEC-010). 달라진 항목 이름은 diff_fields 에 남긴다."""
     if after is None:
         return {"ok": False, "checked": False, "reason": "재조회에 실패해 제목 반영과 보존을 확인하지 못함"}
-    preserved = {k: before.get(k, _MISSING) == after.get(k, _MISSING) for k in VERIFY_PRESERVED_FIELDS}
+    preserved = {k: _same_field(k, before, after) for k in VERIFY_PRESERVED_FIELDS}
     other = sorted(k for k in (set(before) | set(after)) if k not in VERIFY_PRESERVED_FIELDS and k not in ("title", "localized") and before.get(k, _MISSING) != after.get(k, _MISSING))
     title_ok = after.get("title") == expected_title
-    return {"ok": bool(title_ok and all(preserved.values())), "checked": True, "title_ok": title_ok, "preserved": preserved, "other_changed": other}
+    diff = ([] if title_ok else ["제목"]) + [_FIELD_LABEL[k] for k, same in preserved.items() if not same]
+    return {"ok": bool(title_ok and all(preserved.values())), "checked": True, "title_ok": title_ok, "preserved": preserved, "other_changed": other, "diff_fields": diff,
+            "diff_detail": {k: _diff_detail(before.get(k), after.get(k)) for k, same in preserved.items() if not same}}
+
+
+def _diff_detail(b: object, a: object) -> dict:
+    """달라진 항목의 진단 정보(내용 자체는 남기지 않고 길이와 처음 달라진 위치·글자 코드만)."""
+    bs, as_ = ("" if b is None else str(b)), ("" if a is None else str(a))
+    at = next((i for i, (x, y) in enumerate(zip(bs, as_)) if x != y), min(len(bs), len(as_)))
+    return {"before_len": len(bs), "after_len": len(as_), "first_diff_at": at, "before_char": ord(bs[at]) if at < len(bs) else None, "after_char": ord(as_[at]) if at < len(as_) else None}
+
+
+def verify_failure_text(verify: dict) -> str:
+    names = ", ".join(verify.get("diff_fields") or [])
+    return "[verify_failed] 반영 후 재조회 검증에서 " + (f"달라진 항목: {names}." if names else "제목 또는 보존 항목이 맞지 않습니다.") + " 이력에서 롤백을 검토하세요."
 
 
 def _check_body(body: dict, video_id: str, fresh: dict, new_title: str) -> None:
@@ -490,7 +526,7 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         change.error_code = "verify_failed"  # 반영은 일어났으므로 success 로 남기고(한도에 산입·롤백 가능), 항목은 failed 로 알린다
     sug.status, sug.updated_at = "applied", now
     item.status, item.updated_at = ("success" if verify["ok"] else "failed"), now
-    item.skip_reason = None if verify["ok"] else "[verify_failed] 반영 후 재조회 검증에서 제목 또는 보존 항목이 맞지 않습니다. 이력에서 롤백을 검토하세요."
+    item.skip_reason = None if verify["ok"] else verify_failure_text(verify)
     refresh_after_item(session, batch, now)
     audit.record(session, actor=actor, action="change.apply", target_type="change", target_id=str(change.id), detail={"batch_id": batch.id, "video_id": video.video_id, "suggestion_id": sug.id, "verify_ok": verify["ok"]}, now=now)
     session.commit()

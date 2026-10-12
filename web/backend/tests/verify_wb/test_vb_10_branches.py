@@ -45,7 +45,10 @@ def test_tc_vb_282_verify_snippet_pure_function_rules():
     other = verify_snippet(before, {**before, "title": "b", "thumbnails": {"a": 2}}, "b")
     assert other["ok"] is True and other["other_changed"] == ["thumbnails"]          # 알림용 정보(합격 여부에는 영향 없음)
     empty_vs_missing = verify_snippet({**before, "tags": []}, {k: v for k, v in {**before, "title": "b"}.items() if k != "tags"}, "b")
-    assert empty_vs_missing["ok"] is False                                           # 빈 값과 '없음'은 다르게 본다
+    # 2026-10-12 변경: 실제 유튜브는 비어 있는 태그·설명을 응답에서 생략할 수 있어 '없음'과 '비어 있음'을 같게 본다(내용이 있다가 사라지면 여전히 다르게 봄).
+    assert empty_vs_missing["ok"] is True
+    gone = verify_snippet(before, {k: v for k, v in {**before, "title": "b"}.items() if k != "tags"}, "b")
+    assert gone["ok"] is False and gone["diff_fields"] == ["태그"]
 
 
 def test_tc_vb_283_indeterminate_then_reread_fails_is_result_unknown(seeded, db, env, clock):
