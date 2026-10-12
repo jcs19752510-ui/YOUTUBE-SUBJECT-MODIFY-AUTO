@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from youtube_title.textsafe import char_count
 
+from ytweb.domain.batches import describe_verify
 from ytweb.db.models import Batch, BatchItem, Change, Job, Suggestion, Video
 
 
@@ -52,6 +53,15 @@ def job_dict(j: Job) -> dict:
     return {"id": j.id, "type": j.type, "status": j.status, "progress": j.progress, "total": j.total, "error": j.error, "result": j.result}
 
 
+def _failure_reason(it: BatchItem, change: Change | None) -> str | None:
+    """반영 후 검증 실패는 저장된 검증 결과로 달라진 항목(길이 포함)을 풀어서 보여 준다. 옛 기록(항목 이름이 없던 때)도 같은 방식으로 풀린다."""
+    if it.status == "failed" and (it.skip_reason or "").startswith("[verify_failed]") and change is not None and change.verify_result:
+        names = describe_verify(change.verify_result, detail=True)
+        if names:
+            return f"[verify_failed] 반영은 됐지만 반영 전후 비교에서 달라진 항목: {names}. 이력에서 롤백을 검토하세요."
+    return it.skip_reason
+
+
 def _item_dicts(session: Session, items: list[BatchItem]) -> list[dict]:
     if not items:
         return []
@@ -71,7 +81,7 @@ def _item_dicts(session: Session, items: list[BatchItem]) -> list[dict]:
             "seq": it.seq,
             "scheduled_date": it.scheduled_date,
             "status": it.status,
-            "skip_reason": it.skip_reason,
+            "skip_reason": _failure_reason(it, change),
             "change_id": it.change_id,
         })
     return out

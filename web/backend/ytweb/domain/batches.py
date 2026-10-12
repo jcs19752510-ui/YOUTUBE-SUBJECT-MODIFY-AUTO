@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import copy
+import unicodedata
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -355,7 +356,7 @@ def verify_snippet(before: dict, after: dict | None, expected_title: str) -> dic
         return {"ok": False, "checked": False, "reason": "재조회에 실패해 제목 반영과 보존을 확인하지 못함"}
     preserved = {k: _same_field(k, before, after) for k in VERIFY_PRESERVED_FIELDS}
     other = sorted(k for k in (set(before) | set(after)) if k not in VERIFY_PRESERVED_FIELDS and k not in ("title", "localized") and before.get(k, _MISSING) != after.get(k, _MISSING))
-    title_ok = after.get("title") == expected_title
+    title_ok = _canon_title(after.get("title")) == _canon_title(expected_title)  # 유튜브가 저장하며 연속 공백을 정리하거나 유니코드 조합을 바꿔도 같은 제목으로 본다
     diff = ([] if title_ok else ["제목"]) + [_FIELD_LABEL[k] for k, same in preserved.items() if not same]
     return {"ok": bool(title_ok and all(preserved.values())), "checked": True, "title_ok": title_ok, "preserved": preserved, "other_changed": other, "diff_fields": diff,
             "diff_detail": {k: _diff_detail(before.get(k), after.get(k)) for k, same in preserved.items() if not same}}
@@ -368,8 +369,28 @@ def _diff_detail(b: object, a: object) -> dict:
     return {"before_len": len(bs), "after_len": len(as_), "first_diff_at": at, "before_char": ord(bs[at]) if at < len(bs) else None, "after_char": ord(as_[at]) if at < len(as_) else None}
 
 
+def _canon_title(title: object) -> str:
+    return " ".join(unicodedata.normalize("NFC", title).split()) if isinstance(title, str) else ""
+
+
+def describe_verify(verify: dict, *, detail: bool = False) -> str:
+    """검증 결과(옛 형식 포함)에서 달라진 항목을 쉬운 말로. detail=True 면 길이·처음 달라진 위치도 붙인다."""
+    names = list(verify.get("diff_fields") or [])
+    if not names:
+        if verify.get("title_ok") is False:
+            names.append("제목")
+        names += [_FIELD_LABEL[k] for k, ok in (verify.get("preserved") or {}).items() if ok is False and k in _FIELD_LABEL]
+    info = verify.get("diff_detail") or {}
+    parts = []
+    for n in names:
+        key = next((k for k, label in _FIELD_LABEL.items() if label == n), None)
+        d = info.get(key) if (detail and key) else None
+        parts.append(f"{n}(길이 {d['before_len']}→{d['after_len']}, 처음 다른 위치 {d['first_diff_at']})" if d else n)
+    return ", ".join(parts)
+
+
 def verify_failure_text(verify: dict) -> str:
-    names = ", ".join(verify.get("diff_fields") or [])
+    names = describe_verify(verify)
     return "[verify_failed] 반영 후 재조회 검증에서 " + (f"달라진 항목: {names}." if names else "제목 또는 보존 항목이 맞지 않습니다.") + " 이력에서 롤백을 검토하세요."
 
 
