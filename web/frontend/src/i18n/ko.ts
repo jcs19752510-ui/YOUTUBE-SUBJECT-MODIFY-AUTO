@@ -387,6 +387,8 @@ export const ko = {
     strictHint: '건강·금융 등 민감 주제는 경고도 차단으로 처리합니다.',
     length: (n: number) => `${n}자`,
     match: (r: number) => `영상 내용 일치율 ${Math.round(r * 100)}%`,
+    score: (n: number) => `점수 ${n}`,
+    scoreHint: '클릭률 예측이 아닙니다. 영상 내용 일치율·길이·핵심어 위치·주의 사유를 합친 점검 점수이며 후보를 비교할 때만 쓰세요.',
     evidence: '근거',
     reasons: '검증 사유',
     noReasons: '지적된 사유가 없습니다.',

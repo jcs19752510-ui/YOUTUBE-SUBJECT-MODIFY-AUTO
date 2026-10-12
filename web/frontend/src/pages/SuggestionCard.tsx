@@ -17,6 +17,7 @@ import { useApproverName } from '../hooks/approver';
 import { ko } from '../i18n/ko';
 import { charCount, fmtDateTime } from '../lib/format';
 import { suggestionStatusLabel } from '../lib/labels';
+import { scoreTone, suggestionScore } from '../lib/score';
 
 const MAX_TITLE = 100;
 type Dialog = null | 'edit' | 'approve' | 'reject';
@@ -109,6 +110,9 @@ export function SuggestionCard({
         </h3>
       </div>
       <div className="suggestion__head">
+        <span title={ko.suggestion.scoreHint}>
+          <Badge tone={scoreTone(suggestionScore(s))}>{ko.suggestion.score(suggestionScore(s))}</Badge>
+        </span>
         <ValidationBadge result={blocked ? 'block' : s.validation_result} />
         <Badge
           tone={s.status === 'approved' ? 'info' : s.status === 'rejected' ? 'danger' : 'neutral'}

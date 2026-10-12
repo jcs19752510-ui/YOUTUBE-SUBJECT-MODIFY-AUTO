@@ -27,6 +27,7 @@ import {
   workflowTone,
 } from '../lib/labels';
 import { SuggestionCard } from './SuggestionCard';
+import { suggestionScore } from '../lib/score';
 
 function Detail({ v }: { v: VideoDetail }) {
   const api = useApi();
@@ -121,7 +122,9 @@ function Detail({ v }: { v: VideoDetail }) {
             {ko.detail.suggestionsEmptyHint}
           </EmptyState>
         ) : (
-          v.suggestions.map((s) => (
+          [...v.suggestions]
+            .sort((a, b) => suggestionScore(b) - suggestionScore(a) || b.id - a.id)
+            .map((s) => (
             <SuggestionCard key={s.id} s={s} currentTitle={v.title} disabled={v.excluded} />
           ))
         )}
