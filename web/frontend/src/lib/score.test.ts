@@ -9,7 +9,7 @@ describe('suggestionScore', () => {
     expect(suggestionScore({ ...base, validation_result: 'block', match_ratio: 0.22 })).toBeLessThanOrEqual(30));
   it('일치율이 낮을수록 점수가 낮다', () =>
     expect(suggestionScore({ ...base, match_ratio: 0.3 })).toBeLessThan(suggestionScore(base)));
-  it('권장 길이(40자)를 넘으면 감점', () => expect(suggestionScore({ ...base, length: 71 })).toBeLessThan(suggestionScore(base)));
+  it('권장 길이(60자)를 넘으면 감점', () => expect(suggestionScore({ ...base, length: 71 })).toBeLessThan(suggestionScore(base)));
   it('주의 사유가 있으면 감점', () =>
     expect(suggestionScore({ ...base, reasons: [{ code: 'EXCLAMATION', severity: 'warn', message: 'x' }] })).toBeLessThan(suggestionScore(base)));
   it('0~100 범위', () => {

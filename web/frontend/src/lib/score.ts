@@ -13,7 +13,7 @@ export function suggestionScore(s: ScoreInput): number {
   const ratio = s.match_ratio ?? 0.5;
   const match = 40 * Math.min(1, Math.max(0, ratio) / 0.75);
   const n = s.length;
-  const len = n > 40 ? Math.max(0, 20 - (n - 40)) : n >= 15 ? 20 : (20 * Math.max(0, n)) / 15;
+  const len = n > 60 ? Math.max(0, 20 - (n - 60)) : n >= 15 ? 20 : (20 * Math.max(0, n)) / 15;
   const keyLate = s.reasons.some((r) => r.code === 'KEY_LATE') ? 0 : 15;
   const otherWarns = s.reasons.filter((r) => r.severity === 'warn' && !SCORED_CODES.has(r.code)).length;
   const other = Math.max(0, 25 - 10 * otherWarns);

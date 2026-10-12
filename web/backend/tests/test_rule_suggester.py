@@ -27,7 +27,7 @@ def test_every_candidate_passes_validator():
     drafts = RuleSuggester().suggest(VideoBrief("o06Yj-yJCIY", TITLE, REF), count=5, tone="x")
     assert len(drafts) == 5
     for d in drafts:
-        assert len(d.title) <= 40 and d.title != TITLE
+        assert 45 <= len(d.title) <= 60 and d.title != TITLE  # 선생님 요청: 예시 제목(49자) 정도의 길이
         assert _check(d.title, d.evidence, d.topic) == "pass", d.title
 
 
@@ -37,4 +37,15 @@ def test_no_candidates_when_description_has_no_chapters():
 
 def test_intro_chapter_not_used_as_title():
     drafts = RuleSuggester().suggest(VideoBrief("o06Yj-yJCIY", TITLE, REF), count=5, tone="x")
-    assert all(not d.title.endswith("소개") for d in drafts)
+    assert all("순간 소개" not in d.title for d in drafts)  # 도입부 챕터 이름이 어디에도 들어가지 않는다
+
+
+def test_many_distinct_candidates_for_repeated_requests():
+    drafts = RuleSuggester().suggest(VideoBrief("o06Yj-yJCIY", TITLE, REF), count=30, tone="x")
+    assert len({d.title for d in drafts}) == len(drafts) >= 10
+    assert all(45 <= len(d.title) <= 60 and "순간 소개" not in d.title for d in drafts)
+
+
+def test_too_short_titles_are_not_offered():
+    short_ref = "01:00 앱 설치 방법 (공식 앱 사용)"  # 만들 수 있는 제목이 30자에 못 미치면 내놓지 않는다
+    assert RuleSuggester().suggest(VideoBrief("x", TITLE, short_ref), count=3, tone="x") == []

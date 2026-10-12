@@ -163,7 +163,11 @@ def generate_for_video(session: Session, video_id: str, *, count: int, tone: str
     )
     session.add(run)
     try:
-        raw = suggester.suggest(brief, count=count, tone=tone)
+        existing_titles = set(session.execute(select(Suggestion.title).where(Suggestion.video_id == video_id)).scalars())
+        if suggester.name == "rule":  # 규칙 기반은 같은 입력이면 같은 후보라, 이미 만든 제목은 빼고 다음 후보를 낸다
+            raw = [d for d in suggester.suggest(brief, count=count + len(existing_titles), tone=tone) if d.title not in existing_titles][:count]
+        else:
+            raw = suggester.suggest(brief, count=count, tone=tone)
     except Exception as exc:  # noqa: BLE001 - 외부 어댑터 경계: 어떤 오류든 실행 기록을 남기고 사용자에게 한국어로 알린다
         run.status, run.error = "failed", type(exc).__name__ if not isinstance(exc, TitleSuggestionError) else str(exc)[:300]
         audit.record(session, actor=actor, action="suggestion.generate_failed", target_type="video", target_id=video_id, detail={"error": type(exc).__name__}, now=now)
