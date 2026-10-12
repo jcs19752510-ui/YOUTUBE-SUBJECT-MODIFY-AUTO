@@ -55,7 +55,9 @@ def sync_live(session: Session, reader: YouTubeReader, now: datetime, policy: Se
     removed = purge_pristine_demo(session)
     rows = reader.fetch_all()
     existing = {v.video_id: v for v in session.execute(select(Video).where(Video.video_id.in_([r["video_id"] for r in rows]))).scalars()}
-    touched = set(session.execute(select(Change.video_id).where(Change.video_id.in_(list(existing) or [""])).distinct()).scalars())
+    # 반영이 진행 중(planned)인 영상만 건드리지 않는다. 그 외에는 유튜브의 현재 값이 정답이므로(선생님이 Studio 에서 직접 바꾼 제목 포함) 모두 갱신한다.
+    # 롤백 기준은 changes.backup_snippet 에 따로 저장돼 있어 videos 행을 보존할 필요가 없다(DEC-051).
+    touched = set(session.execute(select(Change.video_id).where(Change.video_id.in_(list(existing) or [""]), Change.result == "planned").distinct()).scalars())
     created = updated = 0
     for r in rows:
         v = existing.get(r["video_id"])
@@ -65,7 +67,7 @@ def sync_live(session: Session, reader: YouTubeReader, now: datetime, policy: Se
             created += 1
         else:
             v.fetched_at, v.views = now, r["views"]
-            if v.video_id not in touched:  # 이 프로그램이 바꾼 적이 있는 영상은 보존된 값(롤백 기준)을 건드리지 않는다
+            if v.video_id not in touched:  # 반영 진행 중인 영상은 건드리지 않는다
                 for k, val in r.items():
                     setattr(v, k, val)
             updated += 1

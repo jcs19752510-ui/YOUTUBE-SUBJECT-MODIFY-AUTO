@@ -208,3 +208,18 @@ def test_tc_m2_053_job_handler_uses_live_when_connected_and_demo_otherwise(facto
     monkeypatch.setattr(handlers, "google_access_from_env", lambda d: Acc(False))
     out2 = handlers.handle_videos_sync(factory, J())
     assert out2.get("source") != "youtube"  # 데모 시드 경로
+
+
+def test_tc_live_sync_refreshes_a_video_changed_by_the_program_and_by_hand_but_not_one_in_flight(db, env):
+    """선생님이 Studio 에서 직접 바꾼 제목이 [내 영상 불러오기]로 들어와야 한다(2026-10-12 PC 실측). 반영 진행 중(planned)인 영상만 예외."""
+    from ytweb.db.models import Change
+
+    sync_live(db, reader(FakeYT(items=[item(1), item(2)], pages=[[vid(1), vid(2)]])), NOW, env.policy)
+    for n, result in ((1, "success"), (2, "planned")):
+        db.add(Change(video_id=vid(n), change_type="apply", previous_title="옛", new_title="새", result=result, mode="demo", created_at=NOW))
+    db.commit()
+    sync_live(db, reader(FakeYT(items=[item(1, title="손으로 바꾼 제목 1"), item(2, title="손으로 바꾼 제목 2")], pages=[[vid(1), vid(2)]])), NOW, env.policy)
+    db.commit()
+    v1, v2 = db.get(Video, vid(1)), db.get(Video, vid(2))
+    assert v1.title == "손으로 바꾼 제목 1" and v1.snippet["title"] == "손으로 바꾼 제목 1"  # 제목과 snippet 이 함께 갱신(승인 때 일관성 검사 통과)
+    assert v2.title == "내 영상 2"  # 진행 중인 영상은 그대로
