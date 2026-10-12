@@ -16,6 +16,7 @@ from youtube_title.updater import canonical_json, compute_plan_hash
 from youtube_title.validator import CandidateResult, FileResult, validate_file
 
 from ytweb.ai.base import SuggestionDraft, TitleSuggester, TitleSuggestionError, VideoBrief
+from ytweb.ai.rule import RuleSuggester
 from ytweb.ai.guard import MAX_TITLE_CHARS, build_summary, clean_text, sanitize_drafts
 from ytweb.core import audit
 from ytweb.core.errors import ProblemError
@@ -153,6 +154,8 @@ def generate_for_video(session: Session, video_id: str, *, count: int, tone: str
     if reasons:
         raise ProblemError(409, "video_excluded", "제외 대상 영상이라 제안을 만들지 않습니다.", detail=", ".join(reasons), hint="공개 상태의 일반(롱폼) 영상에서 시도하세요.")
     brief = VideoBrief(video.video_id, clean_text(video.title, 300), build_summary(video.description_excerpt))
+    if suggester.name == "mock" and video.source != "demo":  # 실제 영상에는 시연용 차단 후보를 섞는 모의 제안기를 쓰지 않는다
+        suggester = RuleSuggester()
     prompt_hash = hashlib.sha256(canonical_json({"v": brief.video_id, "t": brief.title, "s": brief.summary, "n": count, "tone": tone}).encode("utf-8")).hexdigest()
     run = AiRun(
         video_id=video_id, provider=suggester.name, model=suggester.model, params={"count": count, "tone": tone}, prompt_hash=prompt_hash,
