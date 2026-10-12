@@ -46,6 +46,7 @@ log = logging.getLogger("ytweb.batches")
 WORKER = "worker"
 STALE_RUNNING = timedelta(minutes=10)
 _APPLY_LOCK_KEY = 7_340_003  # 한도 검사~planned 기록~커밋을 워커 사이에 한 줄로 세우는 PostgreSQL 트랜잭션 락
+LIVE_OFF_MESSAGE = "실제 유튜브 영상인데 실제 수정이 꺼져 있어 반영하지 않았습니다. 켜려면 web\\scripts\\live-on.bat 을 실행하고 홈에서 [제목 수정 권한 연결]을 확인하세요."
 VERIFY_PRESERVED_FIELDS = ("description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")  # live_guard.VERIFY_PRESERVED_FIELDS 와 같다
 _MISSING = object()
 GatewayFactory = Callable[[Session, datetime], YouTubeGateway]
@@ -76,6 +77,8 @@ def _eligibility(session: Session, sug: Suggestion | None, video: Video | None, 
         return "video_excluded", "제외 대상 영상입니다: " + ", ".join(reasons)
     if is_blocking(sug):
         return "suggestion_blocked", "검증에서 차단된 제안입니다."
+    if video.source != "demo" and not live_gateway.live_mode(env.secrets_dir):  # DEF-LIVE-005: 실제 영상은 실제 수정이 꺼져 있으면 모의로 "성공" 처리하지 않고 막는다
+        return "live_off", LIVE_OFF_MESSAGE
     not_allowed = live_gateway.not_allowed_reason(video.video_id, env.secrets_dir)  # 실제 모드: 허용 영상만(쿼터·기록 전에 먼저 막는다)
     if not_allowed:
         return "live_not_allowed", not_allowed
@@ -447,6 +450,8 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         raise StepFailure("suggestion_missing", "제안 또는 영상 정보를 찾을 수 없습니다.")
     if bool((batch.precheck or {}).get("executed_live", False)) != live_gateway.is_live(gateway):  # 확정 때와 모드가 달라졌으면 확인 문구 없이 실제로 쓰거나 모의로 처리하는 일을 막는다
         raise StepFailure("live_mode_changed", "실행을 확정한 때와 실제 수정 모드 설정이 달라 반영하지 않았습니다. 이 배치를 취소하고 새로 만들어 확정하세요.")
+    if video.source != "demo" and not live_gateway.is_live(gateway):  # 이미 대기열에 들어간 항목도 마찬가지(깊은 방어)
+        raise StepFailure("live_off", LIVE_OFF_MESSAGE)
     ref_time = batch.executed_at or now
     # 1) 승인 유효·해시 일치
     try:
