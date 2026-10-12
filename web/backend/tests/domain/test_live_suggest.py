@@ -49,3 +49,39 @@ def test_demo_video_still_uses_mock_with_deliberate_bad_candidates(seeded, env, 
     vid = eligible_video_ids(seeded, 1)[0]
     sugs = _gen(seeded, env, clock, vid, 5)
     assert all(s.source == "ai:mock" for s in sugs) and any(s.validation_result == "block" for s in sugs)
+
+
+def test_live_video_uses_gemini_when_key_present_and_gemini_failure_is_reported(seeded, env, clock, monkeypatch, tmp_path):
+    import json
+    import urllib.error
+
+    from ytweb.ai import gemini as G
+    from ytweb.core.errors import ProblemError
+
+    key = tmp_path / "k"
+    key.write_text("FAKEKEY", encoding="utf-8")
+    monkeypatch.setenv("YTWEB_GEMINI_KEY_FILE", str(key))
+    vid = _live_video(seeded, eligible_video_ids(seeded, 1)[0])
+
+    class R:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self, *a):
+            items = [{"title": "[시니어 필수] 해외여행 통역 앱 설치 및 실행 방법과 언어 선택하는 방법", "evidence": "통역 앱 설치 및 실행 방법", "topic": "life"}]
+            return json.dumps({"candidates": [{"content": {"parts": [{"text": json.dumps({"candidates": items}, ensure_ascii=False)}]}}]}).encode()
+
+    monkeypatch.setattr(G.urllib.request, "urlopen", lambda req, timeout=None: R())
+    sugs = _gen(seeded, env, clock, vid, 1)
+    assert len(sugs) == 1 and sugs[0].source == "ai:gemini" and sugs[0].validation_result == "pass"
+
+    def down(req, timeout=None):
+        raise urllib.error.URLError("x")
+
+    monkeypatch.setattr(G.urllib.request, "urlopen", down)
+    with __import__("pytest").raises(ProblemError) as e:
+        _gen(seeded, env, clock, vid, 1)
+    assert e.value.status == 502 and e.value.code == "ai_unavailable"

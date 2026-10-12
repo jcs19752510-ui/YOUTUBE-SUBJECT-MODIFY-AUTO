@@ -13,6 +13,8 @@ $YtwebWebDir      = Split-Path -Parent $PSScriptRoot
 $YtwebComposeFile = Join-Path $YtwebWebDir 'compose.yaml'
 $YtwebOnlineFile = Join-Path $YtwebWebDir 'compose.online.yaml'
 $YtwebGoogleClient = Join-Path $YtwebWebDir 'secrets\google_client.json'
+$YtwebGeminiFile = Join-Path $YtwebWebDir 'compose.gemini.yaml'
+$YtwebGeminiKey = Join-Path $YtwebWebDir 'secrets\gemini_api_key'
 $YtwebSecretsDir  = Join-Path $YtwebWebDir 'secrets'
 $YtwebBackupDir   = Join-Path $YtwebWebDir 'backups'
 $YtwebPort        = 8080
@@ -69,6 +71,8 @@ function Invoke-Compose {
     # 구글 연결 파일(web\secrets\google_client.json)이 있으면 구글 통신 경로(덧씌우기 파일)를 함께 쓴다(M2). 없으면 데모 모드 그대로.
     $files = @('-f', $YtwebComposeFile)
     if (Test-Path $YtwebGoogleClient) { $files += @('-f', $YtwebOnlineFile) }
+    # Gemini 키 파일(web\secrets\gemini_api_key, 내용이 있을 때만)이 있으면 AI 통신 경로도 함께 쓴다.
+    if ((Test-Path $YtwebGeminiKey) -and ((Get-Item $YtwebGeminiKey).Length -gt 0)) { $files += @('-f', $YtwebGeminiFile) }
     $all = @('compose', '-p', $YtwebProject) + $files + $ArgList
     return Invoke-Native -FilePath 'docker' -ArgList $all -Capture:$Capture -StdoutOnly:$StdoutOnly -Quiet:$Quiet
 }

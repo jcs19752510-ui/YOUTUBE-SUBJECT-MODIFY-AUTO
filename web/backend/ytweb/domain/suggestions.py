@@ -16,7 +16,7 @@ from youtube_title.updater import canonical_json, compute_plan_hash
 from youtube_title.validator import CandidateResult, FileResult, validate_file
 
 from ytweb.ai.base import SuggestionDraft, TitleSuggester, TitleSuggestionError, VideoBrief
-from ytweb.ai.rule import RuleSuggester
+from ytweb.ai.factory import get_live_suggester
 from ytweb.ai.guard import MAX_TITLE_CHARS, build_summary, clean_text, sanitize_drafts
 from ytweb.core import audit
 from ytweb.core.errors import ProblemError
@@ -155,7 +155,7 @@ def generate_for_video(session: Session, video_id: str, *, count: int, tone: str
         raise ProblemError(409, "video_excluded", "제외 대상 영상이라 제안을 만들지 않습니다.", detail=", ".join(reasons), hint="공개 상태의 일반(롱폼) 영상에서 시도하세요.")
     brief = VideoBrief(video.video_id, clean_text(video.title, 300), build_summary(video.description_excerpt))
     if suggester.name == "mock" and video.source != "demo":  # 실제 영상에는 시연용 차단 후보를 섞는 모의 제안기를 쓰지 않는다
-        suggester = RuleSuggester()
+        suggester = get_live_suggester()
     prompt_hash = hashlib.sha256(canonical_json({"v": brief.video_id, "t": brief.title, "s": brief.summary, "n": count, "tone": tone}).encode("utf-8")).hexdigest()
     run = AiRun(
         video_id=video_id, provider=suggester.name, model=suggester.model, params={"count": count, "tone": tone}, prompt_hash=prompt_hash,
@@ -164,7 +164,9 @@ def generate_for_video(session: Session, video_id: str, *, count: int, tone: str
     session.add(run)
     try:
         existing_titles = set(session.execute(select(Suggestion.title).where(Suggestion.video_id == video_id)).scalars())
-        if suggester.name == "rule":  # 규칙 기반은 같은 입력이면 같은 후보라, 이미 만든 제목은 빼고 다음 후보를 낸다
+        if suggester.name == "gemini":  # 이미 만든 제목과 겹치지 않게 모델에 알려 준다
+            raw = [d for d in suggester.with_avoid(existing_titles).suggest(brief, count=count, tone=tone) if d.title not in existing_titles][:count]
+        elif suggester.name == "rule":  # 규칙 기반은 같은 입력이면 같은 후보라, 이미 만든 제목은 빼고 다음 후보를 낸다
             raw = [d for d in suggester.suggest(brief, count=count + len(existing_titles), tone=tone) if d.title not in existing_titles][:count]
         else:
             raw = suggester.suggest(brief, count=count, tone=tone)
