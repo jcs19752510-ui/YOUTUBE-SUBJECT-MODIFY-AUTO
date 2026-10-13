@@ -541,7 +541,7 @@ describe('독립 검증 결함 조치(DEF-FV-001~004)', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
     await user.click(reviewBtn());
-    expect(within(dialog()).getByText(/기본 1시간/)).toBeInTheDocument();
+    expect(within(dialog()).getByText(/기본 24시간/)).toBeInTheDocument();
     await typeApprover(user, '홍');
     await user.click(submitBtn());
     expect(await screen.findByText(/기본 1시간/)).toBeInTheDocument();

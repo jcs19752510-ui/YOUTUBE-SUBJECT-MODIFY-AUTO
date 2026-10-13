@@ -531,7 +531,7 @@ export const ko = {
     blockReasonsLabel: '승인할 수 없는 이유',
     warnReasonsLabel: '이 제안의 경고 내용',
     ttlNotice:
-      '승인은 일정 시간(기본 1시간) 안에 배치를 만들어 실행해야 합니다. 시간이 지나면 다시 승인해야 합니다.',
+      '승인은 일정 시간(기본 24시간) 안에 배치를 만들어 실행해야 합니다. 시간이 지나면 다시 승인해야 합니다.',
     titleLoading: '(제목을 불러오는 중)',
     titleMissing: '(제목을 불러오지 못함)',
     titleMissingWarn:

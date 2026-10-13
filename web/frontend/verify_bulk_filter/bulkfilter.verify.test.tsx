@@ -119,7 +119,7 @@ const newTitles = () =>
   within(tableA())
     .getAllByRole('row')
     .slice(1)
-    .map((r) => within(r).queryAllByRole('cell')[2]?.firstChild?.textContent ?? '');
+    .map((r) => within(r).queryAllByRole('cell')[3]?.firstChild?.textContent ?? '');
 const allBox = () => screen.getByRole('checkbox', { name: '현재 목록 전체 선택' });
 const ready = () => screen.findByText('청소 설정 제목', { selector: 'td' });
 const cap = (n: number) => screen.getByText(`승인 가능한 제안 ${n}건`, { selector: 'caption' });
@@ -176,6 +176,8 @@ describe('줄여 보기 A: 정렬·글자·판정', () => {
     await user.type(box(), '지원금');
     expect(newTitles()).toEqual(['경고 지원금']);
     await user.selectOptions(sel(), 'pass');
+    expect(newTitles()).toEqual(['지원금 조회 제목']);
+    await user.selectOptions(sel(), 'block');
     expect(screen.getByText(/맞는 제안이 없습니다/)).toBeInTheDocument();
     await user.selectOptions(sel(), '');
     expect(newTitles()).toEqual(['경고 지원금', '지원금 조회 제목']);
@@ -306,11 +308,17 @@ describe('줄여 보기 C: 입력 안전·접근성·방법 B', () => {
   it('TC-BF-023 접근성: 라벨 연결(id/name), axe 위반 0', async () => {
     const { user, container } = await setup(six());
     await ready();
-    expect(document.getElementById('bulk-list-filter')).toBe(box());
-    expect(document.getElementById('bulk-verdict-filter')).toBe(sel());
+    expect(box().getAttribute('name')).toBe('bulk-list-filter');
+    expect(sel().getAttribute('name')).toBe('bulk-verdict-filter');
     expect(await axeViolations(container)).toEqual([]);
     await user.type(box(), 'zzz');
     expect(await axeViolations(container)).toEqual([]);
+  });
+  it('TC-BF-023b 요구된 id(bulk-list-filter, bulk-verdict-filter)가 DOM 에 있다', async () => {
+    await setup(six());
+    await ready();
+    expect(document.getElementById('bulk-list-filter')).toBe(box());
+    expect(document.getElementById('bulk-verdict-filter')).toBe(sel());
   });
   it('TC-BF-024 키보드만으로: 입력칸 포커스→입력, Tab→판정 선택→화살표', async () => {
     const { user } = await setup(six());
