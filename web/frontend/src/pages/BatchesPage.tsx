@@ -183,7 +183,10 @@ export function BatchesPage() {
                           {s.approval ? (
                             <>
                               {s.approval.approver}
-                              <div className="muted">{fmtDateTime(s.approval.expires_at)}</div>
+                              <div>{fmtDateTime(s.approval.approved_at)}</div>
+                              <div className="muted">
+                                {ko.batches.approvalExpires(fmtDateTime(s.approval.expires_at))}
+                              </div>
                             </>
                           ) : (
                             '-'

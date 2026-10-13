@@ -568,6 +568,7 @@ export const ko = {
     colVideo: '영상',
     colChange: '제목 변경',
     colApproval: '승인',
+    approvalExpires: (t: string) => `만료 ${t}`,
     selectAll: '전체 선택',
     selectOne: (t: string) => `${t} 선택`,
     maxNote: (n: number) => `한 배치에는 최대 ${n}건까지 담을 수 있습니다.`,
