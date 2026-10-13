@@ -32,6 +32,7 @@
 - **진행 보고 형식(사용자 지시, 2026-10-10)**: 사용자에게 진행 상황을 말할 때마다 매번 맨 위에 **전체 진행률(%)과 마일스톤(M1 등) 기준 진행률**, 마지막으로 확인한 세션 사용량(%)과 확인 시점을 표시한다. 사용자가 직접 확인해야 할 내용이 생기면 반드시 알림(PushNotification)을 보낸다.
 - 작업이 끝나거나 사용자만 할 수 있는 일이 생기면 반드시 PushNotification으로 알린다(사용자 지시, 2026-10-10).
 - **아티팩트 사본(사용자 지시, 2026-10-13)**: 이 프로젝트의 아티팩트를 만들거나 갱신하면 같은 HTML을 저장소 루트의 `아티팩트/` 폴더에 **아티팩트 이름과 같은 파일명**(`<아티팩트 이름>.html`)으로 저장하고 푸시한다. 다른 Claude 계정에서도 볼 수 있게 하려는 것이다. **저장소가 공개(Public)이므로** 사본에는 구글 클라우드 프로젝트 ID·시크릿 일부·영상 ID·키·토큰을 넣지 않는다(가려서 저장). 설명서는 `아티팩트/README.md`.
+- **현재 계정에 게시된 아티팩트 주소(2026-10-13, 비공개)**: 전체 표는 `아티팩트/README.md`. 이 프로젝트 것은 갱신할 때 아래 주소에 같은 파일 경로로 다시 게시한다(새 주소를 만들지 않는다): 유튜브제목변경-전체진행상황 https://claude.ai/artifact/Gm4bSU1mfvLmZjyp4vTKq3 , 유튜브변경작업(내할일) https://claude.ai/artifact/YJ3ghDskUXCe6JTjzxceUK , 제목 수정 도구 화면 https://claude.ai/artifact/4ChB5HNnBmPKZES1nFajEG , 제목 수정 도구 파일 안내 https://claude.ai/artifact/GnjKFkU6fFa2gPC5xG2ssx . 변환 방법: 플랫폼 껍데기가 든 저장본은 껍데기를 벗긴 사본으로 게시한다(`docs/harness/artifact-republish-test.md`).
 - git: 사용자가 클라우드→GitHub의 `git add / commit / push`를 허용했다(DEC-027, 이전 금지 DEC-006 대체). 현재 브랜치 `PROD_SCH`에만, 작업 단위·단계가 끝날 때마다 푸시한다. 강제 푸시·이력 재작성·PR 생성은 사용자 지시가 있을 때만. 커밋 전에 비밀·토큰·`data/`·`.harness-tmp/` 미포함을 확인한다.
 
 ## 프로젝트 현황과 앞으로의 계획 (2026-10-11 기준, 새 세션은 이 절과 `docs/harness/STATE.md`를 먼저 읽는다)
