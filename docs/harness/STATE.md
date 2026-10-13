@@ -124,3 +124,4 @@
 
 - **2026-10-13 아티팩트 사본 폴더**: 저장소 루트 `아티팩트/`에 아티팩트 2개를 아티팩트 이름과 같은 파일명으로 저장(공개 저장소라 프로젝트 ID·시크릿 일부·영상 ID 가림), README·CLAUDE.md 동기화 규칙, 결과서 `docs/harness/units/artifact-export-test.md`. 다른 Claude 계정에서 보려면 README 안내(저장소 HTML을 그 계정에서 발행 또는 공유 메뉴).
 - **2026-10-13 아티팩트 재게시 시작(사용자 지시 "C, 병렬, 최대한 빨리")**: `아티팩트/`의 HTML 26개를 현재 계정의 아티팩트로 게시. 에이전트 8개 병렬(공통 지시서 `.harness-tmp/artpub/BRIEF.md`, 결과 `docs/harness/artifact-republish/<에이전트>.md`). 껍데기(doctype/html/head/body·reset·`/_runtime`) 포함 저장본은 본문만 추출해 게시, 원본 파일은 수정하지 않음. 대시보드형 1개는 일반 페이지로 게시 불가라 제외. 완료 후 통합 결과서 `docs/harness/artifact-republish-test.md`와 README의 새 URL 표 갱신 예정
+- 2026-10-13 아티팩트 26개 현재 계정에 게시 완료(26/26, 미리보기 미수행). 결과서 docs/harness/artifact-republish-test.md
