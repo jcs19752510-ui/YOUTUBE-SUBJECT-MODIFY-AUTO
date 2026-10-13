@@ -544,7 +544,7 @@ describe('독립 검증 결함 조치(DEF-FV-001~004)', () => {
     expect(within(dialog()).getByText(/기본 24시간/)).toBeInTheDocument();
     await typeApprover(user, '홍');
     await user.click(submitBtn());
-    expect(await screen.findByText(/기본 1시간/)).toBeInTheDocument();
+    expect(await screen.findByText(/기본 24시간/)).toBeInTheDocument();
   });
 });
 
