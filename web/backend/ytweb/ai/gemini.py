@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -17,7 +19,11 @@ from ytweb.ai.base import SuggestionDraft, TitleSuggestionError, VideoBrief
 DEFAULT_MODEL = "gemini-flash-latest"  # 특정 버전(예: 2.5)은 신규 사용자에게 막히므로 별칭을 쓴다. YTWEB_GEMINI_MODEL 로 바꿀 수 있다.
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT_SEC = 60
-MAX_OUTPUT_TOKENS = 4000  # 이 모델은 생각 토큰도 출력 한도에서 쓰므로 넉넉히 둔다
+MAX_OUTPUT_TOKENS = 16384  # 이 모델은 생각 토큰(실측 약 3,800개)도 출력 한도에서 쓴다. 4000 이면 JSON 이 잘려 실패했다(2026-10-13 실측)
+ATTEMPTS = 3  # 구글 서버의 일시 오류(429·5xx)와 응답 잘림은 잠시 뒤 다시 시도한다
+RETRY_WAIT_SEC = (1.5, 3.0)
+RETRYABLE_HTTP = (429, 500, 502, 503, 504)
+_MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")  # 요청 주소에 들어가므로 / ? # : 등을 막는다(DEF-D-001)
 
 SYSTEM_PROMPT = (
     "당신은 50~70대 시니어 시청자를 위한 유튜브 채널 '시니어 생활팁'의 제목 편집자입니다. "
@@ -70,20 +76,43 @@ class GeminiSuggester:
             "contents": [{"role": "user", "parts": [{"text": json.dumps(payload, ensure_ascii=False)}]}],
             "generationConfig": {"temperature": 0.8, "maxOutputTokens": MAX_OUTPUT_TOKENS, "responseMimeType": "application/json", "responseSchema": _SCHEMA},
         }
+        if not _MODEL_NAME.fullmatch(self.model or ""):
+            raise TitleSuggestionError("Gemini 모델 이름(YTWEB_GEMINI_MODEL) 형식이 올바르지 않습니다. 영문·숫자·.·_·- 만 쓸 수 있습니다.")
         headers = {"Content-Type": "application/json"}
         if self._key:
             headers["x-goog-api-key"] = self._key
         req = urllib.request.Request(ENDPOINT.format(model=self.model), data=json.dumps(body).encode("utf-8"), headers=headers, method="POST")
-        try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT_SEC) as resp:  # noqa: S310 - 고정된 https 주소
-                data = json.load(resp)
-        except urllib.error.HTTPError as exc:
-            raise TitleSuggestionError(_http_message(exc.code)) from None
-        except (urllib.error.URLError, TimeoutError, OSError):
-            raise TitleSuggestionError("Gemini 에 연결하지 못했습니다(인터넷 연결 또는 시간 초과).") from None
-        except ValueError:
-            raise TitleSuggestionError("Gemini 응답을 읽지 못했습니다.") from None
-        return _parse(data, count)
+        for attempt in range(ATTEMPTS):
+            last = attempt == ATTEMPTS - 1
+            try:
+                with urllib.request.urlopen(req, timeout=TIMEOUT_SEC) as resp:  # noqa: S310 - 고정된 https 주소
+                    data = json.load(resp)
+            except urllib.error.HTTPError as exc:
+                if exc.code in RETRYABLE_HTTP and not last:
+                    _sleep(RETRY_WAIT_SEC[min(attempt, len(RETRY_WAIT_SEC) - 1)])
+                    continue
+                raise TitleSuggestionError(_http_message(exc.code)) from None
+            except (urllib.error.URLError, TimeoutError, OSError):
+                raise TitleSuggestionError("Gemini 에 연결하지 못했습니다(인터넷 연결 또는 시간 초과).") from None
+            except ValueError:
+                raise TitleSuggestionError("Gemini 응답을 읽지 못했습니다.") from None
+            if _truncated(data) and not last:
+                _sleep(RETRY_WAIT_SEC[min(attempt, len(RETRY_WAIT_SEC) - 1)])
+                continue
+            return _parse(data, count)
+        raise TitleSuggestionError("Gemini 응답을 읽지 못했습니다.")  # 도달하지 않는다(마지막 시도는 위에서 반환·예외)
+
+
+def _sleep(sec: float) -> None:
+    time.sleep(sec)
+
+
+def _truncated(data: dict) -> bool:
+    """출력 한도에 닿아 응답이 중간에 잘렸는지(finishReason=MAX_TOKENS)."""
+    try:
+        return data["candidates"][0].get("finishReason") == "MAX_TOKENS"
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return False
 
 
 def _http_message(code: int) -> str:
