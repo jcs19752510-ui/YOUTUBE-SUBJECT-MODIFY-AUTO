@@ -35,6 +35,7 @@ function ModeBadge() {
 const NAV = [
   { to: '/', label: ko.nav.home, end: true },
   { to: '/videos', label: ko.nav.videos },
+  { to: '/bulk-approve', label: ko.nav.bulkApprove },
   { to: '/batches', label: ko.nav.batches },
   { to: '/history', label: ko.nav.history },
   { to: '/reports', label: ko.nav.reports },

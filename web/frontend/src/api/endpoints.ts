@@ -2,6 +2,8 @@ import type { ApiClient } from './client';
 import type {
   AuditPage,
   Batch,
+  BulkApproveResult,
+  ResolvedVideo,
   BatchCreated,
   BatchExecuted,
   Change,
@@ -46,6 +48,25 @@ export function createEndpoints(c: ApiClient) {
       c.request<Suggestion>('PATCH', `${V1}/suggestions/${id}`, { body: { title } }),
     approve: (id: number, approver: string) =>
       c.request<Suggestion>('POST', `${V1}/suggestions/${id}/approve`, { body: { approver } }),
+    resolveVideos: (videoIds: string[]) =>
+      c.request<{ items: ResolvedVideo[] }>('POST', `${V1}/suggestions/resolve-videos`, {
+        body: { video_ids: videoIds },
+      }),
+    approveBatch: (
+      suggestionIds: number[],
+      approver: string,
+      acknowledgedWarningIds: number[],
+      key: string,
+    ) =>
+      c.request<BulkApproveResult>('POST', `${V1}/suggestions/approve-batch`, {
+        body: {
+          approver,
+          suggestion_ids: suggestionIds,
+          acknowledged_warning_ids: acknowledgedWarningIds,
+        },
+        risky: true,
+        idempotencyKey: key,
+      }),
     reject: (id: number) =>
       c.request<Suggestion>('POST', `${V1}/suggestions/${id}/reject`, { body: {} }),
     createBatch: (suggestionIds: number[], note: string | undefined, key: string) =>
@@ -93,7 +114,11 @@ export function createEndpoints(c: ApiClient) {
     googleConnectWrite: () =>
       c.request<{ auth_url: string }>('POST', `${V1}/google/connect-write`, { body: {} }),
     googleDisconnect: () =>
-      c.request<{ connected: boolean; revoked?: boolean | null }>('POST', `${V1}/google/disconnect`, { body: {} }),
+      c.request<{ connected: boolean; revoked?: boolean | null }>(
+        'POST',
+        `${V1}/google/disconnect`,
+        { body: {} },
+      ),
   };
 }
 

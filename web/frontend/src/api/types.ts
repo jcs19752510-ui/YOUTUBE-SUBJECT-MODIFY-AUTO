@@ -283,3 +283,17 @@ export interface VideoListQuery {
   page?: number;
   page_size?: number;
 }
+
+// ---- 일괄 승인(docs/harness/bulk-approve/CONTRACT.md) ----
+export interface ResolvedVideo {
+  video_id: string;
+  found: boolean;
+  video_title: string | null;
+  excluded_reasons: string[];
+  candidates: Suggestion[];
+}
+export interface BulkApproveResult {
+  approved: { suggestion_id: number; video_id: string }[];
+  skipped: { suggestion_id: number; video_id: string | null; code: string; reason: string }[];
+  counts: { requested: number; approved: number; skipped: number };
+}

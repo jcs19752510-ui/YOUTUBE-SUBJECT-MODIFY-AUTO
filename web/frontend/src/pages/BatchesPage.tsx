@@ -101,6 +101,7 @@ export function BatchesPage() {
     <>
       <PageHead title={ko.batches.title} subtitle={ko.batches.subtitle} />
       <div className="stack">
+        <Link to="/bulk-approve">{ko.bulk.linkFromBatches}</Link>
         {activeBatch && (
           <Callout tone="info" role="status" title={ko.batches.runningBanner}>
             <Link to={`/batches/${activeBatch.id}`}>{ko.batches.batchTitle(activeBatch.id)}</Link>

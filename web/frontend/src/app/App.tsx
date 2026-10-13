@@ -6,6 +6,7 @@ import { Layout } from './Layout';
 import { HomePage } from '../pages/HomePage';
 import { VideosPage } from '../pages/VideosPage';
 import { VideoDetailPage } from '../pages/VideoDetailPage';
+import { BulkApprovePage } from '../pages/BulkApprovePage';
 import { BatchesPage } from '../pages/BatchesPage';
 import { BatchDetailPage } from '../pages/BatchDetailPage';
 import { HistoryPage } from '../pages/HistoryPage';
@@ -31,6 +32,7 @@ export function App() {
           <Route index element={<HomePage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="videos/:videoId" element={<VideoDetailPage />} />
+          <Route path="bulk-approve" element={<BulkApprovePage />} />
           <Route path="batches" element={<BatchesPage />} />
           <Route path="batches/:batchId" element={<BatchDetailPage />} />
           <Route path="history" element={<HistoryPage />} />
