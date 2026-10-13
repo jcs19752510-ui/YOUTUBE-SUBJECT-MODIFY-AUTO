@@ -34,7 +34,7 @@
 회귀(전체 백엔드 시험): 아래 6절.
 
 ## 6. 회귀
-FULLRESULT
+**전체 백엔드 시험은 미수행(완료하지 못함)**: 12분 상한 안에 끝나지 않아 중단했고 결과 요약이 남지 않았다(PASS로 세지 않음). 대신 관련 파일 `tests/domain/test_suggestions.py`·`tests/domain/test_batches.py`·`tests/core/test_idempotency.py`만 실행: 진행 표시 점 62개 전부 통과, 실패 표시 없음(pytest 요약 줄은 출력 절단으로 못 봄 — 수치는 점 개수 기준). 단건 approve 회귀는 이 안의 기존 시험(TC-WB-025~029 등)이 통과한 것으로 판단하나 전체 회귀 0은 증명하지 못했다.
 
 ## 7. 변이 점검 (구현 완료 후, 원복 확인: `diff` 일치)
 | # | 변이 | 결과 |
