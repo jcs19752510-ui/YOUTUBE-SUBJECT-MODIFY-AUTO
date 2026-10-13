@@ -28,7 +28,7 @@ export function parseVideoIds(text: string): { valid: string[]; invalid: string[
   const seen = new Set<string>();
   const valid: string[] = [];
   const invalid: string[] = [];
-  for (const t of text.split(/[\s,]+/)) {
+  for (const t of text.split(/[\s,;]+/)) {
     if (!t || seen.has(t)) continue;
     seen.add(t);
     (ID_FORMAT.test(t) ? valid : invalid).push(t);
