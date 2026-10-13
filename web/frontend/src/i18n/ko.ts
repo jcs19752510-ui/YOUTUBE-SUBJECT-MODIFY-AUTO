@@ -485,6 +485,7 @@ export const ko = {
     colVideo: '영상 ID',
     colNew: '새 제목',
     colVerdict: '판정',
+    colScore: '판정 점수',
     colLength: '글자 수',
     colWhy: '승인할 수 없는 이유',
     pickOne: (t: string) => `${t} 선택`,

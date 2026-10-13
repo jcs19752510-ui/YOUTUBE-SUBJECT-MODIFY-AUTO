@@ -5,6 +5,7 @@ import { useApi } from '../api/context';
 import type { BulkApproveResult, ResolvedVideo, Suggestion, WorkflowStatus } from '../api/types';
 import {
   Button,
+  Badge,
   Callout,
   Card,
   EmptyState,
@@ -21,6 +22,7 @@ import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
 import { Pagination } from '../components/Pagination';
 import { workflowLabel } from '../lib/labels';
+import { scoreTone, suggestionScore } from '../lib/score';
 import { STATUSES } from './VideosPage';
 
 export const MAX_BULK = ko.bulk.max;
@@ -469,6 +471,7 @@ export function BulkApprovePage() {
                       <th scope="col">{ko.bulk.colCurrent}</th>
                       <th scope="col">{ko.bulk.colNew}</th>
                       <th scope="col">{ko.bulk.colVerdict}</th>
+                      <th scope="col">{ko.bulk.colScore}</th>
                       <th scope="col">{ko.bulk.colLength}</th>
                     </tr>
                   </thead>
@@ -508,6 +511,11 @@ export function BulkApprovePage() {
                           </td>
                           <td>
                             <ValidationBadge result={s.validation_result} />
+                          </td>
+                          <td title={ko.suggestion.scoreHint}>
+                            <Badge tone={scoreTone(suggestionScore(s))}>
+                              {suggestionScore(s)}점
+                            </Badge>
                           </td>
                           <td>{s.length}</td>
                         </tr>
@@ -609,6 +617,7 @@ export function BulkApprovePage() {
                     <th scope="col">{ko.bulk.colCurrent}</th>
                     <th scope="col">{ko.bulk.colNew}</th>
                     <th scope="col">{ko.bulk.colVerdict}</th>
+                    <th scope="col">{ko.bulk.colScore}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -619,6 +628,11 @@ export function BulkApprovePage() {
                       <td className="cell-title">{q.s.title}</td>
                       <td>
                         <ValidationBadge result={q.s.validation_result} />
+                      </td>
+                      <td title={ko.suggestion.scoreHint}>
+                        <Badge tone={scoreTone(suggestionScore(q.s))}>
+                          {suggestionScore(q.s)}점
+                        </Badge>
                       </td>
                     </tr>
                   ))}

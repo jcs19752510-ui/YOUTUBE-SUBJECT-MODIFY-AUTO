@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import type { Suggestion } from '../api/types';
+import { suggestionScore } from '../lib/score';
 import { suggestion } from '../test/fixtures';
 import { connectedClient, json, renderWithApp, route } from '../test/utils';
 import { BulkApprovePage } from './BulkApprovePage';
@@ -79,5 +80,33 @@ describe('일괄 승인 제목 또는 영상 ID 검색', () => {
     expect(screen.getByText('승인 가능한 제안 1건')).toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: /판정으로 줄여 보기/ }), 'block');
     expect(screen.getByText(/맞는 제안이 없습니다/)).toBeInTheDocument();
+  });
+
+  it('TC-WF-302 목록에 판정 → 판정 점수 → 글자 수 순으로 열이 나오고 점수가 계산값과 같다', async () => {
+    const c = await connectedClient([
+      route('GET', '/api/v1/suggestions', (r) =>
+        json(200, {
+          items: r.query.get('status') === 'candidate' ? items : [],
+          total: 3,
+          page: 1,
+          page_size: 50,
+        }),
+      ),
+      route('POST', '/api/v1/suggestions/resolve-videos', () => json(200, { items: [] })),
+    ]);
+    renderWithApp(
+      <Routes>
+        <Route path="bulk-approve" element={<BulkApprovePage />} />
+      </Routes>,
+      c.client,
+      '/bulk-approve',
+    );
+    expect(await screen.findByText('승인 가능한 제안 3건')).toBeInTheDocument();
+    const heads = screen.getAllByRole('columnheader').map((h) => h.textContent);
+    const v = heads.indexOf('판정');
+    expect(v).toBeGreaterThan(-1);
+    expect(heads[v + 1]).toBe('판정 점수');
+    expect(heads[v + 2]).toBe('글자 수');
+    expect(screen.getAllByText(`${suggestionScore(items[0])}점`).length).toBeGreaterThan(0);
   });
 });
