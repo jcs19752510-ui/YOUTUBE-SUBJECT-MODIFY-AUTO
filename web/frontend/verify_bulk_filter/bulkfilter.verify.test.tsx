@@ -1,4 +1,4 @@
-// 일괄 승인 목록 줄여 보기 독립 검증(TC-BF-*). 구현자 시험(bulkfilter.test.tsx)과 독립.
+// 일괄 승인 제목 또는 영상 ID 검색 독립 검증(TC-BF-*). 구현자 시험(bulkfilter.test.tsx)과 독립.
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -112,7 +112,7 @@ const lists = (cand: Suggestion[], blocked: Suggestion[] = []): Handler[] => [
   route('GET', '/api/v1/dashboard', () => json(200, dashboard())),
 ];
 const six = () => lists([S.a, S.b, S.c, S.e, S.f], [S.d]);
-const box = () => screen.getByRole('searchbox', { name: /목록 줄여 보기/ });
+const box = () => screen.getByRole('searchbox', { name: /제목 또는 영상 ID 검색/ });
 const sel = () => screen.getByRole('combobox', { name: /판정으로 줄여 보기/ });
 const tableA = () => screen.getAllByRole('table')[0]!;
 const newTitles = () =>
@@ -328,6 +328,8 @@ describe('줄여 보기 C: 입력 안전·접근성·방법 B', () => {
     await ready();
     box().focus();
     await user.keyboard('지원금');
+    // 2026-10-13: 영상 목록과 같은 구조로 '진행 상태' 선택을 입력칸과 판정 선택 사이에 넣어, 판정 선택까지 Tab 이 2번 필요하다(첫 실행은 Tab 1번 기준이라 실패, 결과서에 기록).
+    await user.tab();
     await user.tab();
     expect(sel()).toHaveFocus();
     await user.keyboard('{ArrowDown}');

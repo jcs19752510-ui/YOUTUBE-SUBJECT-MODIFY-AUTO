@@ -1,8 +1,8 @@
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../api/context';
-import type { BulkApproveResult, ResolvedVideo, Suggestion } from '../api/types';
+import type { BulkApproveResult, ResolvedVideo, Suggestion, WorkflowStatus } from '../api/types';
 import {
   Button,
   Callout,
@@ -19,6 +19,9 @@ import {
 import { useApproverName } from '../hooks/approver';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
+import { Pagination } from '../components/Pagination';
+import { workflowLabel } from '../lib/labels';
+import { STATUSES } from './VideosPage';
 
 export const MAX_BULK = ko.bulk.max;
 const ID_FORMAT = /^[A-Za-z0-9_-]{11}$/;
@@ -65,6 +68,9 @@ export function BulkApprovePage() {
   const keys = useIdempotency();
   const [filterText, setFilterText] = useState('');
   const [verdict, setVerdict] = useState('');
+  const [wfStatus, setWfStatus] = useState<WorkflowStatus | ''>('');
+  const [pg, setPg] = useState(1);
+  const [pgSize, setPgSize] = useState(100);
   const [approver, setApprover] = useApproverName();
   const [pickedA, setPickedA] = useState<Set<number>>(new Set());
   const [text, setText] = useState('');
@@ -83,6 +89,13 @@ export function BulkApprovePage() {
   const loading = lists.some((q) => q.isPending);
   const listError = lists.find((q) => q.isError)?.error;
   const rows = lists.flatMap((q) => q.data?.items ?? []);
+  // 진행 상태: 영상 목록과 같은 이름·같은 기준(영상의 진행 상태)으로 거른다. 해당 상태의 영상 ID 를 영상 목록 API 로 받아 그 영상의 제안만 남긴다.
+  const statusVideos = useQuery({
+    queryKey: ['bulk-video-status', wfStatus],
+    queryFn: () => api.videos({ status: wfStatus, page_size: 200 }),
+    enabled: wfStatus !== '',
+  });
+  const statusIds = new Set((statusVideos.data?.items ?? []).map((v) => v.video_id));
   const needle = filterText.trim().toLowerCase();
   // 최근에 만든 제안이 맨 위에 오도록 번호가 큰 것부터 보여 준다. 글자·판정으로 줄일 수 있다.
   const shownRows = [...rows]
@@ -92,7 +105,8 @@ export function BulkApprovePage() {
         (!needle ||
           s.video_id.toLowerCase().includes(needle) ||
           s.title.toLowerCase().includes(needle)) &&
-        (!verdict || s.validation_result === verdict),
+        (!verdict || s.validation_result === verdict) &&
+        (wfStatus === '' || statusIds.has(s.video_id)),
     );
 
   // 현재 제목: 목록 영상 ID 를 50개씩 resolve-videos 로 조회한다(실패해도 승인은 막지 않는다).
@@ -184,6 +198,9 @@ export function BulkApprovePage() {
       else n.add(id);
       return n;
     });
+  const lastPage = Math.max(1, Math.ceil(shownRows.length / pgSize));
+  const curPage = Math.min(pg, lastPage);
+  const pagedRows = shownRows.slice((curPage - 1) * pgSize, curPage * pgSize);
   const pickable = shownRows.filter((s) => !blockWhy(s));
   const pagePicked = pickable.length > 0 && pickable.every((s) => pickedA.has(s.id));
   const pickPage = (on: boolean) =>
@@ -331,30 +348,67 @@ export function BulkApprovePage() {
             <EmptyState title={ko.bulk.listEmpty} />
           ) : (
             <div className="stack">
-              <Field label={ko.bulk.filterLabel} hint={ko.bulk.filterHint}>
-                <input
-                  name="bulk-list-filter"
-                  type="search"
-                  className="input"
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  placeholder={ko.bulk.filterPlaceholder}
-                />
-              </Field>
-              <Field label={ko.bulk.verdictFilterLabel}>
-                <select
-                  name="bulk-verdict-filter"
-                  className="input"
-                  value={verdict}
-                  onChange={(e) => setVerdict(e.target.value)}
-                >
-                  <option value="">{ko.bulk.verdictAll}</option>
-                  <option value="pass">{ko.bulk.verdictPass}</option>
-                  <option value="warn">{ko.bulk.verdictWarn}</option>
-                  <option value="block">{ko.bulk.verdictBlock}</option>
-                </select>
-              </Field>
-              {(needle || verdict) && shownRows.length === 0 && (
+              <form className="toolbar" role="search" onSubmit={(e) => e.preventDefault()}>
+                <Field label={ko.videos.search} className="field--grow" hint={ko.bulk.filterHint}>
+                  <input
+                    name="bulk-list-filter"
+                    className="input"
+                    type="search"
+                    value={filterText}
+                    placeholder={ko.bulk.filterPlaceholder}
+                    onChange={(e) => {
+                      setFilterText(e.target.value);
+                      setPg(1);
+                    }}
+                  />
+                </Field>
+                <Field label={ko.videos.filterStatus}>
+                  <select
+                    name="bulk-status-filter"
+                    className="select"
+                    value={wfStatus}
+                    onChange={(e) => {
+                      setWfStatus(e.target.value as WorkflowStatus | '');
+                      setPg(1);
+                    }}
+                  >
+                    <option value="">{ko.videos.filterAll}</option>
+                    {STATUSES.map((st) => (
+                      <option key={st} value={st}>
+                        {workflowLabel(st)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={ko.bulk.verdictFilterLabel}>
+                  <select
+                    name="bulk-verdict-filter"
+                    className="select"
+                    value={verdict}
+                    onChange={(e) => {
+                      setVerdict(e.target.value);
+                      setPg(1);
+                    }}
+                  >
+                    <option value="">{ko.bulk.verdictAll}</option>
+                    <option value="pass">{ko.bulk.verdictPass}</option>
+                    <option value="warn">{ko.bulk.verdictWarn}</option>
+                    <option value="block">{ko.bulk.verdictBlock}</option>
+                  </select>
+                </Field>
+                {(needle || verdict || wfStatus) && (
+                  <Button
+                    onClick={() => {
+                      setFilterText('');
+                      setVerdict('');
+                      setWfStatus('');
+                    }}
+                  >
+                    {ko.videos.reset}
+                  </Button>
+                )}
+              </form>
+              {(needle || verdict || wfStatus) && shownRows.length === 0 && (
                 <p className="muted">{ko.bulk.filterNone}</p>
               )}
               <TableWrap label={ko.bulk.methodA}>
@@ -383,7 +437,7 @@ export function BulkApprovePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shownRows.map((s) => {
+                    {pagedRows.map((s) => {
                       const why = blockWhy(s);
                       const checked = pickedA.has(s.id);
                       return (
@@ -426,6 +480,16 @@ export function BulkApprovePage() {
                   </tbody>
                 </table>
               </TableWrap>
+              <Pagination
+                page={curPage}
+                pageSize={pgSize}
+                total={shownRows.length}
+                onPage={setPg}
+                onPageSize={(n) => {
+                  setPgSize(n);
+                  setPg(1);
+                }}
+              />
               {full && <p className="field__error">{ko.bulk.full(MAX_BULK)}</p>}
             </div>
           )}

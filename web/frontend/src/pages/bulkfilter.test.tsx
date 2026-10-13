@@ -15,7 +15,7 @@ const items = [
   sg(3, 'BBBBBBBBBB2', '지원금 다른 제목', 'warn'),
 ];
 
-describe('일괄 승인 목록 줄여 보기', () => {
+describe('일괄 승인 제목 또는 영상 ID 검색', () => {
   it('TC-WF-300 영상 ID 일부나 제목 일부를 입력하면 그 제안만 남고, 비우면 전체가 돌아온다', async () => {
     const user = userEvent.setup();
     const c = await connectedClient([
@@ -37,7 +37,7 @@ describe('일괄 승인 목록 줄여 보기', () => {
       '/bulk-approve',
     );
     expect(await screen.findByText('승인 가능한 제안 3건')).toBeInTheDocument();
-    const box = screen.getByRole('searchbox', { name: /목록 줄여 보기/ });
+    const box = screen.getByRole('searchbox', { name: /제목 또는 영상 ID 검색/ });
     await user.type(box, 'BBBBBB');
     expect(screen.getByText('승인 가능한 제안 2건')).toBeInTheDocument();
     await user.clear(box);

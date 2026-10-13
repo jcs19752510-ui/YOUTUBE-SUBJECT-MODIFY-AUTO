@@ -26,7 +26,7 @@ import { JobPanel } from './JobPanel';
 /** 서버가 한 번에 받는 영상 수(API.md: 1~200개) */
 export const MAX_GENERATE = 200;
 
-const STATUSES: WorkflowStatus[] = [
+export const STATUSES: WorkflowStatus[] = [
   'none',
   'suggested',
   'approved',
