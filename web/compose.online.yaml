@@ -11,6 +11,7 @@ services:
       # 실제 수정 스위치(M3). 값은 web/.env 에서 읽는다(web/.env.example 참고). 기본은 꺼짐·허용 영상 없음.
       YTWEB_LIVE_WRITE: ${YTWEB_LIVE_WRITE:-0}
       YTWEB_LIVE_ALLOWED_VIDEOS: ${YTWEB_LIVE_ALLOWED_VIDEOS:-}
+      YTWEB_INCLUDE_SHORTS: ${YTWEB_INCLUDE_SHORTS:-0}
     secrets:
       - google_client
   worker:
@@ -21,6 +22,7 @@ services:
       # 실제 수정 스위치(M3). 값은 web/.env 에서 읽는다(web/.env.example 참고). 기본은 꺼짐·허용 영상 없음.
       YTWEB_LIVE_WRITE: ${YTWEB_LIVE_WRITE:-0}
       YTWEB_LIVE_ALLOWED_VIDEOS: ${YTWEB_LIVE_ALLOWED_VIDEOS:-}
+      YTWEB_INCLUDE_SHORTS: ${YTWEB_INCLUDE_SHORTS:-0}
     secrets:
       - google_client
 
