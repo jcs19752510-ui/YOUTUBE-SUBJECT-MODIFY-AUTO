@@ -373,6 +373,20 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 
 ---
 
+## 8-1. 일괄 승인 (EVT-W36, W37) — 2026-10-13
+
+선생님 결정: 목록 선택·영상 ID 붙여넣기 둘 다, 후보 여럿이면 선택 화면, 최대 50건, 승인과 배치 실행 분리. 이 단계는 **승인만** 하며 제목은 바뀌지 않는다. 계약 원문 `docs/harness/bulk-approve/CONTRACT.md`.
+
+### EVT-W36 `POST /api/v1/suggestions/resolve-videos`
+읽기 전용(상태 변경 없음, 세션·CSRF 필요). 요청 `{"video_ids": ["…11자…", …]}` 1~50개(중복은 순서 유지로 제거). 51개 이상 `422 bulk_too_many`. 응답 `{"items": [{"video_id", "found", "video_title", "excluded_reasons": [], "candidates": [Suggestion…]}]}` — `candidates`는 상태 candidate·expired·approved인 제안(최신순).
+
+### EVT-W37 `POST /api/v1/suggestions/approve-batch`
+요청 `{"approver": "이름", "suggestion_ids": [int…1~50], "acknowledged_warning_ids": [int…]}`. 정수는 엄격 검사(문자열 `"1"`·`true`는 422). 건마다 기존 `approve()`(재검증·서명·감사)를 SAVEPOINT 안에서 실행한다.
+응답 200 `{"approved": [{"suggestion_id", "video_id"}], "skipped": [{"suggestion_id", "video_id", "code", "reason"}], "counts": {"requested", "approved", "skipped"}}`.
+- 전체 거부: `422 bulk_empty`(빈 목록), `bulk_too_many`(51건 이상), `duplicate_suggestion`(같은 id 반복).
+- 건별 제외 `code`: `suggestion_blocked`, `video_excluded`, `same_as_current`, `suggestion_state`, `video_inconsistent`, `suggestion_not_found`, `duplicate_video_in_request`(같은 영상은 첫 건만), `warning_not_acknowledged`(경고 건은 `acknowledged_warning_ids`에 있어야 승인, 서버 강제).
+- 감사: 건별 `suggestion.approve` + 요약 `suggestion.approve_batch`. `Idempotency-Key` 규약 적용.
+
 ## 9. 알려진 스키마 한계 (`openapi.json`과 실제 동작의 차이)
 `docs/yt/openapi.json`은 앱 객체에서 직접 뽑은 원본이며 **임의로 고치지 않았다**. 다음 차이는 `DESIGN.md` 편차 표(DV-W05)에 올라 있고 사용자 결정 대기다.
 1. `Idempotency-Key` 헤더가 **선택**으로 표기되지만 3개 엔드포인트에서 실제로는 필수(누락 시 400).
@@ -388,3 +402,4 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 | 2026-10-10 | v0.1 | 최초 작성(as-built) | STATE §6 "문서 개정 3건"의 3단계 산출물. 코드·실제 호출 결과 기준, 6단계 독립 검증 결과 반영 전 |
 | 2026-10-11 | v0.3 | 11단계 대조 1차: 머리말(모드·근거·34개 동작), 대시보드 `mode`/`live_enabled` 설명, `videos/sync` 실제 읽기, 실행 확인 문구(`실제 실행 N건`), 건너뜀 코드 `live_not_allowed`·`live_mode_changed`, 롤백 오류 `live_mode_mismatch`·`live_not_allowed`·`live_changed_since_apply`, 감사 action 목록, 설정 `read_only` 설명 | 실제 코드·화면 문구와의 한 줄씩 대조 |
 | 2026-10-11 | v0.2 | 수정 단위 W-FIX-BE 반영: 초안 취소 계약·`blocked[].batch_id`·`precheck.notice`·리포트 `notes` 면책 첫 줄·세션 유휴 만료·`session_required` 명시·ID 상한 422·`count_invalid` 정정·복구 감사(`change.apply` recovered) | DEC-046, DEF-7-009·7B-001·7B-002·9-001·9-003·9-004·9-007·7-003~005 |
+| 2026-10-13 | v0.4 | 8-1절 일괄 승인(EVT-W36·W37) 추가, `openapi.json` 재생성 | 일괄 승인 기능(N건) 구현 |

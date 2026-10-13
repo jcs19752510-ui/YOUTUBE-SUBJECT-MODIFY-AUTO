@@ -2260,6 +2260,196 @@
         }
       }
     },
+    "/api/v1/suggestions/resolve-videos": {
+      "post": {
+        "tags": [
+          "suggestions"
+        ],
+        "summary": "Post Resolve Videos",
+        "operationId": "post_resolve_videos_api_v1_suggestions_resolve_videos_post",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveVideosIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "요청 값이 올바르지 않음(code: validation_error 등). problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청(예: Idempotency-Key 누락). problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "대상을 찾을 수 없음. problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "현재 상태와 충돌. problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/suggestions/approve-batch": {
+      "post": {
+        "tags": [
+          "suggestions"
+        ],
+        "summary": "Post Approve Batch",
+        "operationId": "post_approve_batch_api_v1_suggestions_approve_batch_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveBatchIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "요청 값이 올바르지 않음(code: validation_error 등). problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청(예: Idempotency-Key 누락). problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "대상을 찾을 수 없음. problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "현재 상태와 충돌. problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/suggestions/{suggestion_id}": {
       "patch": {
         "tags": [
@@ -3016,6 +3206,43 @@
           "expires_at"
         ],
         "title": "ApprovalOut"
+      },
+      "ApproveBatchIn": {
+        "properties": {
+          "approver": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Approver"
+          },
+          "suggestion_ids": {
+            "items": {
+              "type": "integer",
+              "maximum": 9.223372036854776e+18,
+              "minimum": 1.0
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Suggestion Ids"
+          },
+          "acknowledged_warning_ids": {
+            "items": {
+              "type": "integer",
+              "maximum": 9.223372036854776e+18,
+              "minimum": 1.0
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Acknowledged Warning Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "approver",
+          "suggestion_ids"
+        ],
+        "title": "ApproveBatchIn"
       },
       "ApproveIn": {
         "properties": {
@@ -4208,6 +4435,25 @@
           "notes"
         ],
         "title": "ReportsOut"
+      },
+      "ResolveVideosIn": {
+        "properties": {
+          "video_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{11}$"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Video Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "video_ids"
+        ],
+        "title": "ResolveVideosIn"
       },
       "RollbackIn": {
         "properties": {

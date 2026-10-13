@@ -295,8 +295,8 @@ class ApproveIn(_In):
 
 class ApproveBatchIn(_In):
     approver: str = Field(min_length=1, max_length=200)
-    suggestion_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]] = Field(max_length=500)  # 1~50건 규칙은 서비스가 한국어 메시지로 거부
-    acknowledged_warning_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]] = Field(default_factory=list, max_length=500)
+    suggestion_ids: list[Annotated[int, Field(strict=True, ge=1, le=MAX_ID)]] = Field(max_length=500)  # 1~50건 규칙은 서비스가 한국어 메시지로 거부. 문자열 "1"·true 는 받지 않는다(DEF-BA-001)
+    acknowledged_warning_ids: list[Annotated[int, Field(strict=True, ge=1, le=MAX_ID)]] = Field(default_factory=list, max_length=500)
 
 
 class ResolveVideosIn(_In):

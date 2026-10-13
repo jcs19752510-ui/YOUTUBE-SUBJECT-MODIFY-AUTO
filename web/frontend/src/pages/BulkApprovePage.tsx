@@ -28,7 +28,7 @@ export function parseVideoIds(text: string): { valid: string[]; invalid: string[
   const seen = new Set<string>();
   const valid: string[] = [];
   const invalid: string[] = [];
-  for (const t of text.split(/[\s,;]+/)) {
+  for (const t of text.split(/[\s,]+/)) {
     if (!t || seen.has(t)) continue;
     seen.add(t);
     (ID_FORMAT.test(t) ? valid : invalid).push(t);
@@ -193,7 +193,7 @@ export function BulkApprovePage() {
   });
 
   const gate: string[] = [];
-  if (approver === '') gate.push(ko.bulk.approverEmpty);
+  if (approver.trim() === '') gate.push(ko.bulk.approverEmpty);
   if (warnLeft.length > 0) gate.push(ko.bulk.ackNeed(warnLeft.length));
   if (over) gate.push(ko.bulk.queueOver(queue.length, MAX_BULK));
   if (queue.length === 0) gate.push(ko.bulk.reviewDisabledEmpty);
