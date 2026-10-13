@@ -57,7 +57,6 @@ export function BulkApprovePage() {
   const [approver, setApprover] = useApproverName();
   const [pickedA, setPickedA] = useState<Set<number>>(new Set());
   const [text, setText] = useState('');
-  const [invalid, setInvalid] = useState<string[]>([]);
   const [resolved, setResolved] = useState<ResolvedVideo[]>([]);
   const [choice, setChoice] = useState<Map<string, number>>(new Map());
   const [open, setOpen] = useState(false);
@@ -87,7 +86,6 @@ export function BulkApprovePage() {
   const find = useMutation({
     mutationFn: () => api.resolveVideos(parsed.valid),
     onSuccess: (r) => {
-      setInvalid(parsed.invalid);
       setResolved(r.items);
       // 후보가 정확히 1개(승인 가능)일 때만 미리 선택한다. 2개 이상은 사람이 고를 때까지 비워 둔다.
       const next = new Map<string, number>();
@@ -184,7 +182,6 @@ export function BulkApprovePage() {
     setResolved([]);
     setChoice(new Map());
     setText('');
-    setInvalid([]);
     setAcks(new Set());
     approve.reset();
   };
@@ -366,9 +363,6 @@ export function BulkApprovePage() {
           </form>
           {resolved.length > 0 && (
             <div className="stack">
-              {invalid.length > 0 && (
-                <p className="field__error">{ko.bulk.invalidIds(invalid.join(', '))}</p>
-              )}
               <TableWrap label={ko.bulk.methodB}>
                 <table className="table">
                   <caption>{ko.bulk.resultCaption(resolved.length)}</caption>

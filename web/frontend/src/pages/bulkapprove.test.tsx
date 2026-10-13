@@ -56,6 +56,10 @@ async function setup(handlers: Handler[]) {
 }
 const reviewBtn = () => screen.getByRole('button', { name: '확인 창 열기' });
 const approverBox = () => screen.getByRole('textbox', { name: /승인자 이름/ });
+const typeApprover = async (user: ReturnType<typeof userEvent.setup>, v: string) => {
+  await user.clear(approverBox());
+  await user.type(approverBox(), v);
+};
 const dialog = () => screen.getByRole('dialog');
 const submitBtn = () => within(dialog()).getByRole('button', { name: /건 승인$/ });
 const find = async (user: ReturnType<typeof userEvent.setup>, text: string) => {
@@ -219,7 +223,7 @@ describe('확인 창·제출', () => {
     expect(
       within(dialog()).getByText(/승인만 합니다\. 제목은 아직 바뀌지 않습니다/),
     ).toBeInTheDocument();
-    await user.type(approverBox(), '홍길동');
+    await typeApprover(user, '홍길동');
     expect(submitBtn()).toBeEnabled();
     expect(within(dialog()).queryByText('아직 필요한 것')).not.toBeInTheDocument();
   });
@@ -229,7 +233,7 @@ describe('확인 창·제출', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '현재 목록 전체 선택' }));
     await user.click(reviewBtn());
-    await user.type(approverBox(), '홍길동');
+    await typeApprover(user, '홍길동');
     expect(submitBtn()).toBeDisabled();
     expect(within(dialog()).getByText(/경고가 있는 2건은 건별로/)).toBeInTheDocument();
     expect(within(dialog()).queryByRole('checkbox', { name: /전체/ })).not.toBeInTheDocument();
@@ -249,7 +253,7 @@ describe('확인 창·제출', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '현재 목록 전체 선택' }));
     await user.click(reviewBtn());
-    await user.type(approverBox(), '  홍길동 ');
+    await typeApprover(user, '  홍길동 ');
     await user.click(within(dialog()).getByRole('checkbox', { name: /새 제목 1/ }));
     await user.click(within(dialog()).getByRole('checkbox', { name: /새 제목 2/ }));
     await user.click(submitBtn());
@@ -272,7 +276,7 @@ describe('확인 창·제출', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
     await user.click(reviewBtn());
-    await user.type(approverBox(), '홍');
+    await typeApprover(user, '홍');
     await user.click(within(dialog()).getByRole('checkbox', { name: /새 제목 1/ }));
     await user.click(submitBtn());
     await screen.findByText(/승인 1건/);
@@ -299,7 +303,7 @@ describe('확인 창·제출', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '현재 목록 전체 선택' }));
     await user.click(reviewBtn());
-    await user.type(approverBox(), '홍');
+    await typeApprover(user, '홍');
     await user.click(submitBtn());
     expect(await screen.findByText(/승인 1건 \/ 제외 2건/)).toBeInTheDocument();
     expect(screen.getByText('현재 제목과 같습니다.')).toBeInTheDocument();
@@ -327,7 +331,7 @@ describe('확인 창·제출', () => {
       await screen.findByText('새 제목 1', { selector: 'td' });
       await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
       await user.click(reviewBtn());
-      await user.type(approverBox(), '홍');
+      await typeApprover(user, '홍');
       await user.click(submitBtn());
       expect(await within(dialog()).findByText(title)).toBeInTheDocument();
       expect(submitBtn()).toBeEnabled();
@@ -347,7 +351,7 @@ describe('확인 창·제출', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
     await user.click(reviewBtn());
-    await user.type(approverBox(), '홍');
+    await typeApprover(user, '홍');
     await user.click(submitBtn());
     const busy = await within(dialog()).findByRole('button', { name: '승인하는 중' });
     expect(busy).toBeDisabled();
