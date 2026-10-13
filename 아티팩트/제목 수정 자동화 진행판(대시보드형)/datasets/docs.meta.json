@@ -1,0 +1,14 @@
+{
+ "description": "저장소에 만들어진 문서와 줄 수.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "docs.json",
+  "url": "/_blob/14e0c866d2946af847cd6fedfe1a6213"
+ },
+ "title": "산출물 목록",
+ "updated": {
+  "at": "2026-10-10T10:10:00Z",
+  "by": "Claude"
+ }
+}

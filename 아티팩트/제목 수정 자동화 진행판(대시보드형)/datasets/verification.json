@@ -1,0 +1,142 @@
+[
+ {
+  "key": "프롬프트 개요서 v2|1",
+  "artifact": "프롬프트 개요서 v2",
+  "round": 1,
+  "defects": 8,
+  "verdict": "PASS"
+ },
+ {
+  "key": "프롬프트 개요서 v2|2",
+  "artifact": "프롬프트 개요서 v2",
+  "round": 2,
+  "defects": 6,
+  "verdict": "PASS"
+ },
+ {
+  "key": "프롬프트 개요서 v2|3",
+  "artifact": "프롬프트 개요서 v2",
+  "round": 3,
+  "defects": 4,
+  "verdict": "PASS"
+ },
+ {
+  "key": "프롬프트 개요서 v2|4",
+  "artifact": "프롬프트 개요서 v2",
+  "round": 4,
+  "defects": 0,
+  "verdict": "PASS"
+ },
+ {
+  "key": "1단계 정책 조사서|1",
+  "artifact": "1단계 정책 조사서",
+  "round": 1,
+  "defects": 3,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "1단계 정책 조사서|2",
+  "artifact": "1단계 정책 조사서",
+  "round": 2,
+  "defects": 1,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "1단계 정책 조사서|3",
+  "artifact": "1단계 정책 조사서",
+  "round": 3,
+  "defects": 0,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "2단계 기획서군|1",
+  "artifact": "2단계 기획서군",
+  "round": 1,
+  "defects": 4,
+  "verdict": "PASS"
+ },
+ {
+  "key": "2단계 기획서군|2",
+  "artifact": "2단계 기획서군",
+  "round": 2,
+  "defects": 3,
+  "verdict": "PASS"
+ },
+ {
+  "key": "2단계 기획서군|3",
+  "artifact": "2단계 기획서군",
+  "round": 3,
+  "defects": 2,
+  "verdict": "PASS"
+ },
+ {
+  "key": "2단계 기획서군|4",
+  "artifact": "2단계 기획서군",
+  "round": 4,
+  "defects": 1,
+  "verdict": "PASS"
+ },
+ {
+  "key": "2단계 기획서군|5",
+  "artifact": "2단계 기획서군",
+  "round": 5,
+  "defects": 0,
+  "verdict": "PASS"
+ },
+ {
+  "key": "03 수동 가이드|1",
+  "artifact": "03 수동 가이드",
+  "round": 1,
+  "defects": 3,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "03 수동 가이드|2",
+  "artifact": "03 수동 가이드",
+  "round": 2,
+  "defects": 1,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "03 수동 가이드|3",
+  "artifact": "03 수동 가이드",
+  "round": 3,
+  "defects": 1,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "03 수동 가이드|4",
+  "artifact": "03 수동 가이드",
+  "round": 4,
+  "defects": 0,
+  "verdict": "CONDITIONAL"
+ },
+ {
+  "key": "3·4단계 설계서군|1",
+  "artifact": "3·4단계 설계서군",
+  "round": 1,
+  "defects": 5,
+  "verdict": "PASS"
+ },
+ {
+  "key": "3·4단계 설계서군|2",
+  "artifact": "3·4단계 설계서군",
+  "round": 2,
+  "defects": 11,
+  "verdict": "PASS"
+ },
+ {
+  "key": "3·4단계 설계서군|3",
+  "artifact": "3·4단계 설계서군",
+  "round": 3,
+  "defects": 1,
+  "verdict": "PASS"
+ },
+ {
+  "key": "3·4단계 설계서군|4",
+  "artifact": "3·4단계 설계서군",
+  "round": 4,
+  "defects": 0,
+  "verdict": "PASS"
+ }
+]

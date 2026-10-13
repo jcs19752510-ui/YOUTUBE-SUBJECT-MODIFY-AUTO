@@ -1,0 +1,14 @@
+{
+ "description": "개발 단위마다 테스트 수, 커버리지, 변이 점검 결과와 판정.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "units.json",
+  "url": "/_blob/0ab3df02a4e401e20d3d26ac221da4ac"
+ },
+ "title": "개발 단위별 결과",
+ "updated": {
+  "at": "2026-10-10T10:10:00Z",
+  "by": "Claude"
+ }
+}

@@ -1,0 +1,247 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>사업자가 해야 할 작업순서</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 촬영 현장에서 옆에 띄워 두고 체크하는 작업판. 위에 진행률, 가운데 단계별 체크리스트, 아래에 참고표. */
+:root{
+  --bg:#f3f5f9; --card:#ffffff; --ink:#141a2e; --muted:#5a647c; --line:#d9deea;
+  --accent:#f2b705; --accent-ink:#241c00; --ok:#1f8f5f; --ok-bg:#e3f5ec; --warn:#b4540a; --warn-bg:#fdeede;
+  --chip:#e8ecf5; --me:#2f5bd8; --me-bg:#e5ecff;
+  --head:"Black Han Sans","Noto Sans KR",sans-serif; --body:"Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1322; --card:#171e33; --ink:#eef1fa; --muted:#a3acc4; --line:#2a3452;
+  --accent:#f6c026; --accent-ink:#241c00; --ok:#5fd39c; --ok-bg:#12332a; --warn:#ffb26b; --warn-bg:#3a2a18;
+  --chip:#222b47; --me:#8fb0ff; --me-bg:#1d2a55; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1322; --card:#171e33; --ink:#eef1fa; --muted:#a3acc4; --line:#2a3452;
+  --accent:#f6c026; --accent-ink:#241c00; --ok:#5fd39c; --ok-bg:#12332a; --warn:#ffb26b; --warn-bg:#3a2a18;
+  --chip:#222b47; --me:#8fb0ff; --me-bg:#1d2a55; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;padding-inline:16px;padding-block:24px 64px}
+.wrap{max-width:860px;margin-inline:auto}
+h1{font-family:var(--head);font-weight:400;font-size:clamp(26px,5vw,38px);line-height:1.25;margin:0 0 6px;text-wrap:balance}
+h2{font-family:var(--head);font-weight:400;font-size:22px;line-height:1.3;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:22px 0 8px;color:var(--muted);letter-spacing:.02em}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+.top{display:grid;gap:14px;margin-bottom:18px}
+.prog-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pct{font-family:var(--head);font-size:34px;line-height:1}
+.bar{height:12px;background:var(--chip);border-radius:6px;overflow:hidden;margin-top:10px}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.state{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.state div{min-width:0}
+.state b{display:block;margin-bottom:4px}
+.state ul{margin:0;padding-left:18px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.chips a{flex:none;text-decoration:none;color:var(--ink);background:var(--chip);border-radius:16px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.chips a.done{background:var(--ok-bg);color:var(--ok)}
+.chips a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+section.step{margin-block:18px;scroll-margin-top:70px}
+.step-h{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:13px;border-radius:5px;padding:2px 9px;background:var(--chip);color:var(--muted)}
+.tag.me{background:var(--me-bg);color:var(--me)}
+.tag.you{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.items{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.items li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.items input{width:22px;height:22px;margin-top:3px;flex:none;accent-color:var(--ok)}
+.items label{flex:1;min-width:0;cursor:pointer;overflow-wrap:anywhere}
+.items li.on{background:var(--ok-bg);border-color:var(--ok)}
+.items li.on label{color:var(--ok)}
+.note{background:var(--warn-bg);color:var(--ink);border-left:4px solid var(--warn);padding:10px 14px;border-radius:0 8px 8px 0;margin-top:12px;font-size:15px}
+code,.mono{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:var(--chip);padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
+.tw{overflow-x:auto;margin:6px 0 12px}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+button{font:inherit;font-size:14px;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 14px;cursor:pointer}
+button.arm{background:var(--warn-bg);border-color:var(--warn)}
+footer{color:var(--muted);font-size:14px;margin-top:28px}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
+</style>
+
+<div class="wrap">
+  <h1>사업자가 해야 할 작업순서</h1>
+  <p class="sub">사장님이 직접 하실 일만 모았습니다 · 기준일 2026-10-08 · 시간은 어림값이라 연습 때 잰 값으로 바꾸세요</p>
+
+  <div class="top">
+    <div class="card">
+      <div class="prog-row"><div><div class="mono" style="background:none;padding:0;color:var(--muted)">내가 체크한 항목</div><div class="pct" id="pct">0%</div></div><div id="count" style="color:var(--muted)">0 / 0</div></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar"><i id="fill"></i></div>
+    </div>
+    <div class="card state">
+      <div><b>제가(Claude) 이미 끝낸 것</b><ul><li>대본 8챕터 · 연습 자료 · 촬영 클립 목록(B1~B21)</li><li>그래픽 카드 39장 · 썸네일 3종(A·B·C)</li><li>음성 66문단 · 샘플 영상 19분 29초(캐릭터 4구간)</li><li>업로드 문안(제목·설명란·태그)</li></ul></div>
+      <div><b>사장님이 하실 일</b><ul><li>샘플 확인과 방향 결정</li><li>앱 화면 녹화(B1~B21)와 본인 촬영</li><li>정답 숫자 확인, 편집, 내보내기</li><li>업로드와 업로드 후 점검</li></ul></div>
+    </div>
+  </div>
+
+  <nav aria-label="단계 이동"><div class="chips" id="chips"></div></nav>
+  <main id="steps"></main>
+
+  <section class="card" style="margin-top:28px">
+    <h2>참고표</h2>
+    <h3>정답 숫자 (⑤ 주문 요약)</h3>
+    <div class="tw"><table>
+      <tr><th>항목</th><th class="n">수량</th><th class="n">금액(원)</th></tr>
+      <tr><td>버터쿠키</td><td class="n">12</td><td class="n">78,000</td></tr>
+      <tr><td>말차쿠키</td><td class="n">5</td><td class="n">35,000</td></tr>
+      <tr><td>선물세트</td><td class="n">7</td><td class="n">126,000</td></tr>
+      <tr><td><b>합계 (취소 2건 제외, 12건)</b></td><td class="n"><b>24</b></td><td class="n"><b>239,000</b></td></tr>
+    </table></div>
+    <h3>챕터별 시간 (낭독은 초안 실측, 시연은 낭독 위에 깔고 이 시간 안으로 컷·배속)</h3>
+    <div class="tw"><table>
+      <tr><th>챕터</th><th class="n">시작(목표)</th><th class="n">낭독</th><th class="n">시연 허용</th></tr>
+      <tr><td>① 오프닝</td><td class="n">0:00</td><td class="n">0:50</td><td class="n">0:40</td></tr>
+      <tr><td>② 왜 클로드 코드인가 + 설치</td><td class="n">1:30</td><td class="n">2:58</td><td class="n">1:02</td></tr>
+      <tr><td>③ 첫 실행 + 안전 3가지</td><td class="n">5:30</td><td class="n">3:15</td><td class="n">1:15</td></tr>
+      <tr><td>④ 자동화 ① 홍보 글</td><td class="n">10:00</td><td class="n">2:58</td><td class="n">1:32</td></tr>
+      <tr><td>⑤ 자동화 ② 문의·주문</td><td class="n">14:30</td><td class="n">3:18</td><td class="n">1:42</td></tr>
+      <tr><td>⑥ 자동화 ③ 홈페이지</td><td class="n">19:30</td><td class="n">2:58</td><td class="n">1:32</td></tr>
+      <tr><td>⑦ 스킬</td><td class="n">24:00</td><td class="n">1:41</td><td class="n">0:49</td></tr>
+      <tr><td>⑧ 요약 + 다음 영상</td><td class="n">26:30</td><td class="n">1:12</td><td class="n">0</td></tr>
+    </table></div>
+    <h3>캐릭터·본인 출연 구간 (샘플 영상 기준 시각)</h3>
+    <div class="tw"><table>
+      <tr><th>구간</th><th class="n">시각</th><th>대사</th></tr>
+      <tr><td>오프닝</td><td class="n">0:00~0:22</td><td>① 첫 문단들</td></tr>
+      <tr><td>10분 체크포인트</td><td class="n">7:04~7:25</td><td>④ 첫 문단</td></tr>
+      <tr><td>20분 전환</td><td class="n">13:20~13:38</td><td>⑥ 첫 문단</td></tr>
+      <tr><td>엔딩</td><td class="n">18:43~19:09</td><td>⑧ 마지막 두 문단</td></tr>
+    </table></div>
+    <h3>파일 위치 (저장소 <span class="mono">영상제작_개인사업자편/</span>)</h3>
+    <div class="tw"><table>
+      <tr><th>무엇</th><th>어디</th></tr>
+      <tr><td>샘플 영상(캐릭터 포함)</td><td><code>조립결과/개인사업자편_초안_캐릭터.mp4</code></td></tr>
+      <tr><td>대본 (읽을 문장만)</td><td><code>대본_낭독문_순수본.md</code></td></tr>
+      <tr><td>대본 원본 (화면·자막 큐 포함)</td><td><code>01_메인대본.md</code></td></tr>
+      <tr><td>썸네일 3종</td><td><code>썸네일/썸네일_A·B·C_….jpg</code> (원본 <code>썸네일/원본/thumbs.html</code>)</td></tr>
+      <tr><td>복사해서 붙일 문장</td><td><code>02_연습자료/프롬프트_모음.md</code></td></tr>
+      <tr><td>연습 데이터 3개</td><td><code>02_연습자료/상품정보.md · 문의_목록.csv · 주문_내역.csv</code></td></tr>
+      <tr><td>업로드 문안</td><td><code>03_업로드_패키지.md</code></td></tr>
+      <tr><td>촬영 클립 목록 B1~B21</td><td><code>04_제작_가이드.md</code></td></tr>
+      <tr><td>카드가 나오는 순서</td><td><code>조립/카드배치.json</code></td></tr>
+      <tr><td>인물 출연 가이드</td><td><code>05_AI인물_출연_가이드.md</code></td></tr>
+      <tr><td>그래픽 카드</td><td><code>그래픽/이미지_png/ · 그래픽/영상_mp4/G01~G08.mp4</code></td></tr>
+    </table></div>
+  </section>
+
+  <div class="btns"><button id="reset" type="button">체크 모두 지우기</button><button id="theme" type="button">밝게/어둡게</button></div>
+  <footer>체크 표시는 이 브라우저에만 저장됩니다. 이 기기 말고 다른 곳에서 열면 비어 있습니다.</footer>
+</div>
+
+<script>
+var STEPS=[
+{id:1,t:"샘플 영상 확인과 결정",who:"you",time:"약 30분",items:[
+ "저장소를 최신으로 받는다: <code>git pull origin PROD_SCH</code>",
+ "샘플 <code>영상제작_개인사업자편/조립결과/개인사업자편_초안_캐릭터.mp4</code>를 끝까지 재생한다 (19분 29초)",
+ "카드 화면이 대사와 맞게 바뀌는지, 자막이 읽히는지, 캐릭터 위치가 괜찮은지 확인한다",
+ "썸네일 3종(<code>썸네일/</code> 폴더 A·B·C) 중 하나를 고른다 (추천: A)",
+ "고칠 점은 메모해서 Claude에게 전달한다 (대본·음성·카드 수정은 Claude가 한다)"],
+ note:"이 영상은 확인용 초안입니다. 앱 화면 시연이 없어서 19분 29초이고, 시연이 들어가면 약 27분이 됩니다."},
+{id:2,t:"촬영 준비",who:"you",time:"약 1시간",items:[
+ "작업 폴더를 만든다: <code>01_화면녹화</code> <code>02_음성</code> <code>03_그래픽카드</code> <code>04_편집프로젝트</code> <code>05_완성본</code>",
+ "시연 폴더 <code>내사업</code>을 바탕화면 등 개인 파일이 없는 곳에 새로 만든다 (처음엔 비어 있어야 함)",
+ "연습 자료 3개(상품정보, 문의 목록, 주문 내역)를 다른 곳에 따로 둔다. 촬영 중에 폴더에 넣는 장면이 있다",
+ "<code>02_연습자료/프롬프트_모음.md</code>의 문장을 메모장에 저장한다 (타이핑하지 않고 붙여넣기)",
+ "OBS를 설정한다: 창 캡처(클로드 앱 창만), 1920×1080, 30fps, 마이크·데스크톱 소리 끄기",
+ "가릴 것을 정리한다: 계정 이메일·이름, 이전 세션 이름, 로그인 입력 장면, 요금 금액, 바탕화면 알림",
+ "앱 글자·화면 배율을 키운다 (50대 시청자도 읽을 수 있게)"]},
+{id:3,t:"사전 연습 (카메라 끄고)",who:"you",time:"약 2~3시간",items:[
+ "③ 첫 실행을 해 보고 걸린 시간을 적는다",
+ "④ 홍보 글 7개가 <code>홍보글</code> 폴더에 생기는지 본다",
+ "⑤ 주문 요약이 정답과 같은지 본다: 12건, 총매출 239,000원",
+ "⑤ 답변 초안에서 알레르기 문의(말차쿠키 아몬드)와 20세트 이상 별도 상담 답이 맞는지 본다",
+ "⑥ Plan 모드에서 계획이 나오고, <code>index.html</code>이 코드 탭 안에서 열리는지 본다",
+ "⑦ 스킬이 <code>/</code> 목록에 뜨는 쪽(분기 A 또는 B)을 확인한다. 되는 쪽만 남긴다",
+ "클로드가 다른 결과를 냈다면 알려 준다 → 해당 대본 문단과 음성을 Claude가 고친다"],
+ note:"연습에서 막힌 결과가 곧 영상의 내용입니다. 숫자가 다르면 ⑤ 낭독의 숫자 문단을 실제 결과에 맞춰 고치고 그 문단 음성만 다시 만듭니다."},
+{id:4,t:"화면 녹화 B1~B21",who:"you",time:"약 1.5~3시간",items:[
+ "공통 규칙: 녹화 시작 → 3초 정지 → 시연 → 3초 정지 → 중지. 틀리면 그 클립만 다시. 파일명은 <code>B번호_내용_순번.mp4</code>",
+ "B5 → B6 → B7 → B8 (③ 폴더 만들기, 설정 네 가지, 첫 요청, 지침서)",
+ "B9 → B10 → B11 (④ 홍보 글 7개, Accept edits 전환, 3일차 수정)",
+ "B12 → B13 → B14 → B15 (⑤ 연습 파일 투입, 답변 초안, 주문 요약, 코워크 아이콘)",
+ "B16 → B17 → B18 (⑥ Plan 모드, 홈페이지 실행과 열기, 말로 고치기)",
+ "B19 → B20 → B21 (⑦ 스킬 만들기, 새 세션에서 슬래시로 쓰기, Customize)",
+ "B1 (결과물 3개를 완성된 상태에서 한 번에)",
+ "B2 → B4 → B3 (깨끗한 상태가 필요한 탭 소개, 막힘 화면, 설치. 재현 안 되는 것은 찍지 않고 카드로 처리)",
+ "촬영이 끝나면 시연 폴더를 백업하거나 지우고, 개인정보가 보인 클립은 폐기한다"],
+ note:"대기 시간은 자르지 말고 그대로 녹화하고, 편집에서 2~4배속으로 줄입니다. 허락 화면과 정답 확인 장면은 원래 속도로 둡니다. 재촬영할 때는 <code>내사업</code> 폴더를 지우고 새로 만드세요."},
+{id:5,t:"본인 촬영 (출연 구간)",who:"you",time:"약 1시간",items:[
+ "스마트폰 가로, 창가 자연광 정면, 조용한 방에서 한 구간씩 찍는다",
+ "오프닝 약 20초: ① 첫 문단들",
+ "10분 체크포인트 약 20초: ④ 첫 문단",
+ "20분 전환 약 20초: ⑥ 첫 문단",
+ "엔딩 약 26초: ⑧ 마지막 두 문단",
+ "구간마다 앞뒤 3초는 가만히 있는다"],
+ note:"읽을 대사는 <code>대본_낭독문_순수본.md</code>입니다(읽을 문장만 들어 있음). 샘플의 캐릭터를 대신 쓰려면 Claude가 도구로 얹어 줄 수 있습니다."},
+{id:6,t:"썸네일 완성",who:"you",time:"약 30분",items:[
+ "고른 썸네일에서 일러스트(폴더 그림, 쿠키 가게 그림)를 촬영한 실제 결과 화면으로 바꿔 넣는다 (또는 Claude에게 요청)",
+ "문구의 숫자(27분, 7개, 0줄)가 실제 영상과 같은지 확인한다",
+ "휴대폰 크기로 줄여 읽히는지 본다"]},
+{id:7,t:"편집",who:"you",time:"반나절~1일",items:[
+ "편집 도구(CapCut이나 Vrew)에 음성, 화면 녹화, 카드, 본인 영상을 올린다",
+ "음성(또는 본인 목소리)을 기준 줄기로 두고, 시연 화면을 그 위에 깐다",
+ "챕터마다 시연 허용 시간 안으로 컷·배속한다 (아래 참고표). 원본을 그대로 이으면 27분을 크게 넘는다",
+ "카드(그래픽 폴더)와 자막을 얹는다. 카드가 어느 문단에서 나오는지는 <code>조립/카드배치.json</code>을 참고한다",
+ "정답 카드는 낭독 '정답은 제가 미리 계산해 뒀어요' 뒤에 띄운다",
+ "계정 정보와 개인 경로를 블러 처리한다",
+ "본인 영상은 오른쪽 아래 25~30%로 얹고, 카드 글자를 가리지 않는지 본다"]},
+{id:8,t:"내보내기와 점검",who:"you",time:"약 1시간",items:[
+ "1080p MP4로 내보낸다",
+ "스마트폰에서 처음부터 끝까지 본다: 글씨 가독성, 소리 크기, 개인정보 노출",
+ "챕터 시각을 실제 값으로 적어 둔다 (설명란에 쓴다)"]},
+{id:9,t:"업로드",who:"you",time:"약 1시간",items:[
+ "<code>03_업로드_패키지.md</code>에서 제목, 설명란, 고정 댓글, 태그를 고른다",
+ "설명란 챕터 시각을 실제 값으로 바꾸고, 괄호 안 임시 문구를 지운다",
+ "비공개로 올려서 확인한 뒤 예약 공개한다",
+ "업로드 화면의 합성 콘텐츠 관련 질문을 확인한다 (AI 음성이나 가상 인물을 썼다면)"],
+ note:"합성 음성·인물 관련 질문의 기준은 아직 확인하지 못했습니다. 업로드 화면의 안내를 직접 확인하세요."},
+{id:10,t:"업로드 후 점검",who:"you",time:"24시간·72시간 후",items:[
+ "24시간 뒤: 클릭률과 노출 수를 본다",
+ "72시간 뒤: 시청 지속률 그래프에서 급락 구간을 찾는다",
+ "급락 구간을 다음 영상에 반영한다"]}
+];
+var KEY="owner-tasks-done",done={};
+try{done=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){done={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}}
+var steps=document.getElementById("steps"),chips=document.getElementById("chips");
+var html="",ch="";
+STEPS.forEach(function(s){
+  var tag=s.who==="me"?'<span class="tag me">Claude</span>':'<span class="tag you">사장님</span>';
+  var its=s.items.map(function(t,i){var id="s"+s.id+"i"+i;return '<li data-id="'+id+'"><input type="checkbox" id="'+id+'"><label for="'+id+'">'+t+'</label></li>'}).join("");
+  html+='<section class="card step" id="step'+s.id+'"><div class="step-h"><h2>'+s.id+'단계. '+s.t+'</h2><div class="tags">'+tag+'<span class="tag">'+s.time+'</span></div></div><ul class="items">'+its+'</ul>'+(s.note?'<div class="note">'+s.note+'</div>':'')+'</section>';
+  ch+='<a href="#step'+s.id+'" data-step="'+s.id+'">'+s.id+'. '+s.t.replace(/ \(.*\)/,"")+'</a>';
+});
+steps.innerHTML=html;chips.innerHTML=ch;
+function refresh(){
+  var all=document.querySelectorAll(".items input"),n=0;
+  all.forEach(function(c){var on=!!done[c.id];c.checked=on;c.parentNode.classList.toggle("on",on);if(on)n++});
+  var p=all.length?Math.round(n*100/all.length):0;
+  document.getElementById("pct").textContent=p+"%";document.getElementById("count").textContent=n+" / "+all.length;
+  document.getElementById("fill").style.width=p+"%";document.getElementById("bar").setAttribute("aria-valuenow",p);
+  STEPS.forEach(function(s){
+    var inputs=document.querySelectorAll("#step"+s.id+" .items input"),ok=true;
+    inputs.forEach(function(c){if(!c.checked)ok=false});
+    var a=chips.querySelector('[data-step="'+s.id+'"]');if(a)a.classList.toggle("done",ok&&inputs.length>0);
+  });
+}
+steps.addEventListener("change",function(e){if(e.target.matches("input")){if(e.target.checked)done[e.target.id]=1;else delete done[e.target.id];save();refresh()}});
+var rb=document.getElementById("reset"),armed=false;
+rb.addEventListener("click",function(){
+  if(!armed){armed=true;rb.textContent="한 번 더 누르면 모두 지워집니다";rb.className="arm";setTimeout(function(){armed=false;rb.textContent="체크 모두 지우기";rb.className=""},4000);return}
+  done={};save();refresh();armed=false;rb.textContent="체크 모두 지우기";rb.className="";
+});
+document.getElementById("theme").addEventListener("click",function(){
+  var r=document.documentElement,dark=r.getAttribute("data-theme")==="dark"||(!r.getAttribute("data-theme")&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+  r.setAttribute("data-theme",dark?"light":"dark");
+});
+refresh();
+</script>
+
+</body></html>

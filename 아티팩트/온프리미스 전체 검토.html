@@ -1,0 +1,245 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>온프리미스 전체 검토</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* layout: 결론 → 기술 분류(내부망/외부망) → 메뉴별 점검 → 완전 격리 조치. 판정은 색과 글자를 함께 쓴다 */
+:root{--bg:#f5f6f8;--surface:#fff;--fg:#1b2230;--muted:#5b6678;--line:#dde1e8;--accent:#1f5fbf;--accent-soft:#e6eefb;--yes:#13794a;--yes-bg:#e1f4ea;--no:#a63a2b;--no-bg:#fbe9e5;--mid:#9a6200;--mid-bg:#fcf0d6;--code-bg:#eceff4;--head:#14233f;--head-fg:#f2f5fa;
+--sans:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;--head:#0b1018;--head-fg:#e4e8ef;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;--head:#0b1018;--head-fg:#e4e8ef;color-scheme:dark}
+html{scroll-behavior:smooth;scroll-padding-top:calc(52px + env(safe-area-inset-top,0px))}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.7;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--head)}
+.nav{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{flex:0 0 auto;color:var(--head-fg);text-decoration:none;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:3px 10px;font-weight:500;font-size:12.5px}
+main{max-width:960px;margin-inline:auto;padding-inline:16px;padding-block:18px 64px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:23px;line-height:1.35;margin:0;text-wrap:balance}
+h2{font-size:17px;margin:0 0 10px;text-wrap:balance}
+p{margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.lead{font-size:16px;font-weight:700;line-height:1.55;margin-bottom:8px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.pill.yes{background:var(--yes-bg);color:var(--yes)} .pill.no{background:var(--no-bg);color:var(--no)} .pill.mid{background:var(--mid-bg);color:var(--mid)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.kpi.ok b{color:var(--yes)} .kpi.warn b{color:var(--mid)} .kpi.bad b{color:var(--no)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;font-size:13.5px;line-height:1.55;min-width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:84px}
+th{background:var(--accent-soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.k{font-weight:700;min-width:120px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+pre.mermaid{margin:0;text-align:center;overflow-x:auto}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+@media (min-width:700px){main{padding-block:32px 72px}.card{padding:20px 24px}}
+</style>
+<header class="top"><nav class="nav">
+  <a href="#s1">결론</a><a href="#s2">내부망 기술</a><a href="#s3">외부망 기술</a><a href="#s4">메뉴별 점검</a><a href="#s5">완전 격리 조치</a>
+</nav></header>
+<main>
+<header>
+  <h1>온프리미스 전체 검토</h1>
+  <p class="sub">모의면접 프로젝트 · PROD_SCH 소스 코드 검토 · 2026-10-12 · 실제 운영 PC의 설정값·네트워크 실측은 하지 않음</p>
+</header>
+
+<section class="card" id="s1">
+  <p class="lead">결론: 면접 핵심 기능은 전부 내부망에서 동작합니다. 외부망이 필요한 곳은 5가지였고, 코드 에디터(Monaco)는 2026-10-12에 해결했습니다. 메일 발송은 지원자에게 보내야 해서 외부로 나가는 것이 본질이므로 조치 대상에서 제외합니다. 음성인식 키 차단과 설치물 반입을 조치하고 방화벽으로 확인하면, 메일 외에는 모두 내부망에서 동작합니다.</p>
+  <div class="kpis">
+    <div class="kpi ok"><b>12종</b><span>내부망 전용으로 동작하는 기술</span></div>
+    <div class="kpi ok"><b>1건 해결</b><span>코드 에디터(Monaco) CDN 제거, 2026-10-12</span></div>
+    <div class="kpi warn"><b>1곳</b><span>운영 중 외부망 접속 (메일, 의도된 외부 통신이라 조치 제외)</span></div>
+    <div class="kpi warn"><b>1곳</b><span>키가 있을 때만 외부 전송 (음성인식)</span></div>
+    <div class="kpi warn"><b>설치 시 1회</b><span>패키지·모델·이미지 내려받기</span></div>
+  </div>
+</section>
+
+<section class="card" id="s2">
+  <h2>내부망에서만 동작하는 기술과 사용 이유</h2>
+  <div class="tw"><table>
+    <thead><tr><th>기술</th><th>하는 일</th><th>사용 이유</th></tr></thead>
+    <tbody>
+      <tr><td class="k">llama.cpp + Qwen2.5 1.5B</td><td>면접 꼬리질문 생성, 리포트 채점</td><td>지원자 답변을 외부 LLM 회사로 보내지 않으려고(개인정보), 호출 비용 0원, 개인 PC에서도 구동 가능한 작은 모델</td></tr>
+      <tr><td class="k">LangChain / LangGraph</td><td>LLM 호출 래핑, 검증·재시도·폴백 흐름</td><td>라이브러리일 뿐 외부 통신이 없고, 정해진 흐름을 안정적으로 관리하려고 사용. 호출 대상은 같은 PC의 로컬 모델</td></tr>
+      <tr><td class="k">MiniLM 임베딩 + pgvector (RAG)</td><td>질문은행에서 비슷한 질문 검색</td><td>유료 벡터DB(Pinecone) 대신 기존 PostgreSQL에 확장으로 붙여 별도 서비스·비용 없이 구현</td></tr>
+      <tr><td class="k">faster-whisper</td><td>지원자 음성 → 텍스트</td><td>음성 파일은 가장 민감한 개인정보라 외부 전송 없이 처리, 유료 Deepgram 예산 없음</td></tr>
+      <tr><td class="k">Piper</td><td>AI 면접관 음성 합성</td><td>유료 ElevenLabs 대신 무료 오픈소스, 네트워크 불필요</td></tr>
+      <tr><td class="k">SmolVLM-500M</td><td>화이트보드 그림 분석</td><td>유료 GPT-4V 대신 로컬 소형 비전 모델</td></tr>
+      <tr><td class="k">DeepFace, librosa</td><td>표정 감정 분석, 음성 특징 분석</td><td>얼굴 영상·음성이 외부로 나가지 않도록 로컬 처리</td></tr>
+      <tr><td class="k">PostgreSQL 16, Redis, Celery</td><td>데이터 저장, 작업 큐, 비동기 처리</td><td>표준 오픈소스, 모두 자체 서버에서 구동(Docker)</td></tr>
+      <tr><td class="k">코드 샌드박스(Docker, 네트워크 차단)</td><td>지원자가 쓴 코드를 격리 실행</td><td>악성 코드·데이터 유출 방지를 위해 <code>--network none</code>으로 외부 통신을 아예 막음</td></tr>
+      <tr><td class="k">WebRTC 시그널링(자체 WebSocket)</td><td>화상 연결 신호 교환</td><td>외부 STUN/TURN 서버 설정이 소스에서 발견되지 않아 같은 망 안에서 동작하는 구조</td></tr>
+      <tr><td class="k">AES-256-GCM, Argon2id, JWT</td><td>저장 데이터 암호화, 비밀번호, 로그인</td><td>외부 인증·키 서비스 없이 자체 보안 구현</td></tr>
+      <tr><td class="k">FastAPI, Next.js(3001·3002)</td><td>서버·화면</td><td>자체 호스팅 웹 애플리케이션</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card" id="s3">
+  <h2>외부망이 필요한 기술과 사용 이유</h2>
+  <div class="tw"><table>
+    <thead><tr><th>구분</th><th>기술</th><th>사용 이유</th><th>폐쇄망 영향</th><th>대안</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill mid">제외<br>(외부 유지)</span></td><td class="k">Gmail SMTP<br><code>smtp.gmail.com:587</code></td><td>합격·불합격 안내 메일 자동 발송(2026-09-30 사용자 지시). 지원자에게 메일을 보내는 일은 본질적으로 외부 전달이고, 무료로 시작하려고 Gmail 사용</td><td>의도된 외부 통신. 인터넷이 완전히 막힌 환경에서는 메일이 나가지 않음(결정은 저장됨)</td><td><b>조치 제외.</b> 지원자 메일은 반드시 외부로 나가야 하므로 Gmail 발송을 유지하고, 방화벽에서는 이 메일 서버 주소만 예외로 허용</td></tr>
+      <tr><td><span class="pill yes">해결됨<br>2026-10-12</span></td><td class="k">Monaco 코드 에디터</td><td>면접장의 코딩 문제 입력 화면. 기존에는 라이브러리 기본값이 에디터 파일을 인터넷 CDN(jsdelivr)에서 받아왔음</td><td>해결 후 영향 없음. 인터넷을 차단한 브라우저에서 에디터 표시·입력·언어 전환 정상(13건 검증, 설정 없는 대조군에서는 기존 결함 재현)</td><td>적용 완료: 에디터 본체(0.55.1)를 설치 시 <code>public/monaco/vs</code>로 복사해 같은 서버에서 제공. 결과서 <code>개발작업내용/코드에디터Monaco로컬화_20261012_0346.md</code></td></tr>
+      <tr><td><span class="pill yes">코드 차단 완료<br>2026-10-12</span></td><td class="k">Deepgram 음성인식<br><code>api.deepgram.com</code></td><td>로컬 모델(small)보다 인식 정확도·속도가 좋을 수 있어 선택 기능으로 추가(사용자가 키 제공, 2026-09-23)</td><td>해결 후 영향 없음. <code>ONPREM_MODE</code>(기본 켜짐)에서는 키가 남아 있어도 Deepgram을 호출하지 않고 로컬 faster-whisper가 처리 (테스트 13건, 가드 제거 변이 5건 모두 탐지)</td><td>적용 완료. 키는 모든 위치에서 제거하고 콘솔에서 폐기 권장. 롤백은 <code>ONPREM_MODE=false</code>. 로컬 인식 품질이 부족하면 더 큰 Whisper 모델로 보완. 결과서 <code>개발작업내용/Deepgram코드차단_20261012_0445.md</code></td></tr>
+      <tr><td><span class="pill mid">설치·첫 실행 1회</span></td><td class="k">패키지·모델·이미지 내려받기</td><td>pip/npm 패키지, Docker 이미지(pgvector, redis, 샌드박스용 python·node), Whisper·MiniLM 모델, Piper 음성은 최초 사용 시 자동 다운로드. DeepFace 가중치도 일반적으로 첫 실행 시 받음(이 항목은 코드에서 확인하지 못함)</td><td>설치 때만 필요. 폐쇄망에서는 자동 다운로드가 실패</td><td>외부망 PC에서 받아 사내망으로 반입(모델·패키지·이미지 미러), 모델 파일 경로 고정</td></tr>
+      <tr><td><span class="pill yes">연결 안 됨</span></td><td class="k">ElevenLabs, OpenAI GPT-4V, Pinecone</td><td>초기 기획서에 있던 유료 서비스. 예산이 없어 로컬 대안으로 대체했고(DEC-005) 어댑터 코드만 남음</td><td>호출하는 곳이 없어 영향 없음. 단 코드가 남아 있어 실수로 연결될 위험</td><td>삭제하거나 온프리미스 모드에서 차단</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Claude 아티팩트 주소가 소스 주석에 있으나, 화면은 앱 안에 구현돼 있어 실제 접속하지 않습니다.</p>
+</section>
+
+<section class="card" id="s4">
+  <h2>메뉴별 점검</h2>
+  <div class="tw"><table>
+    <thead><tr><th>구분</th><th>메뉴</th><th>사용 기술</th><th>외부망 의존</th><th>폐쇄망 동작</th></tr></thead>
+    <tbody>
+      <tr><td>지원자</td><td class="k">로그인·회원가입, 마이페이지, 약관</td><td>FastAPI, PostgreSQL, JWT</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+      <tr><td>지원자</td><td class="k">새 면접 시작 · 동의</td><td>PostgreSQL, 암호화 저장</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+      <tr><td>지원자</td><td class="k">면접장 · 질문·답변(음성)</td><td>LLM, RAG, LangGraph, faster-whisper, Piper, WebSocket, Redis/Celery</td><td>Deepgram 키가 있을 때만</td><td><span class="pill yes">가능</span><br><span class="note">키 없을 때</span></td></tr>
+      <tr><td>지원자</td><td class="k">면접장 · 코드 에디터</td><td>Monaco(로컬 제공), 코드 샌드박스(Docker)</td><td>없음 (CDN 제거, 2026-10-12)</td><td><span class="pill yes">가능 (해결)</span><br><span class="note">실제 면접 흐름은 PC 확인 필요</span></td></tr>
+      <tr><td>지원자</td><td class="k">면접장 · 화이트보드</td><td>SmolVLM(로컬)</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+      <tr><td>지원자</td><td class="k">면접장 · 웹캠(표정·화상)</td><td>DeepFace, WebRTC 시그널링</td><td>없음(외부 STUN 설정 미발견)</td><td><span class="pill yes">가능</span><br><span class="note">같은 망 기준</span></td></tr>
+      <tr><td>지원자</td><td class="k">면접 리포트</td><td>LLM 채점, 암호화 저장</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+      <tr><td>지원(3002)</td><td class="k">로그인, 이력서 등록, 안내</td><td>FastAPI, PostgreSQL, 파일 저장</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+      <tr><td>채용담당자</td><td class="k">이력서 검토 (결정 시 안내 메일)</td><td>PostgreSQL, 메일 발송</td><td>Gmail SMTP</td><td><span class="pill mid">메일은 외부 유지</span><br><span class="note">조치 제외</span></td></tr>
+      <tr><td>채용담당자</td><td class="k">지원자 리포트 · 최종 합격/불합격</td><td>PostgreSQL, 메일 발송</td><td>Gmail SMTP</td><td><span class="pill mid">메일은 외부 유지</span><br><span class="note">조치 제외</span></td></tr>
+      <tr><td>채용담당자</td><td class="k">제출 절차 안내, 채용담당자 추가, 템플릿 관리</td><td>화면, PostgreSQL</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+      <tr><td>관리자</td><td class="k">운영(/admin/ops)</td><td>FastAPI, Redis</td><td>없음</td><td><span class="pill yes">가능</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card" id="s5">
+  <h2>완전한 내부망(폐쇄망)으로 만들기 위한 조치</h2>
+  <pre class="mermaid">
+flowchart LR
+  A["현재<br/>대부분 내부망"] --> B["1. Deepgram 코드 차단<br/>✔ 완료 (2026-10-12)"]
+  B --> C["2. 코드 에디터 로컬화<br/>Monaco ✔ 완료 (2026-10-12)"]
+  C --> D["3. 메일: 제외<br/>외부 발송 유지, 방화벽 예외 허용"]
+  D --> E["4. 설치물 반입<br/>패키지·모델·이미지"]
+  E --> F["5. 방화벽 아웃바운드 차단<br/>외부 접속 0건 확인"]
+  </pre>
+  <div class="tw" style="margin-top:12px"><table>
+    <thead><tr><th>순서</th><th>조치</th><th>효과</th><th>난이도</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td><span class="pill yes">코드 차단 완료</span> (<code>ONPREM_MODE</code>, 외부 AI 어댑터 3종 다층 차단). 운영 PC에서는 아직 <code>DEEPGRAM_API_KEY</code>를 <b>모든 위치</b>(.env, 시스템 환경변수, 배포 스크립트, 백업 파일)에서 제거하고 서버·워커를 재시작, Deepgram 콘솔에서 키 폐기(이전에 대화 화면에 노출된 이력이 있음), 온프리미스 모드에서 코드로 차단, 미연결 외부 어댑터 정리</td><td>음성의 외부 전송 가능성 제거. 키가 없으면 로컬 모델이 처리</td></tr><td>쉬움</td></tr>
+      <tr><td class="k">2</td><td><span class="pill yes">완료</span> Monaco 에디터를 설치 시 로컬로 복사해 같은 서버에서 로드</td><td>인터넷 없는 PC에서도 코드 화면 동작 (차단 브라우저 검증 통과)</td><td>완료 (PC에서 <code>git pull</code> 후 <code>npm install</code>)</td></tr>
+      <tr><td class="k">3</td><td><span class="pill mid">제외</span> 메일 발송은 지원자에게 가야 하므로 외부 발송(Gmail)을 유지</td><td>방화벽에서 메일 서버 주소만 예외 허용</td><td>해당 없음</td></tr>
+      <tr><td class="k">4</td><td>패키지, Docker 이미지, 모델 파일(Whisper, MiniLM, Piper 음성, DeepFace 가중치, llama 모델·실행파일)을 외부망 PC에서 받아 반입하고 경로를 고정</td><td>폐쇄망에서도 설치·첫 실행 성공</td><td>보통(반입 절차 필요)</td></tr>
+      <tr><td class="k">5</td><td>서버·클라이언트 방화벽에서 아웃바운드 차단 후 접속 시도 로그 점검. <b>SMTP(메일) 외부 발송은 처리 제외</b>이며 메일 서버 주소만 예외 허용. <span class="pill mid">도구·절차서 준비 완료, 실제 점검은 PC에서 수행</span> 로그 분석 도구 <code>scripts/onprem/firewall_audit.py</code>(테스트 27건)와 절차서 <code>docs/onprem/방화벽점검절차.md</code>를 제공함. 아래 "방화벽 점검 쉬운 설명" 참고</td><td>숨은 외부 호출이 없음을 증거로 확인</td><td>쉬움</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">이 조치와 별도로, 면접 LLM을 별도 GPU 서버로 옮기고 모델을 상향하는 작업은 앞서 만든 "온프리미스 변경 가능여부 절차" 문서의 전환 절차를 따릅니다.</p>
+</section>
+
+<section class="card">
+  <h2>방화벽 점검 쉬운 설명</h2>
+  <p><b>비유:</b> 건물 출입문입니다. 들어오는 사람을 막는 것(인바운드)은 흔하지만, 여기서는 <b>건물 안에서 밖으로 나가는 사람(아웃바운드)</b>을 막습니다. 직원(프로그램)이 몰래 밖에 전화를 걸어 자료를 보내는 일이 없는지 출입 기록으로 확인하는 것입니다.</p>
+  <div class="tw" style="margin-top:12px"><table>
+    <thead><tr><th>단계</th><th>하는 일</th><th>쉬운 설명</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1. 허용 목록 만들기</td><td>밖으로 나가도 되는 곳을 정함</td><td>예: 메일 서버(smtp.gmail.com의 587번 포트) 하나뿐. 나머지는 전부 막을 대상</td></tr>
+      <tr><td class="k">2. 기록부터 켜기</td><td>막기 전에 방화벽 로그만 켜고 평소처럼 면접을 한 번 진행</td><td>누가 어디로 나가려 하는지 먼저 관찰. 막았다가 서비스가 멈추는 사고를 방지</td></tr>
+      <tr><td class="k">3. 기록 읽기</td><td>로그에서 목적지가 사내망이 아닌 접속을 찾음</td><td>메일 서버 외에 보이는 주소가 있으면 "어떤 프로그램이 왜 나가는지" 추적</td></tr>
+      <tr><td class="k">4. 차단하기</td><td>허용 목록 외 외부 나가는 통신을 기본 차단</td><td>이제 숨은 외부 호출이 있어도 나가지 못하고 "차단됨"으로 기록</td></tr>
+      <tr><td class="k">5. 다시 면접 + 차단 기록 확인</td><td>면접 전 과정(로그인, 질문, 음성, 코드, 리포트, 메일)을 다시 진행</td><td>차단 기록이 없거나 예상한 것뿐이고, 기능이 모두 정상이면 통과</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><b>서버</b>는 백엔드·워커·모델이 도는 PC, <b>클라이언트</b>는 면접자·채용담당자가 쓰는 PC입니다. 서버는 위 절차로, 클라이언트는 "서버 주소로만 접속 가능"한지(코드 에디터 등이 인터넷을 요구하지 않는지) 같은 방식으로 확인합니다. 차단을 걸 때는 사내 DB·DNS·원격접속 같은 필요한 통신을 허용 목록에 먼저 넣어야 서버에 접속이 끊기지 않습니다.</p>
+</section>
+
+<section class="card">
+  <h2>확인하지 못한 것</h2>
+  <ul>
+    <li>실제 운영 PC의 <code>.env</code> 값(Deepgram 키 설정 여부)과 방화벽 상태는 이 환경에서 볼 수 없습니다.</li>
+    <li>Monaco는 해결 후 인터넷을 차단한 브라우저로 에디터 표시·입력·언어 전환을 확인했습니다(개발 서버·운영 빌드 모두). 다만 로그인 후 실제 면접 진행과 코드 제출까지의 전체 흐름은 이 서버에서 검증하지 못했으므로 PC에서 확인이 필요합니다.</li>
+    <li>DeepFace 가중치와 웹캠 화상의 외부 STUN 사용 여부는 소스에서 설정을 찾지 못했다는 수준의 확인이고, 실제 네트워크 캡처로 검증하지 않았습니다.</li>
+  </ul>
+</section>
+</main>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

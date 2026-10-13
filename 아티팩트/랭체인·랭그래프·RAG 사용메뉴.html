@@ -1,0 +1,188 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>랭체인/랭그래프/RAG 사용메뉴</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* layout: 결론 3칸 → 메뉴 매트릭스 → 흐름도 → 근거(파일:줄) → 한계. 판정은 색 + 글자 둘 다로 표시 */
+:root{--bg:#f5f6f8;--surface:#fff;--fg:#1b2230;--muted:#5b6678;--line:#dde1e8;--accent:#1f5fbf;--accent-soft:#e6eefb;
+--yes:#13794a;--yes-bg:#e1f4ea;--no:#a63a2b;--no-bg:#fbe9e5;--mid:#9a6200;--mid-bg:#fcf0d6;--code-bg:#eceff4;
+--sans:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.7;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+main{max-width:860px;margin-inline:auto;padding-inline:16px;padding-block:20px 56px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:23px;line-height:1.35;margin:0;text-wrap:balance}
+h2{font-size:17px;margin:0 0 10px;text-wrap:balance}
+p{margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.verdicts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.v{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.v b{font-size:16px}
+.pill{align-self:flex-start;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+.pill.yes{background:var(--yes-bg);color:var(--yes)}
+.pill.no{background:var(--no-bg);color:var(--no)}
+.pill.mid{background:var(--mid-bg);color:var(--mid)}
+.v p{font-size:13.5px;color:var(--muted)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;font-size:13.5px;line-height:1.55;min-width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--accent-soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.c{white-space:nowrap}
+code{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+pre.mermaid{margin:0;text-align:center;overflow-x:auto}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.menu{font-weight:700}
+@media (min-width:700px){main{padding-block:32px 72px}.card{padding:20px 24px}}
+</style>
+<main>
+<header>
+  <h1>랭체인/랭그래프/RAG 사용메뉴</h1>
+  <p class="sub">모의면접 프로젝트 전체 코드 검토 · 브랜치 PROD_SCH · 최신 커밋 fb6e73c 기준</p>
+</header>
+
+<section class="verdicts" aria-label="결론">
+  <div class="v"><span class="pill yes">사용함</span><b>RAG</b><p>면접 중 질문 추천에 실제로 쓰입니다. 지원자의 "면접장" 한 곳입니다.</p></div>
+  <div class="v"><span class="pill mid">설치만 됨, 메뉴 연결 없음</span><b>랭체인</b><p>검증용 모듈과 패키지는 있으나 어떤 화면·API·워커에서도 호출하지 않습니다.</p></div>
+  <div class="v"><span class="pill no">사용 안 함</span><b>랭그래프</b><p>패키지, 코드, 설정 어디에도 없습니다.</p></div>
+</section>
+
+<section class="card">
+  <h2>메뉴별 사용 여부</h2>
+  <div class="tw"><table>
+    <thead><tr><th>구분</th><th>메뉴(화면)</th><th>랭체인</th><th>랭그래프</th><th>RAG</th></tr></thead>
+    <tbody>
+      <tr><td>지원자</td><td class="menu">새 면접 시작 → 면접장 (<code>/interviews/[id]</code>)</td><td class="c">미사용</td><td class="c">미사용</td><td class="c"><span class="pill yes">사용</span></td></tr>
+      <tr><td>지원자</td><td>면접 리포트, 마이페이지, 동의 화면</td><td class="c">미사용</td><td class="c">미사용</td><td class="c">미사용</td></tr>
+      <tr><td>지원자(지원)</td><td>이력서 등록·지원 (frontend-apply)</td><td class="c">미사용</td><td class="c">미사용</td><td class="c">미사용</td></tr>
+      <tr><td>채용담당자</td><td>이력서 검토, 지원자 리포트, 제출 절차 안내, 채용담당자 추가</td><td class="c">미사용</td><td class="c">미사용</td><td class="c">미사용</td></tr>
+      <tr><td>관리자</td><td>운영(<code>/admin/ops</code>)</td><td class="c">미사용</td><td class="c">미사용</td><td class="c">미사용</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">리포트 생성(채점)은 루브릭 기반 LLM 호출이라 검색(RAG)을 쓰지 않습니다.</p>
+</section>
+
+<section class="card">
+  <h2>RAG는 면접장에서 두 번 동작합니다</h2>
+  <pre class="mermaid">
+flowchart LR
+  A["지원자: 새 면접 시작"] --> B["면접 시작 API<br/>interviews.py:266"]
+  B --> C["오프닝 job<br/>process_opening_question_job"]
+  C --> D[("질문은행 검색<br/>opening 카테고리 1건")]
+  D --> E["첫 질문 음성 출력"]
+  E --> F["지원자 답변 제출<br/>interviews.py:620"]
+  F --> G["턴 job<br/>process_turn_job"]
+  G --> H[("질문은행 검색<br/>답변과 유사한 질문 3건<br/>MMR + 유사도 임계치")]
+  H --> I["LLM 꼬리질문 생성<br/>후보를 프롬프트에 주입"]
+  I --> J["질문 음성 출력"]
+  </pre>
+  <div class="tw" style="margin-top:12px"><table>
+    <thead><tr><th>단계</th><th>하는 일</th><th>위치</th></tr></thead>
+    <tbody>
+      <tr><td class="c">1. 첫 질문</td><td>"면접 시작 오프닝 자기소개"로 검색해 opening 질문 1건을 그대로 사용. 없으면 고정 문구.</td><td><code>worker/tasks.py:203</code></td></tr>
+      <tr><td class="c">2. 꼬리질문</td><td>지원자 답변을 벡터로 바꿔 질문은행에서 3건을 검색(opening 제외, 유사도 임계치), 그 결과를 LLM 시스템 프롬프트에 넣어 질문 생성. LLM 실패 시 검색된 질문 1건으로 대체.</td><td><code>worker/tasks.py:281, 290</code></td></tr>
+      <tr><td class="c">검색 엔진</td><td>sentence-transformers 다국어 MiniLM(384차원) + PostgreSQL pgvector 코사인 거리 + MMR(다양성 0.5)</td><td><code>services/rag_engine.py</code></td></tr>
+      <tr><td class="c">질문은행</td><td>자체 제작 15건(technical 9, behavioral 5, opening 1). 최초 1회 <code>python -m app.services.seed_questions</code> 실행 필요.</td><td><code>services/seed_questions.py</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>랭체인이 "있지만 쓰이지 않는" 이유</h2>
+  <ul>
+    <li><code>backend/requirements.txt</code>에 <code>langchain-core</code>, <code>langchain-openai</code>가 선언돼 있고, <code>services/langchain_orchestrator.py</code> 한 파일에서만 import합니다.</li>
+    <li>이 파일은 원안의 "LangChain 면접관 페르소나" 요구를 <b>검증용 별도 모듈</b>로 구현한 것입니다(unit-26, 2026-09-22 승인). 파일 머리말에 "운영 중인 턴 처리 파이프라인을 대체하지 않는다"고 명시돼 있습니다.</li>
+    <li>이 모듈의 함수 <code>generate_followup_via_langchain</code>을 부르는 코드는 저장소 전체에 없습니다. 테스트에서도 import 오류를 막으려 가짜(stub) 모듈로 대체됩니다.</li>
+    <li>실제 면접 응답은 <code>llm_engine.py</code>가 llama.cpp 서버를 직접 호출하는 코드로 처리합니다. 프레임워크는 Celery와 FastAPI뿐입니다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>정확히 말해 둘 점</h2>
+  <ul>
+    <li><b>RAG는 있고, "에이전트형 RAG"는 아닙니다.</b> 한 번 검색해 후보를 넣는 단순 구조이며, 검색 결과로 LLM이 도구를 호출하거나 다단계로 판단하지 않습니다. 그래서 랭그래프가 필요한 흐름도 지금은 없습니다.</li>
+    <li>벡터DB는 pgvector를 씁니다. <code>vectordb_adapter_pinecone.py</code>는 Pinecone 대안용 어댑터인데 호출하는 코드가 없는 미사용 파일입니다.</li>
+    <li>이 결과는 소스 검색으로 확인한 것입니다. 실행 중인 서버의 DB에 질문은행이 실제로 들어 있는지는 이 세션에서 확인하지 못했습니다. 시드가 없으면 검색이 빈 결과를 내고 첫 질문은 고정 문구로 대체됩니다.</li>
+  </ul>
+</section>
+</main>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

@@ -1,0 +1,619 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>바이브코딩 블로그 현황판</title>
+<style>
+  :root {
+    --paper: #f2f3f6;
+    --surface: #ffffff;
+    --surface-2: #fafafc;
+    --ink: #191c22;
+    --ink-dim: #5c6472;
+    --ink-faint: #8b93a1;
+    --line: #e1e3ea;
+    --line-strong: #c9cdd8;
+    --accent: #1f6f78;
+    --accent-ink: #0f4a52;
+    --accent-soft: #e4f1f0;
+    --pass: #1a7f4b;
+    --pass-soft: #e2f5ea;
+    --pending: #a6690a;
+    --pending-soft: #fbeedb;
+    --blocker: #b3311f;
+    --blocker-soft: #fbe7e3;
+    --mono-chip: #eef0f4;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #10131a;
+      --surface: #171b24;
+      --surface-2: #1c212c;
+      --ink: #edeff3;
+      --ink-dim: #a2aab8;
+      --ink-faint: #6b7382;
+      --line: #2a303c;
+      --line-strong: #3a4150;
+      --accent: #4fb6bb;
+      --accent-ink: #8fd6d9;
+      --accent-soft: rgba(79, 182, 187, 0.14);
+      --pass: #4bcf8a;
+      --pass-soft: rgba(75, 207, 138, 0.14);
+      --pending: #e3a23c;
+      --pending-soft: rgba(227, 162, 60, 0.14);
+      --blocker: #f0685a;
+      --blocker-soft: rgba(240, 104, 90, 0.14);
+      --mono-chip: #232833;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10131a;
+    --surface: #171b24;
+    --surface-2: #1c212c;
+    --ink: #edeff3;
+    --ink-dim: #a2aab8;
+    --ink-faint: #6b7382;
+    --line: #2a303c;
+    --line-strong: #3a4150;
+    --accent: #4fb6bb;
+    --accent-ink: #8fd6d9;
+    --accent-soft: rgba(79, 182, 187, 0.14);
+    --pass: #4bcf8a;
+    --pass-soft: rgba(75, 207, 138, 0.14);
+    --pending: #e3a23c;
+    --pending-soft: rgba(227, 162, 60, 0.14);
+    --blocker: #f0685a;
+    --blocker-soft: rgba(240, 104, 90, 0.14);
+    --mono-chip: #232833;
+    color-scheme: dark;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans KR", "Noto Sans KR", sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+  h1, h2, h3 {
+    font-family: "Noto Serif KR", serif;
+    font-weight: 700;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--ink);
+  }
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  a { color: var(--accent-ink); }
+
+  /* ---------- header ---------- */
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line-strong);
+    margin-bottom: 28px;
+  }
+  .masthead .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin-bottom: 8px;
+  }
+  .masthead h1 { font-size: clamp(26px, 4vw, 34px); }
+  .masthead .sub { color: var(--ink-dim); font-size: 14.5px; margin-top: 6px; max-width: 52ch; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--pending-soft);
+    color: var(--pending);
+    font-weight: 600;
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+  .status-pill .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
+  .meta-line { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); margin-top: 10px; }
+
+  /* ---------- stat tiles ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 34px;
+  }
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 16px;
+  }
+  .stat-tile .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 26px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .stat-tile .num small { font-size: 14px; color: var(--ink-faint); font-weight: 500; }
+  .stat-tile .label { font-size: 12.5px; color: var(--ink-dim); margin-top: 4px; }
+
+  @media (max-width: 760px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ---------- section shell ---------- */
+  section { margin-bottom: 40px; }
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .section-head h2 { font-size: 20px; }
+  .section-head .idx { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); }
+  .section-note { color: var(--ink-dim); font-size: 13.5px; margin: -6px 0 16px; max-width: 68ch; }
+
+  /* ---------- pipeline ---------- */
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stage {
+    flex: 1 1 68px;
+    min-width: 68px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 10px 8px 9px;
+    text-align: center;
+    position: relative;
+  }
+  .stage .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .stage .t {
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 3px;
+    line-height: 1.25;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage .s {
+    margin-top: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 999px;
+    display: inline-block;
+  }
+  .stage.pass { border-color: color-mix(in srgb, var(--pass) 35%, var(--line)); }
+  .stage.pass .s { background: var(--pass-soft); color: var(--pass); }
+  .stage.pending { border-color: color-mix(in srgb, var(--pending) 35%, var(--line)); }
+  .stage.pending .s { background: var(--pending-soft); color: var(--pending); }
+  .stage.future .s { background: var(--mono-chip); color: var(--ink-faint); }
+  .stage.future { opacity: 0.72; }
+
+  /* ---------- two col ---------- */
+  .cols {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .diagram-card pre.mermaid { margin: 0; }
+
+  .stack-list { display: flex; flex-direction: column; gap: 10px; }
+  .stack-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .stack-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .stack-row .k {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    padding: 3px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .stack-row .v { font-size: 13.5px; color: var(--ink); }
+  .stack-row .v .d { color: var(--ink-dim); font-size: 12.5px; display: block; margin-top: 2px; }
+
+  /* ---------- tables ---------- */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 680px; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+    padding: 11px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0;
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.group-row td {
+    background: var(--surface-2);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    padding: 7px 14px;
+  }
+  .req-id { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-dim); white-space: nowrap; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .chip.pass { background: var(--pass-soft); color: var(--pass); }
+  .chip.pending { background: var(--pending-soft); color: var(--pending); }
+  .chip.off { background: var(--mono-chip); color: var(--ink-faint); }
+
+  /* ---------- timeline ---------- */
+  .timeline { position: relative; padding-left: 26px; }
+  .timeline::before {
+    content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 1px; background: var(--line-strong);
+  }
+  .tl-item { position: relative; padding-bottom: 22px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before {
+    content: ""; position: absolute; left: -26px; top: 4px; width: 11px; height: 11px; border-radius: 999px;
+    background: var(--surface); border: 2px solid var(--accent);
+  }
+  .tl-item.blocker::before { border-color: var(--blocker); }
+  .tl-item.fixed::before { border-color: var(--pass); background: var(--pass); }
+  .tl-date { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); }
+  .tl-title { font-weight: 700; font-size: 14.5px; margin: 3px 0 4px; }
+  .tl-body { font-size: 13px; color: var(--ink-dim); max-width: 70ch; }
+  .tl-body code { background: var(--mono-chip); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  /* ---------- checklist ---------- */
+  .checklist { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 700px) { .checklist { grid-template-columns: 1fr; } }
+  .check-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .check-card .num-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink);
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; margin-right: 8px;
+  }
+  .check-card h3 { font-family: "IBM Plex Sans KR", sans-serif; font-size: 14.5px; font-weight: 700; display: inline; }
+  .check-card ul { margin: 10px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink-dim); }
+  .check-card li { margin-bottom: 4px; }
+  .check-card li code { font-size: 11.5px; background: var(--mono-chip); padding: 1px 5px; border-radius: 4px; }
+
+  footer {
+    margin-top: 50px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", monospace;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">HANESS_AUTO · 13-STAGE HARNESS</div>
+      <h1>바이브코딩 블로그 — 개발 현황판</h1>
+      <div class="sub">Django 5.2 + Wagtail 7.4 기반 블로그/콘텐츠 사이트. Render + Neon + Cloudflare R2로 배포 예정.</div>
+      <div class="meta-line">snapshot: 2026-09-29 · branch: PROD · docs/harness/ 기준</div>
+    </div>
+    <div class="status-pill"><span class="dot"></span>12단계(실배포) 대기 — 외부 인프라 준비 중</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-tile">
+      <div class="num">10<small>/13</small></div>
+      <div class="label">파이프라인 단계 PASS</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">19<small>/27</small></div>
+      <div class="label">요구사항(REQ) 구현 완료</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">14</div>
+      <div class="label">작업단위(WU) 진행</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">114<small>/114</small></div>
+      <div class="label">자동 테스트 통과</div>
+    </div>
+    <div class="stat-tile">
+      <div class="num">60</div>
+      <div class="label">의사결정 로그(decisions.md)</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head"><span class="idx">01</span><h2>13단계 파이프라인 현황</h2></div>
+    <div class="section-note">5→6→7은 작업단위(WU)마다 반복 수행됨. 8~10단계는 WU-11(댓글)·WU-13(애드센스)·WU-14(스팸방어) 추가 후 각각 addendum으로 재검증됨.</div>
+    <div class="pipeline">
+      <div class="stage pass"><div class="n">01</div><div class="t">트렌드분석</div><div class="s">PASS</div></div>
+      <div class="stage pass"><div class="n">02</div><div class="t">기획서</div><div class="s">PASS</div></div>
+      <div class="stage pass"><div class="n">03</div><div class="t">설계서</div><div class="s">PASS v1.4</div></div>
+      <div class="stage pass"><div class="n">04</div><div class="t">디자인서</div><div class="s">PASS</div></div>
+      <div class="stage pass"><div class="n">05</div><div class="t">개발</div><div class="s">WU 14개</div></div>
+      <div class="stage pass"><div class="n">06</div><div class="t">단위테스트</div><div class="s">PASS</div></div>
+      <div class="stage pass"><div class="n">07</div><div class="t">통합테스트</div><div class="s">PASS</div></div>
+      <div class="stage pass"><div class="n">08</div><div class="t">전체시스템</div><div class="s">PASS+addendum</div></div>
+      <div class="stage pass"><div class="n">09</div><div class="t">보안검증</div><div class="s">PASS+addendum×2</div></div>
+      <div class="stage pass"><div class="n">10</div><div class="t">배포테스트</div><div class="s">PASS (2026-09-29 갱신)</div></div>
+      <div class="stage pending"><div class="n">11</div><div class="t">문서화</div><div class="s">4종 작성됨 · 일부 갱신 필요</div></div>
+      <div class="stage future"><div class="n">12</div><div class="t">실배포</div><div class="s">대기 · 사용자 승인 필요</div></div>
+      <div class="stage future"><div class="n">13</div><div class="t">배포후검증</div><div class="s">대기</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="idx">02</span><h2>아키텍처 &amp; 기술 스택</h2></div>
+    <div class="cols">
+      <div class="card diagram-card">
+        <pre class="mermaid">
+flowchart TB
+  U["방문자 / 운영자"] --> R["Render 웹서비스\ngunicorn · Django 5.2 + Wagtail 7.4\n(단일 인스턴스, workers=1)"]
+  R --> N[("Neon PostgreSQL\nscale-to-zero")]
+  R --> RM["Cloudflare R2\nmedia-public 버킷"]
+  R -. 장애알림 .-> MAIL["SMTP\nDJANGO_ADMIN_EMAIL"]
+  GH["GitHub Actions\n(1일 1회 cron)"] -->|pg_dump| RB["Cloudflare R2\nbackup-private 버킷"]
+  GH -.->|읽기 전용| N
+        </pre>
+      </div>
+      <div class="card">
+        <div class="stack-list">
+          <div class="stack-row"><span class="k">CMS</span><span class="v">Wagtail 7.4 LTS<span class="d">Page 트리 상속 모델, 리비전/예약발행 코어 기능 그대로 활용</span></span></div>
+          <div class="stack-row"><span class="k">FRAMEWORK</span><span class="v">Django 5.2 LTS<span class="d">requirements.txt에 버전 고정</span></span></div>
+          <div class="stack-row"><span class="k">DB</span><span class="v">PostgreSQL (Neon)<span class="d">로컬 개발도 동일 엔진(Docker postgres:16-alpine)으로 전환 완료</span></span></div>
+          <div class="stack-row"><span class="k">STORAGE</span><span class="v">Cloudflare R2<span class="d">media-public / backup-private 버킷 분리, django-storages+boto3</span></span></div>
+          <div class="stack-row"><span class="k">HOSTING</span><span class="v">Render 웹서비스<span class="d">단일 인스턴스, gunicorn+uvicorn, healthCheckPath /healthz</span></span></div>
+          <div class="stack-row"><span class="k">AUTH</span><span class="v">Django 세션 + Wagtail 그룹 권한<span class="d">Editors/Moderators, 관리자 진입점 2곳 공유 레이트리밋</span></span></div>
+          <div class="stack-row"><span class="k">BACKUP</span><span class="v">GitHub Actions cron<span class="d">앱과 독립적으로 pg_dump → R2, 장애 격리</span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="idx">03</span><h2>요구사항 추적 (traceability.md 기준)</h2></div>
+    <div class="section-note">Must 15건은 전부 구현·검증 완료. Could 1건(댓글)은 v1로 승격돼 완료, 2건은 post-MVP 보류. REQ-023(광고)은 원 계획엔 Won't였으나 DEC-053 사용자 결정으로 In-Scope 전환·구현 완료 — traceability.md 원문 라벨은 아직 갱신 전이라 표시만 남음.</div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th style="width:70px">ID</th><th>요구사항</th><th style="width:110px">우선순위</th><th style="width:110px">상태</th></tr></thead>
+        <tbody>
+          <tr class="group-row"><td colspan="4">Must — 15건 전체 완료</td></tr>
+          <tr><td class="req-id">REQ-001</td><td>콘텐츠 CRUD/편집 워크플로(임시저장·예약발행·리비전)</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-002</td><td>카테고리/태그 분류체계</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-003</td><td>콘텐츠 공개 목록/상세 뷰</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-004</td><td>RSS 피드 제공</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-005</td><td>SEO 기본요소(메타태그·사이트맵·robots·구조화데이터)</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-006</td><td>이미지/미디어 업로드 — S3 호환 오브젝트 스토리지</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-007</td><td>개인정보처리방침 페이지</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-008</td><td>쿠키 사용 고지</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-009</td><td>이용약관 페이지</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-010</td><td>관리자 인증(Django 어드민 권한관리)</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-011</td><td>무료 티어 콜드스타트 UX 대응</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-012</td><td>인스턴스시간 한도 모니터링·유료전환 기준</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-013</td><td>Neon PITR 6시간 한계 보완 백업</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-014</td><td>반응형 기본 레이아웃(접근성 포함)</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-015</td><td>규제 민감 콘텐츠 게시 금지 가이드라인</td><td>Must</td><td><span class="chip pass">완료</span></td></tr>
+          <tr class="group-row"><td colspan="4">Should — 2건 전체 완료</td></tr>
+          <tr><td class="req-id">REQ-016</td><td>이메일 뉴스레터 구독 폼</td><td>Should</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-017</td><td>AI 검색 대응 콘텐츠 전략(FAQ·RSS·이메일 이중화)</td><td>Should</td><td><span class="chip pass">완료</span></td></tr>
+          <tr class="group-row"><td colspan="4">Could — 1건 완료 · 2건 보류</td></tr>
+          <tr><td class="req-id">REQ-018</td><td>사이트 내부 검색</td><td>Could</td><td><span class="chip off">보류</span></td></tr>
+          <tr><td class="req-id">REQ-019</td><td>댓글 기능(사전승인제 + 스팸방어)</td><td>Could→v1</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">REQ-020</td><td>소셜 공유 버튼</td><td>Could</td><td><span class="chip off">보류</span></td></tr>
+          <tr class="group-row"><td colspan="4">Won't (원계획) — REQ-023만 사용자 결정으로 전환</td></tr>
+          <tr><td class="req-id">REQ-023</td><td>광고 SDK 연동(Google 애드센스)</td><td>Won't→전환</td><td><span class="chip pass">최소구현 완료</span></td></tr>
+          <tr><td class="req-id">REQ-021·022·024~027</td><td>다국어/GDPR 강화, 유료구독, 회원제, LLM기능, 대규모 편집권한, 네이티브앱</td><td>Won't</td><td><span class="chip off">범위 외</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="idx">04</span><h2>작업단위(Work Unit) 현황</h2></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th style="width:64px">WU</th><th>내용</th><th>REQ</th><th style="width:100px">상태</th></tr></thead>
+        <tbody>
+          <tr><td class="req-id">WU-01</td><td>프로젝트 초기 설정(Wagtail 스캐폴딩, Neon 연결, 배포 파이프라인 골격)</td><td class="req-id">기반</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-02</td><td>콘텐츠 모델 및 CRUD</td><td class="req-id">001·002</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-03</td><td>오브젝트 스토리지 연동(R2 미디어 파이프라인)</td><td class="req-id">006</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-04</td><td>공개 열람 화면(목록·상세·카테고리·태그·RSS)</td><td class="req-id">003·004·014</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-05</td><td>SEO 구현 + AI 검색 대응 콘텐츠</td><td class="req-id">005·017</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-06</td><td>법적 페이지 3종 + 콘텐츠 정책 가이드라인</td><td class="req-id">007·008·009·015</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-07</td><td>이메일 뉴스레터 구독 폼</td><td class="req-id">016</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-08</td><td>무료 티어 대응(콜드스타트·사용량 모니터링)</td><td class="req-id">011·012</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-09</td><td>관리자 인증/권한 커스터마이징</td><td class="req-id">010</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-10</td><td>백업/복구 절차(GitHub Actions → R2)</td><td class="req-id">013</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-11</td><td>댓글 기능(사전승인제, 이메일 미수집)</td><td class="req-id">019</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-12</td><td>수익화(유료구독/회원제)</td><td class="req-id">022·024</td><td><span class="chip off">보류</span></td></tr>
+          <tr><td class="req-id">WU-13</td><td>애드센스 준비(계정 없이 값만 넣으면 켜지는 최소구현)</td><td class="req-id">023</td><td><span class="chip pass">완료</span></td></tr>
+          <tr><td class="req-id">WU-14</td><td>댓글 스팸 방어(상습범 자동차단 + IP 수동차단)</td><td class="req-id">019 강화</td><td><span class="chip pass">완료</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="idx">05</span><h2>최근 처리한 이슈 — 배포 전 발견된 결함 2건</h2></div>
+    <div class="section-note">10단계 addendum과 로컬 Postgres 전환 과정에서 실제 Neon 배포를 막았을 결함 2건을 발견해 당일 해소함.</div>
+    <div class="timeline">
+      <div class="tl-item blocker">
+        <div class="tl-date">2026-09-28</div>
+        <div class="tl-title">DEF-10-06 (Critical) — 실배포 시 빌드 100% 크래시</div>
+        <div class="tl-body">10단계 addendum이 실제 Postgres(Neon 재현)로 <code>build.sh</code>를 실행해 <code>legal.0003</code> 마이그레이션에서 트랜잭션 abort 크래시를 2회 재현. 근본원인: <code>wagtail.search</code> 의존성 누락으로 검색색인 테이블 생성 전에 INSERT 시도.</div>
+      </div>
+      <div class="tl-item fixed">
+        <div class="tl-date">2026-09-29</div>
+        <div class="tl-title">DEF-10-06 수정 — wagtailsearch 의존성 명시</div>
+        <div class="tl-body">로컬 Postgres 16(운영과 동일 엔진)에서 수정 전/후 대조 재현으로 검증. 전체 테스트 114/114 통과. <code>10-deploy-test.md</code> PASS로 갱신.</div>
+      </div>
+      <div class="tl-item blocker">
+        <div class="tl-date">2026-09-29</div>
+        <div class="tl-title">데이터 이전 부작용 — content_type ID 불일치</div>
+        <div class="tl-body">SQLite→Postgres 데이터 이전을 PK 그대로 복사하는 방식으로 수행해, 동일 정수 ID가 DB마다 다른 모델을 가리키게 됨(예: 글이 태그로 오인식). 실제 글 상세 페이지 크래시로 발견.</div>
+      </div>
+      <div class="tl-item fixed">
+        <div class="tl-date">2026-09-29</div>
+        <div class="tl-title">자연키 기반 재이전으로 해소</div>
+        <div class="tl-body"><code>dumpdata --natural-foreign</code>으로 재이전(앱/모델 이름 기준 자동 재매핑). 전체 Page·Revision·PageLogEntry를 모델별로 집계해 오염 0건 확인, 브라우저 실측 + 테스트 114/114 재확인.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="idx">06</span><h2>12단계(실배포) 전 남은 작업</h2></div>
+    <div class="section-note">애플리케이션은 배포 준비가 됐지만, 실제 벤더 계정/자격증명은 아직 하나도 발급되지 않은 상태.</div>
+    <div class="checklist">
+      <div class="check-card">
+        <span class="num-badge">1</span><h3>Cloudflare R2</h3>
+        <ul>
+          <li>버킷 2개 — <code>media-public</code>, <code>backup-private</code></li>
+          <li>API 토큰 버킷별 분리 발급 권장</li>
+        </ul>
+      </div>
+      <div class="check-card">
+        <span class="num-badge">2</span><h3>Neon PostgreSQL</h3>
+        <ul>
+          <li>프로젝트 생성, Render와 가까운 리전</li>
+          <li>pooled connection string 사용 확인</li>
+        </ul>
+      </div>
+      <div class="check-card">
+        <span class="num-badge">3</span><h3>Render 웹서비스</h3>
+        <ul>
+          <li><code>render.yaml</code> Blueprint로 신규 생성</li>
+          <li>환경변수 25개 입력(★10개는 .env.example 누락분)</li>
+        </ul>
+      </div>
+      <div class="check-card">
+        <span class="num-badge">4</span><h3>GitHub Actions Secrets</h3>
+        <ul>
+          <li>백업 워크플로용 6개 시크릿</li>
+          <li>미입력 시 워크플로가 명시적으로 실패 처리</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>docs/harness/ · decisions.md DEC-001~061 · traceability.md · 10-deploy-test.md §13</span>
+    <span>규칙E: 12단계 실배포는 세션 내 사용자 명시적 승인 전 절대 실행되지 않음</span>
+  </footer>
+
+</div>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

@@ -1,0 +1,221 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>온프리미스 변경 가능여부 절차</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* layout: 결론 → 현재 구현 → 온프리미스 격차 → 전환 절차(흐름도+단계표) → 코드 변경 → 사전 확인 항목 */
+:root{--bg:#f5f6f8;--surface:#fff;--fg:#1b2230;--muted:#5b6678;--line:#dde1e8;--accent:#1f5fbf;--accent-soft:#e6eefb;--yes:#13794a;--yes-bg:#e1f4ea;--no:#a63a2b;--no-bg:#fbe9e5;--mid:#9a6200;--mid-bg:#fcf0d6;--code-bg:#eceff4;
+--sans:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.7;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+main{max-width:920px;margin-inline:auto;padding-inline:16px;padding-block:20px 56px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:23px;line-height:1.35;margin:0;text-wrap:balance}
+h2{font-size:17px;margin:0 0 10px;text-wrap:balance}
+p{margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.lead{font-size:16px;font-weight:700;line-height:1.55;margin-bottom:8px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.pill.yes{background:var(--yes-bg);color:var(--yes)} .pill.no{background:var(--no-bg);color:var(--no)} .pill.mid{background:var(--mid-bg);color:var(--mid)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;font-size:13.5px;line-height:1.55;min-width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:84px}
+th{background:var(--accent-soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.k{font-weight:700;min-width:120px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+pre.mermaid{margin:0;text-align:center;overflow-x:auto}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+@media (min-width:700px){main{padding-block:32px 72px}.card{padding:20px 24px}}
+</style>
+<main>
+<header>
+  <h1>온프리미스 변경 가능여부 절차</h1>
+  <p class="sub">모의면접 프로젝트 · PROD_SCH 최신 소스 코드 검토(실행·성능 측정은 하지 않음) · 2026-10-12</p>
+</header>
+
+<section class="card">
+  <p class="lead">결론: 전환 가능합니다. 이미 운영 경로는 대부분 로컬(온프리미스형)이고, 남은 일은 "서버 분리·모델 상향·외부 연결 차단·운영 체계"입니다.</p>
+  <ul>
+    <li>면접 LLM은 지금도 회사 밖 API가 아니라 같은 PC에서 뜨는 <b>llama.cpp 서버(Qwen2.5 1.5B)</b>를 씁니다. 지원자 답변이 외부 LLM으로 나가지 않습니다.</li>
+    <li>다만 지금 구조는 "개인 PC 1대용"입니다. 앱이 모델 서버를 직접 띄우고(Windows 실행파일), 주소가 코드에 고정돼 있어, 별도 GPU 서버로 옮기려면 <b>코드 수정이 필요</b>합니다. 규모는 작습니다(파일 3~4개).</li>
+    <li>가장 큰 숙제는 코드가 아니라 <b>모델 품질</b>입니다. 1.5B는 한국어 면접 품질이 낮아 보호 장치가 많이 붙어 있습니다. 온프리미스 서버로 옮기는 김에 7B~14B급으로 올리는 것이 정석입니다.</li>
+    <li>데이터가 밖으로 나갈 수 있는 경로 1개(Deepgram 음성인식)가 키 설정 시 열립니다. 온프리미스 목적이라면 반드시 차단해야 합니다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>현재 LLM·AI 구현 상태</h2>
+  <div class="tw"><table>
+    <thead><tr><th>기능</th><th>현재 구현</th><th>위치</th><th>온프리미스</th></tr></thead>
+    <tbody>
+      <tr><td class="k">면접 질문·리포트 LLM</td><td>llama.cpp <code>llama-server</code>(Windows exe)를 앱이 서브프로세스로 기동. Qwen2.5-1.5B-Instruct Q4_K_M, 포트 8091, 컨텍스트 4096, GPU(Vulkan) 실패 시 CPU 자동 폴백. OpenAI 호환 API(<code>/v1/chat/completions</code>)로 호출, JSON 모드 + Pydantic 검증</td><td><code>services/llm_engine.py</code></td><td><span class="pill yes">로컬 실행</span></td></tr>
+      <tr><td class="k">오케스트레이션</td><td>RAG + LangChain + LangGraph(2026-10-12 적용). LangChain도 같은 로컬 서버(<code>127.0.0.1:8091</code>)를 호출</td><td><code>turn_graph.py</code><br><code>langchain_orchestrator.py</code></td><td><span class="pill yes">로컬 실행</span></td></tr>
+      <tr><td class="k">임베딩(RAG)</td><td>sentence-transformers 다국어 MiniLM(CPU), 벡터는 PostgreSQL pgvector</td><td><code>services/rag_engine.py</code></td><td><span class="pill yes">로컬 실행</span><br><span class="note">모델 파일 사전 반입 필요</span></td></tr>
+      <tr><td class="k">음성 → 텍스트(STT)</td><td>기본 faster-whisper small(CPU, int8). <b>단, <code>DEEPGRAM_API_KEY</code>가 설정되면 Deepgram 외부 API를 먼저 호출</b>하고 실패 시 로컬로 폴백</td><td><code>services/stt_router.py</code></td><td><span class="pill mid">키 설정 시 외부 유출</span></td></tr>
+      <tr><td class="k">텍스트 → 음성(TTS)</td><td>Piper(서브프로세스, 로컬 음성 파일)</td><td><code>services/tts_engine.py</code></td><td><span class="pill yes">로컬 실행</span></td></tr>
+      <tr><td class="k">화이트보드 분석</td><td>API는 로컬 SmolVLM-500M만 호출. OpenAI GPT-4V 어댑터는 코드에 있으나 API에 연결되지 않음</td><td><code>services/whiteboard_vision.py</code></td><td><span class="pill yes">로컬 실행</span></td></tr>
+      <tr><td class="k">표정 분석</td><td>DeepFace(로컬)</td><td><code>services/emotion_engine.py</code></td><td><span class="pill yes">로컬 실행</span></td></tr>
+      <tr><td class="k">미연결 외부 어댑터</td><td>ElevenLabs(TTS), Pinecone(벡터DB), OpenAI(비전) — 호출하는 코드 없음</td><td><code>*_adapter_*.py</code></td><td><span class="pill mid">삭제·차단 권장</span></td></tr>
+      <tr><td class="k">합격 안내 메일</td><td>Gmail SMTP(외부). LLM이 아니라 메일 발송 기능</td><td><code>services/email_service.py</code></td><td><span class="pill mid">처리 제외 (지원자 메일은 외부 발송 유지)</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">이 표는 소스 코드로 확인한 내용입니다. 실제 운영 PC의 <code>.env</code> 값(외부 키 설정 여부)과 실측 성능은 이 검토에서 확인하지 못했습니다.</p>
+</section>
+
+<section class="card">
+  <h2>"온프리미스 LLM 서버"가 되기 위한 격차</h2>
+  <div class="tw"><table>
+    <thead><tr><th>항목</th><th>현재</th><th>온프리미스 서버 기준</th><th>심각도</th></tr></thead>
+    <tbody>
+      <tr><td class="k">서버 분리</td><td>앱이 exe를 직접 기동·종료(PID 파일). 주소 <code>127.0.0.1:8091</code>이 코드에 고정</td><td>LLM 서버를 별도 호스트/서비스로 상시 운영, 앱은 URL 설정으로 접속</td><td><span class="pill no">높음</span></td></tr>
+      <tr><td class="k">모델 품질</td><td>1.5B. 질문 품질 가드·재시도·폴백이 많이 붙은 이유</td><td>7B~14B급 한국어 강한 모델로 상향, 한국어 면접 평가셋으로 선정</td><td><span class="pill no">높음</span></td></tr>
+      <tr><td class="k">동시 처리</td><td>워커가 한 번에 1건(solo), 서버도 단일 슬롯 기준. 큐 상한 50</td><td>동시 면접 수 기준으로 GPU·슬롯·워커 수 산정</td><td><span class="pill mid">중간</span></td></tr>
+      <tr><td class="k">외부 유출 차단</td><td>Deepgram 키 설정 시 음성 전송 가능. 미연결 외부 어댑터 코드 존재</td><td>외부 호출 코드·키 제거 또는 "온프리미스 모드"에서 강제 차단, 방화벽 아웃바운드 차단</td><td><span class="pill no">높음</span></td></tr>
+      <tr><td class="k">서버 인증·보안</td><td>로컬 호스트 전용이라 인증 없음</td><td>내부망 분리, 서버 접근 키/mTLS, 요청 로깅 정책</td><td><span class="pill mid">중간</span></td></tr>
+      <tr><td class="k">모델 거버넌스</td><td>모델 파일 1개를 수동 배치</td><td>모델 버전·해시·라이선스 기록, 반입 절차, 롤백 가능한 버전 관리</td><td><span class="pill mid">중간</span></td></tr>
+      <tr><td class="k">운영 체계</td><td>상태 확인은 기동 시 헬스체크 위주</td><td>상시 헬스체크, 지연·오류 모니터링, 장애 시 폴백/알림</td><td><span class="pill mid">중간</span></td></tr>
+      <tr><td class="k">플랫폼</td><td>Windows exe 전제</td><td>서버는 Linux + NVIDIA GPU가 일반적(드라이버·컨테이너 운영 용이)</td><td><span class="pill mid">선택</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>전환 절차</h2>
+  <pre class="mermaid">
+flowchart TD
+  A["0. 요구사항 확정<br/>동시 면접 수, 망분리 수준, 예산(GPU)"] --> B["1. 현행 기준선 측정<br/>품질·응답시간·오류율 기록"]
+  B --> C["2. 코드 분리 준비<br/>LLM 주소 설정화 + 외부 서버 모드"]
+  C --> D["3. 모델 후보 평가<br/>한국어 면접 평가셋으로 7B~14B 비교"]
+  D --> E["4. 서버 구축<br/>GPU 서버 + 추론 엔진 + 내부망"]
+  E --> F["5. 보안 잠금<br/>외부 호출 차단, 서버 인증, 로그 정책"]
+  F --> G["6. 병행 검증<br/>스위치로 신구 경로 비교, 부하 테스트"]
+  G --> H{"기준 충족?"}
+  H -- "예" --> I["7. 전환<br/>운영 모델 교체, 구경로는 롤백용 유지"]
+  H -- "아니오" --> D
+  I --> J["8. 운영<br/>모니터링, 모델 버전 관리, 정기 평가"]
+  </pre>
+  <div class="tw" style="margin-top:12px"><table>
+    <thead><tr><th>단계</th><th>핵심 작업</th><th>완료 기준</th></tr></thead>
+    <tbody>
+      <tr><td class="k">0. 요구사항</td><td>동시 면접 수, 일일 면접 수, 망분리 수준(완전 폐쇄 / 아웃바운드 제한), GPU 예산, 데이터 보관 정책 확정</td><td>수치로 적힌 요구서</td></tr>
+      <tr><td class="k">1. 기준선</td><td>현재 1.5B 기준으로 질문 품질, 턴당 응답 시간, 리포트 생성 시간, 실패율 측정</td><td>비교 가능한 기준 수치</td></tr>
+      <tr><td class="k">2. 코드 준비</td><td><code>LLM_BASE_URL</code> 설정화(두 호출 경로 모두), "외부 서버 모드"에서는 앱이 서버를 기동하지 않고 헬스체크만 수행, 요청 헤더 인증, 외부 어댑터 차단 플래그</td><td>URL만 바꿔 같은 코드가 로컬·원격 양쪽에서 동작</td></tr>
+      <tr><td class="k">3. 모델 평가</td><td>후보(7B/14B급) 3개 이내를 같은 평가셋으로 비교: 한국어 질문 자연스러움, JSON 형식 준수, 지연, 메모리. 라이선스 원문 확인</td><td>선정 근거 문서</td></tr>
+      <tr><td class="k">4. 서버 구축</td><td>GPU 서버 설치, 추론 엔진 선택(소규모는 llama.cpp 서버, 동시 사용자가 많으면 vLLM 같은 배치 엔진), 모델 반입, 내부망 연결</td><td>앱 서버에서 헬스체크 통과</td></tr>
+      <tr><td class="k">5. 보안 잠금</td><td>Deepgram 코드 차단(완료, 2026-10-12) 및 미사용 외부 어댑터 정리, 서버 인증, 방화벽 아웃바운드 차단(SMTP 메일 외부 발송은 처리 제외, 메일 서버만 예외 허용), 프롬프트·응답 로그 보관 정책</td><td>외부 접속 시도 0건 확인</td></tr>
+      <tr><td class="k">6. 병행 검증</td><td>신구 경로를 스위치로 비교, 동시 면접 부하 테스트, 장애 주입(서버 다운 시 폴백 문구 동작)</td><td>기준선 대비 품질 동등 이상, 응답시간 예산 충족</td></tr>
+      <tr><td class="k">7. 전환</td><td>운영 모델 교체. 이전 경로는 롤백용으로 일정 기간 유지</td><td>롤백 리허설 완료</td></tr>
+      <tr><td class="k">8. 운영</td><td>지연·오류 모니터링, 모델 버전·해시 기록, 정기 품질 재평가</td><td>운영 점검표 가동</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>코드 변경 범위 (예상)</h2>
+  <div class="tw"><table>
+    <thead><tr><th>파일</th><th>변경</th><th>규모</th></tr></thead>
+    <tbody>
+      <tr><td class="k"><code>services/llm_engine.py</code></td><td>주소·포트를 설정으로 분리, 외부 서버 모드(기동 생략, 헬스체크·인증 헤더), 타임아웃·컨텍스트 값을 모델에 맞게 설정화</td><td>중</td></tr>
+      <tr><td class="k"><code>services/langchain_orchestrator.py</code></td><td>고정 주소 대신 같은 설정 사용</td><td>소</td></tr>
+      <tr><td class="k"><code>core/config.py</code></td><td><code>LLM_BASE_URL</code>, <code>LLM_API_KEY</code>, <code>ONPREM_MODE</code>(외부 호출 강제 차단) 추가</td><td>소</td></tr>
+      <tr><td class="k"><code>services/stt_router.py</code></td><td>온프리미스 모드에서는 Deepgram 경로를 아예 타지 않음</td><td>소</td></tr>
+      <tr><td class="k">미연결 외부 어댑터 3~4개</td><td>삭제하거나 온프리미스 모드에서 import 차단</td><td>소</td></tr>
+      <tr><td class="k">프롬프트·평가</td><td>모델 상향 시 프롬프트 재튜닝과 품질 가드 기준(한국어 비율 등) 재검증. 기존 11건 결함 이력의 회귀 테스트 재실행</td><td>중</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">기존 보호 장치(질문 품질 가드, 재시도, 질문은행 폴백, 레이트리밋, 큐 상한)는 그대로 두고 재사용합니다. 모델이 좋아져도 폴백은 서버 장애 대비로 계속 필요합니다.</p>
+</section>
+
+<section class="card">
+  <h2>착수 전 확인이 필요한 항목</h2>
+  <ul>
+    <li><b>동시 면접 수와 일일 면접 수</b>: GPU 사양과 추론 엔진 선택을 결정합니다. 이 숫자가 없으면 서버 용량을 정할 수 없습니다.</li>
+    <li><b>망분리 수준</b>: 완전 폐쇄망인지, 아웃바운드만 제한하는지에 따라 모델 반입 방법과 메일 발송 방식이 달라집니다.</li>
+    <li><b>GPU 보유·예산</b>: 대략적으로 7B급 4비트 양자화는 VRAM 수 GB대, 14B급은 10GB 안팎이 필요합니다(일반적인 수치이며 모델·컨텍스트에 따라 달라지므로 후보 모델로 실측해야 합니다).</li>
+    <li><b>모델 라이선스</b>: 상용·내부 사용 조건을 선정한 모델의 원문으로 확인해야 합니다. 이 검토에서는 확인하지 않았습니다.</li>
+    <li><b>면접 데이터 보관 정책</b>: LLM 요청·응답 로그를 남길지, 얼마나 보관할지 결정이 필요합니다.</li>
+  </ul>
+  <p class="note">이 문서는 검토 결과이며 코드는 변경하지 않았습니다. 위 확인 항목이 정해지면 2단계(코드 분리 준비)부터 바로 착수할 수 있습니다.</p>
+</section>
+</main>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

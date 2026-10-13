@@ -1,0 +1,465 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>모의면접 기능맵</title>
+<style>
+:root{
+  --bg:#f5f6fb; --surface:#ffffff; --surface-2:#eef0f7; --border:#dfe3ee;
+  --ink:#191d2b; --ink-soft:#5a6280; --ink-faint:#8890a8;
+  --accent:#3a56f0; --accent-soft:#eaeeff; --accent-ink:#2c40c4;
+  --teal:#0d9488; --teal-soft:#e3f6f3;
+  --amber:#b45309; --amber-soft:#fdf1de;
+  --rose:#c0362c; --rose-soft:#fce8e6;
+  --mono-bg:#eef0f7; --mono-ink:#2c3350;
+  --shadow:0 1px 2px rgba(20,24,45,.04), 0 10px 24px -14px rgba(20,24,45,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1119; --surface:#161a24; --surface-2:#1d2230; --border:#2a3145;
+    --ink:#e8eaf5; --ink-soft:#a3aac4; --ink-faint:#6e7690;
+    --accent:#8296ff; --accent-soft:#1e2544; --accent-ink:#b7c1ff;
+    --teal:#3fd6c2; --teal-soft:#123330;
+    --amber:#f2b657; --amber-soft:#332510;
+    --rose:#f18b83; --rose-soft:#3a1c1a;
+    --mono-bg:#1d2230; --mono-ink:#c7cde6;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1119; --surface:#161a24; --surface-2:#1d2230; --border:#2a3145;
+  --ink:#e8eaf5; --ink-soft:#a3aac4; --ink-faint:#6e7690;
+  --accent:#8296ff; --accent-soft:#1e2544; --accent-ink:#b7c1ff;
+  --teal:#3fd6c2; --teal-soft:#123330;
+  --amber:#f2b657; --amber-soft:#332510;
+  --rose:#f18b83; --rose-soft:#3a1c1a;
+  --mono-bg:#1d2230; --mono-ink:#c7cde6;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Noto Sans KR",system-ui,sans-serif;
+  font-size:15px; line-height:1.62;
+  padding-inline:20px;
+}
+.wrap{max-width:1040px; margin:0 auto; padding-block:36px 80px;}
+code, .mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+/* ---------- header ---------- */
+header.hero{padding-block:8px 28px; border-bottom:1px solid var(--border); margin-bottom:28px;}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700;
+  color:var(--accent-ink); background:var(--accent-soft); border-radius:100px;
+  padding:5px 12px; letter-spacing:.02em;
+}
+h1{
+  font-size:clamp(26px,4vw,36px); line-height:1.18; margin:14px 0 8px; font-weight:900;
+  letter-spacing:-.01em;
+}
+.sub{color:var(--ink-soft); font-size:15.5px; max-width:680px; margin:0 0 20px;}
+.stack{display:flex; flex-wrap:wrap; gap:7px;}
+.chip{
+  font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--ink-soft);
+  background:var(--surface-2); border:1px solid var(--border); border-radius:6px;
+  padding:4px 9px;
+}
+
+/* ---------- stat row ---------- */
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:22px 0 6px;}
+.stat{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 14px; box-shadow:var(--shadow);
+}
+.stat b{display:block; font-size:24px; font-weight:900;}
+.stat span{font-size:12.5px; color:var(--ink-soft);}
+@media (max-width:640px){ .stats{grid-template-columns:repeat(2,1fr);} }
+
+/* ---------- jump nav ---------- */
+nav.jump{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  padding-block:14px; margin-bottom:8px; display:flex; gap:6px; flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+}
+nav.jump a{
+  text-decoration:none; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+  background:var(--surface); border:1px solid var(--border); border-radius:100px;
+  padding:6px 11px; white-space:nowrap;
+}
+nav.jump a:hover{color:var(--accent-ink); border-color:var(--accent);}
+
+section.block{margin-top:38px;}
+h2{
+  font-size:20px; font-weight:900; margin:0 0 4px; letter-spacing:-.01em;
+  display:flex; align-items:center; gap:8px; scroll-margin-top:60px;
+}
+.h2sub{color:var(--ink-faint); font-size:13px; margin:0 0 16px;}
+
+/* ---------- pipeline ---------- */
+.pipeline{
+  display:flex; flex-wrap:wrap; gap:0; align-items:stretch;
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:18px; box-shadow:var(--shadow);
+}
+.pstep{
+  flex:1 1 140px; padding:10px 14px; position:relative; min-width:140px;
+}
+.pstep .n{
+  font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:700; color:var(--accent-ink);
+}
+.pstep .t{font-weight:800; font-size:14px; margin:4px 0 3px;}
+.pstep .d{font-size:12.5px; color:var(--ink-soft);}
+.pstep .src{font-size:11px; color:var(--ink-faint); margin-top:5px; font-family:"JetBrains Mono",monospace;}
+.arrow{
+  display:flex; align-items:center; justify-content:center; color:var(--ink-faint);
+  font-size:16px; flex:0 0 20px;
+}
+@media (max-width:820px){ .arrow{display:none;} .pstep{border-bottom:1px dashed var(--border); padding-bottom:14px; margin-bottom:4px;} }
+
+/* ---------- feature cards ---------- */
+.grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:760px){ .grid{grid-template-columns:1fr;} }
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:18px 20px; box-shadow:var(--shadow); scroll-margin-top:60px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+.card-id{
+  width:34px; height:34px; border-radius:9px; background:var(--accent-soft); color:var(--accent-ink);
+  font-weight:900; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none;
+}
+.card-title{flex:1;}
+.card-title h3{margin:0 0 2px; font-size:16px; font-weight:800;}
+.card-title .req{font-size:11.5px; color:var(--ink-faint); font-family:"JetBrains Mono",monospace;}
+.badge{
+  font-size:11px; font-weight:700; border-radius:100px; padding:4px 10px; white-space:nowrap; flex:none;
+}
+.badge.done{color:var(--teal); background:var(--teal-soft);}
+.badge.partial{color:var(--amber); background:var(--amber-soft);}
+.badge.todo{color:var(--rose); background:var(--rose-soft);}
+.desc{font-size:13.5px; color:var(--ink-soft); margin:0;}
+.srcbox{background:var(--mono-bg); border-radius:10px; padding:10px 12px;}
+.srcbox .lbl{font-size:10.5px; font-weight:800; color:var(--ink-faint); letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px;}
+.srcbox .lbl:not(:first-child){margin-top:8px;}
+.srcbox code{display:block; font-size:11.8px; color:var(--mono-ink); line-height:1.72; word-break:break-all;}
+.note{
+  font-size:12px; color:var(--amber); background:var(--amber-soft); border-radius:8px; padding:7px 10px;
+  border:1px solid color-mix(in srgb, var(--amber) 30%, transparent);
+}
+.note.rose{color:var(--rose); background:var(--rose-soft); border-color:color-mix(in srgb, var(--rose) 30%, transparent);}
+
+/* ---------- oos table ---------- */
+.tablewrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow);}
+table{width:100%; border-collapse:collapse; font-size:13px; min-width:560px;}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:top;}
+th{font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; background:var(--surface-2);}
+tr:last-child td{border-bottom:none;}
+td.reqid{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent-ink); white-space:nowrap;}
+
+/* ---------- process ---------- */
+.steps{display:flex; flex-direction:column; gap:0; border-left:2px solid var(--border); margin-left:8px;}
+.steps li{list-style:none; position:relative; padding:0 0 20px 22px;}
+.steps li::before{
+  content:""; position:absolute; left:-7px; top:2px; width:12px; height:12px; border-radius:50%;
+  background:var(--surface); border:2px solid var(--accent);
+}
+.steps b{font-size:13.5px;}
+.steps p{margin:3px 0 0; font-size:13px; color:var(--ink-soft);}
+
+footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--border); font-size:12px; color:var(--ink-faint);}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">● AI 모의면접 플랫폼 · 기능 레퍼런스</span>
+  <h1>모의면접 프로그램 기능맵</h1>
+  <p class="sub">FastAPI(백엔드) + Next.js(프론트엔드) 구조. 아래 각 기능 카드에 실제 추적 가능한 소스 경로(REQ-ID 기준, <code>docs/harness/traceability.md</code> + 코드 직접 확인)를 정리했습니다. 카드의 파일 경로를 그대로 열어 소스를 따라가면 됩니다.</p>
+  <div class="stack">
+    <span class="chip">FastAPI</span><span class="chip">Next.js 14</span><span class="chip">PostgreSQL+pgvector</span>
+    <span class="chip">Redis</span><span class="chip">Celery</span><span class="chip">faster-whisper (STT)</span>
+    <span class="chip">llama.cpp · Qwen2.5-1.5B (LLM)</span><span class="chip">Piper TTS</span><span class="chip">Monaco Editor</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>9</b><span>핵심 기능 그룹 (Feature A~I)</span></div>
+  <div class="stat"><b>39</b><span>추적 대상 요구사항(REQ-001~039)</span></div>
+  <div class="stat"><b>11</b><span>Out-of-Scope 제외 항목</span></div>
+  <div class="stat"><b>5</b><span>AI 안전장치 — 아직 미착수</span></div>
+</div>
+
+<nav class="jump">
+  <a href="#pipeline">핵심 파이프라인</a>
+  <a href="#a">A 인증</a><a href="#b">B 세션</a><a href="#c">C AI 면접</a><a href="#d">D 코딩</a>
+  <a href="#e">E 리포트</a><a href="#f">F 채용담당자</a><a href="#g">G 개인정보</a><a href="#h">H 보조도구</a><a href="#i">I 통합UI</a>
+  <a href="#oos">범위 제외</a><a href="#security">미착수 안전장치</a><a href="#process">개발 진행방식</a>
+</nav>
+
+<section class="block" id="pipeline">
+  <h2>🔁 핵심 파이프라인 — 답변 1턴이 처리되는 흐름 (Feature C)</h2>
+  <p class="h2sub">지원자가 답변을 제출한 순간부터 AI 면접관의 다음 질문이 음성으로 돌아오기까지의 실제 처리 경로</p>
+  <div class="pipeline">
+    <div class="pstep">
+      <div class="n">01</div><div class="t">턴 제출</div>
+      <div class="d">텍스트 JSON 또는 음성 multipart</div>
+      <div class="src">interviews.py<br>POST /turns</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="pstep">
+      <div class="n">02</div><div class="t">STT 변환</div>
+      <div class="d">음성일 때만, faster-whisper small/int8</div>
+      <div class="src">services/stt_engine.py</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="pstep">
+      <div class="n">03</div><div class="t">Celery 큐 적재</div>
+      <div class="d">job_id 발급, DB 커밋 후 비동기 위임</div>
+      <div class="src">services/job_queue.py</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="pstep">
+      <div class="n">04</div><div class="t">RAG 검색 + LLM 생성</div>
+      <div class="d">pgvector 유사질문 검색 → 꼬리질문 생성 + 품질가드/재시도</div>
+      <div class="src">rag_engine.py<br>llm_engine.py<br>interview_prompts.py</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="pstep">
+      <div class="n">05</div><div class="t">TTS 합성</div>
+      <div class="d">Piper(ko_KR-kss), 실패해도 텍스트는 전달(그레이스풀 디그레이드)</div>
+      <div class="src">services/tts_engine.py</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="pstep">
+      <div class="n">06</div><div class="t">WS 실시간 푸시</div>
+      <div class="d">Redis Pub/Sub 릴레이 → turn_result 이벤트</div>
+      <div class="src">worker/tasks.py<br>api/v1/ws.py</div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="features">
+  <h2>🧩 기능별 소스 맵 (Feature A~I)</h2>
+  <p class="h2sub">상태 배지: <span style="color:var(--teal)">●구현완료</span> · <span style="color:var(--amber)">●부분구현</span> · <span style="color:var(--rose)">●미착수/배치 누락</span></p>
+  <div class="grid">
+
+    <div class="card" id="a">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">A</div>
+          <div class="card-title"><h3>회원가입 / 로그인 / 역할 구분</h3><div class="req">REQ-001</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">지원자·채용담당자(recruiter) 역할 구분, JWT 액세스/리프레시 토큰 발급, 본인 정보 조회.</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/auth.py — POST /register, /login, /refresh, GET /me</code>
+        <code>backend/app/core/security.py · backend/app/models/user.py</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/register/page.tsx</code>
+        <code>frontend/app/login/page.tsx</code>
+      </div>
+    </div>
+
+    <div class="card" id="b">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">B</div>
+          <div class="card-title"><h3>면접 세션 상태머신</h3><div class="req">REQ-002 · REQ-013</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">세션 생성 → 시작(live) → 일시중단(paused) → 재개(resume) → 종료(completed) / 24h 만료(expired). 지원자 본인 면접 목록 조회.</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/interviews.py — POST "" / GET "" / POST /start / /end / GET /{id} / POST /resume</code>
+        <code>backend/app/models/interview.py</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/interviews/new/page.tsx</code>
+        <code>frontend/components/CandidateHome.tsx</code>
+      </div>
+    </div>
+
+    <div class="card" id="c">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">C</div>
+          <div class="card-title"><h3>AI 질문·응답 파이프라인 (핵심)</h3><div class="req">REQ-003~007</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">텍스트/음성 턴 제출 → STT → LLM 적응형 꼬리질문 생성(+RAG 질문은행) → TTS 음성합성 → WebSocket 실시간 푸시. Celery 워커 비동기 파이프라인. 위 "핵심 파이프라인" 참고.</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/interviews.py — POST /{id}/turns, GET /{id}/transcripts, POST /{id}/tts-preview</code>
+        <code>backend/app/api/v1/ws.py — WS /ws/interviews/{id}</code>
+        <code>backend/app/services/{stt_engine,tts_engine,llm_engine,rag_engine,interview_prompts,turn_numbering,job_queue,celery_app,job_watchdog,ws_publisher}.py</code>
+        <code>backend/app/worker/tasks.py — process_opening_question_job / process_turn_job</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/interviews/[id]/page.tsx (채팅 UI + 음성 녹음)</code>
+        <code>frontend/app/interviews/[id]/components/InterviewSidePanel.tsx</code>
+      </div>
+    </div>
+
+    <div class="card" id="d">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">D</div>
+          <div class="card-title"><h3>라이브 코딩 환경</h3><div class="req">REQ-008</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">Monaco 에디터로 코드 작성 후 제출/저장(실행·자동채점은 의도적으로 범위 밖). 매 저장이 이력으로 누적, 재접속 시 복원.</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/code_submissions.py — POST/GET /interviews/{id}/code-submissions</code>
+        <code>backend/app/models/code_submission.py</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/interviews/[id]/components/CodeEditorPanel.tsx</code>
+      </div>
+    </div>
+
+    <div class="card" id="e">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">E</div>
+          <div class="card-title"><h3>평가 리포트 자동 생성</h3><div class="req">REQ-009 · 010 · 012</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">전체 대화이력을 LLM에 입력해 STAR(상황-과제-행동-결과) 구조 피드백 + 기술/커뮤니케이션/조직적합도 1~5점 스코어링 생성. "합격/불합격" 자동 확정은 만들지 않고 recommend/neutral/not_recommend 3단계 추천만 제공(REQ-031 원칙).</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/worker/tasks.py — process_report_generation_job</code>
+        <code>backend/app/api/v1/interviews.py — GET /{id}/report, POST /{id}/report/regenerate</code>
+        <code>backend/app/models/evaluation_report.py</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/interviews/[id]/report/page.tsx</code>
+      </div>
+      <div class="note">문서-코드 괴리 주의: <code>docs/harness/traceability.md</code>에는 이 기능이 "Not Started"로 남아있으나, 실제 <code>worker/tasks.py</code>에는 이미 상세 구현되어 있음(2026-09-22 시점 코드 기준). 추적 문서가 갱신 안 된 것으로 보이므로, 상태 판단은 코드/git log 기준으로 하는 걸 권장.</div>
+    </div>
+
+    <div class="card" id="f">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">F</div>
+          <div class="card-title"><h3>채용담당자 대시보드</h3><div class="req">REQ-011 · 014</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">전체 지원자 면접 목록·리포트 열람(MVP 단일조직 정책 — recruiter 전원 전체열람), 평가 루브릭 템플릿 생성/수정.</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/recruiter.py — GET /reports, /reports/{id}, GET/POST/PATCH /rubric-templates</code>
+        <code>backend/app/models/rubric_template.py</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/recruiter/page.tsx · [id]/page.tsx · rubric-templates/page.tsx</code>
+      </div>
+    </div>
+
+    <div class="card" id="g">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">G</div>
+          <div class="card-title"><h3>개인정보·생체정보 동의관리</h3><div class="req">REQ-029~034</div></div>
+        </div>
+        <span class="badge partial">부분구현</span>
+      </div>
+      <p class="desc">AI면접 사전고지 동의, 음성(생체정보) 별도 동의/철회, 삭제요청 접수, 법률고지 상시 열람. 개인정보보호법 제37조의2(자동화된 결정 거부권) 대응 문구 고정 노출.</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/consents.py — POST /consents, /{id}/revoke, GET /users/me/consents, DELETE /users/me/biometric-data, GET /deletion-requests</code>
+        <code>backend/app/models/{consent,deletion_request}.py</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/interviews/[id]/consent/page.tsx · frontend/app/legal/page.tsx · frontend/app/mypage/page.tsx</code>
+        <code>frontend/lib/complianceContent.ts</code>
+      </div>
+      <div class="note rose">실제 하드삭제 배치(삭제요청 pending→completed 자동 전이, Celery beat)는 아직 미구현. 현재는 삭제 "요청"을 접수만 함.</div>
+    </div>
+
+    <div class="card" id="h">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">H</div>
+          <div class="card-title"><h3>보조 도구: 웹캠 · 화이트보드 · 운영모니터링</h3><div class="req">REQ-015~017</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">① 웹캠 로컬 미리보기(서버 전송·AI분석 없음), ② 시스템설계 화이트보드 캔버스 스냅샷 저장(AI 자동분석 없음), ③ 관리자용 기본 모니터링(활성 세션 수 등, admin 전용).</p>
+      <div class="srcbox">
+        <div class="lbl">백엔드</div>
+        <code>backend/app/api/v1/whiteboard.py — PUT/GET /interviews/{id}/whiteboard</code>
+        <code>backend/app/api/v1/ops.py — GET /ops/health</code>
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/components/WebcamPreview.tsx</code>
+        <code>frontend/app/interviews/[id]/components/WhiteboardCanvas.tsx</code>
+        <code>frontend/app/admin/ops/page.tsx</code>
+      </div>
+    </div>
+
+    <div class="card" id="i">
+      <div class="card-top">
+        <div style="display:flex;gap:10px;"><div class="card-id">I</div>
+          <div class="card-title"><h3>면접장 통합 UI</h3><div class="req">unit-20</div></div>
+        </div>
+        <span class="badge done">구현완료</span>
+      </div>
+      <p class="desc">Feature C~H의 개별 컴포넌트(채팅·코드에디터·화이트보드·웹캠)를 하나의 면접장 화면에 배선. 데스크톱 60:40 분할, 태블릿 1:1, 모바일은 전체화면 모달로 반응형 전환.</p>
+      <div class="srcbox">
+        <div class="lbl">프론트엔드</div>
+        <code>frontend/app/interviews/[id]/page.tsx (배선 지점)</code>
+        <code>frontend/app/interviews/[id]/components/* (CodeEditorPanel, WhiteboardCanvas, InterviewSidePanel)</code>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="block" id="oos">
+  <h2>🚫 범위에서 제외한 기능 (Out-of-Scope)</h2>
+  <p class="h2sub">기획 단계(02-planning)에서 의도적으로 뺀 항목 — "왜 없는지"를 알아야 소스에서 안 찾아 헤맨다</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>REQ</th><th>기능</th><th>제외 사유</th></tr></thead>
+      <tbody>
+        <tr><td class="reqid">REQ-018</td><td>표정 기반 감정분석(DeepFace)</td><td>GPU 4GB 제약, EU AI Act 감정인식 관련 논의, 생체인식정보 리스크</td></tr>
+        <tr><td class="reqid">REQ-019</td><td>음성 운율(Prosody) 분석</td><td>REQ-018과 동일 사유</td></tr>
+        <tr><td class="reqid">REQ-020</td><td>실시간 VAD 기반 끼어들기</td><td>구현 난이도·하드웨어 제약 → 턴제(REQ-004)로 대체</td></tr>
+        <tr><td class="reqid">REQ-021</td><td>화이트보드 AI 비전 자동분석</td><td>오픈소스 대안 로컬구동 미검증·예산없음 (캔버스 자체는 REQ-017로 유지)</td></tr>
+        <tr><td class="reqid">REQ-022</td><td>코드 실제 실행/자동채점(샌드박스)</td><td>임의 코드 실행 보안위험, 일정상 샌드박스 구축 여력 없음</td></tr>
+        <tr><td class="reqid">REQ-023</td><td>동시접속 500명, K8s 오토스케일링</td><td>50명/단일 인스턴스로 대체 확정</td></tr>
+        <tr><td class="reqid">REQ-024~026</td><td>Oracle DB / Pinecone / 유료 API(OpenAI 등)</td><td>PostgreSQL+pgvector, 오픈소스 스택으로 전면 대체</td></tr>
+        <tr><td class="reqid">REQ-027</td><td>클라우드 배포(AWS/GCP/EKS)</td><td>로컬서버 운영으로 확정</td></tr>
+        <tr><td class="reqid">REQ-028</td><td>GDPR/CCPA 완전 대응</td><td>국내(한국어/한국 채용시장) 대상 — 한국 개인정보보호법 대응(Feature G)으로 대체</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="block" id="security">
+  <h2>⚠️ 아직 미착수 — AI 안전장치 (unit-8)</h2>
+  <p class="h2sub">보안 관점에서 반드시 인지하고 있어야 할 공백. 배포 전 필수 확인 대상</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>REQ</th><th>안전장치</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td class="reqid">REQ-035</td><td>프롬프트 인젝션 방어</td><td>사용자 입력이 시스템 프롬프트를 덮어쓰거나 우회하지 못하게 하는 입력 경계 설계</td></tr>
+        <tr><td class="reqid">REQ-036</td><td>LLM 출력 새니타이즈</td><td>채팅/리포트 렌더링 시 HTML 이스케이프, XSS 방지(리포트 star_json/summary_text/details_json 포함)</td></tr>
+        <tr><td class="reqid">REQ-037</td><td>함수호출 최소권한</td><td>시스템 제어 신호는 화이트리스트 명령만 허용, function-calling 권한 미부여</td></tr>
+        <tr><td class="reqid">REQ-038</td><td>레이트리밋</td><td>세션/사용자당 LLM 호출 제한 + GPU 4GB 제약 고려한 동시추론 큐잉(큐 최대 50)</td></tr>
+        <tr><td class="reqid">REQ-039</td><td>시스템 프롬프트 유출 방지</td><td>유출 시도 탐지 시 출력 후처리로 거부, 감사로그 기록</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="block" id="process">
+  <h2>🛠️ 이 프로젝트는 어떻게 개발됐나</h2>
+  <p class="h2sub">저장소 <code>ORCHESTRATOR.md</code> 기준 13단계 개발 하네스 파이프라인 — 기능 하나가 아니라 "작업 단위(unit)" 단위로 순차 진행됨</p>
+  <ul class="steps">
+    <li><b>1~4단계 — 기획/설계/디자인</b><p>트렌드 분석 → 기획서(<code>02-planning.md</code>) → 시스템 설계서(<code>03-system-design.md</code>) → UX 디자인서. 여기서 REQ-001~039 요구사항 ID가 확정되고, <code>docs/harness/traceability.md</code>에 REQ→설계→작업단위(unit) 매핑표가 만들어짐.</p></li>
+    <li><b>5단계 — 구현(unit 단위)</b><p>기능 하나를 통째로 만들지 않고, Feature A~I를 다시 unit-1~unit-21로 쪼개 한 번에 하나씩 구현. 예: LLM 파이프라인은 unit-7 하나가 전담(<code>services/llm_engine.py</code> 등).</p></li>
+    <li><b>6단계 — 단위테스트 + 결함 재작업 루프</b><p>구현 직후 바로 테스트. 예컨대 unit-7(LLM 파이프라인)은 1차 테스트에서 결함 11건(오프닝 질문 품질 불량, Redis 무인증 노출 등)이 나와 재작업 v2를 거쳐 10건 수정 — <code>worker/tasks.py</code> 상단 주석(DEF-001~011)에 그 이력이 그대로 남아있음.</p></li>
+    <li><b>7~8단계 — 통합/전체 시스템 테스트</b><p>업무 단위(Feature) 내부 통합 → 시스템 전체 E2E. 현재 다수 REQ가 "L1 경량판 PASS, 08 착수 전 정산 필요"로 표기되어 있어, 정식 통합/전체테스트는 진행 중 단계.</p></li>
+    <li><b>9~13단계 — 보안감사 / 배포검증 / 문서화 / 배포 / 배포후 검증</b><p>REQ-035~039(AI 안전장치)가 미착수인 것과 연결 — 9단계 보안감사 이전에 반드시 먼저 채워야 하는 항목.</p></li>
+  </ul>
+</section>
+
+<footer>
+  출처: <code>docs/harness/traceability.md</code>(REQ-ID 매핑) + <code>backend/app</code>, <code>frontend</code> 실제 소스 직접 확인. 작성 기준일 2026-09-22.
+</footer>
+
+</div>
+
+</body></html>

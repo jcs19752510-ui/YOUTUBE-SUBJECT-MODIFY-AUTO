@@ -1,0 +1,104 @@
+[
+ {
+  "id": "RISK-001",
+  "name": "오해 소지 있는 제목",
+  "level": "상",
+  "mitigation": "FR-002·FR-004 영상 내용 일치 점검과 근거 문장 기록, 일치율이 낮으면 경고·차단, POL-001"
+ },
+ {
+  "id": "RISK-002",
+  "name": "시니어 대상 공포 조장",
+  "level": "상",
+  "mitigation": "FR-002 공포 조장 유형 차단, FR-003 사전 수정 가능"
+ },
+ {
+  "id": "RISK-003",
+  "name": "건강·금융 단정 표현",
+  "level": "상",
+  "mitigation": "POL-001 엄격 모드(경고도 차단, 키워드 감지 시 topic 무관 승격), FR-002, POL-002 면책 문구. 법률 자문 필요"
+ },
+ {
+  "id": "RISK-004",
+  "name": "사칭 오인",
+  "level": "상",
+  "mitigation": "FR-002 사칭 오인 유형 차단"
+ },
+ {
+  "id": "RISK-007",
+  "name": "토큰·credentials 유출",
+  "level": "상",
+  "mitigation": "SEC-008 (.env 분리, 로그 마스킹, 파일 권한, .gitignore), K-6 로그 스캔 테스트"
+ },
+ {
+  "id": "RISK-008",
+  "name": "설명·태그 등 덮어쓰기",
+  "level": "상",
+  "mitigation": "FR-009, SEC-005 (snippet 전체 백업 + 제목만 변경), SEC-010 (적용 후 재조회 검증), SEC-006 롤백"
+ },
+ {
+  "id": "RISK-015",
+  "name": "계정 경고·제재",
+  "level": "상",
+  "mitigation": "위 RISK-001~004 완화의 종합, 실제 수정은 SEC-001 (사람 승인 없는 쓰기 금지)과 3중 조건 + 사람 승인(FR-012), 비공개 테스트 영상부터(…"
+ },
+ {
+  "id": "RISK-005",
+  "name": "과도한 제목 변경 빈도",
+  "level": "중",
+  "mitigation": "FR-014, SEC-004 (72시간 간격, 횟수 상한, 최소 노출 수)"
+ },
+ {
+  "id": "RISK-006",
+  "name": "쿼터 소진",
+  "level": "중",
+  "mitigation": "FR-015, SEC-002 (60% 상한, 초과 시 즉시 중단), SEC-003 (재시도 2회 제한으로 재시도 폭주 방지), SEC-007 (다중 프로젝트 쿼터 확…"
+ },
+ {
+  "id": "RISK-009",
+  "name": "Studio 수동 수정과의 경합",
+  "level": "중",
+  "mitigation": "SEC-009 (호출 직전 재조회, 불일치 시 중단)"
+ },
+ {
+  "id": "RISK-010",
+  "name": "후보 JSON 변조·경로 조작",
+  "level": "중",
+  "mitigation": "SEC-011 (스키마·video_id 형식·크기 검증)"
+ },
+ {
+  "id": "RISK-011",
+  "name": "공식 A/B 진행 중 API로 제목을 바꾸는 경우의 영향이 불명",
+  "level": "중",
+  "mitigation": "FR-008 dry-run에 \"A/B 테스트 중인 영상이 아닌지 확인\" 문구, FR-019 순차 교체 기본 비활성, POL-003 (공식 A/B 불가 영상군 제외),…"
+ },
+ {
+  "id": "RISK-013",
+  "name": "공식 원문 미확인으로 인한 오류",
+  "level": "중",
+  "mitigation": "모든 값은 설정값, 도메인 허용 후 원문 재확인, POL-004 출처 기록, 규칙 F 재산정"
+ },
+ {
+  "id": "RISK-014",
+  "name": "순차 비교의 신뢰도 한계를 무시한 잘못된 결론",
+  "level": "중",
+  "mitigation": "FR-018 한계 문구 상시 표기, 결론 단정 금지"
+ },
+ {
+  "id": "RISK-016",
+  "name": "신규 의존성의 환각·악성 패키지",
+  "level": "중",
+  "mitigation": "SEC-013 (PyPI 실존·라이선스 확인, 버전 고정), 9단계 점검"
+ },
+ {
+  "id": "RISK-012",
+  "name": "OAuth 토큰 만료로 중단",
+  "level": "하",
+  "mitigation": "FR-016 만료 감지·재인증 안내(NFR-007), 03 가이드의 운영 방식 선택지"
+ },
+ {
+  "id": "RISK-017",
+  "name": "Windows 환경 문제",
+  "level": "하",
+  "mitigation": "NFR-001·NFR-002, 03 가이드와 RUNBOOK의 문제 해결 절차"
+ }
+]

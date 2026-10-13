@@ -1,0 +1,65 @@
+[
+ {
+  "unit": "WU-0",
+  "name": "공통 기반(설정·DB·로그·UI)",
+  "track": "L5",
+  "tests": 108,
+  "coverage": "95%",
+  "mutation": "23/23",
+  "verdict": "PASS"
+ },
+ {
+  "unit": "WU-1",
+  "name": "OAuth 인증(읽기/쓰기 분리)",
+  "track": "L5",
+  "tests": 26,
+  "coverage": "99%",
+  "mutation": "13/13",
+  "verdict": "PASS"
+ },
+ {
+  "unit": "WU-2",
+  "name": "조회·쿼터(읽기 전용)",
+  "track": "L3",
+  "tests": 79,
+  "coverage": "99%",
+  "mutation": "32/32",
+  "verdict": "PASS"
+ },
+ {
+  "unit": "WU-3",
+  "name": "후보 입력·안전 필터",
+  "track": "L3",
+  "tests": 71,
+  "coverage": "100%",
+  "mutation": "34/34",
+  "verdict": "PASS"
+ },
+ {
+  "unit": "WU-4",
+  "name": "계획·이력·롤백 계획",
+  "track": "L5",
+  "tests": 0,
+  "coverage": "-",
+  "mutation": "-",
+  "verdict": "IN_PROGRESS"
+ },
+ {
+  "unit": "WU-5",
+  "name": "실제 수정 가드·승인·적용",
+  "track": "L5",
+  "tests": 0,
+  "coverage": "-",
+  "mutation": "-",
+  "verdict": "PENDING"
+ },
+ {
+  "unit": "WU-6",
+  "name": "성과 리포트·CSV",
+  "track": "L3",
+  "tests": 0,
+  "coverage": "-",
+  "mutation": "-",
+  "verdict": "PENDING"
+ }
+]

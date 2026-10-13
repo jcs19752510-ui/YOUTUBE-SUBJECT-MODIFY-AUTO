@@ -1,0 +1,185 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>랭체인/랭그래프/RAG 적용 검토</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* layout: 결론 → 메뉴별 적용 매트릭스 → 목표 구조(그래프) → 위험과 대책 → 근거. 판정은 색과 글자를 함께 쓴다 */
+:root{--bg:#f5f6f8;--surface:#fff;--fg:#1b2230;--muted:#5b6678;--line:#dde1e8;--accent:#1f5fbf;--accent-soft:#e6eefb;
+--yes:#13794a;--yes-bg:#e1f4ea;--no:#a63a2b;--no-bg:#fbe9e5;--mid:#9a6200;--mid-bg:#fcf0d6;--code-bg:#eceff4;
+--sans:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141b;--surface:#171c26;--fg:#e4e8ef;--muted:#9aa5b6;--line:#2a3140;--accent:#7fb0ff;--accent-soft:#1d2a42;--yes:#5fd39a;--yes-bg:#12301f;--no:#ff9b8a;--no-bg:#3a1d19;--mid:#f0c060;--mid-bg:#3a2d10;--code-bg:#1f2633;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.7;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+main{max-width:900px;margin-inline:auto;padding-inline:16px;padding-block:20px 56px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:23px;line-height:1.35;margin:0;text-wrap:balance}
+h2{font-size:17px;margin:0 0 10px;text-wrap:balance}
+p{margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.pill.yes{background:var(--yes-bg);color:var(--yes)}
+.pill.no{background:var(--no-bg);color:var(--no)}
+.pill.mid{background:var(--mid-bg);color:var(--mid)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;font-size:13.5px;line-height:1.55;min-width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:84px}
+th{background:var(--accent-soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.menu{font-weight:700;min-width:140px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+pre.mermaid{margin:0;text-align:center;overflow-x:auto}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.lead{font-size:16px;font-weight:700;line-height:1.55;margin-bottom:8px}
+@media (min-width:700px){main{padding-block:32px 72px}.card{padding:20px 24px}}
+</style>
+<main>
+<header>
+  <h1>랭체인/랭그래프/RAG 적용 검토</h1>
+  <p class="sub">3개 모두 필수 사용 조건 기준 · 모의면접 프로젝트 PROD_SCH fb6e73c · 코드는 수정하지 않은 검토 결과</p>
+</header>
+
+<section class="card">
+  <p class="lead">결론: 3개 모두 사용할 수 있습니다. 다만 "모든 메뉴"가 아니라 AI 호출이 있는 두 곳(면접장, 리포트 생성)에 붙이는 것이 현실적입니다.</p>
+  <ul>
+    <li><b>RAG</b>는 이미 면접장에서 동작 중이라 추가 작업이 거의 없습니다.</li>
+    <li><b>랭체인</b>은 패키지와 검증용 모듈이 이미 있습니다. 운영 경로에 연결만 하면 됩니다.</li>
+    <li><b>랭그래프</b>는 아직 없지만, 현재 코드의 "재시도, 폴백, 검증" 분기가 그대로 그래프 구조라 잘 맞습니다. 기존 패키지 버전과 충돌하지 않는 것도 확인했습니다.</li>
+    <li>나머지 메뉴(이력서 검토, 최종 합격, 관리자 등)에는 현재 AI 호출이 없어서 붙일 대상 자체가 없습니다. 억지로 넣으면 기능 없는 장식이 됩니다.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>메뉴별 적용 가능성</h2>
+  <div class="tw"><table>
+    <thead><tr><th>메뉴</th><th>현재 AI 처리</th><th>RAG</th><th>랭체인</th><th>랭그래프</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr><td class="menu">면접장 · 꼬리질문<br><span class="note">process_turn_job</span></td><td>질문은행 검색 → LLM 생성 → 검증 재시도 → 실패 시 질문은행 폴백 → 음성 변환</td><td>이미 사용 중</td><td>LLM 호출·프롬프트·출력 파서</td><td>검색→생성→검증→재시도/폴백 흐름</td><td><span class="pill yes">3개 모두 적용 가능</span></td></tr>
+      <tr><td class="menu">면접장 · 첫 질문<br><span class="note">process_opening_question_job</span></td><td>질문은행 검색 1건, 없으면 고정 문구</td><td>이미 사용 중</td><td>호출할 LLM이 없음</td><td>2단계뿐이라 이득 작음</td><td><span class="pill mid">RAG만 해당, 그래프는 선택</span></td></tr>
+      <tr><td class="menu">면접 리포트 생성<br><span class="note">process_report_generation_job</span></td><td>대화 번호 매기기 → 토큰 예산 → LLM 채점 → 항목 검증 → 전부 미채점이면 1회 재생성 → 정합성 보정 → 저장</td><td>해당 없음(검색할 자료가 없음)</td><td>LLM 호출·구조화 출력</td><td>다단계 분기가 가장 많아 효과가 큼</td><td><span class="pill yes">랭체인+랭그래프 적용 가능</span></td></tr>
+      <tr><td class="menu">이력서 검토(채용담당자)</td><td>없음. 사람이 보고 합격/불합격 결정</td><td>신규 기능 필요</td><td>신규 기능 필요</td><td>신규 기능 필요</td><td><span class="pill mid">현재는 대상 없음, 신규 개발 시 가능</span></td></tr>
+      <tr><td class="menu">코드 제출 · 화이트보드</td><td>코드는 샌드박스 실행(LLM 없음). 화이트보드 비전 분석은 API에 아직 연결되지 않음</td><td>해당 없음</td><td>해당 없음</td><td>해당 없음</td><td><span class="pill no">적용 대상 아님</span></td></tr>
+      <tr><td class="menu">최종 합격/불합격, 안내 메일</td><td>없음(DB 처리와 메일 발송)</td><td>해당 없음</td><td>해당 없음</td><td>해당 없음</td><td><span class="pill no">적용 대상 아님</span></td></tr>
+      <tr><td class="menu">지원자 리포트, 마이페이지, 관리자 운영, 이력서 지원, 템플릿 관리</td><td>조회·입력 화면. 리포트 화면은 위 생성 결과를 보여주기만 함</td><td>해당 없음</td><td>해당 없음</td><td>해당 없음</td><td><span class="pill no">적용 대상 아님</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>면접장 꼬리질문의 목표 구조</h2>
+  <pre class="mermaid">
+flowchart LR
+  S(["답변 제출"]) --> R["검색 노드<br/>RAG: 질문은행 3건<br/>(랭체인 Retriever로 감쌈)"]
+  R --> G["생성 노드<br/>랭체인 ChatOpenAI → llama-server<br/>프롬프트 + 구조화 출력"]
+  G --> V{"검증 노드<br/>형식·길이·안전 검사"}
+  V -- "통과" --> T["음성 변환 노드"]
+  V -- "실패, 재시도 남음" --> G
+  V -- "실패, 재시도 소진" --> F["폴백 노드<br/>검색된 질문 그대로 사용"]
+  F --> T
+  T --> E(["저장 후 화면 전송"])
+  </pre>
+  <p class="note">지금 <code>worker/tasks.py</code>의 <code>_generate_validated_followup</code>이 하는 일을 노드와 엣지로 옮기는 구조입니다. 새 기능이 아니라 같은 동작을 그래프로 표현하는 것이어서 화면과 API는 바뀌지 않습니다.</p>
+</section>
+
+<section class="card">
+  <h2>20년차 관점의 위험과 대책</h2>
+  <div class="tw"><table>
+    <thead><tr><th>위험</th><th>내용</th><th>대책</th></tr></thead>
+    <tbody>
+      <tr><td class="menu">모델 한계</td><td>모델이 Qwen2.5 1.5B 양자화판이라 함수 호출·도구 사용 에이전트가 불안정합니다. 기존 모듈도 같은 이유로 <code>with_structured_output</code>을 쓰지 않았습니다.</td><td>ReAct 같은 에이전트형은 쓰지 않고, 순서가 정해진 고정 그래프만 씁니다. 출력은 지금처럼 JSON 모드 + Pydantic 수동 파싱을 유지합니다.</td></tr>
+      <tr><td class="menu">운영 안정성 회귀</td><td><code>llm_engine.py</code>는 실측 결함 11건을 거쳐 안정화된 코드입니다. 통째로 바꾸면 같은 결함이 되살아날 수 있습니다.</td><td>서버 기동·GPU→CPU 폴백 로직은 그대로 재사용하고(기존 모듈 방식), 환경변수 스위치로 "기존 경로/그래프 경로"를 전환할 수 있게 둡니다. 기존 테스트를 그대로 통과시킨 뒤 동등성 테스트를 추가합니다.</td></tr>
+      <tr><td class="menu">응답 시간</td><td>생성 제한 25초, 질문당 처리 시간 예산이 있습니다. 그래프 오버헤드는 작지만 재시도 횟수가 늘면 초과할 수 있습니다.</td><td>재시도는 현재와 같이 최대 1회로 고정하고, 노드별 소요 시간을 로그로 남깁니다.</td></tr>
+      <tr><td class="menu">패키지 호환</td><td>기존 핀(<code>langchain-core 0.3.x</code>, <code>langchain-openai 0.2.x</code>, <code>pydantic 2.x</code>)과 랭그래프가 맞아야 합니다.</td><td>임시 가상환경에서 의존성 해석을 확인했습니다. <code>langgraph 1.0.1</code>이 <code>langchain-core 0.3.86</code>, <code>langchain-openai 0.2.14</code>와 함께 설치 가능합니다. 실제 프로젝트 환경에 설치하거나 테스트를 돌린 것은 아닙니다.</td></tr>
+      <tr><td class="menu">실행 환경</td><td>Celery를 <code>--pool=solo</code>로 쓰는 동기 방식, 상태는 DB에 저장합니다.</td><td>그래프는 동기 <code>invoke()</code>로 실행하면 그대로 맞고, 랭그래프 체크포인터(별도 저장소)는 필요 없습니다.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>권장 적용 범위</h2>
+  <ul>
+    <li><b>1순위 면접장 꼬리질문:</b> RAG + 랭체인 + 랭그래프를 모두 적용. "3개 필수" 조건을 충족하는 핵심 지점입니다.</li>
+    <li><b>2순위 리포트 생성:</b> 랭체인 + 랭그래프 적용. 분기가 가장 복잡해서 그래프의 효과가 가장 큽니다.</li>
+    <li><b>그 외 메뉴:</b> 현재 AI 기능이 없으므로 적용하지 않습니다. 이력서 AI 요약·적합도 같은 신규 기능을 만들 때 함께 붙이는 것이 맞습니다.</li>
+  </ul>
+  <p class="note">이 문서는 코드와 의존성을 검토한 결과이며, 프로젝트 코드는 변경하지 않았습니다. 실제 전환 시 응답 품질과 처리 시간은 로컬 모델로 실측해야 하고, 이 세션에서는 측정하지 않았습니다.</p>
+</section>
+</main>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>
