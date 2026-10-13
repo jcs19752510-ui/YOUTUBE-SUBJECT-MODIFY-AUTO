@@ -187,11 +187,16 @@ export function BulkApprovePage() {
   const pickable = shownRows.filter((s) => !blockWhy(s));
   const pagePicked = pickable.length > 0 && pickable.every((s) => pickedA.has(s.id));
   const pickPage = (on: boolean) =>
-    setPickedA(() => {
-      if (!on) return new Set();
-      // 50건을 넘지 않는 만큼만 담는다
-      const room = MAX_BULK - queue.filter((q) => !pickedA.has(q.s.id)).length;
-      return new Set(pickable.slice(0, Math.max(0, room)).map((s) => s.id));
+    setPickedA((prev) => {
+      // 줄여 보기로 숨겨진 항목의 선택은 건드리지 않는다: 보이는 항목만 더하거나 뺀다.
+      if (!on) {
+        const visible = new Set(shownRows.map((s) => s.id));
+        return new Set([...prev].filter((id) => !visible.has(id)));
+      }
+      // 50건을 넘지 않는 만큼만 담는다(이미 담긴 것 포함)
+      const room = MAX_BULK - queue.length;
+      const add = pickable.filter((s) => !prev.has(s.id)).slice(0, Math.max(0, room));
+      return new Set([...prev, ...add.map((s) => s.id)]);
     });
 
   const ackIds = warnItems.filter((q) => acks.has(q.s.id)).map((q) => q.s.id);
@@ -328,7 +333,6 @@ export function BulkApprovePage() {
             <div className="stack">
               <Field label={ko.bulk.filterLabel} hint={ko.bulk.filterHint}>
                 <input
-                  id="bulk-list-filter"
                   name="bulk-list-filter"
                   type="search"
                   className="input"
@@ -339,7 +343,6 @@ export function BulkApprovePage() {
               </Field>
               <Field label={ko.bulk.verdictFilterLabel}>
                 <select
-                  id="bulk-verdict-filter"
                   name="bulk-verdict-filter"
                   className="input"
                   value={verdict}
