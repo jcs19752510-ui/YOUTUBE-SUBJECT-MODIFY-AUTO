@@ -50,6 +50,15 @@ interface QueueItem {
   currentTitle: string | null;
 }
 
+const MAX_APPROVER_CHARS = 40;
+/** 서버 규칙(clean_approver)과 같게: 비어 있음 / 제어·보이지 않는 문자 / 40자 초과를 화면에서 먼저 알린다. 서버가 최종 판단한다. */
+function approverProblem(v: string): 'empty' | 'invalid' | null {
+  const t = v.trim();
+  if (t === '' || t.replace(/[\p{Cf}\p{Zl}\p{Zp}\s]/gu, '') === '') return 'empty';
+  if (/[\p{Cf}\p{Zl}\p{Zp}\p{Cc}]/u.test(t) || [...t].length > MAX_APPROVER_CHARS) return 'invalid';
+  return null;
+}
+
 export function BulkApprovePage() {
   const api = useApi();
   const qc = useQueryClient();
@@ -174,7 +183,10 @@ export function BulkApprovePage() {
 
   const ackIds = warnItems.filter((q) => acks.has(q.s.id)).map((q) => q.s.id);
   const ids = queue.map((q) => q.s.id);
+  const [snap, setSnap] = useState<Map<number, { cur: string | null; title: string }>>(new Map());
   const approve = useMutation({
+    onMutate: () =>
+      setSnap(new Map(queue.map((q) => [q.s.id, { cur: q.currentTitle, title: q.s.title }]))),
     mutationFn: () =>
       api.approveBatch(
         ids,
@@ -193,7 +205,9 @@ export function BulkApprovePage() {
   });
 
   const gate: string[] = [];
-  if (approver.trim() === '') gate.push(ko.bulk.approverEmpty);
+  const apProblem = approverProblem(approver);
+  if (apProblem === 'empty') gate.push(ko.bulk.approverEmpty);
+  if (apProblem === 'invalid') gate.push(ko.bulk.approverInvalid);
   if (warnLeft.length > 0) gate.push(ko.bulk.ackNeed(warnLeft.length));
   if (over) gate.push(ko.bulk.queueOver(queue.length, MAX_BULK));
   if (queue.length === 0) gate.push(ko.bulk.reviewDisabledEmpty);
@@ -223,6 +237,7 @@ export function BulkApprovePage() {
             title={`${ko.bulk.resultTitle}: ${ko.bulk.resultSummary(result.counts.approved, result.counts.skipped)}`}
           >
             <p>{ko.bulk.resultOnly}</p>
+            <p>{ko.bulk.ttlNotice}</p>
           </Callout>
           {result.approved.length > 0 && (
             <TableWrap label={ko.bulk.approvedCaption(result.approved.length)}>
@@ -231,12 +246,16 @@ export function BulkApprovePage() {
                 <thead>
                   <tr>
                     <th scope="col">{ko.bulk.colVideo}</th>
+                    <th scope="col">{ko.bulk.colCurrent}</th>
+                    <th scope="col">{ko.bulk.colChange}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {result.approved.map((a) => (
                     <tr key={a.suggestion_id}>
                       <td className="mono">{a.video_id}</td>
+                      <td>{titleText(snap.get(a.suggestion_id)?.cur ?? null)}</td>
+                      <td className="cell-title">{snap.get(a.suggestion_id)?.title ?? '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -257,7 +276,11 @@ export function BulkApprovePage() {
                   {result.skipped.map((k) => (
                     <tr key={k.suggestion_id}>
                       <td className="mono">{k.video_id ?? '-'}</td>
-                      <td>{ko.bulk.codes[k.code] ?? k.reason}</td>
+                      <td>
+                        {k.code === 'suggestion_state'
+                          ? k.reason || ko.bulk.codes[k.code]
+                          : (ko.bulk.codes[k.code] ?? k.reason)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -488,11 +511,20 @@ export function BulkApprovePage() {
           }
         >
           <div className="stack">
-            <Callout tone="info">{ko.bulk.onlyApprove}</Callout>
+            <Callout tone="info">
+              <p>{ko.bulk.onlyApprove}</p>
+              <p>{ko.bulk.ttlNotice}</p>
+            </Callout>
             <Field
               label={ko.bulk.approverLabel}
               hint={ko.bulk.approverHint}
-              error={approver.trim() === '' ? ko.bulk.approverEmpty : undefined}
+              error={
+                approverProblem(approver) === 'empty'
+                  ? ko.bulk.approverEmpty
+                  : approverProblem(approver) === 'invalid'
+                    ? ko.bulk.approverInvalid
+                    : undefined
+              }
             >
               <input
                 name="bulk-approver"
@@ -521,6 +553,15 @@ export function BulkApprovePage() {
                       <td>{titleText(q.currentTitle)}</td>
                       <td className="cell-title">
                         {q.s.title} <ValidationBadge result={q.s.validation_result} />
+                        {isWarn(q.s) && (
+                          <ul className="muted" aria-label={ko.bulk.warnReasonsLabel}>
+                            {q.s.reasons
+                              .filter((r) => r.severity !== 'info')
+                              .map((r, i) => (
+                                <li key={`${r.code}-${i}`}>{r.message}</li>
+                              ))}
+                          </ul>
+                        )}
                       </td>
                       <td>
                         {isWarn(q.s) ? (

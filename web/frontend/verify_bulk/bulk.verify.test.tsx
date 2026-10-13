@@ -81,7 +81,10 @@ const approverBox = () => within(dialog()).getByRole('textbox', { name: /승인�
 const setApprover = async (u: ReturnType<typeof userEvent.setup>, v: string) => {
   const b = approverBox();
   await u.clear(b);
-  if (v) await u.click(b), await u.paste(v);
+  if (v) {
+    await u.click(b);
+    await u.paste(v);
+  }
 };
 const paste = async (u: ReturnType<typeof userEvent.setup>, text: string) => {
   const box = screen.getByRole('textbox', { name: /영상 ID/ });

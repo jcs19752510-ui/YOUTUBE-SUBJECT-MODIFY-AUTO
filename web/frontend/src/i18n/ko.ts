@@ -513,14 +513,19 @@ export const ko = {
     approverLabel: '승인자 이름',
     approverHint: '누가 승인했는지 기록에 남습니다.',
     approverEmpty: '승인자 이름을 입력해 주세요.',
+    approverInvalid:
+      '승인자 이름이 올바르지 않습니다. 보이지 않는 문자 없이 40자 이하의 평범한 글자로 입력해 주세요.',
+    warnReasonsLabel: '이 제안의 경고 내용',
+    ttlNotice:
+      '승인은 일정 시간(기본 1시간) 안에 배치를 만들어 실행해야 합니다. 시간이 지나면 다시 승인해야 합니다.',
     titleLoading: '(제목을 불러오는 중)',
     titleMissing: '(제목을 불러오지 못함)',
     titleMissingWarn:
       '일부 영상의 현재 제목을 불러오지 못했습니다. 어떤 영상인지 영상 ID 로 확인한 뒤 승인하세요. 승인은 그대로 할 수 있습니다.',
     colCurrent: '현재 제목',
     colChange: '새 제목',
-    colAck: '경고 확인',
-    ackOne: (t: string) => `경고를 확인했습니다: ${t}`,
+    colAck: '경고를 읽었음',
+    ackOne: (t: string) => `이 제안의 경고 내용을 읽었고 승인합니다: ${t}`,
     ackNeed: (n: number) => `경고가 있는 ${n}건은 건별로 확인란을 선택해야 합니다.`,
     gateTitle: '아직 필요한 것',
     submit: (n: number) => `${n}건 승인`,
@@ -540,7 +545,8 @@ export const ko = {
       suggestion_blocked: '차단 판정이라 승인할 수 없습니다.',
       video_excluded: '제외 대상 영상입니다.',
       same_as_current: '현재 제목과 같습니다.',
-      suggestion_state: '승인할 수 있는 상태가 아닙니다.',
+      suggestion_state:
+        '지금 상태에서는 승인할 수 없습니다(이미 승인됨, 만료, 반려, 배치에 담김 등). 목록을 새로고침해 상태를 확인하세요.',
       video_inconsistent: '영상 정보가 맞지 않습니다.',
       suggestion_not_found: '제안을 찾을 수 없습니다.',
       duplicate_video_in_request: '같은 영상의 다른 제안이 먼저 처리되었습니다.',

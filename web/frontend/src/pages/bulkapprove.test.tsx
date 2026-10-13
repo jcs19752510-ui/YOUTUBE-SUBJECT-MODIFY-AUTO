@@ -466,3 +466,81 @@ describe('현재 제목 표시(결함 조치)', () => {
     ]);
   });
 });
+
+describe('독립 검증 결함 조치(DEF-FV-001~004)', () => {
+  it('TC-FE-BA-028 제로폭 문자만 있거나 40자를 넘는 승인자 이름은 버튼을 켜지 않고 이유를 글로 보인다', async () => {
+    const { user } = await setup(lists([sg(1)]));
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
+    await user.click(reviewBtn());
+    await typeApprover(user, '\u200b\u200b');
+    expect(submitBtn()).toBeDisabled();
+    expect(within(dialog()).getAllByText('승인자 이름을 입력해 주세요.').length).toBeGreaterThan(0);
+    await typeApprover(user, '가'.repeat(41));
+    expect(submitBtn()).toBeDisabled();
+    expect(within(dialog()).getAllByText(/승인자 이름이 올바르지 않습니다/).length).toBeGreaterThan(
+      0,
+    );
+    await typeApprover(user, '홍길동\u200b');
+    expect(submitBtn()).toBeDisabled();
+    await typeApprover(user, '홍길동');
+    expect(submitBtn()).toBeEnabled();
+  });
+
+  it('TC-FE-BA-029 경고 건에는 무슨 경고인지 이유 문구가 확인란 옆에 보인다', async () => {
+    const w = sg(1, { validation_result: 'warn' });
+    w.reasons = [{ code: 'x', severity: 'warn', message: '제목이 55자를 넘습니다' }];
+    const { user } = await setup(lists([w]));
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
+    await user.click(reviewBtn());
+    expect(within(dialog()).getByText('제목이 55자를 넘습니다')).toBeInTheDocument();
+  });
+
+  it('TC-FE-BA-030 결과 패널의 승인된 표에 영상 ID 와 현재 제목·새 제목이 함께 보이고 제외 사유(상태)는 서버 사유를 그대로 보인다', async () => {
+    const { user } = await setup([
+      ...lists([sg(1), sg(2)]),
+      route('POST', '/api/v1/suggestions/resolve-videos', () =>
+        json(200, { items: [rv(1), rv(2)] }),
+      ),
+      route('POST', '/api/v1/suggestions/approve-batch', () =>
+        json(200, {
+          approved: [{ suggestion_id: 1, video_id: vid(1) }],
+          skipped: [
+            {
+              suggestion_id: 2,
+              video_id: vid(2),
+              code: 'suggestion_state',
+              reason: '현재 상태(approved)에서는 승인할 수 없습니다.',
+            },
+          ],
+          counts: { requested: 2, approved: 1, skipped: 1 },
+        }),
+      ),
+    ]);
+    await screen.findByText('현재 제목 1', { selector: 'td' });
+    await user.click(screen.getByRole('checkbox', { name: '현재 목록 전체 선택' }));
+    await user.click(reviewBtn());
+    await typeApprover(user, '홍');
+    await user.click(submitBtn());
+    const cap = await screen.findByText('승인된 1건', { selector: 'caption' });
+    const row = within(cap.closest('table')!).getByText(vid(1)).closest('tr')!;
+    expect(row).toHaveTextContent('현재 제목 1');
+    expect(row).toHaveTextContent('새 제목 1');
+    expect(screen.getByText('현재 상태(approved)에서는 승인할 수 없습니다.')).toBeInTheDocument();
+  });
+
+  it('TC-FE-BA-031 승인 유효 시간 안내가 확인 창과 결과 패널에 있다', async () => {
+    const { user } = await setup([
+      ...lists([sg(1)]),
+      route('POST', '/api/v1/suggestions/approve-batch', () => okResult([1])),
+    ]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
+    await user.click(reviewBtn());
+    expect(within(dialog()).getByText(/기본 1시간/)).toBeInTheDocument();
+    await typeApprover(user, '홍');
+    await user.click(submitBtn());
+    expect(await screen.findByText(/기본 1시간/)).toBeInTheDocument();
+  });
+});
