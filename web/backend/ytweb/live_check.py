@@ -34,6 +34,9 @@ def main() -> int:
     print("--- 실제 제목 수정 준비 상태 ---")
     for ok, msg in items:
         print(("[OK]  " if ok else "[필요] ") + msg)
+    from ytweb.domain.exclusions import include_shorts
+    print("[정보] 쇼츠(180초 이하) 영상 제목 변경: " + ("켜짐(YTWEB_INCLUDE_SHORTS=1)" if include_shorts()
+          else "꺼짐 → 쇼츠도 바꾸려면 web\\.env 에 YTWEB_INCLUDE_SHORTS=1 을 넣고 start.ps1 을 다시 실행한 뒤 홈의 [내 영상 불러오기]를 누르세요"))
     print("")
     print("결과: 실제 수정이 가능한 상태입니다. 허용된 영상의 제목만 실제 유튜브에서 바뀝니다." if ready
           else "결과: 아직 실제 수정은 꺼져 있습니다(위 [필요] 항목을 하면 켜집니다). 지금은 실제 유튜브가 바뀌지 않습니다.")
