@@ -91,11 +91,30 @@ export function BulkApprovePage() {
   const rows = lists.flatMap((q) => q.data?.items ?? []);
   // 진행 상태: 영상 목록과 같은 이름·같은 기준(영상의 진행 상태)으로 거른다. 해당 상태의 영상 ID 를 영상 목록 API 로 받아 그 영상의 제안만 남긴다.
   const statusVideos = useQuery({
-    queryKey: ['bulk-video-status', wfStatus],
-    queryFn: () => api.videos({ status: wfStatus, page_size: 200 }),
+    queryKey: ['bulk-video-status', wfStatus, 1],
+    queryFn: () => api.videos({ status: wfStatus, page_size: 200, page: 1 }),
     enabled: wfStatus !== '',
   });
-  const statusIds = new Set((statusVideos.data?.items ?? []).map((v) => v.video_id));
+  // 해당 상태의 영상이 200개를 넘으면 나머지 쪽도 받아 모두 합친다(가려지는 제안이 없게).
+  const morePages = Array.from(
+    { length: Math.max(0, Math.ceil((statusVideos.data?.total ?? 0) / 200) - 1) },
+    (_, i) => i + 2,
+  );
+  const moreVideos = useQueries({
+    queries: morePages.map((pageNo) => ({
+      queryKey: ['bulk-video-status', wfStatus, pageNo],
+      queryFn: () => api.videos({ status: wfStatus, page_size: 200, page: pageNo }),
+    })),
+  });
+  const statusLoading =
+    wfStatus !== '' && (statusVideos.isPending || moreVideos.some((q) => q.isPending));
+  const statusError =
+    wfStatus !== '' ? (statusVideos.error ?? moreVideos.find((q) => q.isError)?.error) : null;
+  const statusIds = new Set(
+    [statusVideos.data, ...moreVideos.map((q) => q.data)].flatMap((d) =>
+      (d?.items ?? []).map((v) => v.video_id),
+    ),
+  );
   const needle = filterText.trim().toLowerCase();
   // 최근에 만든 제안이 맨 위에 오도록 번호가 큰 것부터 보여 준다. 글자·판정으로 줄일 수 있다.
   const shownRows = [...rows]
@@ -408,12 +427,29 @@ export function BulkApprovePage() {
                   </Button>
                 )}
               </form>
-              {(needle || verdict || wfStatus) && shownRows.length === 0 && (
-                <p className="muted">{ko.bulk.filterNone}</p>
+              {!statusLoading &&
+                !statusError &&
+                (needle || verdict || wfStatus) &&
+                shownRows.length === 0 && <p className="muted">{ko.bulk.filterNone}</p>}
+              {statusLoading && <Skeleton lines={3} />}
+              {statusError && (
+                <ErrorPanel
+                  error={statusError}
+                  onRetry={() => {
+                    void statusVideos.refetch();
+                    moreVideos.forEach((q) => void q.refetch());
+                  }}
+                />
               )}
               <TableWrap label={ko.bulk.methodA}>
                 <table className="table">
-                  <caption>{ko.bulk.listCaption(shownRows.length)}</caption>
+                  <caption>
+                    {statusLoading
+                      ? ko.bulk.statusLoading
+                      : statusError
+                        ? ko.bulk.statusFail
+                        : ko.bulk.listCaption(shownRows.length)}
+                  </caption>
                   <thead>
                     <tr>
                       <th scope="col">
@@ -490,6 +526,7 @@ export function BulkApprovePage() {
                   setPg(1);
                 }}
               />
+
               {full && <p className="field__error">{ko.bulk.full(MAX_BULK)}</p>}
             </div>
           )}

@@ -164,27 +164,34 @@ def generate_for_video(session: Session, video_id: str, *, count: int, tone: str
     session.add(run)
     try:
         existing_titles = set(session.execute(select(Suggestion.title).where(Suggestion.video_id == video_id)).scalars())
+        # 실제 영상은 검증을 '통과'한 후보만 남기므로(아래), 통과하지 못하는 후보를 걸러 내도 count 개가 남도록 더 많이 받는다.
+        fetch = min(count * 3, 15) if video.source != "demo" else count
         if suggester.name == "gemini":  # 이미 만든 제목과 겹치지 않게 모델에 알려 준다
-            raw = [d for d in suggester.with_avoid(existing_titles).suggest(brief, count=count, tone=tone) if d.title not in existing_titles][:count]
+            raw = [d for d in suggester.with_avoid(existing_titles).suggest(brief, count=fetch, tone=tone) if d.title not in existing_titles][:fetch]
         elif suggester.name == "rule":  # 규칙 기반은 같은 입력이면 같은 후보라, 이미 만든 제목은 빼고 다음 후보를 낸다
-            raw = [d for d in suggester.suggest(brief, count=count + len(existing_titles), tone=tone) if d.title not in existing_titles][:count]
+            raw = [d for d in suggester.suggest(brief, count=fetch + len(existing_titles), tone=tone) if d.title not in existing_titles][:fetch]
         else:
-            raw = suggester.suggest(brief, count=count, tone=tone)
+            raw = suggester.suggest(brief, count=fetch, tone=tone)
     except Exception as exc:  # noqa: BLE001 - 외부 어댑터 경계: 어떤 오류든 실행 기록을 남기고 사용자에게 한국어로 알린다
         run.status, run.error = "failed", type(exc).__name__ if not isinstance(exc, TitleSuggestionError) else str(exc)[:300]
         audit.record(session, actor=actor, action="suggestion.generate_failed", target_type="video", target_id=video_id, detail={"error": type(exc).__name__}, now=now)
         session.commit()  # 요청이 실패로 끝나도 실패 기록은 남긴다
         raise ProblemError(502, "ai_unavailable", "AI 제안기가 응답하지 못했습니다.", hint="잠시 후 다시 시도하거나, 제목을 직접 수정해 사용하세요.") from exc
-    guarded = sanitize_drafts(raw, max_count=count)
+    guarded = sanitize_drafts(raw, max_count=fetch)
+    drafts = list(guarded.drafts)
+    if video.source != "demo":  # 사용자 요청(2026-10-13): 경고·차단 후보는 만들지 않는다. 검증을 '통과'한 후보만 남긴다.
+        drafts = [d for d in drafts if validate_title(env, video, d.title, d.evidence, d.topic)[0].result == "pass"][:count]
     run.params = {"count": count, "tone": tone, "returned": len(raw) if hasattr(raw, "__len__") else None, "dropped": [list(d) for d in guarded.dropped]}
     session.flush()
-    if not guarded.drafts:
+    if not drafts:
         run.status, run.error = "failed", "no_valid_candidates"
         session.commit()
+        if guarded.drafts:  # 후보는 있었지만 모두 검증을 통과하지 못함(실제 영상은 통과 후보만 남긴다)
+            raise ProblemError(502, "ai_no_pass_candidates", "만든 후보가 모두 검증을 통과하지 못해 저장하지 않았습니다.", hint="[AI 제안 생성]을 다시 눌러 새 후보를 만들거나, 제목을 직접 입력하세요.")
         raise ProblemError(502, "ai_no_candidates", "AI 응답에서 쓸 수 있는 후보가 없었습니다.", hint="다시 생성하거나 제목을 직접 수정해 사용하세요.")
     result: list[Suggestion] = []
     created = reused = 0
-    for draft in guarded.drafts:
+    for draft in drafts:
         existing = session.execute(select(Suggestion).where(Suggestion.video_id == video_id, Suggestion.title == draft.title)).scalar_one_or_none()
         if existing is not None:
             result.append(existing)

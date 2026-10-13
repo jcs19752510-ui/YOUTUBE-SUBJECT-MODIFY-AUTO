@@ -472,6 +472,8 @@ export const ko = {
     filterHint:
       '영상 ID 의 일부나 제목의 일부를 입력하면 아래 목록이 그 영상만 남습니다. 최근에 만든 제안이 위에 나오고, 비우면 전체가 다시 보입니다.',
     filterPlaceholder: '예: IC_yZY 또는 청소 설정',
+    statusLoading: '진행 상태별 영상을 불러오는 중입니다…',
+    statusFail: '진행 상태로 목록을 줄이지 못했습니다(아래 안내를 확인하세요)',
     verdictFilterLabel: '판정으로 줄여 보기',
     verdictAll: '전체',
     verdictPass: '통과',
