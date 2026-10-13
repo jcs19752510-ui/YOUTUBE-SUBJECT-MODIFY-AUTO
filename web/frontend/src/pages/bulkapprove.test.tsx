@@ -405,3 +405,64 @@ describe('접근성', () => {
     expect(screen.getByText('선택 1/50건')).toBeInTheDocument();
   });
 });
+
+describe('현재 제목 표시(결함 조치)', () => {
+  const titleRoute = (items: ResolvedVideo[]) =>
+    route('POST', '/api/v1/suggestions/resolve-videos', () => json(200, { items }));
+
+  it('TC-FE-BA-024 방법 A 표·승인 대기 목록·확인 창에 현재 제목이 새 제목 옆에 보인다', async () => {
+    const { user } = await setup([...lists([sg(1), sg(2)]), titleRoute([rv(1), rv(2)])]);
+    const cell = await screen.findByText('현재 제목 1', { selector: 'td' });
+    expect(cell.closest('tr')).toHaveTextContent('새 제목 1');
+    await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
+    await user.click(reviewBtn());
+    const row = within(dialog()).getByText('현재 제목 1').closest('tr')!;
+    expect(row).toHaveTextContent('새 제목 1');
+    expect(within(dialog()).queryByText('(제목을 불러오지 못함)')).toBeNull();
+  });
+
+  it('TC-FE-BA-025 조회가 실패하면 글로 알리고 경고를 두되 승인은 막지 않는다', async () => {
+    const { user } = await setup([
+      ...lists([sg(1)]),
+      route('POST', '/api/v1/suggestions/resolve-videos', () => problem(500, 'boom', '서버 오류')),
+    ]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await waitFor(() =>
+      expect(screen.getAllByText('(제목을 불러오지 못함)').length).toBeGreaterThan(0),
+    );
+    await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
+    await user.click(reviewBtn());
+    expect(within(dialog()).getByText(/현재 제목을 불러오지 못했습니다/)).toBeInTheDocument();
+    await typeApprover(user, '선생님');
+    expect(submitBtn()).toBeEnabled();
+  });
+
+  it('TC-FE-BA-026 미발견 영상은 제목 없음 문구로 보인다', async () => {
+    await setup([...lists([sg(1)]), titleRoute([rv(1, { found: false, video_title: null })])]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await waitFor(() => expect(screen.getByText('(제목을 불러오지 못함)')).toBeInTheDocument());
+  });
+
+  it('TC-FE-BA-027 영상이 50개를 넘으면 50개씩 나눠 조회한다', async () => {
+    const many = Array.from({ length: 51 }, (_, i) => sg(i + 1));
+    const { calls } = await setup([
+      ...lists(many),
+      route('POST', '/api/v1/suggestions/resolve-videos', (r) =>
+        json(200, {
+          items: (r.body as { video_ids: string[] }).video_ids.map((v) => ({
+            video_id: v,
+            found: true,
+            video_title: `T-${v}`,
+            excluded_reasons: [],
+            candidates: [],
+          })),
+        }),
+      ),
+    ]);
+    await screen.findByText('T-' + vid(51));
+    const rc = calls.filter((c) => c.path.endsWith('resolve-videos'));
+    expect(rc.map((c) => (c.body as { video_ids: string[] }).video_ids.length).sort()).toEqual([
+      1, 50,
+    ]);
+  });
+});

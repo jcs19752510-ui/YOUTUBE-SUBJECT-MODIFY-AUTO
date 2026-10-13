@@ -513,6 +513,10 @@ export const ko = {
     approverLabel: '승인자 이름',
     approverHint: '누가 승인했는지 기록에 남습니다.',
     approverEmpty: '승인자 이름을 입력해 주세요.',
+    titleLoading: '(제목을 불러오는 중)',
+    titleMissing: '(제목을 불러오지 못함)',
+    titleMissingWarn:
+      '일부 영상의 현재 제목을 불러오지 못했습니다. 어떤 영상인지 영상 ID 로 확인한 뒤 승인하세요. 승인은 그대로 할 수 있습니다.',
     colCurrent: '현재 제목',
     colChange: '새 제목',
     colAck: '경고 확인',

@@ -73,6 +73,28 @@ export function BulkApprovePage() {
   const listError = lists.find((q) => q.isError)?.error;
   const rows = lists.flatMap((q) => q.data?.items ?? []);
 
+  // 현재 제목: 목록 영상 ID 를 50개씩 resolve-videos 로 조회한다(실패해도 승인은 막지 않는다).
+  const listVideoIds = [...new Set(rows.map((s) => s.video_id))];
+  const chunks: string[][] = [];
+  for (let i = 0; i < listVideoIds.length; i += MAX_BULK)
+    chunks.push(listVideoIds.slice(i, i + MAX_BULK));
+  const titleQs = useQueries({
+    queries: chunks.map((ch) => ({
+      queryKey: ['suggestions', 'bulk-titles', ch.join(',')],
+      queryFn: () => api.resolveVideos(ch),
+      staleTime: 60_000,
+      retry: false,
+    })),
+  });
+  const titleMap = new Map<string, string | null>();
+  for (const q of titleQs)
+    for (const it of q.data?.items ?? [])
+      titleMap.set(it.video_id, it.found ? it.video_title : null);
+  const titleLoading = titleQs.some((q) => q.isPending);
+  const titleOf = (id: string): string | null => titleMap.get(id) ?? null;
+  const titleText = (t: string | null) =>
+    t ?? (titleLoading ? ko.bulk.titleLoading : ko.bulk.titleMissing);
+
   const parsed = parseVideoIds(text);
   const findDisabledWhy =
     parsed.valid.length === 0 && parsed.invalid.length === 0
@@ -115,7 +137,7 @@ export function BulkApprovePage() {
     seenVideo.add(s.video_id);
     queue.push({ s, currentTitle });
   };
-  for (const s of rows) if (pickedA.has(s.id) && !blockWhy(s)) add(s, null);
+  for (const s of rows) if (pickedA.has(s.id) && !blockWhy(s)) add(s, titleOf(s.video_id));
   for (const it of resolved) {
     const id = choice.get(it.video_id);
     const s = it.candidates.find((c) => c.id === id);
@@ -287,6 +309,7 @@ export function BulkApprovePage() {
                         </label>
                       </th>
                       <th scope="col">{ko.bulk.colVideo}</th>
+                      <th scope="col">{ko.bulk.colCurrent}</th>
                       <th scope="col">{ko.bulk.colNew}</th>
                       <th scope="col">{ko.bulk.colVerdict}</th>
                       <th scope="col">{ko.bulk.colLength}</th>
@@ -312,6 +335,7 @@ export function BulkApprovePage() {
                             </label>
                           </td>
                           <td className="mono">{s.video_id}</td>
+                          <td className="cell-title">{titleText(titleOf(s.video_id))}</td>
                           <td className="cell-title">
                             {s.title}
                             {why && <p className="field__error">{why}</p>}
@@ -405,6 +429,7 @@ export function BulkApprovePage() {
                 <thead>
                   <tr>
                     <th scope="col">{ko.bulk.colVideo}</th>
+                    <th scope="col">{ko.bulk.colCurrent}</th>
                     <th scope="col">{ko.bulk.colNew}</th>
                     <th scope="col">{ko.bulk.colVerdict}</th>
                   </tr>
@@ -413,6 +438,7 @@ export function BulkApprovePage() {
                   {queue.map((q) => (
                     <tr key={q.s.id}>
                       <td className="mono">{q.s.video_id}</td>
+                      <td className="cell-title">{titleText(q.currentTitle)}</td>
                       <td className="cell-title">{q.s.title}</td>
                       <td>
                         <ValidationBadge result={q.s.validation_result} />
@@ -492,7 +518,7 @@ export function BulkApprovePage() {
                   {queue.map((q) => (
                     <tr key={q.s.id}>
                       <td className="mono">{q.s.video_id}</td>
-                      <td>{q.currentTitle ?? '-'}</td>
+                      <td>{titleText(q.currentTitle)}</td>
                       <td className="cell-title">
                         {q.s.title} <ValidationBadge result={q.s.validation_result} />
                       </td>
@@ -524,6 +550,11 @@ export function BulkApprovePage() {
                 </tbody>
               </table>
             </TableWrap>
+            {queue.some((q) => q.currentTitle === null) && !titleLoading && (
+              <p className="field__error" role="status">
+                {ko.bulk.titleMissingWarn}
+              </p>
+            )}
             {gate.length > 0 && (
               <div aria-live="polite">
                 <p className="callout__title">{ko.bulk.gateTitle}</p>
