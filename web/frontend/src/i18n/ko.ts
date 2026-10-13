@@ -515,6 +515,7 @@ export const ko = {
     approverEmpty: '승인자 이름을 입력해 주세요.',
     approverInvalid:
       '승인자 이름이 올바르지 않습니다. 보이지 않는 문자 없이 40자 이하의 평범한 글자로 입력해 주세요.',
+    blockReasonsLabel: '승인할 수 없는 이유',
     warnReasonsLabel: '이 제안의 경고 내용',
     ttlNotice:
       '승인은 일정 시간(기본 1시간) 안에 배치를 만들어 실행해야 합니다. 시간이 지나면 다시 승인해야 합니다.',

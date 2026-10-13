@@ -73,7 +73,7 @@ export function BulkApprovePage() {
   const [result, setResult] = useState<BulkApproveResult | null>(null);
 
   const lists = useQueries({
-    queries: ['candidate', 'expired'].map((status) => ({
+    queries: ['candidate', 'expired', 'blocked'].map((status) => ({
       queryKey: ['suggestions', 'bulk', status],
       queryFn: () => api.suggestions({ status, page_size: MAX_BULK }),
     })),
@@ -362,6 +362,15 @@ export function BulkApprovePage() {
                           <td className="cell-title">
                             {s.title}
                             {why && <p className="field__error">{why}</p>}
+                            {why && s.status === 'blocked' && (
+                              <ul className="muted" aria-label={ko.bulk.blockReasonsLabel}>
+                                {s.reasons
+                                  .filter((r) => r.severity === 'block')
+                                  .map((r, i) => (
+                                    <li key={`${r.code}-${i}`}>{r.message}</li>
+                                  ))}
+                              </ul>
+                            )}
                           </td>
                           <td>
                             <ValidationBadge result={s.validation_result} />

@@ -20,7 +20,8 @@ import {
 const vid = (n: number) => `vid${String(n).padStart(8, '0')}`;
 const sg = (id: number, over: Partial<Suggestion> = {}) =>
   suggestion(id, { video_id: vid(id), title: `새 제목 ${id}`, ...over });
-const page = (items: unknown[]) => json(200, { items, total: items.length, page: 1, page_size: 50 });
+const page = (items: unknown[]) =>
+  json(200, { items, total: items.length, page: 1, page_size: 50 });
 const rv = (n: number, over: Partial<ResolvedVideo> = {}): ResolvedVideo => ({
   video_id: vid(n),
   found: true,
@@ -30,9 +31,12 @@ const rv = (n: number, over: Partial<ResolvedVideo> = {}): ResolvedVideo => ({
   ...over,
 });
 /** 목록 + resolve(목록 영상의 현재 제목, 붙여넣기 모두 같은 규칙: 요청 ID 마다 rv) */
-const baseHandlers = (cand: Suggestion[], resolve?: (ids: string[]) => ResolvedVideo[]): Handler[] => [
+const baseHandlers = (
+  cand: Suggestion[],
+  resolve?: (ids: string[]) => ResolvedVideo[],
+): Handler[] => [
   route('GET', '/api/v1/suggestions', (r) =>
-    page(r.query.get('status') === 'expired' ? [] : cand),
+    page(r.query.get('status') === 'expired' || r.query.get('status') === 'blocked' ? [] : cand),
   ),
   route('POST', '/api/v1/suggestions/resolve-videos', (r) => {
     const ids = (r.body as { video_ids: string[] }).video_ids;
@@ -105,7 +109,9 @@ describe('화면 계약 1~3: 방법 A·B·합산', () => {
     const t = screen.getAllByRole('table')[0]!;
     for (const h of ['영상 ID', '현재 제목', '새 제목', '판정', '글자 수'])
       expect(within(t).getByRole('columnheader', { name: h })).toBeInTheDocument();
-    expect(within(t).getByText('승인 가능한 제안 2건', { selector: 'caption' })).toBeInTheDocument();
+    expect(
+      within(t).getByText('승인 가능한 제안 2건', { selector: 'caption' }),
+    ).toBeInTheDocument();
     expect(await within(t).findByText('현재 제목 1')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: '새 제목 1 선택' })).toBeInTheDocument();
     expect(document.querySelector('[aria-live="polite"]')).not.toBeNull();
@@ -123,31 +129,36 @@ describe('화면 계약 1~3: 방법 A·B·합산', () => {
     expect(screen.getByText('선택 1/50건')).toBeInTheDocument();
   });
 
-  it('TC-FV-003 50건 경계: A 49건 → 확인 창 열림, 50건 → 열림, B 로 1건 더(합산 51) → 막힘+사유 글', { timeout: 60000 }, async () => {
-    const many = Array.from({ length: 50 }, (_, i) => sg(i + 1));
-    const { user } = await setup(baseHandlers(many));
-    await waitList();
-    for (let i = 1; i <= 49; i++) await user.click(screen.getByRole('checkbox', { name: `새 제목 ${i} 선택` }));
-    expect(screen.getByText('선택 49/50건')).toBeInTheDocument();
-    expect(reviewBtn()).toBeEnabled();
-    await user.click(screen.getByRole('checkbox', { name: '새 제목 50 선택' }));
-    expect(screen.getByText('선택 50/50건')).toBeInTheDocument();
-    expect(reviewBtn()).toBeEnabled();
-    expect(screen.getByText(/최대 50건까지만 고를 수 있습니다/)).toBeInTheDocument();
-    await paste(user, vid(77));
-    await clickFind(user);
-    await screen.findByText('찾은 결과 1개 영상');
-    // B 의 새 후보는 자동 선택되어 합산 51 이 된다 -> 막혀야 한다
-    const over = screen.queryAllByText(/승인 대기 목록이 51건입니다/).length > 0;
-    const count = screen.getByText(/^선택 \d+\/50건$/).textContent;
-    if (over) {
-      expect(reviewBtn()).toBeDisabled();
-      expect(screen.getAllByText(/50건 이하로 줄여야 합니다/).length).toBeGreaterThan(0);
-    } else {
-      // 51 로 담기지 않았다면 50 이하여야 하고, 그 이유가 화면에 보여야 한다
-      expect(count).toMatch(/선택 50\/50건/);
-    }
-  });
+  it(
+    'TC-FV-003 50건 경계: A 49건 → 확인 창 열림, 50건 → 열림, B 로 1건 더(합산 51) → 막힘+사유 글',
+    { timeout: 60000 },
+    async () => {
+      const many = Array.from({ length: 50 }, (_, i) => sg(i + 1));
+      const { user } = await setup(baseHandlers(many));
+      await waitList();
+      for (let i = 1; i <= 49; i++)
+        await user.click(screen.getByRole('checkbox', { name: `새 제목 ${i} 선택` }));
+      expect(screen.getByText('선택 49/50건')).toBeInTheDocument();
+      expect(reviewBtn()).toBeEnabled();
+      await user.click(screen.getByRole('checkbox', { name: '새 제목 50 선택' }));
+      expect(screen.getByText('선택 50/50건')).toBeInTheDocument();
+      expect(reviewBtn()).toBeEnabled();
+      expect(screen.getByText(/최대 50건까지만 고를 수 있습니다/)).toBeInTheDocument();
+      await paste(user, vid(77));
+      await clickFind(user);
+      await screen.findByText('찾은 결과 1개 영상');
+      // B 의 새 후보는 자동 선택되어 합산 51 이 된다 -> 막혀야 한다
+      const over = screen.queryAllByText(/승인 대기 목록이 51건입니다/).length > 0;
+      const count = screen.getByText(/^선택 \d+\/50건$/).textContent;
+      if (over) {
+        expect(reviewBtn()).toBeDisabled();
+        expect(screen.getAllByText(/50건 이하로 줄여야 합니다/).length).toBeGreaterThan(0);
+      } else {
+        // 51 로 담기지 않았다면 50 이하여야 하고, 그 이유가 화면에 보여야 한다
+        expect(count).toMatch(/선택 50\/50건/);
+      }
+    },
+  );
 
   it('TC-FV-004 A 30 + B 21 (겹침 없음, 합산 51): 확인 창 버튼 꺼짐 + 남은 조건 글', async () => {
     const many = Array.from({ length: 30 }, (_, i) => sg(i + 1));
@@ -158,7 +169,9 @@ describe('화면 계약 1~3: 방법 A·B·합산', () => {
     await paste(user, ids);
     await clickFind(user);
     await screen.findByText('찾은 결과 21개 영상');
-    await waitFor(() => expect(screen.getAllByText(/승인 대기 목록이 51건입니다/).length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(screen.getAllByText(/승인 대기 목록이 51건입니다/).length).toBeGreaterThan(0),
+    );
     expect(reviewBtn()).toBeDisabled();
   });
 
@@ -183,11 +196,7 @@ describe('화면 계약 1~3: 방법 A·B·합산', () => {
 
   it('TC-FV-006 차단 건: 체크박스 비활성 + 사유 글, 승인 완료 건도 비활성+사유', async () => {
     const { user } = await setup(
-      baseHandlers([
-        sg(1, { validation_result: 'block' }),
-        sg(2, { status: 'approved' }),
-        sg(3),
-      ]),
+      baseHandlers([sg(1, { validation_result: 'block' }), sg(2, { status: 'approved' }), sg(3)]),
     );
     await waitList(3);
     expect(screen.getByRole('checkbox', { name: '새 제목 1 선택' })).toBeDisabled();
@@ -211,7 +220,11 @@ describe('영상 ID 파싱 경계', () => {
     await clickFind(user);
     await waitFor(() => expect(posts(calls, 'resolve-videos').length).toBe(1));
     expect((posts(calls, 'resolve-videos')[0]!.body as { video_ids: string[] }).video_ids).toEqual([
-      vid(1), vid(2), vid(3), vid(4), vid(5),
+      vid(1),
+      vid(2),
+      vid(3),
+      vid(4),
+      vid(5),
     ]);
   });
   it('TC-FV-011 대소문자는 서로 다른 ID(ABCDEFGHIJK 와 abcdefghijk)로 둘 다 보낸다', async () => {
@@ -219,7 +232,8 @@ describe('영상 ID 파싱 경계', () => {
     await clickFind(user);
     await waitFor(() => expect(posts(calls, 'resolve-videos').length).toBe(1));
     expect((posts(calls, 'resolve-videos')[0]!.body as { video_ids: string[] }).video_ids).toEqual([
-      'ABCDEFGHIJK', 'abcdefghijk',
+      'ABCDEFGHIJK',
+      'abcdefghijk',
     ]);
   });
   it('TC-FV-012 10자·12자·한글은 보내지 않고 이유를 글로 보인다. 유효 ID 가 없으면 찾기 꺼짐', async () => {
@@ -227,14 +241,19 @@ describe('영상 ID 파싱 경계', () => {
     expect(screen.getByText(/형식이 맞지 않아 찾지 않은 ID/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '찾기' })).toBeDisabled();
     // 사유 글이 사용자에게 의미가 통하는가: 잘못된 ID 만 입력했는데 "한 개 이상 입력하세요" 로 안내하면 혼란
-    const why = screen.getAllByText(/ID/).map((e) => e.textContent).join(' | ');
+    const why = screen
+      .getAllByText(/ID/)
+      .map((e) => e.textContent)
+      .join(' | ');
     expect(why).toContain('11자');
   });
   it('TC-FV-013 같은 ID 반복 입력은 한 번만 보낸다', async () => {
     const { user, calls } = await run(`${vid(1)} ${vid(1)}\n${vid(1)}`);
     await clickFind(user);
     await waitFor(() => expect(posts(calls, 'resolve-videos').length).toBe(1));
-    expect((posts(calls, 'resolve-videos')[0]!.body as { video_ids: string[] }).video_ids).toHaveLength(1);
+    expect(
+      (posts(calls, 'resolve-videos')[0]!.body as { video_ids: string[] }).video_ids,
+    ).toHaveLength(1);
   });
   it('TC-FV-014 빈 입력·공백만 입력은 찾기 꺼짐 + 이유 글', async () => {
     await run('   \n  ');
@@ -325,7 +344,10 @@ describe('후보 선택·경고·승인 요청 내용', () => {
     expect(submitBtn()).toBeEnabled();
     await user.click(submitBtn());
     await screen.findByText(/승인 결과/);
-    const body = posts(calls, 'approve-batch')[0]!.body as { acknowledged_warning_ids: number[]; suggestion_ids: number[] };
+    const body = posts(calls, 'approve-batch')[0]!.body as {
+      acknowledged_warning_ids: number[];
+      suggestion_ids: number[];
+    };
     expect([...body.acknowledged_warning_ids].sort()).toEqual([1, 2, 3]);
     expect(body.suggestion_ids).toEqual([1, 2, 3, 4]);
   });
@@ -384,7 +406,9 @@ describe('승인자 이름과 비활성 사유', () => {
     await setApprover(user, '  홍길동  ');
     await user.click(submitBtn());
     await screen.findByText(/승인 결과/);
-    expect((posts(calls, 'approve-batch')[0]!.body as { approver: string }).approver).toBe('홍길동');
+    expect((posts(calls, 'approve-batch')[0]!.body as { approver: string }).approver).toBe(
+      '홍길동',
+    );
   });
 });
 
@@ -412,20 +436,32 @@ describe('제출·오류·결과', () => {
     expect(n).toBe(1);
   });
   it.each([
-    [409, 'warning_not_acknowledged', '경고 확인 필요', '경고가 있는 제안은 확인 체크 후에만 승인할 수 있습니다'],
+    [
+      409,
+      'warning_not_acknowledged',
+      '경고 확인 필요',
+      '경고가 있는 제안은 확인 체크 후에만 승인할 수 있습니다',
+    ],
     [422, 'bulk_too_many', '너무 많음', '한 번에 최대 50건까지 승인할 수 있습니다'],
     [500, 'internal_error', '서버 오류', ''],
-  ])('TC-FV-04%# 서버 %i 오류는 한국어로 보이고 내부 정보(스택·SQL·경로)가 없으며 창은 열린 채 재시도 가능', async (st, code, title, detail) => {
-    const { user } = await open1([
-      route('POST', '/api/v1/suggestions/approve-batch', () => problem(st as number, code as string, title as string, detail as string)),
-    ]);
-    await user.click(submitBtn());
-    const alert = await within(dialog()).findByRole('alert');
-    expect(alert.textContent).toMatch(/[가-힣]/);
-    expect(alert.textContent).not.toMatch(/Traceback|SELECT |psycopg|\/home\/|\.py|undefined|\[object/);
-    expect(alert.textContent).toMatch(/다음에 할 일|할 일|다시/);
-    expect(submitBtn()).toBeEnabled();
-  });
+  ])(
+    'TC-FV-04%# 서버 %i 오류는 한국어로 보이고 내부 정보(스택·SQL·경로)가 없으며 창은 열린 채 재시도 가능',
+    async (st, code, title, detail) => {
+      const { user } = await open1([
+        route('POST', '/api/v1/suggestions/approve-batch', () =>
+          problem(st as number, code as string, title as string, detail as string),
+        ),
+      ]);
+      await user.click(submitBtn());
+      const alert = await within(dialog()).findByRole('alert');
+      expect(alert.textContent).toMatch(/[가-힣]/);
+      expect(alert.textContent).not.toMatch(
+        /Traceback|SELECT |psycopg|\/home\/|\.py|undefined|\[object/,
+      );
+      expect(alert.textContent).toMatch(/다음에 할 일|할 일|다시/);
+      expect(submitBtn()).toBeEnabled();
+    },
+  );
   it('TC-FV-044 네트워크 오류(fetch 거부)도 한국어 안내, 내부 정보 없음', async () => {
     const { user } = await open1([
       route('POST', '/api/v1/suggestions/approve-batch', () => {
@@ -459,7 +495,10 @@ describe('제출·오류·결과', () => {
     expect(await screen.findByText(/승인 1건 \/ 제외 2건/)).toBeInTheDocument();
     expect(screen.getByText('현재 제목과 같습니다.')).toBeInTheDocument();
     expect(screen.getByText('서버가 준 이유')).toBeInTheDocument();
-    expect(within(screen.getByRole('main')).getByRole('link', { name: /배치/ })).toHaveAttribute('href', '/batches');
+    expect(within(screen.getByRole('main')).getByRole('link', { name: /배치/ })).toHaveAttribute(
+      'href',
+      '/batches',
+    );
     expect(screen.getByText(/제목은 아직 바뀌지 않았습니다/)).toBeInTheDocument();
     expect(await axeViolations(document.body)).toEqual([]);
   });
@@ -469,7 +508,9 @@ describe('XSS·키보드·접근성·모드', () => {
   const evil = '<script>window.__x=1</script><img src=x onerror="window.__x=2">';
   it('TC-FV-050 제목·현재 제목에 HTML 이 있어도 텍스트로만 출력되고 요소가 생기지 않는다', async () => {
     const { user, container } = await setup(
-      baseHandlers([sg(1, { title: evil })], () => [rv(1, { video_title: evil, candidates: [sg(1, { title: evil })] })]),
+      baseHandlers([sg(1, { title: evil })], () => [
+        rv(1, { video_title: evil, candidates: [sg(1, { title: evil })] }),
+      ]),
     );
     await screen.findByText(evil, { selector: 'td' });
     expect(container.querySelector('script, img[src="x"]')).toBeNull();
@@ -541,7 +582,9 @@ describe('XSS·키보드·접근성·모드', () => {
     expect(screen.getAllByText(/실제|데모/).length).toBeGreaterThan(0);
   });
   it('TC-FV-057 목록 조회 실패는 한국어 오류+다시 시도, 승인 대기 0건이면 확인 창 버튼 꺼짐', async () => {
-    await setup([route('GET', '/api/v1/suggestions', () => problem(500, 'internal_error', '서버 오류'))]);
+    await setup([
+      route('GET', '/api/v1/suggestions', () => problem(500, 'internal_error', '서버 오류')),
+    ]);
     await screen.findAllByText(/다시 시도|서버 오류/);
     expect(within(screen.getByRole('main')).getByRole('alert').textContent).toMatch(/[가-힣]/);
     expect(reviewBtn()).toBeDisabled();
@@ -549,7 +592,9 @@ describe('XSS·키보드·접근성·모드', () => {
   it('TC-FV-058 resolve-videos 실패(422/네트워크)도 한국어 오류와 다시 시도', async () => {
     const { user } = await setup([
       route('GET', '/api/v1/suggestions', () => page([])),
-      route('POST', '/api/v1/suggestions/resolve-videos', () => problem(422, 'bulk_too_many', '너무 많음', '한 번에 최대 50건까지 승인할 수 있습니다')),
+      route('POST', '/api/v1/suggestions/resolve-videos', () =>
+        problem(422, 'bulk_too_many', '너무 많음', '한 번에 최대 50건까지 승인할 수 있습니다'),
+      ),
     ]);
     await screen.findByText('승인할 수 있는 제안이 없습니다.');
     await paste(user, vid(1));
@@ -569,7 +614,9 @@ describe('XSS·키보드·접근성·모드', () => {
     await user.click(submitBtn());
     await screen.findByText(/승인 결과/);
     await act(async () => {});
-    const again = screen.getAllByRole('button').find((b) => /새로 고르기/.test(b.textContent ?? ''));
+    const again = screen
+      .getAllByRole('button')
+      .find((b) => /새로 고르기/.test(b.textContent ?? ''));
     expect(again).toBeTruthy();
   });
 });

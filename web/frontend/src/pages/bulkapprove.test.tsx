@@ -28,7 +28,9 @@ const page = (items: unknown[]) =>
   json(200, { items, total: items.length, page: 1, page_size: 50 });
 const lists = (cand: Suggestion[], exp: Suggestion[] = []): Handler[] => [
   route('GET', '/api/v1/suggestions', (r) =>
-    page(r.query.get('status') === 'expired' ? exp : cand),
+    page(
+      r.query.get('status') === 'expired' ? exp : r.query.get('status') === 'blocked' ? [] : cand,
+    ),
   ),
 ];
 const resolveRoute = (items: ResolvedVideo[]) =>
@@ -542,5 +544,30 @@ describe('독립 검증 결함 조치(DEF-FV-001~004)', () => {
     await typeApprover(user, '홍');
     await user.click(submitBtn());
     expect(await screen.findByText(/기본 1시간/)).toBeInTheDocument();
+  });
+});
+
+describe('차단 제안도 목록에 이유와 함께 보인다(선생님 결정 2026-10-13)', () => {
+  it('TC-FE-BA-032 차단 판정 제안은 목록에 비활성으로 나오고 차단 이유가 글로 보이며 승인 대기에 들어가지 않는다', async () => {
+    const blocked = sg(7, {
+      status: 'blocked',
+      validation_result: 'block',
+      reasons: [{ code: 'banned', severity: 'block', message: '금지 표현이 들어 있습니다' }],
+    });
+    const { user } = await setup([
+      route('GET', '/api/v1/suggestions', (r) => {
+        const st = r.query.get('status');
+        return page(st === 'blocked' ? [blocked] : st === 'candidate' ? [sg(1)] : []);
+      }),
+    ]);
+    await screen.findByText('새 제목 7', { selector: 'td' });
+    const box = screen.getByRole('checkbox', { name: '새 제목 7 선택' });
+    expect(box).toBeDisabled();
+    expect(screen.getByText('금지 표현이 들어 있습니다')).toBeInTheDocument();
+    expect(screen.getAllByText('차단 판정이라 승인할 수 없습니다.').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('checkbox', { name: '현재 목록 전체 선택' }));
+    expect(reviewBtn()).toBeEnabled();
+    await user.click(reviewBtn());
+    expect(within(dialog()).queryByText('새 제목 7')).toBeNull();
   });
 });
