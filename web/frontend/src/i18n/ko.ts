@@ -328,6 +328,8 @@ export const ko = {
     selectOne: (t: string) => `${t} 선택`,
     excludedBadge: '제외',
     excludedWhy: '제외 사유',
+    excludedNotice: (n: number, ok: number) =>
+      `이 페이지의 영상 ${n}개는 안전 규칙(쇼츠·비공개·어린이용·예약 라이브)에 따라 제목을 바꿀 수 없어 선택할 수 없습니다. 이유는 각 영상 아래에 표시됩니다. 선택할 수 있는 영상은 ${ok}개이고, 맨 위 체크칸은 그 영상들만 고릅니다.`,
     shortBadge: '쇼츠',
     selectedCount: (n: number) => `${n}개 선택됨`,
     generateOver: (max: number) =>

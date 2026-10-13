@@ -188,6 +188,11 @@ export function VideosPage() {
         )
       ) : (
         <>
+          {items.length > selectable.length && (
+            <p className="muted" role="note">
+              {ko.videos.excludedNotice(items.length - selectable.length, selectable.length)}
+            </p>
+          )}
           <TableWrap label={ko.videos.title}>
             <table className="table">
               <caption>{ko.videos.captionLine(query.data?.total ?? 0)}</caption>
@@ -348,6 +353,7 @@ function Row({
             type="checkbox"
             checked={selected}
             disabled={v.excluded}
+            title={v.excluded ? ko.videos.excludedWhy : undefined}
             aria-label={ko.videos.selectOne(v.title)}
             onChange={onToggle}
           />
