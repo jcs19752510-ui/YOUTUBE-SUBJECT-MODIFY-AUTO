@@ -117,7 +117,8 @@ describe('방법 A', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '현재 목록 전체 선택' }));
     expect(screen.getByText('선택 50/50건')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: '새 제목 51 선택' })).toBeDisabled();
+    // 2026-10-13: 목록이 최근 제안(번호 큰 것)부터 정렬되도록 바뀌어, 50건이 차면 가장 오래된 제안(번호 1)이 비활성이 된다. 첫 실행(정렬 변경 직후)에서는 이 줄이 '새 제목 51' 기준이라 실패했다.
+    expect(screen.getByRole('checkbox', { name: '새 제목 1 선택' })).toBeDisabled();
     expect(screen.getByText(/최대 50건까지만 고를 수 있습니다/)).toBeInTheDocument();
     expect(reviewBtn()).toBeEnabled();
   });
@@ -540,10 +541,10 @@ describe('독립 검증 결함 조치(DEF-FV-001~004)', () => {
     await screen.findByText('새 제목 1', { selector: 'td' });
     await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
     await user.click(reviewBtn());
-    expect(within(dialog()).getByText(/기본 1시간/)).toBeInTheDocument();
+    expect(within(dialog()).getByText(/기본 24시간/)).toBeInTheDocument();
     await typeApprover(user, '홍');
     await user.click(submitBtn());
-    expect(await screen.findByText(/기본 1시간/)).toBeInTheDocument();
+    expect(await screen.findByText(/기본 24시간/)).toBeInTheDocument();
   });
 });
 

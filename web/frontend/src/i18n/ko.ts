@@ -129,7 +129,7 @@ export const ko = {
   // ---- 상태 라벨 ----
   workflow: {
     none: '제안 없음',
-    suggested: '제안 있음',
+    suggested: '제안 있음(검토 대기)',
     approved: '승인됨',
     queued: '반영 대기',
     applied: '반영 완료',
@@ -285,7 +285,7 @@ export const ko = {
     counts: {
       videos: '전체 영상',
       excluded: '제외된 영상',
-      suggested: '제안 있음',
+      suggested: '제안 있음(검토 대기)',
       approved: '승인됨',
       queued: '반영 대기',
       applied: '반영 완료',
@@ -328,6 +328,8 @@ export const ko = {
     selectOne: (t: string) => `${t} 선택`,
     excludedBadge: '제외',
     excludedWhy: '제외 사유',
+    excludedNotice: (n: number, ok: number) =>
+      `이 페이지의 영상 ${n}개는 안전 규칙(쇼츠·비공개·어린이용·예약 라이브)에 따라 제목을 바꿀 수 없어 선택할 수 없습니다. 이유는 각 영상 아래에 표시됩니다. 선택할 수 있는 영상은 ${ok}개이고, 맨 위 체크칸은 그 영상들만 고릅니다.`,
     shortBadge: '쇼츠',
     selectedCount: (n: number) => `${n}개 선택됨`,
     generateOver: (max: number) =>
@@ -466,10 +468,24 @@ export const ko = {
     methodB: '방법 B. 영상 ID 붙여넣기',
     listCaption: (n: number) => `승인 가능한 제안 ${n}건`,
     listEmpty: '승인할 수 있는 제안이 없습니다.',
+    filterLabel: '목록 줄여 보기',
+    filterHint:
+      '영상 ID 의 일부나 제목의 일부를 입력하면 아래 목록이 그 영상만 남습니다. 최근에 만든 제안이 위에 나오고, 비우면 전체가 다시 보입니다.',
+    filterPlaceholder: '예: IC_yZY 또는 청소 설정',
+    statusLoading: '진행 상태별 영상을 불러오는 중입니다…',
+    statusFail: '진행 상태로 목록을 줄이지 못했습니다(아래 안내를 확인하세요)',
+    verdictFilterLabel: '판정으로 줄여 보기',
+    verdictAll: '전체',
+    verdictPass: '통과',
+    verdictWarn: '경고',
+    verdictBlock: '차단',
+    filterSortNote: '최근에 만든 제안이 위에 나옵니다.',
+    filterNone: '입력한 글자와 맞는 제안이 없습니다. 글자를 줄이거나 비워 보세요.',
     colPick: '선택',
     colVideo: '영상 ID',
     colNew: '새 제목',
     colVerdict: '판정',
+    colScore: '판정 점수',
     colLength: '글자 수',
     colWhy: '승인할 수 없는 이유',
     pickOne: (t: string) => `${t} 선택`,
@@ -518,7 +534,7 @@ export const ko = {
     blockReasonsLabel: '승인할 수 없는 이유',
     warnReasonsLabel: '이 제안의 경고 내용',
     ttlNotice:
-      '승인은 일정 시간(기본 1시간) 안에 배치를 만들어 실행해야 합니다. 시간이 지나면 다시 승인해야 합니다.',
+      '승인은 일정 시간(기본 24시간) 안에 배치를 만들어 실행해야 합니다. 시간이 지나면 다시 승인해야 합니다.',
     titleLoading: '(제목을 불러오는 중)',
     titleMissing: '(제목을 불러오지 못함)',
     titleMissingWarn:
@@ -566,6 +582,7 @@ export const ko = {
     colVideo: '영상',
     colChange: '제목 변경',
     colApproval: '승인',
+    approvalExpires: (t: string) => `만료 ${t}`,
     selectAll: '전체 선택',
     selectOne: (t: string) => `${t} 선택`,
     maxNote: (n: number) => `한 배치에는 최대 ${n}건까지 담을 수 있습니다.`,
