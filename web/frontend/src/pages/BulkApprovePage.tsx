@@ -193,7 +193,7 @@ export function BulkApprovePage() {
   });
 
   const gate: string[] = [];
-  if (approver.trim() === '') gate.push(ko.bulk.approverEmpty);
+  if (approver === '') gate.push(ko.bulk.approverEmpty);
   if (warnLeft.length > 0) gate.push(ko.bulk.ackNeed(warnLeft.length));
   if (over) gate.push(ko.bulk.queueOver(queue.length, MAX_BULK));
   if (queue.length === 0) gate.push(ko.bulk.reviewDisabledEmpty);
