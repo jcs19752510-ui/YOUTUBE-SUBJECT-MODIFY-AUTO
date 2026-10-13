@@ -10,6 +10,7 @@ param([switch]$Detail)
 Test-ComposeFileExists
 Test-DockerReady
 $problems = 0
+$unverified = 0
 
 Write-Host ''
 Write-Host '--- 서비스 상태 ---' -ForegroundColor White
@@ -29,10 +30,12 @@ foreach ($svc in $YtwebServices) {
 Write-Host ''
 Write-Host '--- 호스트에 열린 포트 (127.0.0.1:8080 하나만 있어야 합니다) ---' -ForegroundColor White
 $ps = Invoke-Native -FilePath 'docker' -ArgList @('ps', '-a', '--filter', "label=com.docker.compose.project=$YtwebProject", '--format', '{{.Names}}|{{.Ports}}') -StdoutOnly
+$seenSvc = @()
 foreach ($line in $ps.Output) {
     if (-not $line.Contains('|')) { continue }
     $cname, $ports = $line.Split('|', 2)
     $svc = $cname -replace ('^' + [regex]::Escape($YtwebProject) + '-'), '' -replace '-\d+$', ''
+    $seenSvc += $svc
     $published = @($ports.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '->' })
     if ($published.Count -eq 0) { Write-Ok ("{0,-8} 호스트 포트 없음" -f $svc); continue }
     foreach ($p in $published) {
@@ -40,10 +43,20 @@ foreach ($line in $ps.Output) {
         else { Write-Host ("[위험] {0,-8} {1}" -f $svc, $p) -ForegroundColor Red; $problems++ }
     }
 }
+# 컨테이너 정보를 못 읽었거나 예상한 서비스가 목록에 없으면 '안전함'으로 보고하지 않고 '확인하지 못함'으로 알린다.
+if ($ps.ExitCode -ne 0 -or $seenSvc.Count -eq 0) {
+    Write-Warn '컨테이너의 호스트 포트 정보를 읽지 못했습니다. 포트 점검을 하지 못했습니다(확인하지 못함).'; $unverified++
+} else {
+    foreach ($svc in $YtwebServices) {
+        if ($seenSvc -notcontains $svc) { Write-Warn ("{0,-8} 호스트 포트를 확인하지 못함 (컨테이너 목록에 없음)" -f $svc); $unverified++ }
+    }
+}
 $dp = Invoke-Compose -ArgList @('port', 'web', '8080') -StdoutOnly
 if ($dp.ExitCode -eq 0 -and $dp.Output.Count -gt 0) {
     $addr = ([string]($dp.Output | Select-Object -First 1)).Trim()
     if ($addr.StartsWith('127.0.0.1:')) { Write-Ok "docker compose port: $addr" } else { Write-Host "[위험] docker compose port: $addr" -ForegroundColor Red; $problems++ }
+} else {
+    Write-Warn 'docker compose port 로 web 의 게시 주소를 확인하지 못했습니다(확인하지 못함).'; $unverified++
 }
 try {
     $bad = @()
@@ -52,7 +65,7 @@ try {
     }
     if ($bad.Count -gt 0) { Write-Host ("[위험] 이 PC 의 포트 {0} 가 루프백이 아닌 주소에도 열려 있습니다: {1}" -f $YtwebPort, ($bad -join ', ')) -ForegroundColor Red; $problems++ }
     else { Write-Ok "이 PC 의 포트 $YtwebPort 리스너는 루프백(127.0.0.1)뿐입니다." }
-} catch { Write-Warn '이 PC 의 리스너 주소를 확인하지 못했습니다.' }
+} catch { Write-Warn '이 PC 의 리스너 주소를 확인하지 못했습니다(확인하지 못함).'; $unverified++ }
 
 Write-Host ''
 Write-Host '--- 응답 확인 ---' -ForegroundColor White
@@ -78,6 +91,10 @@ if ($Detail) {
 }
 
 Write-Host ''
+if ($problems -eq 0 -and $unverified -gt 0) {
+    Write-Warn "점검 결과: 확인 불가 항목 있음 ($unverified 건). 문제 없음으로 판정할 수 없습니다. 로그: .\web\scripts\logs.ps1"
+    exit 1
+}
 if ($problems -eq 0) { Write-Ok "점검 결과: 문제 없음. 접속 주소 $YtwebUrl"; exit 0 }
 Write-Warn "점검 결과: 확인이 필요한 항목 $problems 건. 로그: .\web\scripts\logs.ps1"
 exit 1

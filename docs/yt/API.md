@@ -376,7 +376,7 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 ## 9. 알려진 스키마 한계 (`openapi.json`과 실제 동작의 차이)
 `docs/yt/openapi.json`은 앱 객체에서 직접 뽑은 원본이며 **임의로 고치지 않았다**. 다음 차이는 `DESIGN.md` 편차 표(DV-W05)에 올라 있고 사용자 결정 대기다.
 1. `Idempotency-Key` 헤더가 **선택**으로 표기되지만 3개 엔드포인트에서 실제로는 필수(누락 시 400).
-2. 오류 응답이 FastAPI 기본(`422 HTTPValidationError`)만 표기. 실제 입력 검증 오류는 `422 application/problem+json`(`code: validation_error`)이고, 401·403·409·429·502 등은 스키마에 없다.
+2. (2026-10-13 개정) 모든 동작에 공통 오류 응답 `400`·`404`·`409`·`422`(`application/problem+json`, 스키마 `Problem`, 1-7절 형식)가 표기된다 — 해당 동작에서 실제로 나올 수 있는 코드는 각 절의 오류 표가 기준이다. 401·403·413·429·502 등은 여전히 스키마에 없다.
 3. `auth/me`, `auth/session`, `settings`, `audit`, `healthz/readyz`는 응답 스키마가 없다(`additionalProperties: true`). 이 문서의 필드 목록이 기준이다.
 4. `readyz`의 503, `reports/export.csv`의 `text/csv`가 표기되지 않았다.
 5. `Suggestion.status`, `Batch.status`, `Job.status` 등은 문자열로만 표기(허용 값은 본문 참고).

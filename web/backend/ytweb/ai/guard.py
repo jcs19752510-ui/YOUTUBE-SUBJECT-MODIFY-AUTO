@@ -17,7 +17,7 @@ MAX_SUMMARY_CHARS = 500    # AI 로 보내는 설명 요약 상한
 TOPICS = ("life", "health", "finance")
 
 _BIDI = frozenset(chr(c) for c in list(range(0x202A, 0x202F)) + list(range(0x2066, 0x206A)))
-_INVISIBLE = frozenset("​‌‍‎‏⁠﻿­")
+_INVISIBLE = frozenset("\u200b\u200c\u200d\u200e\u200f\u2060\ufeff\u00ad")
 _WS = frozenset("\r\n\t  \x0b\x0c\x85")
 _URL = re.compile(r"(?:https?://|www\.)\S+", re.IGNORECASE)
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")

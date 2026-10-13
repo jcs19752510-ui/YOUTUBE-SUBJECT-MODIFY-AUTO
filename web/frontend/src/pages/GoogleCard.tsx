@@ -11,6 +11,7 @@ export function GoogleCard() {
   const qc = useQueryClient();
   const toast = useToast();
   const [asking, setAsking] = useState(false);
+  const [revokeNote, setRevokeNote] = useState<string | null>(null);
   const status = useQuery({ queryKey: ['google'], queryFn: () => api.google() });
   const connect = useMutation({
     mutationFn: () => api.googleConnect(),
@@ -22,9 +23,12 @@ export function GoogleCard() {
   });
   const disconnect = useMutation({
     mutationFn: () => api.googleDisconnect(),
-    onSuccess: () => {
+    onSuccess: (r) => {
       setAsking(false);
       toast.push('success', ko.google.disconnected);
+      setRevokeNote(
+        r.revoked === true ? ko.google.revokeDone : r.revoked === false ? ko.google.revokeFailed : null,
+      );
       void qc.invalidateQueries({ queryKey: ['google'] });
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
@@ -50,6 +54,11 @@ export function GoogleCard() {
               </p>
               <p>{g.last_error}</p>
               {g.last_error.includes('데모') && <p>{ko.google.resetHint}</p>}
+            </Callout>
+          )}
+          {revokeNote && (
+            <Callout tone="info" role="status">
+              <p>{revokeNote}</p>
             </Callout>
           )}
           <p>{g.message}</p>

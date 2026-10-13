@@ -138,8 +138,14 @@ def google_callback(code: str | None = Query(default=None, max_length=2048), sta
 @router.post("/disconnect")
 def google_disconnect(info=Depends(require_csrf), ctx: GoogleCtx = Depends(get_google_ctx),
                       session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock)):
+    # 로컬 토큰 파일 삭제를 먼저 확정하고, 그 뒤 구글에 폐기를 요청한다(실패해도 해제는 성공). 토큰 값은 어디에도 남기지 않는다.
+    held = [t for t in (ctx.store.load(), ctx.write_store.load() if ctx.write_store is not None else None) if t]
     ctx.store.clear()
     if ctx.write_store is not None:
         ctx.write_store.clear()
-    audit.record(session, actor="owner", action="google.disconnected", now=clock())
-    return {"connected": False}
+    revoked: bool | None = None
+    if held and ctx.client_file.exists():  # 토큰이 없거나 구글 클라이언트 파일이 없는(데모) 때는 외부 호출을 하지 않는다
+        results = [oauth.revoke_token(t) for t in held]
+        revoked = all(results)
+    audit.record(session, actor="owner", action="google.disconnected", detail={"revoked": revoked}, now=clock())
+    return {"connected": False, "revoked": revoked}

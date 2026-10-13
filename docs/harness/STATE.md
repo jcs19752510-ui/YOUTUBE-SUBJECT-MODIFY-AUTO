@@ -119,3 +119,5 @@
 - **2026-10-13 시험 공백 보강 완료**: PG 전용 156 통과(첫 실행 환경 오류 85 보존), 변이 35/35, AI 제안 종류 표시·실행 버튼 이유·입력칸 id·백업 권한(Windows 미확인) 조치, 인프라·보안 시험 5건 조치. 백엔드 2025 통과/0 실패/3 건너뜀, 프런트 752 통과, 결과서 `docs/harness/units/web-hardening-test.md`. 안 한 것: Windows PC 확인, 화면 육안 확인, DEF-LIVE-004 원인 확정.
 
 - **2026-10-13 전체 시험 보강 완료(클라우드 가능분)**: E2E 19/21·화면·axe 0건·계약 5208회 5xx 0·커버리지 백엔드 97%·보안 Critical/High 0·Gemini 호출 성공률 31% 확인 후 수정(재확인은 429로 못 함). 백엔드 2048 통과, 프런트 752 통과, 인프라/보안 510 통과. 결과서 `docs/harness/units/web-fullcheck-test.md`. 열림: DEF-LIVE-004, GEM-3, DEF-D-002, LOAD-1, STATUS-1, E2E-08/20 재실행, 선생님 PC 시험 전부.
+
+- **2026-10-13 7·8·9단계 100% 추진(3차)**: 선생님 결정(DEC-050: 보안 5건 추천안, Chrome·Edge만, 혼자 사용 성능 기준, 추적표 W-N 승인) 반영. 토큰 폐기 구현(DEC-051), 부하 수정 보류(DEC-052, 동시 50 실제 서버 정상·동시 100 풀 소진), status.ps1·OpenAPI 수정(DEC-053), 침투형 시험(PIN·XSS·3조건·감사 로그) Critical/High/Medium 0, 추적성 95.0%. 백엔드 2076·프런트 755·인프라/보안 510 통과. 결과서 `docs/harness/units/web-fullcheck2-test.md`. 열림: 쓰기 부하·8분 가동, LOAD-2, POL-007 고지, AI 호출 상한 결정, 원본 E2E 시험 코드 수리, trivy, 선생님 PC 시험 전부.

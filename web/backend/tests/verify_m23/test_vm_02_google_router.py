@@ -238,11 +238,18 @@ def test_tc_vm_124_callback_get_does_not_need_session_but_forged_one_changes_no_
     assert set(after) - set(before) <= {"google.connect.failed"}
 
 
-def test_tc_vm_125_disconnect_clears_both_tokens_and_audits(gapp, csrf, fg, web_settings, factory):
+def test_tc_vm_125_disconnect_clears_both_tokens_and_audits(gapp, csrf, fg, web_settings, factory, monkeypatch):
+    # 2026-10-13 보안 결정(연결 해제 때 구글에 토큰 폐기 요청)으로 응답에 revoked 가 추가됐다.
+    # 이 시험 구성에는 구글 클라이언트 파일이 없어 폐기 요청을 보내지 않으므로 revoked 는 null 이어야 하고, 외부 호출이 나가면 실패한다.
+    import urllib.request
+
+    def _no_network(req, timeout=None):
+        raise AssertionError("구글 클라이언트 파일이 없는데 폐기 요청이 나갔다")
+    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
     finish_flow(gapp, fg, start_flow(gapp, csrf, "connect"))
     finish_flow(gapp, fg, start_flow(gapp, csrf, "connect-write"))
     r = gapp.post("/api/v1/google/disconnect", headers=hdr(csrf))
-    assert r.status_code == 200 and r.json() == {"connected": False}
+    assert r.status_code == 200 and r.json() == {"connected": False, "revoked": None}
     s = gapp.get("/api/v1/google/status").json()
     assert s["connected"] is False and s["write_connected"] is False
     assert not list(secrets_dir(web_settings).glob("google*token*"))

@@ -208,6 +208,9 @@ export const ko = {
     disconnectYes: '해제',
     disconnectNo: '취소',
     disconnected: '구글 연결을 해제했습니다.',
+    revokeDone: '구글에도 접근 권한 폐기를 요청했습니다.',
+    revokeFailed:
+      "이 PC의 로그인 정보는 지웠습니다. 구글 쪽 폐기는 하지 못했습니다. 필요하면 구글 계정의 '보안 > 타사 앱 액세스'에서 직접 제거할 수 있습니다.",
     syncReal: '내 영상 불러오기',
     syncStarted: '내 영상 불러오기를 시작했습니다.',
     readOnly:

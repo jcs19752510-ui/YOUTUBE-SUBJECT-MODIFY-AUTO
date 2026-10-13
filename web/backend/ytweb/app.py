@@ -18,6 +18,7 @@ from youtube_title.config import load_settings
 
 from ytweb.config import WebSettings, load_web_settings
 from ytweb.core.clock import utcnow
+from ytweb.core import openapi_errors
 from ytweb.core.errors import PROBLEM_MEDIA_TYPE, ProblemError, problem_body
 from ytweb.core.guard import GuardMiddleware
 from ytweb.core.logsetup import setup_logging
@@ -118,6 +119,7 @@ def create_app(
     app.state.clock = clock or utcnow
 
     _register_error_handlers(app)
+    openapi_errors.install(app)  # OpenAPI 문서에 공통 오류 응답(400/404/409/422)만 덧붙인다(동작 변경 없음)
 
     limiter_kwargs = {"time_fn": time_fn} if time_fn else {}
     app.add_middleware(

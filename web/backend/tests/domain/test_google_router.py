@@ -127,11 +127,25 @@ def test_tc_m2_029_google_token_error_saves_nothing(api, csrf, gctx):
     assert gctx.store.load() is None
 
 
-def test_tc_m2_030_disconnect_clears_token(api, csrf, gctx):
+class _RevokeOk:
+    """구글 폐기 요청의 가짜 응답(실제 구글에는 접속하지 않는다)."""
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_tc_m2_030_disconnect_clears_token(api, csrf, gctx, monkeypatch):
+    # 2026-10-13 보안 결정(연결 해제 때 구글에 토큰 폐기 요청)으로 응답에 revoked 가 추가됐다. 기존 필드는 그대로이며, 실제 구글 호출을 막기 위해 가짜 urlopen 을 건다.
+    import urllib.request
+    monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout=None: _RevokeOk())
     _with_client(gctx)
     gctx.store.save({"access_token": "a", "refresh_token": "r", "expires_at": "2026-01-01T00:00:00+00:00"})
     assert api.get("/api/v1/google/status").json()["connected"] is True
-    assert api.post("/api/v1/google/disconnect", headers=hdr(csrf)).json() == {"connected": False}
+    assert api.post("/api/v1/google/disconnect", headers=hdr(csrf)).json() == {"connected": False, "revoked": True}
     assert gctx.store.load() is None and api.get("/api/v1/google/status").json()["connected"] is False
 
 

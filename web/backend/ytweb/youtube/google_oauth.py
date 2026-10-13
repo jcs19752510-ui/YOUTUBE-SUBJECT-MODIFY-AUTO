@@ -21,6 +21,8 @@ from typing import Callable
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
+REVOKE_URL = "https://oauth2.googleapis.com/revoke"  # 연결 해제 때 구글에 토큰 폐기를 요청하는 고정 주소
+REVOKE_TIMEOUT_SECONDS = 5
 SCOPE_READ = "https://www.googleapis.com/auth/youtube.readonly"
 SCOPE_WRITE = "https://www.googleapis.com/auth/youtube.force-ssl"  # 제목 수정(videos.update)에 필요. 읽기 토큰과 별도 파일로 보관(M3)
 STATE_TTL_SECONDS = 600
@@ -127,6 +129,23 @@ def default_http_post(url: str, form: dict) -> dict:
         return {"error": str(body.get("error", f"http_{e.code}"))}
     except Exception:  # noqa: BLE001  (네트워크 오류 — 상세는 숨긴다)
         raise OAuthError("network", "구글에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.") from None
+
+
+def revoke_token(tokens: dict | None) -> bool:
+    """구글에 토큰 폐기를 요청한다(best-effort). 폐기 성공이면 True, 그 밖의 모든 실패는 False. 예외·토큰 값을 밖으로 내지 않는다.
+
+    refresh_token 이 있으면 그것을, 없으면 access_token 을 보낸다(refresh_token 을 폐기하면 연결된 access_token 도 함께 무효가 된다).
+    """
+    token = (tokens or {}).get("refresh_token") or (tokens or {}).get("access_token")
+    if not token:
+        return False
+    data = urllib.parse.urlencode({"token": token}).encode("ascii")
+    req = urllib.request.Request(REVOKE_URL, data=data, method="POST", headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urllib.request.urlopen(req, timeout=REVOKE_TIMEOUT_SECONDS) as r:  # noqa: S310 (고정 https 주소)
+            return 200 <= int(getattr(r, "status", 200)) < 300
+    except Exception:  # noqa: BLE001  (네트워크·시간 초과·4xx·5xx 모두 실패로만 알린다. 상세에는 토큰이 섞일 수 있어 버린다)
+        return False
 
 
 def _tokens_from(resp: dict, now: datetime, *, keep_refresh: str | None = None) -> dict:

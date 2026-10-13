@@ -275,6 +275,69 @@ v4 추가분(POL/SEC 22행)은 02_planning §W7-1(POL)·§W7-2(SEC)의 정의를
 
 M2·M3 v5 요약: 신규 임시 행 12개(POL 보강 2행 포함) 중 시험 연결 10행, 시험 없음 2행(POL-012·015, 시험 대상 아님/정책 미정), 구현 상태는 Implemented 7·Partial 2·Not Started 1(W-M3-05)·정책행 2. **전체 연결률 숫자는 재계산하지 않았다**(기존 83행 표의 85.5% 는 이 갱신 전 값).
 
+### v6 (2026-10-13): 세션 신규 기능 W-N01~11, 시험 연결 없던 요구 11개 분류, 결과서 ID 34개 정정
+
+> **ID 주의(규칙 H)**: `W-N01`~`W-N11` 은 임시 번호이며 **선생님이 2026-10-13 추가를 승인**했다(정식 번호 부여·02단계 기획서 반영은 별도). 요구 설명은 코드·시험에서 확인한 사실만 적었다. "이번 실행"은 2026-10-13 이 갱신 작업에서 해당 시험만 돌린 결과다(첫 실행 그대로, 실패 없음).
+
+| ID | 유형 | 요구사항/기능 | 설계 매핑 | 구현 상태 | 단위테스트 (TC-ID / 파일) | 이번 실행 | 비고 |
+|----|------|------|------|------|------|------|------|
+| W-N01 | W | 규칙 기반 제안기: 설명의 챕터에서 제목 후보 생성, 후보는 검증기를 통과 | WEB_DESIGN §12 | Implemented | `web/backend/tests/test_rule_suggester.py` 5건 | 5 통과 | 임시 ID(승인됨) |
+| W-N02 | W | Gemini 제안기: 키 파일 `web/secrets/gemini_api_key`, 키는 헤더로만 전송, 제목+설명 요약만 전송, 오류 한국어, 이미 만든 제목 전달, 502/503 등 재시도, 출력 한도 16384 | 13c1b2a | Implemented(가짜 응답 시험. 실서버 확인은 `docs/harness/units/web-fullcheck-parts/e-gemini-traceability.md`) | `test_gemini_suggester.py` 8건, `test_gemini_retry.py` 10건, `domain/test_live_suggest.py` 5건 | 23 통과 | 외부 AI 전송 고지(POL-007)는 미구현 |
+| W-N03 | W | 실제 영상 제안은 승인 가능 후보만·충분한 길이 | 631a14c, 08074b5 | Implemented | `domain/test_live_suggest.py::test_live_video_gets_only_approvable_candidates_of_sufficient_length` | 통과 | DEF-LIVE-001 |
+| W-N04 | W | 반영 후 검증: 줄바꿈·끝 공백·태그 순서·언어 자동 채움 완화, 달라진 항목 표시 | e1bfa0c | Implemented | `domain/test_verify_report.py` 3건 | 3 통과 | CLI 의 SEC-010 과 별개 |
+| W-N05 | W | 유튜브에서 직접 바꾼 제목도 불러오기 때 갱신(반영 진행 중 영상 제외), 직접 고친 제목 출처 구분 | 722ae2c, b5a5b9d | Implemented | `domain/test_live_sync.py::test_tc_live_sync_refreshes_a_video_changed_by_the_program_and_by_hand_but_not_one_in_flight`, TC-M3-060 (`domain/test_source_edit.py`) | 통과 | |
+| W-N06 | F | AI 제안 종류 표시(모의/규칙/Gemini/직접 고침/옛 제안) | 1fcef8a | Implemented | `web/frontend/src/pages/ai.aibadge.test.tsx` 7건, `verify_ai_badge/` 2건 | 7 + 2 통과 | |
+| W-N07 | F | 실행 버튼 비활성일 때 남은 조건 표시 | 1fcef8a | Implemented | `batchdetail.execgate.test.tsx` 4건 | 4 통과 | 선생님 질문("체크도 해야 하나요?") 근거 |
+| W-N08 | F | 입력칸에 id 또는 name | 1fcef8a | Implemented | `formids.test.tsx` (it/test 11개 호출) | 통과 | |
+| W-N09 | W | 실제 모드 꺼짐 상태에서 실제 영상은 배치 포함 불가·모의 성공 처리 금지 | 0306011 (DEF-LIVE-005) | Implemented | `domain/test_live_off_block.py` 3건 | 3 통과 | |
+| W-N10 | W | 실제 수정 준비 점검(live-check) | b5a5b9d | Implemented | TC-M3-070·071 (`domain/test_live_check.py`) | 2 통과 | |
+| W-N11 | F | 제안 카드 점검 점수·색 구분 | 8d672d1 | Implemented | `web/frontend/src/lib/score.test.ts` 7건 | 7 통과 | `SuggestionCard.tsx` 에서 사용 |
+
+**시험 연결이 없던 요구 11개의 분류 (원문: `docs/yt/02_planning.md`, `DESIGN.md`)**
+
+| ID | 분류 | 조치·근거 |
+|---|---|---|
+| NFR-006 | (a) 시험 추가 | `web/backend/tests/verify_trace/test_trace_unlinked.py::test_tc_trace_nfr006_validator_and_request_body_line_coverage_at_least_90` — validator.py·live_guard.py(요청 본문 구성 `build_write_body`)·updater.py 줄+분기 커버리지 각 100%(CLI 시험 6개 파일 실행). 통과 |
+| SEC-013 | (a) 시험 추가(부분) | `test_tc_trace_sec013_*` — 의존성 파일 4개 `==` 고정과 웹 잠금 파일 해시 존재만 시험. "공식 레지스트리에 실존·라이선스 확인"은 사람이 하는 절차라 시험하지 않음(S-W11 라이선스 미확인과 같은 이유). 통과 |
+| W-015 | (a) 시험 추가 | `test_tc_trace_w015_*` — CLI `--help` 동작, 웹이 `youtube_title` 를 임포트하고 복사본이 없음, CLI 회귀 시험 4개 파일 통과. 통과 |
+| S-W10 | (b) 미구현·결정 대기 | CSV 업로드 엔드포인트 없음(M2 대기). `test_tc_trace_sw10_csv_upload_endpoint_exists` 를 xfail(strict)로 표시해 구현되면 알림 |
+| POL-007 | (b) 미구현 | 외부 AI 전송 고지(서비스명·서버 위치·자막 제외·이름/연락처 삭제 권고) 문구가 프런트 소스에 없음(`자막`·`연락처` 0건). **Gemini 어댑터가 이미 외부 전송을 하므로 이전 사유 "전송 자체가 없음"은 더 이상 사실이 아님.** `test_tc_trace_pol007_*` xfail(strict) |
+| SEC-027 | (a)+(b) 부분 | 일부 구현·시험: Gemini 타임아웃·재시도 횟수·출력 토큰 상한(`test_tc_trace_sec027_gemini_has_retry_cap_timeout_and_output_token_cap`, 통과). 일/배치당 호출·비용 상한·빈도 제한은 코드 없음 → `test_tc_trace_sec027_daily_or_batch_ai_call_cap_exists` xfail(strict) |
+| POL-012 | (b) 미구현·결정 대기 | 보관 상한·자동 삭제 코드 없음(보안 결과서 DEF-9-013, Q-W2). 시험을 만들지 않음 |
+| POL-016 | (b) 미구현·결정 대기 | 백업 암호화·보관 기간 미정(Q-W4, DEF-9-013). 시험을 만들지 않음 |
+| POL-015 | (c) 시험 대상 아님 | 구글 클라우드 프로젝트 1개만 쓰는 운영 정책(코드 없음, 02_planning 원문 "문서 정책") |
+| S-W15 | (c) 시험 대상 아님 | 위협 모델 문서 작성 요구. 산출물 `docs/yt/threat_model.md` Part W(TW-01~44) 존재로 확인(시험 아님) |
+| NFR-001 | 사용자 PC 확인 대기 | Windows 10/11 + PowerShell 5.1 요건은 이 Linux 환경에서 시험 불가. 선생님 PC 확인 5건(README §8)에 해당. 시험 연결 없음 |
+
+**결과서에는 있고 소스에서 못 찾았다던 ID 34개 정정**: 원인은 시험이 없어서가 아니라 **표기 차이**였다. 시험 함수명은 `TC-VI-025` → `test_tc_vi_025_...`(소문자·밑줄), 범위 `TC-WI-003~008` 는 개별 `tc_wi_003` 들. 대소문자·밑줄 변환으로 대조하면 아래 행의 TC-VI/TC-WI/TC-VB/TC-WB 계열 ID 는 **전부 실제 시험에 존재**한다(W-016, D-01·03·04·05·06·07·10·11·12·13·14, S-W06·07·11·14, POL-014, W-M3-02, S-W17: 각 행의 ID 100% 확인). 위치: `web/tests_infra/test_vi_independent.py`·`test_vinf2_*.py`·`test_fix_inf*.py`(TC-VI), `web/backend/tests/verify_wb/test_vb_*.py`(TC-VB), `web/backend/tests/core`·`domain`(TC-WB 등). 남은 ID 는 **TC-S9-nn** 이며 보안 결과서(`docs/harness/security-web-m1-test.md`)가 함수명으로 지정한다. 실제 위치는 `web/tests_security/` 이다:
+
+| ID(S9) | 실제 시험 (파일::함수) | 연결 요구 |
+|---|---|---|
+| TC-S9-020 | `test_sec_02_injection_ai_integrity.py::test_full_flow_makes_no_network_calls` | SEC-022 |
+| TC-S9-025 | 같은 파일 `test_build_summary_masks_pii_urls_and_caps_length`, `test_prompt_input_is_data_not_instructions_in_adapter_contract` | SEC-021·022·026 |
+| TC-S9-026 / 026b | 같은 파일 `test_malicious_ai_output_is_sanitized_end_to_end`, `test_ai_cannot_downgrade_strict_mode_on_health_video`, `test_strict_keyword_list_gap_is_documented` | SEC-023·024·030 |
+| TC-S9-027 | 같은 파일 `test_db_level_approval_tamper_is_detected` 외 승인 변조 시험(`test_expiry_extension_in_db_is_detected`, `test_approval_is_single_use_...`) | POL-011, SEC-025 |
+| TC-S9-079 | `web/tests_security/test_sec_05_regulatory_ai_notice.py` (`test_bundle_contains_demo_badge_and_ai_label` 등, POL-006·008·013 은 xfail 고정) | POL-005·006·008·013 |
+
+정정되지 않고 남은 불일치: 위 정정은 이름 규칙 대조 결과이며, 범위(`~`)·접미사(`130B` 등)는 끝점·변형을 개별 확인하지 않았다(한계). 결과서 파일은 수정하지 않았다.
+
+**기존 시험의 현재 실패 1건 (이번 실행에서 확인, 결함 후보)**: `domain/test_google_router.py::test_tc_m2_030_disconnect_clears_token` 이 실패한다. 응답이 `{'connected': False, 'revoked': False}` 인데 시험은 `{'connected': False}` 를 기대한다(제품이 `revoked` 필드를 추가한 뒤 시험이 갱신되지 않은 것으로 보이나 **확인한 것은 아님**). 시험 기대값을 고치지 않고 그대로 두며, W-M2-02 는 "통과 확인"에서 제외한다.
+
+**v6 숫자 (분모 = FR 20 + NFR 11 + POL 16 + SEC 48 + W 23 + D 16 + F 14 = 요구 행 148개 + 이번 추가 W-N 11 = 159개. EVT/UX/SCR/ADR/RISK 설계 항목 제외)**
+
+| 지표 | 값 |
+|---|---|
+| 표에 시험이 기재된 행 | 154 / 159 (96.9%) — 미기재 5: NFR-001, S-W15, POL-015, POL-012, POL-016 |
+| **시험이 소스에 실제 존재하는 행** | **151 / 159 (95.0%)** (직전 134/148 + W-N 11 + 이번 추가 6; 이 중 S-W10·POL-007·SEC-027 의 일부는 xfail 로 "시험은 있고 구현이 없음"). F-02·F-10 은 문서에 "TC-ID 없음"이라 존재 쪽에서 제외 |
+| 이번 작업에서 실제 실행해 통과 확인 | 14 / 159 (8.8%): W-N01~11, NFR-006, SEC-013, W-015. 나머지는 8단계 기록(백엔드 1844·프런트 728 통과)에 의존하며 이번에 재실행하지 않음 |
+| 이번 실행 실패 | 1 (W-M2-02 의 TC-M2-030, 위) |
+| 미구현·결정 대기 | 5 (POL-012, POL-016, S-W10, POL-007, SEC-027 일부) + 표에 이미 Not Started 인 POL-006·008·013(xfail 고정) |
+| 시험 대상 아님 | 2 (POL-015, S-W15) |
+| 사용자 PC 확인 대기 | 1 (NFR-001) |
+| 문서 증빙만(소스 시험 ID 없음) | F-02(OpenAPI 타입 생성 미적용), F-10(실브라우저 점검) |
+
+100% 에 못 미치는 이유: 위 표 (미구현 5, 시험 대상 아님 2, 사용자 PC 1, 시험 ID 없음 F-02·F-10). F-11 은 `web/frontend/src/a11y.test.tsx`(axe 사용, 8건 통과)가 소스에 존재하나 표의 연결은 아직 고치지 않았다.
+
 ## 변경 이력
 | 일시 | 버전 | 변경 내용 | 사유 |
 |---|---|---|---|
@@ -284,3 +347,4 @@ M2·M3 v5 요약: 신규 임시 행 12개(POL 보강 2행 포함) 중 시험 연
 | 2026-10-11 | v3 | 웹 요구사항(W/D/F/S-W 61행) 구현 상태·단위테스트·비고를 4개 단위 결과서(A·B·F·I)와 구현 노트로 채움, 시험 연결 요약 표 추가, 모순·누락 목록은 verify-log_web-traceability.md | 규칙 H, 규칙 B |
 | 2026-10-11 | v4 | 웹 정책·AI 안전 요구 POL-005~016(12행)·SEC-021~030(10행) 정식 등록(총 83행). 정의는 02_planning §W7-1·§W7-2 에서 옮김(새 ID 없음), 구현 상태·TC 는 9단계 결과서와 단위 결과서 기준, 시험 연결 요약 표 갱신. POL-006·008·013 은 DEF-9-007·008 Open 으로 연결 | DEF-9-018 조치(규칙 H·I·J 추적성) |
 | 2026-10-11 | v5 | W-002·S-W08 행 갱신, "M2·M3 요구사항 v5" 표 신설(임시 ID W-M2-01~04, W-M3-01~05, S-W17 및 POL-012·015 보강 — 미승인 ID, 규칙 H 확인 필요) | M2·M3 구현 반영(DEC-048), 11단계 문서 갱신 |
+| 2026-10-13 | v6 | 세션 신규 기능 W-N01~11(선생님 승인, 임시 번호) 추가, 시험 연결 없던 11개 요구 분류와 시험 3개 파일 추가(`web/backend/tests/verify_trace/`), 결과서 ID 34개 표기 차이 정정, 숫자 재계산(분모 159) | 규칙 H, 추적성 판정 TRC-1·2·3 |
