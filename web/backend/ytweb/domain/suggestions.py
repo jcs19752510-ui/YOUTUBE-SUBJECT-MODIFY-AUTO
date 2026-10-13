@@ -262,7 +262,7 @@ def reject(session: Session, suggestion_id: int, *, now: datetime, actor: str = 
 
 # ───────────── 승인 ─────────────
 
-def approve(session: Session, suggestion_id: int, approver: str, *, now: datetime, env: Env, actor: str = ACTOR) -> Suggestion:
+def approve(session: Session, suggestion_id: int, approver: str, *, now: datetime, env: Env, actor: str = ACTOR, ack_warning: bool | None = None) -> Suggestion:
     name = clean_approver(approver)
     sug = get_suggestion(session, suggestion_id, lock=True)
     if sug.status not in ("candidate", "expired"):
@@ -279,6 +279,9 @@ def approve(session: Session, suggestion_id: int, approver: str, *, now: datetim
     if is_blocking(sug):
         raise ProblemError(409, "suggestion_blocked", "다시 검증한 결과 차단 판정이라 승인할 수 없습니다." if res.result == "block" else "엄격 모드(건강·금융)에서는 경고도 승인할 수 없습니다.",
                            detail="; ".join(f.message for f in res.findings), hint="제목을 수정해 다시 검증하세요.")
+    if ack_warning is False and sug.validation_result == "warn":  # 일괄 승인: 재검증 결과가 경고면 사용자 확인 없이는 서명·승인을 만들지 않는다
+        raise ProblemError(409, "warning_not_acknowledged", "경고가 있는 제안은 확인 체크 후에만 승인할 수 있습니다.",
+                           detail="; ".join(f.message for f in res.findings), hint="경고 내용을 확인하고 확인 체크를 한 뒤 다시 승인하세요.")
     if not isinstance(video.snippet, dict) or video.snippet.get("title") != video.title:
         raise ProblemError(409, "video_inconsistent", "저장된 영상 정보가 서로 맞지 않습니다.", hint="영상 목록을 새로고침(동기화)한 뒤 다시 시도하세요.")
     if sug.title == video.title:
@@ -299,6 +302,72 @@ def approve(session: Session, suggestion_id: int, approver: str, *, now: datetim
     session.flush()
     audit.record(session, actor=actor, action="suggestion.approve", target_type="suggestion", target_id=str(sug.id), detail={"approver": name, "result": sug.validation_result, "plan_hash": sug.plan_hash[:12], "expires_at": utc_iso(expires)}, now=now)
     return sug
+
+
+# ───────────── 일괄 승인·영상 찾기 ─────────────
+
+BULK_MAX = 50
+
+
+def _bulk_size(n: int) -> None:
+    if n == 0:
+        raise ProblemError(422, "bulk_empty", "승인할 제안을 하나 이상 선택하세요.", hint="목록에서 제안을 고르거나 영상 ID를 입력하세요.")
+    if n > BULK_MAX:
+        raise ProblemError(422, "bulk_too_many", f"한 번에 최대 {BULK_MAX}건까지 승인할 수 있습니다.", hint=f"{BULK_MAX}건 이하로 나누어 진행하세요.")
+
+
+def approve_batch(session: Session, suggestion_ids: list[int], approver: str, acknowledged_warning_ids: list[int], *, now: datetime, env: Env, actor: str = ACTOR) -> dict:
+    """제안 N건(최대 50)을 건마다 기존 approve()(재검증·서명·감사)로 승인한다. 건별 SAVEPOINT 라 막힌 건만 되돌리고 나머지는 승인한다."""
+    _bulk_size(len(suggestion_ids))
+    if len(set(suggestion_ids)) != len(suggestion_ids):
+        raise ProblemError(422, "duplicate_suggestion", "같은 제안이 두 번 들어 있습니다.", hint="중복을 지우고 다시 승인하세요.")
+    clean_approver(approver)  # 잘못된 승인자 이름이면 아무것도 건드리기 전에 거부
+    acked = set(acknowledged_warning_ids)
+    # 잠금 순서를 id 오름차순으로 고정(동시 일괄 승인끼리 교착 방지). 처리·보고 순서는 요청 순서를 따른다.
+    video_of = dict(session.execute(lock_rows(select(Suggestion.id, Suggestion.video_id).where(Suggestion.id.in_(suggestion_ids)).order_by(Suggestion.id), session)).all())
+    approved: list[dict] = []
+    skipped: list[dict] = []
+    seen_videos: set[str] = set()
+    for sid in suggestion_ids:
+        vid = video_of.get(sid)
+        if vid is None:
+            skipped.append({"suggestion_id": sid, "video_id": None, "code": "suggestion_not_found", "reason": "제안을 찾을 수 없습니다."})
+            continue
+        if vid in seen_videos:
+            skipped.append({"suggestion_id": sid, "video_id": vid, "code": "duplicate_video_in_request", "reason": "같은 영상의 제안이 이미 선택되어 이 제안은 건너뜁니다."})
+            continue
+        seen_videos.add(vid)
+        try:
+            with session.begin_nested():
+                approve(session, sid, approver, now=now, env=env, actor=actor, ack_warning=sid in acked)
+        except ProblemError as exc:
+            reason = exc.title if not getattr(exc, "detail", None) else f"{exc.title} {exc.detail}"
+            skipped.append({"suggestion_id": sid, "video_id": vid, "code": exc.code, "reason": reason})
+            continue
+        approved.append({"suggestion_id": sid, "video_id": vid})
+    counts = {"requested": len(suggestion_ids), "approved": len(approved), "skipped": len(skipped)}
+    audit.record(session, actor=actor, action="suggestion.approve_batch", target_type="suggestion", target_id="batch", detail={"approver": clean_approver(approver), **counts}, now=now)
+    return {"approved": approved, "skipped": skipped, "counts": counts}
+
+
+def resolve_videos(session: Session, video_ids: list[str], *, env: Env) -> list[dict]:
+    """영상 ID 목록 → 영상별 후보 제안. 읽기 전용(만료 처리도 하지 않는다)."""
+    ids = list(dict.fromkeys(video_ids))
+    if not ids:
+        _bulk_size(0)
+    if len(ids) > BULK_MAX:
+        raise ProblemError(422, "bulk_too_many", f"한 번에 최대 {BULK_MAX}개 영상까지 찾을 수 있습니다.", hint=f"{BULK_MAX}개 이하로 나누어 진행하세요.")
+    videos = {v.video_id: v for v in session.execute(select(Video).where(Video.video_id.in_(ids))).scalars()}
+    sugs = session.execute(select(Suggestion).where(Suggestion.video_id.in_(ids), Suggestion.status.in_(("candidate", "expired", "approved"))).order_by(Suggestion.id.desc())).scalars().all()
+    by_video: dict[str, list[Suggestion]] = {}
+    for s in sugs:
+        by_video.setdefault(s.video_id, []).append(s)
+    out = []
+    for vid in ids:
+        v = videos.get(vid)
+        out.append({"video_id": vid, "found": v is not None, "video_title": v.title if v else None,
+                    "excluded_reasons": list(exclusion_reasons(v, env.policy)) if v else [], "candidates": by_video.get(vid, []) if v else []})
+    return out
 
 
 # ───────────── 만료·반환 ─────────────

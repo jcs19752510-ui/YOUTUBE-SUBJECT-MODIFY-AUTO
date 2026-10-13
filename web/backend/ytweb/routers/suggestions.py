@@ -5,18 +5,19 @@ from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Path, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ytweb.core import audit, jobs
-from ytweb.core.deps import get_clock, get_session, require_csrf, require_session
+from ytweb.core.deps import get_clock, get_idempotency_key, get_session, require_csrf, require_session
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import Video
 from ytweb.domain.common import VIDEO_ID_PATTERN, Env
-from ytweb.domain.deps import get_env
-from ytweb.domain.schemas import MAX_ID, MAX_PAGE, ApproveIn, GenerateIn, JobOut, Page, SuggestionOut, TitleEditIn
+from ytweb.domain.deps import get_env, idempotent
+from ytweb.domain.schemas import MAX_ID, MAX_PAGE, ApproveBatchIn, ApproveIn, ResolveVideosIn, GenerateIn, JobOut, Page, SuggestionOut, TitleEditIn
 from ytweb.domain.serialize import job_dict, suggestion_dict
-from ytweb.domain.suggestions import approve, edit_title, list_suggestions, reject
+from ytweb.domain.suggestions import approve, approve_batch, edit_title, list_suggestions, reject, resolve_videos
 
 router = APIRouter(prefix="/api/v1/suggestions", tags=["suggestions"])
 
@@ -44,6 +45,26 @@ def get_suggestions(
 ):
     rows, total = list_suggestions(session, video_id=video_id, status=status, result=result, page=page, page_size=page_size, now=clock())
     return {"items": [suggestion_dict(s) for s in rows], "total": total, "page": page, "page_size": page_size}
+
+
+@router.post("/resolve-videos")
+def post_resolve_videos(body: ResolveVideosIn, session: Session = Depends(get_session), env: Env = Depends(get_env), _=Depends(require_csrf)):
+    rows = resolve_videos(session, body.video_ids, env=env)
+    return {"items": [{**r, "candidates": [suggestion_dict(s) for s in r["candidates"]]} for r in rows]}
+
+
+@router.post("/approve-batch")
+def post_approve_batch(
+    body: ApproveBatchIn, key: str | None = Depends(get_idempotency_key), session: Session = Depends(get_session),
+    clock: Callable[[], datetime] = Depends(get_clock), env: Env = Depends(get_env), _=Depends(require_csrf),
+):
+    now = clock()
+
+    def handler():
+        return 200, approve_batch(session, body.suggestion_ids, body.approver, body.acknowledged_warning_ids, now=now, env=env)
+
+    status, payload = idempotent(session, key=key, route="POST /api/v1/suggestions/approve-batch", request=body.model_dump(), now=now, handler=handler)
+    return JSONResponse(payload, status_code=status)
 
 
 @router.patch("/{suggestion_id}", response_model=SuggestionOut)

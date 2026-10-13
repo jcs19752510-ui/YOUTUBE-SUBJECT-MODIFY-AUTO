@@ -293,6 +293,16 @@ class ApproveIn(_In):
     approver: str = Field(min_length=1, max_length=200)
 
 
+class ApproveBatchIn(_In):
+    approver: str = Field(min_length=1, max_length=200)
+    suggestion_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]] = Field(max_length=500)  # 1~50건 규칙은 서비스가 한국어 메시지로 거부
+    acknowledged_warning_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]] = Field(default_factory=list, max_length=500)
+
+
+class ResolveVideosIn(_In):
+    video_ids: list[Annotated[str, StringConstraints(pattern=VIDEO_ID)]] = Field(max_length=500)  # 1~50개 규칙은 서비스가 거부
+
+
 class BatchCreateIn(_In):
     suggestion_ids: list[Annotated[int, Field(ge=1, le=MAX_ID)]] = Field(min_length=1, max_length=500)  # 50건 상한은 서비스가 한국어 메시지로 거부
     note: str | None = Field(default=None, max_length=1000)
