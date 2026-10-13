@@ -344,6 +344,7 @@ def test_tc_ba_034_resolve_read_only(seeded, env, clock):
     before = snap()
     resolve_videos(seeded, [vid], env=env)
     assert not seeded.dirty and not seeded.new and not seeded.deleted
+    assert snap() == before  # 롤백 전(같은 트랜잭션 안)에서도 변경이 없다
     seeded.rollback()
     assert snap() == before
 

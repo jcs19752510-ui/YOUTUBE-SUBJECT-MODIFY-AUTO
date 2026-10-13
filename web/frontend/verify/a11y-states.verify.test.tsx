@@ -427,14 +427,14 @@ describe('접근성: 시작·끊김 화면', () => {
 });
 
 describe('키보드 이동·포커스', () => {
-  it('TC-VF-138 첫 Tab 은 "본문으로 건너뛰기", 이어서 메뉴 6개 순서(홈→영상→배치→이력→리포트→설정)', async () => {
+  it('TC-VF-138 첫 Tab 은 "본문으로 건너뛰기", 이어서 메뉴 7개 순서(홈→영상→일괄 승인→배치→이력→리포트→설정)', async () => {
     const user = userEvent.setup();
     await mount('/');
     await screen.findByRole('heading', { level: 1, name: '홈' });
     await user.tab();
     expect(screen.getByText('본문으로 건너뛰기')).toHaveFocus();
     const order: string[] = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 8; i++) {
       await user.tab();
       order.push(document.activeElement?.textContent ?? '');
     }
@@ -442,6 +442,7 @@ describe('키보드 이동·포커스', () => {
     expect(order.slice(1)).toEqual([
       '홈',
       '영상 목록',
+      '일괄 승인',
       '배치(일괄 반영)',
       '이력·롤백',
       '성과 리포트',

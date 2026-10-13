@@ -209,6 +209,21 @@ describe('방법 B', () => {
   });
 });
 
+describe('50건 초과(두 방법 합산)', () => {
+  it('TC-FE-BA-021 방법 A 1건 + 방법 B 50건이면 51건이라 확인 창 버튼이 꺼지고 줄이라고 안내한다', async () => {
+    const items = Array.from({ length: 50 }, (_, i) => rv(i + 100));
+    const { user } = await setup([...lists([sg(1)]), resolveRoute(items)]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await user.click(screen.getByRole('checkbox', { name: '새 제목 1 선택' }));
+    await find(user, items.map((i) => i.video_id).join('\n'));
+    expect(await screen.findByText('선택 51/50건')).toBeInTheDocument();
+    expect(reviewBtn()).toBeDisabled();
+    expect(
+      screen.getAllByText('승인 대기 목록이 51건입니다. 50건 이하로 줄여야 합니다.').length,
+    ).toBeGreaterThan(0);
+  });
+});
+
 describe('확인 창·제출', () => {
   const warnS = (id: number) => sg(id, { validation_result: 'warn' });
 

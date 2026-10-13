@@ -76,7 +76,7 @@ describe('시작·세션 화면', () => {
     expect(screen.getByText('서버 연결됨')).toBeInTheDocument();
     expect(
       within(screen.getByRole('navigation', { name: '주 메뉴' })).getAllByRole('link'),
-    ).toHaveLength(6);
+    ).toHaveLength(7);
   });
 
   it('TC-WF-075 메뉴로 이동하면 새 화면 제목으로 포커스가 이동한다', async () => {
