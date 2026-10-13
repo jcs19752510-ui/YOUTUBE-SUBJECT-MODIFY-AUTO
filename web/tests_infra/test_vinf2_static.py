@@ -532,7 +532,10 @@ def test_vif_051_invoke_compose_overlay_logic():
     assert re.search(r"if\s*\(Test-Path\s+\$YtwebGoogleClient\)\s*\{\s*\$files\s*\+=\s*@\('-f',\s*\$YtwebOnlineFile\)\s*\}", fn)
     assert fn.index("$YtwebComposeFile") < fn.index("$YtwebOnlineFile")
     assert re.search(r"@\('compose',\s*'-p',\s*\$YtwebProject\)\s*\+\s*\$files\s*\+\s*\$ArgList", fn)
-    assert fn.count("Test-Path") == 1                          # 오버레이 조건이 한 곳뿐
+    # Gemini 오버레이(compose.gemini.yaml): 키 파일이 있고 길이가 0 보다 클 때만, 구글 파일 유무와 독립적으로 붙는다(외부망은 키가 있을 때만 열림).
+    assert re.search(r"if\s*\(\(Test-Path\s+\$YtwebGeminiKey\)\s*-and\s*\(\(Get-Item\s+\$YtwebGeminiKey\)\.Length\s*-gt\s*0\)\)\s*\{\s*\$files\s*\+=\s*@\('-f',\s*\$YtwebGeminiFile\)\s*\}", fn)
+    assert fn.index("$YtwebOnlineFile") < fn.index("$YtwebGeminiFile")
+    assert fn.count("Test-Path") == 2                          # 오버레이 조건 2곳: 구글 파일, Gemini 키 파일(각각 한 곳)
 
 
 def test_vif_052_all_scripts_go_through_invoke_compose():

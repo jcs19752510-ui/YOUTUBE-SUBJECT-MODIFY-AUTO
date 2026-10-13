@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ko } from '../i18n/ko';
 import { fmtNum } from '../lib/format';
 import { Button } from './Button';
@@ -17,6 +18,7 @@ export function Pagination({
   onPageSize?: (n: number) => void;
   sizes?: number[];
 }) {
+  const sizeId = useId();
   const last = Math.max(1, Math.ceil(total / pageSize));
   // 주소로 들어온 쪽 크기가 목록에 없어도 실제 값 그대로 보여 준다
   const options = sizes.includes(pageSize) ? sizes : [...sizes, pageSize].sort((a, b) => a - b);
@@ -37,6 +39,8 @@ export function Pagination({
         <label className="row">
           {ko.pagination.size}
           <select
+            id={sizeId}
+            name="page-size"
             className="select"
             value={pageSize}
             onChange={(e) => onPageSize(Number(e.target.value))}

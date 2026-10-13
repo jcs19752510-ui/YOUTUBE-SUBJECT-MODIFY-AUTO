@@ -294,6 +294,8 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
                 <p>{ko.legal.abHint}</p>
                 <label className="check">
                   <input
+                    id="batch-ab-ack"
+                    name="batch-ab-ack"
                     type="checkbox"
                     checked={abAck}
                     aria-describedby="ab-needed"
@@ -312,10 +314,24 @@ function Detail({ batch, pcFromNav }: { batch: Batch; pcFromNav: Precheck | null
                   variant="danger"
                   busy={execute.isPending}
                   disabled={phrase !== expected || !abAck}
+                  aria-describedby="exec-gate"
                   onClick={() => execute.mutate()}
                 >
                   {execute.isPending ? ko.batches.executing : ko.batches.execute}
                 </Button>
+              </div>
+              <div id="exec-gate" className="muted" aria-live="polite">
+                {phrase !== expected || !abAck ? (
+                  <>
+                    <p>{ko.execGate.title}</p>
+                    <ol>
+                      {!abAck && <li>{ko.execGate.ab}</li>}
+                      {phrase !== expected && <li>{ko.execGate.phrase(expected)}</li>}
+                    </ol>
+                  </>
+                ) : (
+                  <p>{ko.execGate.ready}</p>
+                )}
               </div>
             </div>
           )}

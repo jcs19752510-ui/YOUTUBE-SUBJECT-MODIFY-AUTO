@@ -183,7 +183,7 @@ export function VideosPage() {
           </EmptyState>
         ) : (
           <EmptyState title={ko.videos.emptyFirstTitle} action={<Link to="/">{ko.nav.home}</Link>}>
-            {ko.videos.emptyFirstBody}
+            <EmptyFirstBody />
           </EmptyState>
         )
       ) : (
@@ -197,6 +197,8 @@ export function VideosPage() {
                     <label className="check-hit">
                       <input
                         ref={headRef}
+                        id="videos-select-page"
+                        name="videos-select-page"
                         type="checkbox"
                         aria-label={ko.videos.selectPage}
                         checked={allOnPage}
@@ -341,6 +343,8 @@ function Row({
       <td>
         <label className="check-hit">
           <input
+            id={`video-select-${v.video_id}`}
+            name="video-select"
             type="checkbox"
             checked={selected}
             disabled={v.excluded}
@@ -376,4 +380,12 @@ function Row({
       <td className="nowrap">{fmtDateTime(v.last_change_at)}</td>
     </tr>
   );
+}
+
+/** 영상이 하나도 없을 때의 안내. 구글 연결·실제 모드면 데모 문구 대신 내 채널 불러오기를 안내한다(상태를 못 읽으면 기존 데모 문구). */
+function EmptyFirstBody() {
+  const api = useApi();
+  const q = useQuery({ queryKey: ['dashboard'], queryFn: () => api.dashboard() });
+  const live = q.data ? q.data.google.connected || q.data.mode === 'live' : false;
+  return <>{live ? ko.videos.emptyFirstBodyLive : ko.videos.emptyFirstBody}</>;
 }

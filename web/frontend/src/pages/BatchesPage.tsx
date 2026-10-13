@@ -127,6 +127,8 @@ export function BatchesPage() {
                       <th scope="col">
                         <label className="check-hit">
                           <input
+                            id="batches-select-all"
+                            name="batches-select-all"
                             type="checkbox"
                             aria-label={ko.batches.selectAll}
                             checked={allPicked}
@@ -150,6 +152,8 @@ export function BatchesPage() {
                         <td>
                           <label className="check-hit">
                             <input
+                              id={`batch-pick-${s.id}`}
+                              name="batch-pick"
                               type="checkbox"
                               checked={picked.has(s.id) && !inDraft.has(s.id)}
                               disabled={inDraft.has(s.id)}

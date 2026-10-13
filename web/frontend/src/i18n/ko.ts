@@ -38,6 +38,13 @@ export const ko = {
   },
   // ---- 면책·AI 고지(규칙 I·J, POL-002·006·008·013). 문구는 이 한 곳에서만 정의한다 ----
   // disclaimer 는 서버(리포트 notes·CSV)·CLI(ui.py DISCLAIMER)와 같은 문장이어야 한다.
+  // 실행 버튼이 꺼진 이유 안내(배치 상세). 아직 못 채운 조건만 버튼 아래에 보여 준다.
+  execGate: {
+    title: '아직 필요한 것',
+    ab: 'A/B 테스트 확인: 위의 확인란을 선택하세요.',
+    phrase: (p: string) => `확인 문구: 입력칸에 '${p}' 를 정확히 입력하세요.`,
+    ready: '필요한 조건을 모두 채웠습니다. [실행]을 누를 수 있습니다.',
+  },
   legal: {
     disclaimer: '이 검증은 법률 자문이 아니며 최종 책임은 채널 소유자에게 있습니다.',
     footerLabel: '면책 및 AI 안내',
@@ -237,6 +244,8 @@ export const ko = {
     todoTitle: '오늘 할 일',
     todoNothing: '지금 처리할 일이 없습니다. 영상 목록에서 새 제안을 만들어 보세요.',
     todoNoVideos: '아직 영상이 없습니다. 데모 영상 200개를 불러와 시작하세요.',
+    aiBadgeNoVideosLive:
+      '아직 영상이 없습니다. 아래 "구글(유튜브) 연결" 카드에서 내 채널 영상 목록을 불러오세요.',
     todoReview: (n: number) => `검토할 AI 제안이 ${n}개 영상에 있습니다`,
     todoBatch: (n: number) => `승인된 제안 ${n}건을 배치로 묶어 반영할 수 있습니다`,
     todoQueued: (n: number) => `반영 대기 중인 항목이 ${n}건 있습니다`,
@@ -331,6 +340,8 @@ export const ko = {
     emptyBody: '검색어나 필터를 바꿔 보세요.',
     emptyFirstTitle: '아직 영상이 없습니다',
     emptyFirstBody: '홈에서 "데모 영상 불러오기"를 눌러 연습용 영상 200개를 만들 수 있습니다.',
+    emptyFirstBodyLive:
+      '홈의 "구글(유튜브) 연결" 카드에서 내 채널 영상 목록을 불러오세요.',
     reset: '필터 초기화',
     open: '상세 보기',
     secondsUnit: '길이',
@@ -373,6 +384,10 @@ export const ko = {
     ai: 'AI 제안',
     manual: '직접 수정',
     aiEdited: 'AI 제안(직접 고침)',
+    aiKindMock: '연습용 모의 제안(데모)',
+    aiKindRule: '규칙 기반 제안(영상 설명의 장면 제목을 조합)',
+    aiKindGemini: 'Gemini AI 제안',
+    aiKindEdited: '(직접 고침)',
     topic: '주제',
     topics: {
       life: '생활',
@@ -388,7 +403,8 @@ export const ko = {
     length: (n: number) => `${n}자`,
     match: (r: number) => `영상 내용 일치율 ${Math.round(r * 100)}%`,
     score: (n: number) => `점수 ${n}`,
-    scoreHint: '클릭률 예측이 아닙니다. 영상 내용 일치율·길이·핵심어 위치·주의 사유를 합친 점검 점수이며 후보를 비교할 때만 쓰세요.',
+    scoreHint:
+      '클릭률 예측이 아닙니다. 영상 내용 일치율·길이·핵심어 위치·주의 사유를 합친 점검 점수이며 후보를 비교할 때만 쓰세요.',
     evidence: '근거',
     reasons: '검증 사유',
     noReasons: '지적된 사유가 없습니다.',

@@ -20,6 +20,23 @@ import { suggestionStatusLabel } from '../lib/labels';
 import { scoreTone, suggestionScore } from '../lib/score';
 
 const MAX_TITLE = 100;
+/** 제안이 어떤 방식으로 만들어졌는지(source 는 'ai:mock'·'ai:rule'·'ai:gemini', 고치면 '+edited'). 모르는 값은 그냥 AI 제안. */
+export function aiKindLabel(source: string): string {
+  if (source === 'manual') return ko.suggestion.manual;
+  const edited = source.endsWith('+edited');
+  const kind = source.replace(/\+edited$/, '').split(':')[1];
+  const base =
+    kind === 'mock'
+      ? ko.suggestion.aiKindMock
+      : kind === 'rule'
+        ? ko.suggestion.aiKindRule
+        : kind === 'gemini'
+          ? ko.suggestion.aiKindGemini
+          : null;
+  if (base === null) return edited ? ko.suggestion.aiEdited : ko.suggestion.ai;
+  return edited ? `${base}${ko.suggestion.aiKindEdited}` : base;
+}
+
 type Dialog = null | 'edit' | 'approve' | 'reject';
 
 export function SuggestionCard({
@@ -119,13 +136,7 @@ export function SuggestionCard({
         >
           {suggestionStatusLabel(s.status)}
         </Badge>
-        <Badge>
-          {s.source === 'manual'
-            ? ko.suggestion.manual
-            : s.source.endsWith('+edited')
-              ? ko.suggestion.aiEdited
-              : ko.suggestion.ai}
-        </Badge>
+        <Badge>{aiKindLabel(s.source)}</Badge>
         {s.topic && (
           <Badge>{`${ko.suggestion.topic}: ${ko.suggestion.topics[s.topic] ?? s.topic}`}</Badge>
         )}
@@ -300,7 +311,13 @@ export function SuggestionCard({
                   ))}
                 </ul>
                 <label className="check">
-                  <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+                  <input
+                    id={`sg-ack-${s.id}`}
+                    name="warn-ack"
+                    type="checkbox"
+                    checked={ack}
+                    onChange={(e) => setAck(e.target.checked)}
+                  />
                   {ko.suggestion.warnAck}
                 </label>
               </Callout>

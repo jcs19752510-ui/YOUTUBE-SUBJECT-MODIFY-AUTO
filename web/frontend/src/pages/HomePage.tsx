@@ -70,16 +70,22 @@ function Todo({ d }: { d: Dashboard }) {
     <Card title={ko.home.todoTitle}>
       {d.counts.videos === 0 ? (
         <div className="stack">
-          <p>{ko.home.todoNoVideos}</p>
-          <div>
-            <Button
-              variant="primary"
-              busy={sync.isPending || (jobId !== null && !jobFinished)}
-              onClick={() => sync.mutate()}
-            >
-              {sync.isPending ? ko.home.syncing : ko.home.syncDemo}
-            </Button>
-          </div>
+          {d.google.connected || d.mode === 'live' ? (
+            <p>{ko.home.aiBadgeNoVideosLive}</p>
+          ) : (
+            <>
+              <p>{ko.home.todoNoVideos}</p>
+              <div>
+                <Button
+                  variant="primary"
+                  busy={sync.isPending || (jobId !== null && !jobFinished)}
+                  onClick={() => sync.mutate()}
+                >
+                  {sync.isPending ? ko.home.syncing : ko.home.syncDemo}
+                </Button>
+              </div>
+            </>
+          )}
           {sync.isError && <ErrorPanel error={sync.error} />}
           {jobId && (
             <JobPanel

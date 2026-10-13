@@ -347,7 +347,10 @@ def test_ytweb_has_no_outbound_capable_imports():
     bad = re.compile(r"^\s*(import|from)\s+(requests|httpx|urllib\.request|http\.client|aiohttp|socket|googleapiclient|google\.|openai|anthropic|subprocess|ftplib|smtplib|telnetlib)\b", re.M)
     hits = [(f.relative_to(root).as_posix(), m.group(0).strip()) for f in root.rglob("*.py") for m in bad.finditer(f.read_text(encoding="utf-8"))]
     # M2·M3(DEC-048): 구글 통신 전용 모듈 3개만 표준 라이브러리 urllib.request 를 쓸 수 있다. 그 외 모듈·다른 네트워크 라이브러리는 계속 금지.
-    google_only = {"youtube/google_oauth.py", "youtube/live_read.py", "youtube/live_write.py"}
+    # Gemini(AI 제안): ai/gemini.py 한 모듈만 추가 허용. 근거: 고정 호스트(generativelanguage.googleapis.com) https 만 호출, 키는 x-goog-api-key 헤더로만 보내고
+    # 로그·오류 메시지에 넣지 않음, ai/factory.py 가 키 파일이 비어 있지 않을 때만 GeminiSuggester 선택(키 없음/데모는 RuleSuggester, 호출 없음),
+    # compose.gemini.yaml 은 키 파일이 있을 때만 api·worker 에 egress 망을 붙임. 다른 모듈·다른 네트워크 라이브러리는 계속 금지.
+    google_only = {"youtube/google_oauth.py", "youtube/live_read.py", "youtube/live_write.py", "ai/gemini.py"}
     hits = [h for h in hits if not (h[0] in google_only and h[1] == "import urllib.request")]
     hits = [h for h in hits if h != ("worker.py", "import socket")]  # worker.py 는 socket.gethostname() 으로 워커 ID 만 만든다
     assert not hits, hits

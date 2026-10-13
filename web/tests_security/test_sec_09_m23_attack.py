@@ -381,13 +381,14 @@ def test_d3_urllib_redirect_forwards_bearer_to_other_host_repro():
     assert new.get_header("Authorization") == "Bearer SECRET-T"
 
 
-def test_d4_only_three_modules_import_urllib_request():
+def test_d4_only_four_modules_import_urllib_request():
     import re
     from pathlib import Path
     root = Path(__file__).resolve().parents[1] / "backend" / "ytweb"
     bad = re.compile(r"^\s*(import|from)\s+(requests|httpx|urllib\.request|http\.client|aiohttp|socket|googleapiclient|google\.|openai|anthropic|subprocess|ftplib|smtplib|telnetlib)\b", re.M)
     hits = sorted({f.relative_to(root).as_posix() for f in root.rglob("*.py") for _ in bad.finditer(f.read_text(encoding="utf-8"))} - {"worker.py"})
-    assert hits == ["youtube/google_oauth.py", "youtube/live_read.py", "youtube/live_write.py"], hits
+    # 4번째 모듈 ai/gemini.py 만 추가 허용(허용 이유는 test_sec_02 의 같은 가드 주석 참조). 5번째 모듈이 생기면 이 시험이 실패한다.
+    assert hits == ["ai/gemini.py", "youtube/google_oauth.py", "youtube/live_read.py", "youtube/live_write.py"], hits
 
 
 # ================= E. 롤백 덮어쓰기 (DEF-9-002 의 M3 실제 모드 재현) =================

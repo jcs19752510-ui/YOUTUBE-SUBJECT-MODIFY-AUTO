@@ -163,24 +163,19 @@ function Test-PortInUse {
 }
 
 function Set-OwnerOnlyAcl {
+    # DACL(접근 허용 목록)만 icacls 로 바꾼다. 소유자·감사(SACL)는 건드리지 않으므로 SeSecurityPrivilege 가 필요 없다.
+    # 실패해도 경고만 내고 $false 를 돌려준다(백업·복원은 계속 진행).
     param([string]$Path)
     if ($env:OS -ne 'Windows_NT') { return $true }
     try {
-        $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-        $isDir = (Get-Item -LiteralPath $Path -Force).PSIsContainer
-        $acl = Get-Acl -LiteralPath $Path
-        $acl.SetAccessRuleProtection($true, $false)
-        foreach ($r in @($acl.Access)) { [void]$acl.RemoveAccessRule($r) }
-        if ($isDir) {
-            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
-        } else {
-            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'Allow')
-        }
-        $acl.AddAccessRule($rule)
-        Set-Acl -LiteralPath $Path -AclObject $acl
+        # 이름 대신 SID 를 쓴다(한글·도메인 계정 문제 방지). icacls 는 SID 앞에 * 를 붙인다.
+        $sid = '*' + [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        # 한 번의 명령으로 부여와 상속 제거를 함께 처리한다(현재 사용자·SYSTEM 에게만 모든 권한). 실패하면 아무것도 바뀌지 않는다.
+        $r = Invoke-Native -FilePath 'icacls' -ArgList @($Path, '/grant:r', "${sid}:(OI)(CI)F", '/grant:r', '*S-1-5-18:(OI)(CI)F', '/inheritance:r') -Capture
+        if ($r.ExitCode -ne 0) { throw ("icacls 종료 코드 {0}: {1}" -f $r.ExitCode, ($r.Output -join ' ')) }
         return $true
     } catch {
-        Write-Warn "접근 권한을 현재 사용자 전용으로 제한하지 못했습니다: $Path ($($_.Exception.Message))"
+        Write-Warn "접근 권한을 현재 사용자 전용으로 제한하지 못했습니다(백업·복원은 계속됩니다): $Path ($($_.Exception.Message))"
         return $false
     }
 }
