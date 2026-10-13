@@ -20,9 +20,9 @@ DEFAULT_MODEL = "gemini-flash-latest"  # 특정 버전(예: 2.5)은 신규 사�
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT_SEC = 60
 MAX_OUTPUT_TOKENS = 16384  # 이 모델은 생각 토큰(실측 약 3,800개)도 출력 한도에서 쓴다. 4000 이면 JSON 이 잘려 실패했다(2026-10-13 실측)
-ATTEMPTS = 3  # 구글 서버의 일시 오류(429·5xx)와 응답 잘림은 잠시 뒤 다시 시도한다
+ATTEMPTS = 3  # 구글 서버의 일시 오류(5xx)와 응답 잘림은 잠시 뒤 다시 시도한다. 429(사용량 한도)는 수 초 뒤에도 풀리지 않아 재시도하지 않고 바로 안내한다(2026-10-13 실측)
 RETRY_WAIT_SEC = (1.5, 3.0)
-RETRYABLE_HTTP = (429, 500, 502, 503, 504)
+RETRYABLE_HTTP = (500, 502, 503, 504)
 _MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")  # 요청 주소에 들어가므로 / ? # : 등을 막는다(DEF-D-001)
 
 SYSTEM_PROMPT = (

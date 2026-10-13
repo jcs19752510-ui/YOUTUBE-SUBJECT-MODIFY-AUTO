@@ -63,7 +63,7 @@ def test_output_budget_is_large_enough_for_thinking_tokens(monkeypatch):
     assert log["bodies"][0]["generationConfig"]["maxOutputTokens"] >= 16000  # 생각 토큰 약 3,800개 + 후보
 
 
-@pytest.mark.parametrize("code", [429, 500, 502, 503, 504])
+@pytest.mark.parametrize("code", [500, 502, 503, 504])
 def test_transient_http_errors_are_retried_then_succeed(monkeypatch, code):
     log = _script(monkeypatch, [_http(code), _http(code), _ok])
     assert [d.title for d in _run()] == [GOOD[0]["title"]]
@@ -78,7 +78,7 @@ def test_gives_up_after_three_attempts_with_the_server_error_message(monkeypatch
     assert log["calls"] == G.ATTEMPTS == 3 and len(log["sleeps"]) == 2
 
 
-@pytest.mark.parametrize("code", [400, 401, 403, 404])
+@pytest.mark.parametrize("code", [400, 401, 403, 404, 429])
 def test_client_errors_are_not_retried(monkeypatch, code):
     log = _script(monkeypatch, [_http(code), _ok])
     with pytest.raises(TitleSuggestionError):

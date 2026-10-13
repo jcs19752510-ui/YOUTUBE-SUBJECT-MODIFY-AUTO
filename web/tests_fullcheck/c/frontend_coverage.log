@@ -1,0 +1,66 @@
+
+ RUN  v5.0.3 /home/user/youtube-subject-modify-auto/web/frontend
+      Coverage enabled with v8
+
+
+ Test Files  29 passed | 1 skipped (30)
+      Tests  752 passed | 1 expected fail | 21 skipped (774)
+   Start at  01:48:26
+   Duration  65.31s (tests 70%, environment 16%, import 6%, setup 4%, transform 3%, worker 1%)
+
+    Isolate  30 workers spawned · ~1.19s startup each (spawn + environment, per file)
+             at least ~10.68s faster with isolate: false — reuses workers across files instead of one per file
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    97.3 |    94.43 |   95.37 |   98.27 |                   
+ src/api           |   98.97 |    96.89 |   98.48 |     100 |                   
+  client.ts        |   99.34 |    97.52 |   96.87 |     100 | 103,171,248       
+  context.tsx      |   92.85 |       50 |     100 |     100 | 18                
+ src/app           |   95.83 |    95.16 |   90.32 |   95.55 |                   
+  AuthGate.tsx     |   90.32 |     90.9 |   77.77 |   89.28 | 37,79-83          
+  ...rBoundary.tsx |    87.5 |      100 |      75 |   85.71 | 33                
+  Layout.tsx       |     100 |    94.44 |     100 |     100 | 54                
+ src/components    |   96.15 |    93.51 |   96.49 |   96.21 |                   
+  Card.tsx         |     100 |       75 |     100 |     100 | 18-20             
+  ...irmPhrase.tsx |     100 |       75 |     100 |     100 | 27-36             
+  ErrorPanel.tsx   |     100 |    97.77 |     100 |     100 | 49                
+  Field.tsx        |     100 |    93.33 |     100 |     100 | 18                
+  Modal.tsx        |   94.73 |    92.85 |     100 |   94.28 | 55-56             
+  Tabs.tsx         |   95.65 |    83.33 |     100 |   94.44 | 30                
+  Toast.tsx        |   90.62 |       75 |   88.88 |    90.9 | 59,76             
+ src/hooks         |      95 |     87.5 |   93.75 |   97.05 |                   
+  selection.tsx    |   92.85 |    83.33 |      90 |   95.83 | 42                
+ src/i18n          |   98.03 |      100 |      98 |   98.03 |                   
+  ko.ts            |   98.03 |      100 |      98 |   98.03 | 452               
+ src/lib           |   97.08 |    94.11 |   97.14 |   98.96 |                   
+  labels.ts        |   94.82 |    91.48 |     100 |     100 | 21-32,34,40       
+  navigate.ts      |       0 |      100 |       0 |       0 | 3                 
+  score.ts         |     100 |     87.5 |     100 |     100 | 13,17             
+ src/pages         |    98.7 |     94.4 |    97.6 |   99.13 |                   
+  ...etailPage.tsx |   98.68 |    96.15 |   96.77 |   98.64 | 385               
+  BatchesPage.tsx  |     100 |    91.37 |     100 |     100 | 63,138,174-182    
+  DiscardDraft.tsx |   95.23 |    83.33 |     100 |     100 | 26                
+  GoogleCard.tsx   |     100 |       98 |     100 |     100 | 87                
+  HistoryPage.tsx  |     100 |     97.5 |     100 |     100 | 212               
+  HomePage.tsx     |     100 |    95.74 |     100 |     100 | 103,137           
+  JobPanel.tsx     |      96 |    95.65 |   85.71 |     100 | 60                
+  ReportsPage.tsx  |   97.05 |    93.33 |   94.11 |     100 | 23-28,60          
+  SettingsPage.tsx |     100 |    92.17 |     100 |     100 | ...34-347,404,428 
+  ...stionCard.tsx |     100 |    96.74 |     100 |     100 | 36,114,177,275    
+  ...etailPage.tsx |     100 |    88.88 |     100 |     100 | 58-67,119         
+  VideosPage.tsx   |    95.6 |    92.63 |    92.3 |   95.23 | 113-114,226,241   
+ src/test          |   95.65 |       96 |      90 |   97.43 |                   
+  utils.tsx        |   94.28 |       95 |   85.71 |   96.87 | 98                
+ verify_fix        |      75 |    66.66 |   46.66 |   88.46 |                   
+  shared.tsx       |      75 |    66.66 |   46.66 |   88.46 | 39-42,56          
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 97.3% ( 1336/1373 )
+Branches     : 94.43% ( 1188/1258 )
+Functions    : 95.37% ( 515/540 )
+Lines        : 98.27% ( 1197/1218 )
+================================================================================
