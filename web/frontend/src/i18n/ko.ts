@@ -129,7 +129,7 @@ export const ko = {
   // ---- 상태 라벨 ----
   workflow: {
     none: '제안 없음',
-    suggested: '제안 있음',
+    suggested: '제안 있음(검토 대기)',
     approved: '승인됨',
     queued: '반영 대기',
     applied: '반영 완료',
@@ -285,7 +285,7 @@ export const ko = {
     counts: {
       videos: '전체 영상',
       excluded: '제외된 영상',
-      suggested: '제안 있음',
+      suggested: '제안 있음(검토 대기)',
       approved: '승인됨',
       queued: '반영 대기',
       applied: '반영 완료',
