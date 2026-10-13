@@ -70,7 +70,7 @@ def test_tc_bv_002_single_http_schema_unchanged(seeded, api, csrf, env, clock):
 
 def test_tc_bv_003_response_schema_exact(seeded, api, csrf, env, clock):
     sugs = passes(seeded, env, clock, 3)
-    blk = find(seeded, env, clock, "block")[0]
+    blk = find(seeded, env, clock, "block", start=20)[0]
     seeded.commit()
     body = {"approver": "홍길동", "suggestion_ids": [sugs[0].id, sugs[1].id, blk.id, 999999, sugs[2].id]}
     r = post(api, csrf, body)
@@ -176,10 +176,11 @@ def test_tc_bv_010_approver_rules_match_single(seeded, api, csrf, env, clock):
     names = ["", "   ", "\t\n", "a" * 41, "a" * 200, "a" * 201, "a" * 5000, "홍​길동", "홍‮길동", "홍­x", "홍\x00길동", "홍 길동", "  홍길동  ", None, 5]
     for i, nm in enumerate(names):
         sid = sugs[i % 12].id
-        rb = post(api, csrf, {"approver": nm, "suggestion_ids": [sid]}, f"vb-appr-{i:04d}-x")
         rs = api.post(f"/api/v1/suggestions/{sid}/approve", json={"approver": nm}, headers=hdr(csrf))
+        sid = sugs[(i + 6) % 12].id if rs.status_code != 200 else sugs[11].id
+        rb = post(api, csrf, {"approver": nm, "suggestion_ids": [sid]}, f"vb-appr-{i:04d}-x")
         if rs.status_code == 200:
-            assert rb.status_code == 200 or rb.json()["skipped"], (nm, rb.text)
+            assert rb.status_code == 200, (nm, rb.text)
         else:
             assert rb.status_code == rs.status_code and rb.json()["code"] == rs.json()["code"], (nm, rs.status_code, rs.text, rb.status_code, rb.text)
     seeded.expire_all()
