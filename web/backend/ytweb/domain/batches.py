@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import copy
+import time
 import unicodedata
 import logging
 from collections.abc import Callable
@@ -49,6 +50,8 @@ _APPLY_LOCK_KEY = 7_340_003  # 한도 검사~planned 기록~커밋을 워커 사
 LIVE_OFF_MESSAGE = "실제 유튜브 영상인데 실제 수정이 꺼져 있어 반영하지 않았습니다. 켜려면 web\\scripts\\live-on.bat 을 실행하고 홈에서 [제목 수정 권한 연결]을 확인하세요."
 VERIFY_PRESERVED_FIELDS = ("description", "tags", "categoryId", "defaultLanguage", "defaultAudioLanguage")  # live_guard.VERIFY_PRESERVED_FIELDS 와 같다
 _MISSING = object()
+VERIFY_RETRY_DELAYS = (2.0, 4.0, 8.0)  # 반영 직후 재조회가 이전 제목을 줄 때의 재시도 간격(초, 실제 모드만)
+_sleep = time.sleep
 GatewayFactory = Callable[[Session, datetime], YouTubeGateway]
 
 
@@ -547,6 +550,18 @@ def _apply(session: Session, item: BatchItem, now: datetime, env: Env, gateway: 
         mark_call(session, r_verify, "failed")
         after = None
     verify = verify_snippet(fresh, after, sug.title)
+    if live_gateway.is_live(gateway) and after is not None and not verify.get("title_ok", True):
+        # 유튜브는 제목을 바꾼 직후 잠시 이전 제목을 돌려줄 수 있다(실제로 바뀌었는데 '실패'로 보이던 결함). 제목만 다를 때 몇 초 간격으로 다시 조회한다.
+        for delay in VERIFY_RETRY_DELAYS:
+            _sleep(delay)
+            try:
+                after = gateway.read_snippet(video.video_id)
+            except GatewayError:
+                continue
+            verify = verify_snippet(fresh, after, sug.title)
+            if verify.get("title_ok"):
+                verify["retried"] = True
+                break
     change.result, change.applied_at, change.verified_at, change.verify_result = "success", now, now, verify
     if not verify["ok"]:
         change.error_code = "verify_failed"  # 반영은 일어났으므로 success 로 남기고(한도에 산입·롤백 가능), 항목은 failed 로 알린다
@@ -596,6 +611,41 @@ def _finish_failure(session: Session, item_id: int, sf: StepFailure, state: _Sta
 
 
 # ───────────── 재시작 복구 ─────────────
+
+def reconcile_verify_failed(session: Session, gateway: YouTubeGateway, now: datetime, batch_id: int | None = None) -> list[tuple[int, str]]:
+    stmt = select(BatchItem).where(BatchItem.status == "failed", BatchItem.skip_reason.like("[verify_failed]%"))
+    if batch_id is not None:
+        stmt = stmt.where(BatchItem.batch_id == batch_id)
+    out: list[tuple[int, str]] = []
+    for item in session.execute(stmt).scalars().all():
+        change = session.get(Change, item.change_id) if item.change_id else None
+        if change is None or change.mode != "live" or change.result != "success":
+            continue
+        if (change.verify_result or {}).get("reconcile_checked"):
+            continue  # 한 번 다시 확인했는데도 다른 항목은 반복해서 읽지 않는다(쿼터 보호)
+        try:
+            snap = gateway.read_snippet(change.video_id)
+        except GatewayError:
+            snap = None
+        if snap is None:
+            out.append((item.id, "재조회 실패(그대로 둠)"))
+            continue
+        verify = verify_snippet(change.backup_snippet or {}, snap, change.new_title)
+        if verify["ok"]:
+            change.error_code, change.verify_result, change.verified_at = None, {**verify, "note": "나중에 재조회로 확정(reconcile)"}, now
+            item.status, item.skip_reason, item.updated_at = "success", None, now
+            batch = session.get(Batch, item.batch_id)
+            if batch is not None:
+                refresh_batch_status(batch, now)
+            audit.record(session, actor="worker", action="change.verify", target_type="change", target_id=str(change.id), detail={"video_id": change.video_id, "verify_ok": True, "reason": "reconcile"}, now=now)
+            out.append((item.id, "성공으로 바로잡음(유튜브 제목이 새 제목과 같음)"))
+        else:
+            change.verify_result = {**(change.verify_result or {}), "reconcile_checked": True}
+            out.append((item.id, f"여전히 다름: {', '.join(verify.get('diff_fields') or ['확인 불가'])}(그대로 둠)"))
+    return out
+
+
+
 
 def recover_running_items(factory: sessionmaker, now: datetime, env: Env | None = None, *, gateway_factory: GatewayFactory = mock_gateway_factory, stale_after: timedelta = STALE_RUNNING) -> int:
     """비정상 종료로 running 에 남은 항목을 재조회로 확정해 정리한다. 워커 기동 직후에는 stale_after=0 으로 부르면 된다."""
@@ -694,6 +744,16 @@ def run_due_items(factory: sessionmaker, now: datetime, env: Env | None = None, 
         expire_stale_approvals(s, now)
         s.commit()
     recover_running_items(factory, now, env, gateway_factory=gateway_factory)
+    with factory() as s:  # 반영은 됐는데 재조회 지연으로 '실패'로 남은 실제 모드 항목을 스스로 바로잡는다(읽기만, 사용자 조작 불필요)
+        try:
+            has_candidates = s.execute(select(BatchItem.id).where(BatchItem.status == "failed", BatchItem.skip_reason.like("[verify_failed]%")).limit(1)).first() is not None
+            gw = gateway_factory(s, now) if has_candidates else None  # 대상이 없으면 게이트웨이를 만들지도 않는다
+            if gw is not None and live_gateway.is_live(gw):
+                reconcile_verify_failed(s, gw, now)
+            s.commit()
+        except Exception:  # noqa: BLE001 — 보정 실패가 배치 처리를 막지 않는다
+            s.rollback()
+            log.warning("reconcile_verify_failed 오류", exc_info=True)
     today = kst_today(now)
     for _ in range(MAX_BATCH_ITEMS * 40):  # 무한 반복 방지용 상한
         with factory() as s:
