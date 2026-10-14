@@ -118,3 +118,18 @@ def test_gemini_branch_tells_model_existing_titles_and_filters_duplicates(seeded
     assert seen["avoid"] == {s.title for s in first}
     titles = [t for (t,) in seeded.execute(select(Suggestion.title).where(Suggestion.video_id == vid))]
     assert len(titles) == len(set(titles)) == 2
+
+
+def test_rule_suggester_no_candidates_tells_to_connect_gemini(seeded, env, clock):
+    """챕터가 없는 영상(쇼츠 등)에서 규칙 기반 제안기가 후보를 못 만들면, 이유와 Gemini 연결 방법을 한국어로 알린다(2026-10-14)."""
+    from ytweb.ai.rule import RuleSuggester
+    from ytweb.core.errors import ProblemError
+    from ytweb.db.models import Video
+
+    vid = eligible_video_ids(seeded, 1)[0]
+    v = seeded.get(Video, vid)
+    v.source, v.description_excerpt = "youtube", "#shorts"
+    seeded.flush()
+    with __import__("pytest").raises(ProblemError) as e:
+        generate_for_video(seeded, vid, count=2, tone="t", now=clock(), env=env, suggester=RuleSuggester())
+    assert e.value.code == "ai_no_candidates" and "Gemini" in e.value.title and "gemini-on.bat" in e.value.hint
