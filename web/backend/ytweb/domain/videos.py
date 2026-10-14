@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ytweb.core.dates import in_range, kst_range_utc
 from ytweb.core.errors import ProblemError
 from ytweb.core.settings_store import effective_daily_cap
 from ytweb.db.models import Change, Suggestion, Video
@@ -58,8 +59,10 @@ def _summary(v, status: str, count: int, last_change: datetime | None) -> dict:
     }
 
 
-def list_videos(session: Session, *, now: datetime, q: str | None, status: str | None, excluded: bool | None, sort: str, order: str, page: int, page_size: int) -> tuple[list[dict], int]:
+def list_videos(session: Session, *, now: datetime, q: str | None, status: str | None, excluded: bool | None, sort: str, order: str, page: int, page_size: int,
+                date_from: date | None = None, date_to: date | None = None) -> tuple[list[dict], int]:
     expire_stale_approvals(session, now)
+    start, end = kst_range_utc(date_from, date_to)  # 시작>종료면 422
     page, page_size = clamp_page(page, page_size)
     status_map, counts, last_map = workflow_maps(session)
     cols = (Video.video_id, Video.title, Video.privacy_status, Video.duration_sec, Video.is_short, Video.exclusion_reasons, Video.views)
@@ -73,6 +76,8 @@ def list_videos(session: Session, *, now: datetime, q: str | None, status: str |
         if status and wf != status:
             continue
         if excluded is not None and bool(reasons) != excluded:
+            continue
+        if not in_range(last_map.get(row.video_id), start, end):  # 기간이 지정되면 최근 변경이 없는 영상은 제외
             continue
         rows.append(_summary(row, wf, counts.get(row.video_id, 0), last_map.get(row.video_id)))
     key = {"workflow_status": lambda r: _WORKFLOW_ORDER[r["workflow_status"]]}.get(sort, lambda r: r[sort])

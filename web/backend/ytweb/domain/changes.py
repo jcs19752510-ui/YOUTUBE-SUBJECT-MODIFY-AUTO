@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import copy
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -47,9 +47,17 @@ def rollbackable_map(session: Session, changes: list[Change]) -> dict[int, bool]
     }
 
 
-def list_changes(session: Session, *, video_id: str | None, batch_id: int | None, result: str | None, page: int, page_size: int) -> tuple[list[tuple[Change, str | None]], dict[int, bool], int]:
+def list_changes(session: Session, *, video_id: str | None, batch_id: int | None, result: str | None, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None) -> tuple[list[tuple[Change, str | None]], dict[int, bool], int]:
+    from ytweb.core.dates import kst_range_utc
+
     page, page_size = clamp_page(page, page_size)
+    start, end = kst_range_utc(date_from, date_to)   # 처리 시각 = coalesce(applied_at, created_at) 기준
+    when = func.coalesce(Change.applied_at, Change.created_at)
     conds = []
+    if start is not None:
+        conds.append(when >= start)
+    if end is not None:
+        conds.append(when < end)
     if video_id:
         conds.append(Change.video_id == video_id)
     if batch_id is not None:

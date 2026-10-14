@@ -12,6 +12,7 @@ from youtube_title.report import CAUSAL_NOTE, INSUFFICIENT_LABEL, LIMIT_NOTE, Ru
 from youtube_title.report import Change as ReportChange
 from youtube_title.timeutil import utc_iso
 
+from ytweb.core.dates import kst_range_utc
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import Change, MetricsSnapshot, Video
 from ytweb.domain.common import Env
@@ -59,7 +60,9 @@ def _report_dict(r: VideoReport) -> dict:
     }
 
 
-def build_reports(session: Session, env: Env, video_id: str | None = None) -> dict:
+def build_reports(session: Session, env: Env, video_id: str | None = None, date_from: date | None = None, date_to: date | None = None) -> dict:
+    """date_from/date_to: 한국시간 날짜. 기간 안에 성공한 제목 변경(apply)이 있는 영상만 대상. video_id 지정 시 기간 제한 없음(기간 형식 검증만)."""
+    start, end = kst_range_utc(date_from, date_to)
     rules = Rules.from_settings(env.policy)
     if video_id is not None:
         video = session.get(Video, video_id)
@@ -67,9 +70,14 @@ def build_reports(session: Session, env: Env, video_id: str | None = None) -> di
             raise ProblemError(404, "video_not_found", "영상을 찾을 수 없습니다.", hint="영상 ID를 확인하세요.")
         ids = [video_id]
     else:
+        at = func.coalesce(Change.applied_at, Change.created_at)
+        stmt = select(Change.video_id).where(Change.result == "success", Change.change_type == "apply")
+        if start is not None:
+            stmt = stmt.where(at >= start)
+        if end is not None:
+            stmt = stmt.where(at < end)
         ids = list(session.execute(
-            select(Change.video_id).where(Change.result == "success", Change.change_type == "apply").group_by(Change.video_id)
-            .order_by(func.max(func.coalesce(Change.applied_at, Change.created_at)).desc(), Change.video_id).limit(MAX_REPORT_VIDEOS)
+            stmt.group_by(Change.video_id).order_by(func.max(at).desc(), Change.video_id).limit(MAX_REPORT_VIDEOS)
         ).scalars())
     titles = dict(session.execute(select(Video.video_id, Video.title).where(Video.video_id.in_(ids))).all()) if ids else {}
     items = [_report_dict(build_report(vid, titles.get(vid), _changes_for(session, vid), _snapshots_for(session, vid), rules)) for vid in ids]
@@ -91,8 +99,8 @@ def _metric_cells(snap: dict | None) -> list:
     return [("" if snap is None or snap.get(k) is None else snap[k]) for k in ("impressions", "ctr", "views", "watch_minutes")]
 
 
-def export_csv(session: Session, env: Env, video_id: str | None = None) -> str:
-    data = build_reports(session, env, video_id)
+def export_csv(session: Session, env: Env, video_id: str | None = None, date_from: date | None = None, date_to: date | None = None) -> str:
+    data = build_reports(session, env, video_id, date_from, date_to)
     buf = io.StringIO()
     writer = csv.writer(buf, lineterminator="\r\n")
     writer.writerow(CSV_COLUMNS)

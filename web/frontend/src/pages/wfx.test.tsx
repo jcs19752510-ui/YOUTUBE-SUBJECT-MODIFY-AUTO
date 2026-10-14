@@ -190,6 +190,7 @@ describe('면책·AI 고지 문구 (DEF-9-007·008, POL-002·006·008·013)', ()
   it('TC-WFX-010 이력 화면 위에도 AI 생성 고지가 있다', async () => {
     const { client } = await connectedClient([route('GET', '/api/v1/changes', () => page([]))]);
     renderWithApp(<HistoryPage />, client);
+    await userEvent.setup().click(await screen.findByRole('button', { name: '전체 기간' })); // 기간 기본값=오늘 → 전체 기간으로
     await screen.findByText(ko.history.emptyTitle);
     expect(screen.getByText(ko.legal.aiNotice)).toBeInTheDocument();
   });

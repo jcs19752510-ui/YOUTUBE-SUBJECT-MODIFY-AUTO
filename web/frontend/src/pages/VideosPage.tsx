@@ -17,6 +17,7 @@ import {
   useToast,
 } from '../components';
 import { Skeleton } from '../components/Skeleton';
+import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
 import { useSelection } from '../hooks/selection';
 import { ko } from '../i18n/ko';
 import { fmtDateTime, fmtDuration, fmtNum } from '../lib/format';
@@ -35,7 +36,7 @@ export const STATUSES: WorkflowStatus[] = [
   'rolled_back',
 ];
 
-function readParams(sp: URLSearchParams): Required<VideoListQuery> {
+function readParams(sp: URLSearchParams): Required<Omit<VideoListQuery, 'date_from' | 'date_to'>> {
   const num = (k: string, d: number) => {
     const n = Number(sp.get(k));
     return Number.isInteger(n) && n > 0 ? n : d;
@@ -61,6 +62,7 @@ export function VideosPage() {
   const sel = useSelection();
   const [sp, setSp] = useSearchParams();
   const p = readParams(sp);
+  const range = useDateRange();
   const [qInput, setQInput] = useState(p.q);
   const [genJob, setGenJob] = useState<{ id: string; count: number } | null>(null);
   const [genDone, setGenDone] = useState<Job | null>(null);
@@ -77,8 +79,9 @@ export function VideosPage() {
   };
 
   const query = useQuery({
-    queryKey: ['videos', p],
-    queryFn: () => api.videos(p),
+    queryKey: ['videos', p, range.query],
+    queryFn: () => api.videos({ ...p, ...range.query }),
+    enabled: range.valid,
     placeholderData: (prev) => prev,
   });
 
@@ -168,18 +171,23 @@ export function VideosPage() {
         </Button>
         {filtered && <Button onClick={reset}>{ko.videos.reset}</Button>}
       </form>
+      <DateRangeFilter
+        range={range}
+        basis="최근 변경 시각 기준"
+        onChange={() => update({})}
+      />
 
-      {query.isPending ? (
+      {!range.valid ? null : query.isPending ? (
         <Skeleton lines={8} />
       ) : query.isError ? (
         <ErrorPanel error={query.error} onRetry={() => void query.refetch()} />
       ) : items.length === 0 ? (
-        filtered ? (
+        filtered || !range.isAll ? (
           <EmptyState
             title={ko.videos.emptyTitle}
             action={<Button onClick={reset}>{ko.videos.reset}</Button>}
           >
-            {ko.videos.emptyBody}
+            {range.isAll ? ko.videos.emptyBody : ko.dateRange.none}
           </EmptyState>
         ) : (
           <EmptyState title={ko.videos.emptyFirstTitle} action={<Link to="/">{ko.nav.home}</Link>}>

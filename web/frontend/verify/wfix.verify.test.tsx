@@ -299,6 +299,8 @@ describe('C. 제안 카드의 AI 고지·한계·주의 (POL-006·008)', () => {
   it('TC-VFF-026 이력 화면에 AI 고지와 이력 안내가 있다(빈 결과여도)', async () => {
     const { client } = await connectedClient([route('GET', '/api/v1/changes', () => emptyPage)]);
     renderWithApp(<HistoryPage />, client);
+    // 조회 기간 기본값이 오늘이라, 비어 있는 첫 사용 안내를 보려면 전체 기간으로 바꾼다(2026-10-14)
+    fireEvent.click(await screen.findByRole('button', { name: '전체 기간' }));
     await screen.findByText(ko.history.emptyTitle);
     expect(screen.getByText(ko.legal.aiNotice)).toBeInTheDocument();
     expect(screen.getByText(ko.legal.historyNote)).toBeInTheDocument();

@@ -19,7 +19,7 @@ import {
 
 const vid = (n: number) => `vid${String(n).padStart(8, '0')}`;
 const sg = (id: number, over: Partial<Suggestion> = {}) =>
-  suggestion(id, { video_id: vid(id), title: `새 제목 ${id}`, ...over });
+  suggestion(id, { video_id: vid(id), title: `새 제목 ${id}`, created_at: new Date().toISOString(), ...over });
 const page = (items: unknown[]) =>
   json(200, { items, total: items.length, page: 1, page_size: 50 });
 const rv = (n: number, over: Partial<ResolvedVideo> = {}): ResolvedVideo => ({

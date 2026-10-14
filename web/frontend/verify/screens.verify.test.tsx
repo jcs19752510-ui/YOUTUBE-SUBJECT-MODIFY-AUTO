@@ -1,5 +1,5 @@
 // 06단계 독립 검증(TC-VF) — 화면별 인수 조건 보강: 영상 목록 서버측 질의, 홈, 배치 만들기, 리포트 CSV, 이력 필터, 데모 배지, 미리보기 문구
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -183,6 +183,8 @@ describe('영상 목록: 서버측 질의 (F-03)', () => {
   it('TC-VF-180 필터 없이 0건이면 "첫 사용" 안내(홈으로 가기)가 나오고 필터 지우기는 없다', async () => {
     const empty = route('GET', '/api/v1/videos', () => json(200, page([], 0)));
     mountApp([empty], '/videos');
+    // 조회 기간 기본값이 오늘이라, 비어 있는 첫 사용 안내를 보려면 전체 기간으로 바꾼다(2026-10-14)
+    fireEvent.click(await screen.findByRole('button', { name: '전체 기간' }));
     expect(await screen.findByText(ko.videos.emptyFirstTitle)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: ko.videos.reset })).toBeNull();
     expect(
@@ -671,6 +673,8 @@ describe('이력 화면', () => {
   it('TC-VF-174 영상 ID·결과 필터는 서버 질의로 가며(앞뒤 공백 제거), 필터를 걸면 1쪽으로 돌아간다', async () => {
     const user = userEvent.setup();
     const c = mountApp([route('GET', '/api/v1/changes', () => json(200, page([], 0)))], '/history');
+    // 조회 기간 기본값이 오늘이라, 비어 있는 첫 사용 안내를 보려면 전체 기간으로 바꾼다(2026-10-14)
+    await user.click(await screen.findByRole('button', { name: '전체 기간' }));
     await screen.findByText(ko.history.emptyTitle);
     await user.type(screen.getByLabelText(ko.history.filterVideo), '  vid00000001  {Enter}');
     await waitFor(() =>

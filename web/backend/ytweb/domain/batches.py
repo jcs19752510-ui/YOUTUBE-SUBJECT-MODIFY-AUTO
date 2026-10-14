@@ -232,10 +232,18 @@ def get_batch(session: Session, batch_id: int, *, lock: bool = False) -> Batch:
     return batch
 
 
-def list_batches(session: Session, *, page: int, page_size: int) -> tuple[list[Batch], int]:
+def list_batches(session: Session, *, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None) -> tuple[list[Batch], int]:
+    from ytweb.core.dates import kst_range_utc
+
     page, page_size = clamp_page(page, page_size)
-    total = int(session.execute(select(func.count()).select_from(Batch)).scalar_one())
-    rows = session.execute(select(Batch).order_by(Batch.id.desc()).offset((page - 1) * page_size).limit(page_size)).scalars().all()
+    start, end = kst_range_utc(date_from, date_to)   # 만든 시각(created_at) 기준, 한국 시간 날짜, 양 끝 포함
+    conds = []
+    if start is not None:
+        conds.append(Batch.created_at >= start)
+    if end is not None:
+        conds.append(Batch.created_at < end)
+    total = int(session.execute(select(func.count()).select_from(Batch).where(*conds)).scalar_one())
+    rows = session.execute(select(Batch).where(*conds).order_by(Batch.id.desc()).offset((page - 1) * page_size).limit(page_size)).scalars().all()
     return list(rows), total
 
 

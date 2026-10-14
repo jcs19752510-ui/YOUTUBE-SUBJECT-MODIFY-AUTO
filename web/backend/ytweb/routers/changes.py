@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Path, Query
@@ -25,9 +25,10 @@ def get_changes(
     video_id: str | None = Query(default=None, pattern=VIDEO_ID_PATTERN), batch_id: int | None = Query(default=None, ge=1, le=MAX_ID),
     result: Literal["planned", "success", "failed", "aborted"] | None = None,
     page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200),
+    date_from: date | None = None, date_to: date | None = None,
     session: Session = Depends(get_session), _=Depends(require_session),
 ):
-    pairs, rb, total = list_changes(session, video_id=video_id, batch_id=batch_id, result=result, page=page, page_size=page_size)
+    pairs, rb, total = list_changes(session, video_id=video_id, batch_id=batch_id, result=result, page=page, page_size=page_size, date_from=date_from, date_to=date_to)
     return {"items": [change_dict(c, t, rb[c.id]) for c, t in pairs], "total": total, "page": page, "page_size": page_size}
 
 

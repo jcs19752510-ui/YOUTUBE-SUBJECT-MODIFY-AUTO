@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { dashboard } from '../test/fixtures';
 import { connectedClient, json, renderWithApp, route } from '../test/utils';
@@ -18,6 +19,7 @@ describe('빈 영상 목록 안내 (DEF-LIVE-006 후속)', () => {
       ),
     ]);
     renderWithApp(<VideosPage />, c.client, '/videos');
+    await userEvent.setup().click(await screen.findByRole('button', { name: '전체 기간' })); // 기본 기간(오늘) 해제
     expect(await screen.findByText(/내 채널 영상 목록을 불러오세요/)).toBeInTheDocument();
     expect(screen.queryByText(/데모 영상 불러오기/)).toBeNull();
   });
@@ -27,6 +29,7 @@ describe('빈 영상 목록 안내 (DEF-LIVE-006 후속)', () => {
       route('GET', '/api/v1/dashboard', () => json(200, dashboard({ counts: noVideos }))),
     ]);
     renderWithApp(<VideosPage />, c.client, '/videos');
+    await userEvent.setup().click(await screen.findByRole('button', { name: '전체 기간' })); // 기본 기간(오늘) 해제
     expect(await screen.findByText(/데모 영상 불러오기/)).toBeInTheDocument();
   });
 });

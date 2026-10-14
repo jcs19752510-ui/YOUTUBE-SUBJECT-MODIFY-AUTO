@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import JSONResponse
@@ -33,8 +33,8 @@ def post_batch(
 
 
 @router.get("", response_model=Page[BatchOut])
-def get_batches(page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200), session: Session = Depends(get_session), _=Depends(require_session)):
-    rows, total = list_batches(session, page=page, page_size=page_size)
+def get_batches(page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200), date_from: date | None = None, date_to: date | None = None, session: Session = Depends(get_session), _=Depends(require_session)):
+    rows, total = list_batches(session, page=page, page_size=page_size, date_from=date_from, date_to=date_to)
     return {"items": [batch_dict(session, b, with_items=False) for b in rows], "total": total, "page": page, "page_size": page_size}
 
 

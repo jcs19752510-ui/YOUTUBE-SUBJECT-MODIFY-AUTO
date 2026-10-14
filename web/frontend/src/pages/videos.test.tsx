@@ -126,6 +126,8 @@ describe('영상 목록', () => {
       ),
     ]);
     renderWithApp(<VideosPage />, client, '/videos');
+    // 조회 기간 기본값이 오늘이므로 영상 자체가 없는지 보려면 [전체 기간]을 눌러야 한다(의도적 설정)
+    await userEvent.setup().click(await screen.findByRole('button', { name: '전체 기간' }));
     expect(await screen.findByText('아직 영상이 없습니다')).toBeInTheDocument();
     expect(screen.getByText(/데모 영상 불러오기/)).toBeInTheDocument();
   });

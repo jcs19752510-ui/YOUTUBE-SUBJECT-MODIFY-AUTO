@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -23,7 +23,12 @@ const routes = (
 );
 const vid = (n: number) => `vid${String(n).padStart(8, '0')}`;
 const sg = (id: number, over: Partial<Suggestion> = {}) =>
-  suggestion(id, { video_id: vid(id), title: `새 제목 ${id}`, ...over });
+  suggestion(id, {
+    video_id: vid(id),
+    title: `새 제목 ${id}`,
+    created_at: new Date().toISOString(), // 조회 기간 기본값이 오늘이라 오늘 만든 제안으로 둔다
+    ...over,
+  });
 const page = (items: unknown[]) =>
   json(200, { items, total: items.length, page: 1, page_size: 50 });
 const lists = (cand: Suggestion[], exp: Suggestion[] = []): Handler[] => [
@@ -573,32 +578,64 @@ describe('차단 제안도 목록에 이유와 함께 보인다(선생님 결정
   });
 });
 
-describe('요청 날짜 조회·요청 시각 표시(2026-10-14)', () => {
+describe('조회 기간(날짜 from~to)·요청 시각 표시(2026-10-14)', () => {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  const dateBox = (name: string) =>
+    screen.getByLabelText(name, { selector: 'input' }) as HTMLInputElement;
+  const setDate = (el: HTMLInputElement, v: string) =>
+    fireEvent.change(el, { target: { value: v } });
+  const today = () => dateBox('조회 시작일').value;
   it('TC-FE-BA-033 요청 시각이 한국 시간 24시 기준 년-월-일 시:분:초로 보인다', async () => {
-    await setup([...lists([sg(1, { created_at: '2026-10-10T14:05:09Z' })])]);
+    const { user } = await setup([...lists([sg(1, { created_at: '2026-10-10T14:05:09Z' })])]);
+    await screen.findByText('데이터를 불러오는 중', { exact: false }).catch(() => undefined);
+    await user.click(await screen.findByRole('button', { name: '전체 기간' }));
     await screen.findByText('새 제목 1', { selector: 'td' });
     expect(screen.getByRole('columnheader', { name: '요청 시각' })).toBeInTheDocument();
     expect(screen.getByText('2026-10-10 23:05:09')).toBeInTheDocument();
   });
-  it('TC-FE-BA-034 요청 날짜 "오늘"로 오늘 만든 제안만 남고 "전체"로 되돌린다', async () => {
+  it('TC-FE-BA-034 달력 2개의 기본값은 모두 오늘이고 오늘 만든 제안만 보이며 [전체 기간]으로 모두 본다', async () => {
     const { user } = await setup([
       ...lists([sg(1, { created_at: daysAgo(0) }), sg(2, { created_at: daysAgo(3) })]),
     ]);
-    await screen.findByText('새 제목 2', { selector: 'td' });
-    const sel = screen.getByRole('combobox', { name: '요청 날짜' });
-    await user.selectOptions(sel, 'today');
-    expect(screen.getByText('새 제목 1', { selector: 'td' })).toBeInTheDocument();
-    expect(screen.queryByText('새 제목 2', { selector: 'td' })).toBeNull();
-    await user.selectOptions(sel, 'week');
-    expect(screen.getByText('새 제목 2', { selector: 'td' })).toBeInTheDocument();
-    await user.selectOptions(sel, '');
-    expect(screen.getByText('새 제목 1', { selector: 'td' })).toBeInTheDocument();
-  });
-  it('TC-FE-BA-035 "어제"에는 오늘 제안이 없고 맞는 제안이 없으면 안내 글이 나온다', async () => {
-    const { user } = await setup([...lists([sg(1, { created_at: daysAgo(0) })])]);
     await screen.findByText('새 제목 1', { selector: 'td' });
-    await user.selectOptions(screen.getByRole('combobox', { name: '요청 날짜' }), 'yesterday');
+    expect(dateBox('조회 시작일').value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(dateBox('조회 종료일').value).toBe(today());
+    expect(screen.queryByText('새 제목 2', { selector: 'td' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '전체 기간' }));
+    expect(screen.getByText('새 제목 2', { selector: 'td' })).toBeInTheDocument();
+    expect(dateBox('조회 시작일').value).toBe('');
+    await user.click(screen.getByRole('button', { name: '오늘' }));
+    expect(screen.queryByText('새 제목 2', { selector: 'td' })).toBeNull();
+  });
+  it('TC-FE-BA-035 시작일~종료일을 바꾸면 그 기간(양 끝 포함)의 제안만 보인다', async () => {
+    await setup([
+      ...lists([
+        sg(1, { created_at: '2026-01-01T03:00:00Z' }),
+        sg(2, { created_at: '2026-06-15T03:00:00Z' }),
+        sg(3, { created_at: '2026-10-14T14:59:59Z' }), // KST 10-14 23:59:59
+        sg(4, { created_at: '2026-10-14T15:00:00Z' }), // KST 10-15 00:00:00
+      ]),
+    ]);
+    await screen.findByRole('group', { name: '조회 기간' });
+    setDate(dateBox('조회 시작일'), '2026-01-01');
+    setDate(dateBox('조회 종료일'), '2026-10-14');
+    expect(await screen.findByText('새 제목 1', { selector: 'td' })).toBeInTheDocument();
+    expect(screen.getByText('새 제목 2', { selector: 'td' })).toBeInTheDocument();
+    expect(screen.getByText('새 제목 3', { selector: 'td' })).toBeInTheDocument();
+    expect(screen.queryByText('새 제목 4', { selector: 'td' })).toBeNull();
+    setDate(dateBox('조회 시작일'), '2026-06-01');
+    setDate(dateBox('조회 종료일'), '2026-06-30');
+    expect(screen.queryByText('새 제목 1', { selector: 'td' })).toBeNull();
+    expect(screen.getByText('새 제목 2', { selector: 'td' })).toBeInTheDocument();
+  });
+  it('TC-FE-BA-036 시작일이 종료일보다 뒤면 오류 글이 나오고 목록이 비며, 맞는 제안이 없으면 안내가 나온다', async () => {
+    await setup([...lists([sg(1, { created_at: daysAgo(0) })])]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    setDate(dateBox('조회 종료일'), '2020-01-01');
+    setDate(dateBox('조회 시작일'), '2026-12-31');
+    expect(await screen.findByText(/시작일이 종료일보다 뒤입니다/)).toBeInTheDocument();
+    expect(screen.queryByText('새 제목 1', { selector: 'td' })).toBeNull();
+    setDate(dateBox('조회 시작일'), '2019-01-01');
     expect(screen.getByText(/조건에 맞는 제안이 없습니다/)).toBeInTheDocument();
   });
 });

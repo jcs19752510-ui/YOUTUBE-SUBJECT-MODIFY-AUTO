@@ -16,6 +16,7 @@ import {
   TableWrap,
   useToast,
 } from '../components';
+import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
 import { useApproverName } from '../hooks/approver';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
@@ -116,18 +117,22 @@ export function HistoryPage() {
   const [videoInput, setVideoInput] = useState('');
   const [videoId, setVideoId] = useState('');
   const [target, setTarget] = useState<Change | null>(null);
+  const range = useDateRange(); // 기본값 오늘(한국 시간), 기준 = 처리 시각
   const q = useQuery({
-    queryKey: ['changes', { page, result, videoId }],
+    queryKey: ['changes', { page, result, videoId, range: range.query }],
+    enabled: range.valid,
     queryFn: () =>
       api.changes({
         page,
         page_size: 50,
         result: result || undefined,
         video_id: videoId || undefined,
+        ...range.query,
       }),
     placeholderData: (p) => p,
   });
   const filtered = Boolean(result || videoId);
+  const dateOnly = !filtered && !range.isAll; // 다른 조건 없이 기간만 걸려 있음
   return (
     <>
       <PageHead title={ko.history.title} subtitle={ko.history.subtitle} />
@@ -172,16 +177,21 @@ export function HistoryPage() {
           {ko.videos.searchButton}
         </Button>
       </form>
-      {q.isPending ? (
+      <DateRangeFilter range={range} basis="처리 시각 기준" onChange={() => setPage(1)} />
+      {!range.valid ? (
+        <p className="field__error" role="alert">
+          {ko.dateRange.invalid}
+        </p>
+      ) : q.isPending ? (
         <Skeleton lines={6} />
       ) : q.isError ? (
         <ErrorPanel error={q.error} onRetry={() => void q.refetch()} />
       ) : q.data.items.length === 0 ? (
         <EmptyState
-          title={filtered ? ko.videos.emptyTitle : ko.history.emptyTitle}
+          title={filtered || dateOnly ? ko.videos.emptyTitle : ko.history.emptyTitle}
           action={<Link to="/batches">{ko.nav.batches}</Link>}
         >
-          {filtered ? ko.videos.emptyBody : ko.history.emptyBody}
+          {dateOnly ? ko.dateRange.none : filtered ? ko.videos.emptyBody : ko.history.emptyBody}
         </EmptyState>
       ) : (
         <>

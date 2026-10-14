@@ -9,7 +9,7 @@ import { connectedClient, json, renderWithApp, route } from '../test/utils';
 import { BulkApprovePage } from './BulkApprovePage';
 
 const sg = (id: number, vid: string, title: string, v: 'pass' | 'warn' = 'pass'): Suggestion =>
-  suggestion(id, { video_id: vid, title, validation_result: v });
+  suggestion(id, { video_id: vid, title, validation_result: v, created_at: new Date().toISOString() });
 const items = [
   sg(1, 'AAAAAAAAAA1', '청소 설정 제목'),
   sg(2, 'BBBBBBBBBB2', '지원금 조회 제목'),

@@ -178,6 +178,8 @@ describe('이력·롤백', () => {
   it('TC-WF-063 변경 이력이 없으면 다음 행동을 안내한다', async () => {
     const { client } = await connectedClient([list([])]);
     renderWithApp(<HistoryPage />, client);
+    // 조회 기간 기본값이 오늘이라 먼저 [전체 기간]으로 둔다(기간 안내 문구는 history.daterange.test.tsx 에서 검증)
+    await userEvent.setup().click(await screen.findByRole('button', { name: '전체 기간' }));
     expect(await screen.findByText('아직 변경 이력이 없습니다')).toBeInTheDocument();
     expect(screen.getByText('배치를 실행하면 여기에 기록됩니다.')).toBeInTheDocument();
   });

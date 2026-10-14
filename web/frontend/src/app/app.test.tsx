@@ -133,6 +133,8 @@ describe('시작·세션 화면', () => {
     await user.type(within(dlg).getByLabelText('PIN'), '1234');
     await user.click(within(dlg).getByRole('button', { name: '확인' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    // 조회 기간 기본값이 오늘이라 비어 있는 첫 사용 안내는 전체 기간에서 보인다(2026-10-14)
+    await user.click(await screen.findByRole('button', { name: '전체 기간' }));
     expect(await screen.findByText('아직 변경 이력이 없습니다')).toBeInTheDocument();
   });
 

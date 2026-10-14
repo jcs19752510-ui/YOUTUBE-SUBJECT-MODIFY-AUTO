@@ -19,7 +19,7 @@ import {
 } from '../src/test/utils';
 
 const mk = (id: number, v: string, t: string, over: Partial<Suggestion> = {}) =>
-  suggestion(id, { video_id: v, title: t, ...over });
+  suggestion(id, { video_id: v, title: t, created_at: new Date().toISOString(), ...over });
 const page = (items: unknown[]) =>
   json(200, { items, total: items.length, page: 1, page_size: 50 });
 

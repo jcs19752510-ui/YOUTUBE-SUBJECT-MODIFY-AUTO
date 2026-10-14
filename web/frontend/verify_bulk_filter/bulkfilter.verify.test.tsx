@@ -19,7 +19,7 @@ import {
 
 const vid = (n: number) => `vid${String(n).padStart(8, '0')}`;
 const sg = (id: number, over: Partial<Suggestion> = {}) =>
-  suggestion(id, { video_id: vid(id), title: `새 제목 ${id}`, ...over });
+  suggestion(id, { video_id: vid(id), title: `새 제목 ${id}`, created_at: new Date().toISOString(), ...over });
 const page = (items: unknown[]) =>
   json(200, { items, total: items.length, page: 1, page_size: 50 });
 const rv = (n: number, over: Partial<ResolvedVideo> = {}): ResolvedVideo => ({
@@ -80,7 +80,7 @@ async function setup(handlers: Handler[], mode?: 'demo' | 'live') {
 }
 void baseHandlersOld;
 const mk = (id: number, v: string, t: string, over: Partial<Suggestion> = {}) =>
-  suggestion(id, { video_id: v, title: t, ...over });
+  suggestion(id, { video_id: v, title: t, created_at: new Date().toISOString(), ...over });
 const S = {
   a: mk(1, 'AAAAAAAAAA1', '청소 설정 제목'),
   b: mk(2, 'BBBBBBBBBB2', '지원금 조회 제목'),

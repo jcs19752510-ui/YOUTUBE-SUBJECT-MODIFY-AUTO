@@ -403,3 +403,6 @@ CSRF 필요. 읽기·쓰기 토큰 파일을 모두 지운다. 200 `{connected:f
 | 2026-10-11 | v0.3 | 11단계 대조 1차: 머리말(모드·근거·34개 동작), 대시보드 `mode`/`live_enabled` 설명, `videos/sync` 실제 읽기, 실행 확인 문구(`실제 실행 N건`), 건너뜀 코드 `live_not_allowed`·`live_mode_changed`, 롤백 오류 `live_mode_mismatch`·`live_not_allowed`·`live_changed_since_apply`, 감사 action 목록, 설정 `read_only` 설명 | 실제 코드·화면 문구와의 한 줄씩 대조 |
 | 2026-10-11 | v0.2 | 수정 단위 W-FIX-BE 반영: 초안 취소 계약·`blocked[].batch_id`·`precheck.notice`·리포트 `notes` 면책 첫 줄·세션 유휴 만료·`session_required` 명시·ID 상한 422·`count_invalid` 정정·복구 감사(`change.apply` recovered) | DEC-046, DEF-7-009·7B-001·7B-002·9-001·9-003·9-004·9-007·7-003~005 |
 | 2026-10-13 | v0.4 | 8-1절 일괄 승인(EVT-W36·W37) 추가, `openapi.json` 재생성 | 일괄 승인 기능(N건) 구현 |
+
+### 조회 기간 쿼리 (2026-10-14, 변경 이력 v0.5)
+`GET /api/v1/videos`·`/batches`·`/changes`·`/reports/changes`·`/reports/export.csv` 는 `date_from`, `date_to`(YYYY-MM-DD, 한국 시간, 양 끝 포함, 둘 다 선택)를 받는다. 기준 시각: 영상=최근 변경, 배치=만든 시각, 이력=처리 시각(applied_at, 없으면 created_at), 리포트=제목 변경(apply 성공) 시각. 시작일>종료일이면 422 `date_range_invalid`. 미지정이면 제한 없음. 화면 기본값은 오늘. (`video_id` 를 지정한 리포트 조회는 기간 제한 없음.) 일괄 승인 화면은 서버가 아니라 화면에서 제안 생성 시각으로 거른다.

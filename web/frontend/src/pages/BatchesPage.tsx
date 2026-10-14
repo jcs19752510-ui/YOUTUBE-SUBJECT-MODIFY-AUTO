@@ -17,6 +17,7 @@ import {
   TableWrap,
   ValidationBadge,
 } from '../components';
+import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
 import { fmtDateTime } from '../lib/format';
@@ -33,14 +34,16 @@ export function BatchesPage() {
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [note, setNote] = useState('');
   const [page, setPage] = useState(1);
+  const range = useDateRange(); // 기본값 오늘(한국 시간), 기준 = 배치 만든 시각
 
   const approved = useQuery({
     queryKey: ['suggestions', 'approved'],
     queryFn: () => api.suggestions({ status: 'approved', page_size: 200 }),
   });
   const list = useQuery({
-    queryKey: ['batches', page],
-    queryFn: () => api.batches({ page, page_size: 20 }),
+    queryKey: ['batches', page, range.query],
+    enabled: range.valid,
+    queryFn: () => api.batches({ page, page_size: 20, ...range.query }),
     refetchInterval: (q) =>
       q.state.data?.items.some((b) => isBatchActive(b.status)) ? 2000 : false,
   });
@@ -95,7 +98,9 @@ export function BatchesPage() {
     });
   const selectable = items.filter((s) => !inDraft.has(s.id));
   const allPicked = selectable.length > 0 && selectable.every((s) => picked.has(s.id));
-  const activeBatch = list.data?.items.find((b) => isBatchActive(b.status));
+  const activeBatch =
+    list.data?.items.find((b) => isBatchActive(b.status)) ??
+    draftList.data?.items.find((b) => isBatchActive(b.status));
 
   return (
     <>
@@ -226,10 +231,16 @@ export function BatchesPage() {
 
         <section aria-labelledby="past-title" className="stack">
           <h2 id="past-title">{ko.batches.listTitle}</h2>
+          <DateRangeFilter range={range} basis="만든 시각 기준" onChange={() => setPage(1)} />
+          {!range.valid && (
+            <p className="field__error" role="alert">
+              {ko.dateRange.invalid}
+            </p>
+          )}
           <QueryView query={list} lines={3}>
             {(d) =>
               d.items.length === 0 ? (
-                <p className="muted">{ko.batches.listEmpty}</p>
+                <p className="muted">{range.isAll ? ko.batches.listEmpty : ko.dateRange.none}</p>
               ) : (
                 <>
                   <TableWrap label={ko.batches.listTableLabel}>

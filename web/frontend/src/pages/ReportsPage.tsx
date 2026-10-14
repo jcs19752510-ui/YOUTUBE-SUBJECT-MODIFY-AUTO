@@ -7,12 +7,14 @@ import {
   Button,
   Callout,
   Card,
+  DateRangeFilter,
   EmptyState,
   ErrorPanel,
   Field,
   PageHead,
   QueryView,
   TableWrap,
+  useDateRange,
   useToast,
 } from '../components';
 import { ko } from '../i18n/ko';
@@ -122,13 +124,16 @@ export function ReportsPage() {
   const toast = useToast();
   const [input, setInput] = useState('');
   const [videoId, setVideoId] = useState('');
+  const range = useDateRange();
   const q = useQuery({
-    queryKey: ['reports', videoId],
-    queryFn: () => api.reports(videoId || undefined),
+    queryKey: ['reports', videoId, range.from, range.to],
+    queryFn: () => api.reports(videoId || undefined, range.query),
+    enabled: range.valid,
   });
   const exp = useMutation({
     mutationFn: async () => {
-      const blob = await api.reportCsv();
+      if (!range.valid) throw new Error(ko.dateRange.invalid);
+      const blob = await api.reportCsv(range.query);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -146,13 +151,15 @@ export function ReportsPage() {
         title={ko.reports.title}
         subtitle={ko.reports.subtitle}
         actions={
-          <Button busy={exp.isPending} onClick={() => exp.mutate()}>
+          <Button busy={exp.isPending} disabled={!range.valid} onClick={() => exp.mutate()}>
             {exp.isPending ? ko.reports.exporting : ko.reports.export}
           </Button>
         }
       />
       {exp.isError && <ErrorPanel error={exp.error} />}
-      <QueryView query={q} lines={6}>
+      <DateRangeFilter range={range} basis="제목 변경 시각 기준" />
+      {!range.valid && <Callout tone="danger" title={ko.dateRange.groupLabel}>{ko.dateRange.invalid}</Callout>}
+      {range.valid && <QueryView query={q} lines={6}>
         {(d) => (
           <div className="stack">
             <Callout tone="warning" title={ko.reports.notesTitle}>
@@ -179,13 +186,15 @@ export function ReportsPage() {
               </Button>
             </form>
             {d.items.length === 0 ? (
-              <EmptyState title={ko.reports.emptyTitle}>{ko.reports.emptyBody}</EmptyState>
+              <EmptyState title={ko.reports.emptyTitle}>
+                {range.isAll || videoId ? ko.reports.emptyBody : ko.dateRange.none}
+              </EmptyState>
             ) : (
               d.items.map((r) => <ReportCard key={r.video_id} r={r} />)
             )}
           </div>
         )}
-      </QueryView>
+      </QueryView>}
     </>
   );
 }
