@@ -17,6 +17,8 @@ import {
   TableWrap,
   ValidationBadge,
 } from '../components';
+import { KindSelect } from '../components/KindFilter';
+import type { VideoKind } from '../api/types';
 import { DateRangeFilter, useDateRange } from '../components/DateRangeFilter';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
@@ -34,6 +36,7 @@ export function BatchesPage() {
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [note, setNote] = useState('');
   const [page, setPage] = useState(1);
+  const [kind, setKind] = useState<'' | VideoKind>('');
   const range = useDateRange(); // 기본값 오늘(한국 시간), 기준 = 배치 만든 시각
 
   const approved = useQuery({
@@ -41,9 +44,9 @@ export function BatchesPage() {
     queryFn: () => api.suggestions({ status: 'approved', page_size: 200 }),
   });
   const list = useQuery({
-    queryKey: ['batches', page, range.query],
+    queryKey: ['batches', page, range.query, kind],
     enabled: range.valid,
-    queryFn: () => api.batches({ page, page_size: 20, ...range.query }),
+    queryFn: () => api.batches({ page, page_size: 20, ...range.query, ...(kind ? { kind } : {}) }),
     refetchInterval: (q) =>
       q.state.data?.items.some((b) => isBatchActive(b.status)) ? 2000 : false,
   });
@@ -232,6 +235,13 @@ export function BatchesPage() {
         <section aria-labelledby="past-title" className="stack">
           <h2 id="past-title">{ko.batches.listTitle}</h2>
           <DateRangeFilter range={range} basis="만든 시각 기준" onChange={() => setPage(1)} />
+          <KindSelect
+            value={kind}
+            onChange={(v) => {
+              setKind(v);
+              setPage(1);
+            }}
+          />
           {!range.valid && (
             <p className="field__error" role="alert">
               {ko.dateRange.invalid}
@@ -240,7 +250,7 @@ export function BatchesPage() {
           <QueryView query={list} lines={3}>
             {(d) =>
               d.items.length === 0 ? (
-                <p className="muted">{range.isAll ? ko.batches.listEmpty : ko.dateRange.none}</p>
+                <p className="muted">{range.isAll && !kind ? ko.batches.listEmpty : ko.dateRange.none}</p>
               ) : (
                 <>
                   <TableWrap label={ko.batches.listTableLabel}>
@@ -250,6 +260,7 @@ export function BatchesPage() {
                           <th scope="col">{ko.batches.colId}</th>
                           <th scope="col">{ko.batches.colCreated}</th>
                           <th scope="col">{ko.batches.colBatchStatus}</th>
+                          <th scope="col">{ko.kind.col}</th>
                           <th scope="col" className="num">
                             {ko.batches.colCount}
                           </th>
@@ -275,6 +286,14 @@ export function BatchesPage() {
                               >
                                 {batchStatusText(b)}
                               </Badge>
+                            </td>
+                            <td className="nowrap">
+                              {b.kind_counts
+                                ? ko.kind.counts(b.kind_counts.long, b.kind_counts.short) +
+                                  (b.kind_counts.unknown > 0
+                                    ? ` · 불명 ${b.kind_counts.unknown}`
+                                    : '')
+                                : '-'}
                             </td>
                             <td className="num">
                               {b.items.length || Object.values(b.counts).reduce((a, c) => a + c, 0)}

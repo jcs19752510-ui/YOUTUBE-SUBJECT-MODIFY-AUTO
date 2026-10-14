@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../api/context';
-import type { Change } from '../api/types';
+import type { Change, VideoKind } from '../api/types';
 import {
   Badge,
   Button,
   EmptyState,
   ErrorPanel,
   Field,
+  KindBadge,
+  KindSelect,
   Modal,
   PageHead,
   Pagination,
@@ -114,12 +116,13 @@ export function HistoryPage() {
   const api = useApi();
   const [page, setPage] = useState(1);
   const [result, setResult] = useState('');
+  const [kind, setKind] = useState<'' | VideoKind>('');
   const [videoInput, setVideoInput] = useState('');
   const [videoId, setVideoId] = useState('');
   const [target, setTarget] = useState<Change | null>(null);
   const range = useDateRange(); // 기본값 오늘(한국 시간), 기준 = 처리 시각
   const q = useQuery({
-    queryKey: ['changes', { page, result, videoId, range: range.query }],
+    queryKey: ['changes', { page, result, videoId, kind, range: range.query }],
     enabled: range.valid,
     queryFn: () =>
       api.changes({
@@ -127,11 +130,12 @@ export function HistoryPage() {
         page_size: 50,
         result: result || undefined,
         video_id: videoId || undefined,
+        kind: kind || undefined,
         ...range.query,
       }),
     placeholderData: (p) => p,
   });
-  const filtered = Boolean(result || videoId);
+  const filtered = Boolean(result || videoId || kind);
   const dateOnly = !filtered && !range.isAll; // 다른 조건 없이 기간만 걸려 있음
   return (
     <>
@@ -173,6 +177,13 @@ export function HistoryPage() {
             ))}
           </select>
         </Field>
+        <KindSelect
+          value={kind}
+          onChange={(v) => {
+            setKind(v);
+            setPage(1);
+          }}
+        />
         <Button type="submit" variant="primary">
           {ko.videos.searchButton}
         </Button>
@@ -201,6 +212,7 @@ export function HistoryPage() {
                 <tr>
                   <th scope="col">{ko.history.colTime}</th>
                   <th scope="col">{ko.history.colVideo}</th>
+                  <th scope="col">{ko.kind.label}</th>
                   <th scope="col">{ko.history.colType}</th>
                   <th scope="col">{ko.history.colChange}</th>
                   <th scope="col">{ko.history.colResult}</th>
@@ -215,6 +227,9 @@ export function HistoryPage() {
                     <td className="cell-title">
                       <Link to={`/videos/${encodeURIComponent(c.video_id)}`}>{c.video_title}</Link>
                       <div className="muted mono">{c.video_id}</div>
+                    </td>
+                    <td>
+                      <KindBadge kind={c.video_kind} />
                     </td>
                     <td>
                       {changeTypeLabel(c.change_type)}

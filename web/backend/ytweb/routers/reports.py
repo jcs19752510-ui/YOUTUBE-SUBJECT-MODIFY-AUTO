@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
@@ -15,11 +16,11 @@ router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
 
 @router.get("/changes", response_model=ReportsOut)
-def report_changes(video_id: str | None = Query(default=None, pattern=VIDEO_ID_PATTERN), date_from: date | None = None, date_to: date | None = None, session: Session = Depends(get_session), env: Env = Depends(get_env), _=Depends(require_session)):
-    return build_reports(session, env, video_id, date_from, date_to)
+def report_changes(video_id: str | None = Query(default=None, pattern=VIDEO_ID_PATTERN), date_from: date | None = None, date_to: date | None = None, kind: Literal["long", "short"] | None = None, session: Session = Depends(get_session), env: Env = Depends(get_env), _=Depends(require_session)):
+    return build_reports(session, env, video_id, date_from, date_to, kind)
 
 
 @router.get("/export.csv")
-def report_csv(video_id: str | None = Query(default=None, pattern=VIDEO_ID_PATTERN), date_from: date | None = None, date_to: date | None = None, session: Session = Depends(get_session), env: Env = Depends(get_env), _=Depends(require_session)):
-    return Response(export_csv(session, env, video_id, date_from, date_to).encode("utf-8"), media_type="text/csv; charset=utf-8",
+def report_csv(video_id: str | None = Query(default=None, pattern=VIDEO_ID_PATTERN), date_from: date | None = None, date_to: date | None = None, kind: Literal["long", "short"] | None = None, session: Session = Depends(get_session), env: Env = Depends(get_env), _=Depends(require_session)):
+    return Response(export_csv(session, env, video_id, date_from, date_to, kind).encode("utf-8"), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": 'attachment; filename="youtube-title-report.csv"', "Cache-Control": "no-store"})

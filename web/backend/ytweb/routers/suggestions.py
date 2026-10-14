@@ -16,7 +16,7 @@ from ytweb.db.models import Video
 from ytweb.domain.common import VIDEO_ID_PATTERN, Env
 from ytweb.domain.deps import get_env, idempotent
 from ytweb.domain.schemas import MAX_ID, MAX_PAGE, ApproveBatchIn, ApproveIn, ResolveVideosIn, GenerateIn, JobOut, Page, SuggestionOut, TitleEditIn
-from ytweb.domain.serialize import job_dict, suggestion_dict
+from ytweb.domain.serialize import job_dict, suggestion_dict, suggestion_kinds
 from ytweb.domain.suggestions import approve, approve_batch, edit_title, list_suggestions, reject, resolve_videos
 
 router = APIRouter(prefix="/api/v1/suggestions", tags=["suggestions"])
@@ -44,7 +44,8 @@ def get_suggestions(
     session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), _=Depends(require_session),
 ):
     rows, total = list_suggestions(session, video_id=video_id, status=status, result=result, page=page, page_size=page_size, now=clock())
-    return {"items": [suggestion_dict(s) for s in rows], "total": total, "page": page, "page_size": page_size}
+    kinds = suggestion_kinds(session, rows)
+    return {"items": [suggestion_dict(s, kinds) for s in rows], "total": total, "page": page, "page_size": page_size}
 
 
 @router.post("/resolve-videos")

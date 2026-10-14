@@ -6,12 +6,23 @@ from sqlalchemy.orm import Session
 from youtube_title.textsafe import char_count
 
 from ytweb.domain.batches import describe_verify
+from ytweb.domain.kinds import video_kind
 from ytweb.db.models import Batch, BatchItem, Change, Job, Suggestion, Video
 
 
-def suggestion_dict(s: Suggestion) -> dict:
+def suggestion_kinds(session: Session, suggestions) -> dict[str, str | None]:
+    """제안들의 영상 구분(롱폼/쇼츠)을 영상 테이블 한 번의 조회로 구한다(영상 ID → 구분)."""
+    ids = {s.video_id for s in suggestions}
+    if not ids:
+        return {}
+    rows = session.execute(select(Video.video_id, Video.is_short, Video.duration_sec).where(Video.video_id.in_(ids))).all()
+    return {vid: video_kind(sh, dur) for vid, sh, dur in rows}
+
+
+def suggestion_dict(s: Suggestion, kinds: dict[str, str | None] | None = None) -> dict:
     ap = s.approval
     return {
+        "video_kind": (kinds or {}).get(s.video_id),
         "id": s.id,
         "video_id": s.video_id,
         "title": s.title,
@@ -30,11 +41,12 @@ def suggestion_dict(s: Suggestion) -> dict:
     }
 
 
-def change_dict(c: Change, video_title: str | None, rollbackable: bool) -> dict:
+def change_dict(c: Change, video_title: str | None, rollbackable: bool, video_kind: str | None = None) -> dict:
     return {
         "id": c.id,
         "video_id": c.video_id,
         "video_title": video_title,
+        "video_kind": video_kind,
         "change_type": c.change_type,
         "previous_title": c.previous_title,
         "new_title": c.new_title,
@@ -75,6 +87,7 @@ def _item_dicts(session: Session, items: list[BatchItem]) -> list[dict]:
             "id": it.id,
             "suggestion_id": it.suggestion_id,
             "video_id": it.video_id,
+            "video_kind": video_kind(video.is_short, video.duration_sec) if video else None,
             "video_title": video.title if video else None,
             "previous_title": change.previous_title if change else (video.title if video else ""),
             "new_title": change.new_title if change else (sug.title if sug else ""),
@@ -88,7 +101,18 @@ def _item_dicts(session: Session, items: list[BatchItem]) -> list[dict]:
     return out
 
 
-def batch_dict(session: Session, b: Batch, *, with_items: bool = True) -> dict:
+def kind_counts_for(session: Session, batches: list[Batch]) -> dict[int, dict[str, int]]:
+    """배치별 롱폼/쇼츠/불명 개수. 영상 정보는 전체 배치를 한 번에 조회한다(N+1 방지)."""
+    out = {b.id: {"long": 0, "short": 0, "unknown": 0} for b in batches}
+    if not batches:
+        return out
+    rows = session.execute(select(BatchItem.batch_id, Video.is_short, Video.duration_sec).select_from(BatchItem).outerjoin(Video, Video.video_id == BatchItem.video_id).where(BatchItem.batch_id.in_(list(out)))).all()
+    for bid, is_short, dur in rows:
+        out[bid][video_kind(is_short, dur) or "unknown"] += 1
+    return out
+
+
+def batch_dict(session: Session, b: Batch, *, with_items: bool = True, kind_counts: dict[str, int] | None = None) -> dict:
     counts = {k: 0 for k in ("pending", "running", "success", "failed", "skipped", "cancelled")}
     for it in b.items:
         counts[it.status] += 1
@@ -99,6 +123,7 @@ def batch_dict(session: Session, b: Batch, *, with_items: bool = True) -> dict:
         "created_at": b.created_at,
         "executed_at": b.executed_at,
         "counts": counts,
+        "kind_counts": kind_counts if kind_counts is not None else kind_counts_for(session, [b])[b.id],
         "items": _item_dicts(session, list(b.items)) if with_items else [],
         "precheck": b.precheck if with_items else None,  # 생성 시 저장한 사전 점검(새로고침 후 복구용)
     }

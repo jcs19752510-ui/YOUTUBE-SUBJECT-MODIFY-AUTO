@@ -716,7 +716,7 @@ export const ko = {
     resultAll: '전체',
     colTime: '시각',
     colVideo: '영상',
-    colType: '구분',
+    colType: '변경 종류',
     colChange: '제목 변경',
     colResult: '결과',
     colMode: '모드',

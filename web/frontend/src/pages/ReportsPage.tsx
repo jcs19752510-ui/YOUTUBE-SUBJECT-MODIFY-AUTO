@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useApi } from '../api/context';
-import type { VideoReport } from '../api/types';
+import type { VideoKind, VideoReport } from '../api/types';
 import {
   Badge,
   Button,
@@ -11,6 +11,8 @@ import {
   EmptyState,
   ErrorPanel,
   Field,
+  KindBadge,
+  KindSelect,
   PageHead,
   QueryView,
   TableWrap,
@@ -28,7 +30,9 @@ function metricFmt(key: string, v: number | null): string {
 function ReportCard({ r }: { r: VideoReport }) {
   return (
     <Card title={r.title ?? r.video_id}>
-      <p className="muted mono">{r.video_id}</p>
+      <p className="muted mono">
+        {r.video_id} <KindBadge kind={r.video_kind} />
+      </p>
       {r.status === 'no_change' && (
         <>
           <Badge icon="–">{ko.reports.noChange}</Badge>
@@ -124,16 +128,17 @@ export function ReportsPage() {
   const toast = useToast();
   const [input, setInput] = useState('');
   const [videoId, setVideoId] = useState('');
+  const [kind, setKind] = useState<'' | VideoKind>('');
   const range = useDateRange();
   const q = useQuery({
-    queryKey: ['reports', videoId, range.from, range.to],
-    queryFn: () => api.reports(videoId || undefined, range.query),
+    queryKey: ['reports', videoId, kind, range.from, range.to],
+    queryFn: () => api.reports(videoId || undefined, { ...range.query, kind: kind || undefined }),
     enabled: range.valid,
   });
   const exp = useMutation({
     mutationFn: async () => {
       if (!range.valid) throw new Error(ko.dateRange.invalid);
-      const blob = await api.reportCsv(range.query);
+      const blob = await api.reportCsv({ ...range.query, kind: kind || undefined });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -157,6 +162,9 @@ export function ReportsPage() {
         }
       />
       {exp.isError && <ErrorPanel error={exp.error} />}
+      <div className="toolbar">
+        <KindSelect value={kind} onChange={setKind} />
+      </div>
       <DateRangeFilter range={range} basis="제목 변경 시각 기준" />
       {!range.valid && <Callout tone="danger" title={ko.dateRange.groupLabel}>{ko.dateRange.invalid}</Callout>}
       {range.valid && <QueryView query={q} lines={6}>
@@ -187,7 +195,7 @@ export function ReportsPage() {
             </form>
             {d.items.length === 0 ? (
               <EmptyState title={ko.reports.emptyTitle}>
-                {range.isAll || videoId ? ko.reports.emptyBody : ko.dateRange.none}
+                {range.isAll || videoId || kind ? ko.reports.emptyBody : ko.dateRange.none}
               </EmptyState>
             ) : (
               d.items.map((r) => <ReportCard key={r.video_id} r={r} />)

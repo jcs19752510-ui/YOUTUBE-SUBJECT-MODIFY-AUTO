@@ -165,7 +165,7 @@ def test_tc_wb_129_create_batch_requires_key_and_replays(api, csrf, data, env, c
     key = str(uuid.uuid4())
     out = _ok(api.post("/api/v1/batches", json={"suggestion_ids": ids, "note": "테스트"}, headers=hdr(csrf, key)), 201)
     assert set(out) == {"batch", "precheck"} and out["precheck"]["confirm_text"] == "실행 3건" and out["batch"]["status"] == "draft" and out["batch"]["counts"]["pending"] == 3
-    assert set(out["batch"]["items"][0]) == {"id", "suggestion_id", "video_id", "video_title", "previous_title", "new_title", "seq", "scheduled_date", "status", "skip_reason", "change_id", "processed_at"}
+    assert set(out["batch"]["items"][0]) == {"id", "suggestion_id", "video_id", "video_kind", "video_title", "previous_title", "new_title", "seq", "scheduled_date", "status", "skip_reason", "change_id", "processed_at"}
     again = _ok(api.post("/api/v1/batches", json={"suggestion_ids": ids, "note": "테스트"}, headers=hdr(csrf, key)), 201)
     assert again == out
     with data() as s:
@@ -217,7 +217,7 @@ def test_tc_wb_132_changes_list_and_rollback_over_http(api, csrf, data, env, clo
     cid, vid, bid = _applied_change(data, env, clock)
     page = _ok(api.get(f"/api/v1/changes?video_id={vid}&batch_id={bid}&result=success"))
     row = page["items"][0]
-    assert set(row) == {"id", "video_id", "video_title", "change_type", "previous_title", "new_title", "result", "mode", "approver", "applied_at", "verified_at", "error_code", "rollbackable", "batch_id"}
+    assert set(row) == {"id", "video_id", "video_title", "video_kind", "change_type", "previous_title", "new_title", "result", "mode", "approver", "applied_at", "verified_at", "error_code", "rollbackable", "batch_id"}
     assert row["rollbackable"] is True and row["mode"] == "demo" and row["video_title"] == row["new_title"]
     key = str(uuid.uuid4())
     _problem(api.post(f"/api/v1/changes/{cid}/rollback", json={"typed_video_id": vid, "approver": "홍길동"}, headers=hdr(csrf)), 400, "idempotency_key_required")

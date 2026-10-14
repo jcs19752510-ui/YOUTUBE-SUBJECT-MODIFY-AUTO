@@ -47,8 +47,15 @@ def rollbackable_map(session: Session, changes: list[Change]) -> dict[int, bool]
     }
 
 
-def list_changes(session: Session, *, video_id: str | None, batch_id: int | None, result: str | None, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None) -> tuple[list[tuple[Change, str | None]], dict[int, bool], int]:
+def list_changes(session: Session, *, video_id: str | None, batch_id: int | None, result: str | None, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None, kind: str | None = None) -> tuple[list[tuple[Change, str | None]], dict[int, bool], int]:
+    pairs, rb, total, _kinds = list_changes_with_kind(session, video_id=video_id, batch_id=batch_id, result=result, page=page, page_size=page_size, date_from=date_from, date_to=date_to, kind=kind)
+    return pairs, rb, total
+
+
+def list_changes_with_kind(session: Session, *, video_id: str | None, batch_id: int | None, result: str | None, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None, kind: str | None = None) -> tuple[list[tuple[Change, str | None]], dict[int, bool], int, dict[int, str | None]]:
+    """list_changes + 변경 id → 영상 구분(롱폼/쇼츠/None). Video 를 이미 조인하므로 추가 조회 없이 구분을 채운다."""
     from ytweb.core.dates import kst_range_utc
+    from ytweb.domain.kinds import kind_clause, video_kind
 
     page, page_size = clamp_page(page, page_size)
     start, end = kst_range_utc(date_from, date_to)   # 처리 시각 = coalesce(applied_at, created_at) 기준
@@ -64,12 +71,15 @@ def list_changes(session: Session, *, video_id: str | None, batch_id: int | None
         conds.append(Change.batch_id == batch_id)
     if result:
         conds.append(Change.result == result)
-    total = int(session.execute(select(func.count()).select_from(Change).where(*conds)).scalar_one())
+    if kind:
+        conds.append(kind_clause(kind))
+    total = int(session.execute(select(func.count()).select_from(Change).join(Video, Video.video_id == Change.video_id).where(*conds)).scalar_one())
     rows = session.execute(
-        select(Change, Video.title).join(Video, Video.video_id == Change.video_id).where(*conds).order_by(Change.id.desc()).offset((page - 1) * page_size).limit(page_size)
+        select(Change, Video.title, Video.is_short, Video.duration_sec).join(Video, Video.video_id == Change.video_id).where(*conds).order_by(Change.id.desc()).offset((page - 1) * page_size).limit(page_size)
     ).all()
-    pairs = [(c, t) for c, t in rows]
-    return pairs, rollbackable_map(session, [c for c, _ in pairs]), total
+    pairs = [(c, t) for c, t, _s, _d in rows]
+    kinds = {c.id: video_kind(s_, d_) for c, _t, s_, d_ in rows}
+    return pairs, rollbackable_map(session, [c for c, _ in pairs]), total, kinds
 
 
 def rollback_change(session: Session, change_id: int, typed_video_id: str, approver: str, *, now: datetime, env: Env, gateway: YouTubeGateway, actor: str = "web") -> Change:

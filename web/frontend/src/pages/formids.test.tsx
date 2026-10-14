@@ -96,7 +96,7 @@ describe('입력칸 id/name', () => {
       route('GET', '/api/v1/settings', () => json(200, settings)),
     ]);
     const h = renderWithApp(<HistoryPage />, client, '/history');
-    await screen.findByRole('combobox');
+    await screen.findAllByRole('combobox'); // 이력 화면에 영상 구분·결과 두 개(2026-10-14)
     expect(audit()).toEqual([]);
     h.unmount();
     const r = renderWithApp(<ReportsPage />, client, '/reports');

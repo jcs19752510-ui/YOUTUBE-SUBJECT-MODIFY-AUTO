@@ -232,7 +232,7 @@ def get_batch(session: Session, batch_id: int, *, lock: bool = False) -> Batch:
     return batch
 
 
-def list_batches(session: Session, *, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None) -> tuple[list[Batch], int]:
+def list_batches(session: Session, *, page: int, page_size: int, date_from: date | None = None, date_to: date | None = None, kind: str | None = None) -> tuple[list[Batch], int]:
     from ytweb.core.dates import kst_range_utc
 
     page, page_size = clamp_page(page, page_size)
@@ -242,6 +242,9 @@ def list_batches(session: Session, *, page: int, page_size: int, date_from: date
         conds.append(Batch.created_at >= start)
     if end is not None:
         conds.append(Batch.created_at < end)
+    if kind in ("long", "short"):   # 그 구분의 영상이 1개 이상 든 배치만(EXISTS 라서 배치가 중복되지 않는다)
+        from ytweb.domain.kinds import kind_clause
+        conds.append(select(BatchItem.id).join(Video, Video.video_id == BatchItem.video_id).where(BatchItem.batch_id == Batch.id, kind_clause(kind)).exists())
     total = int(session.execute(select(func.count()).select_from(Batch).where(*conds)).scalar_one())
     rows = session.execute(select(Batch).where(*conds).order_by(Batch.id.desc()).offset((page - 1) * page_size).limit(page_size)).scalars().all()
     return list(rows), total

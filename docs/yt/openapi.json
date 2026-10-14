@@ -475,6 +475,26 @@
               ],
               "title": "Date To"
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "long",
+                    "short"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
           }
         ],
         "responses": {
@@ -932,6 +952,26 @@
                 }
               ],
               "title": "Date To"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "long",
+                    "short"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
             }
           }
         ],
@@ -1834,6 +1874,26 @@
               ],
               "title": "Date To"
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "long",
+                    "short"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
           }
         ],
         "responses": {
@@ -1947,6 +2007,26 @@
                 }
               ],
               "title": "Date To"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "long",
+                    "short"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
             }
           }
         ],
@@ -3567,6 +3647,21 @@
             "type": "string",
             "title": "Video Id"
           },
+          "video_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "long",
+                  "short"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Kind"
+          },
           "video_title": {
             "anyOf": [
               {
@@ -3674,6 +3769,16 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "kind_counts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KindCounts"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "note": {
             "anyOf": [
@@ -3785,6 +3890,21 @@
           "video_id": {
             "type": "string",
             "title": "Video Id"
+          },
+          "video_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "long",
+                  "short"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Kind"
           },
           "video_title": {
             "anyOf": [
@@ -4163,6 +4283,27 @@
           "result"
         ],
         "title": "JobOut"
+      },
+      "KindCounts": {
+        "properties": {
+          "long": {
+            "type": "integer",
+            "title": "Long",
+            "default": 0
+          },
+          "short": {
+            "type": "integer",
+            "title": "Short",
+            "default": 0
+          },
+          "unknown": {
+            "type": "integer",
+            "title": "Unknown",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "KindCounts"
       },
       "LimitsOut": {
         "properties": {
@@ -4852,6 +4993,21 @@
             "type": "string",
             "title": "Video Id"
           },
+          "video_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "long",
+                  "short"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Kind"
+          },
           "title": {
             "type": "string",
             "title": "Title"
@@ -5175,6 +5331,21 @@
           "video_id": {
             "type": "string",
             "title": "Video Id"
+          },
+          "video_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "long",
+                  "short"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Kind"
           },
           "title": {
             "anyOf": [

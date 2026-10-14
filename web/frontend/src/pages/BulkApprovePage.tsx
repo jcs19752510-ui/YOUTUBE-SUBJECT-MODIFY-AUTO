@@ -2,13 +2,15 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../api/context';
-import type { BulkApproveResult, ResolvedVideo, Suggestion, WorkflowStatus } from '../api/types';
+import type { BulkApproveResult, ResolvedVideo, Suggestion, VideoKind, WorkflowStatus } from '../api/types';
 import {
   Button,
   Badge,
   Callout,
   Card,
   DateRangeFilter,
+  KindBadge,
+  KindSelect,
   EmptyState,
   ErrorPanel,
   Field,
@@ -73,6 +75,7 @@ export function BulkApprovePage() {
   const keys = useIdempotency();
   const [filterText, setFilterText] = useState('');
   const [verdict, setVerdict] = useState('');
+  const [kind, setKind] = useState<'' | VideoKind>('');
   const range = useDateRange();
   const [wfStatus, setWfStatus] = useState<WorkflowStatus | ''>('');
   const [pg, setPg] = useState(1);
@@ -137,6 +140,7 @@ export function BulkApprovePage() {
           s.video_id.toLowerCase().includes(needle) ||
           s.title.toLowerCase().includes(needle)) &&
         (!verdict || s.validation_result === verdict) &&
+        (!kind || s.video_kind === kind) &&
         inDateRange(s.created_at) &&
         (wfStatus === '' || statusIds.has(s.video_id)),
     );
@@ -428,12 +432,21 @@ export function BulkApprovePage() {
                     <option value="block">{ko.bulk.verdictBlock}</option>
                   </select>
                 </Field>
-                {(needle || verdict || wfStatus) && (
+                <KindSelect
+                  value={kind}
+                  onChange={(v) => {
+                    setKind(v);
+                    setPg(1);
+                  }}
+                />
+                {(needle || verdict || wfStatus || kind) && (
                   <Button
                     onClick={() => {
                       setFilterText('');
                       setVerdict('');
                       setWfStatus('');
+                      setKind('');
+                      setPg(1);
                     }}
                   >
                     {ko.videos.reset}
@@ -443,7 +456,7 @@ export function BulkApprovePage() {
               <DateRangeFilter range={range} basis={ko.bulk.dateBasis} onChange={() => setPg(1)} />
               {!statusLoading &&
                 !statusError &&
-                (needle || verdict || wfStatus || !range.isAll) &&
+                (needle || verdict || wfStatus || kind || !range.isAll) &&
                 shownRows.length === 0 && <p className="muted">{ko.bulk.filterNone}</p>}
               {statusLoading && <Skeleton lines={3} />}
               {statusError && (
@@ -485,6 +498,7 @@ export function BulkApprovePage() {
                       <th scope="col">{ko.bulk.colVerdict}</th>
                       <th scope="col">{ko.bulk.colScore}</th>
                       <th scope="col">{ko.bulk.colLength}</th>
+                      <th scope="col">{ko.kind.col}</th>
                       <th scope="col">{ko.bulk.colRequested}</th>
                     </tr>
                   </thead>
@@ -531,6 +545,9 @@ export function BulkApprovePage() {
                             </Badge>
                           </td>
                           <td>{s.length}</td>
+                          <td>
+                            <KindBadge kind={s.video_kind} />
+                          </td>
                           <td className="mono">{fmtDateTimeSec(s.created_at)}</td>
                         </tr>
                       );

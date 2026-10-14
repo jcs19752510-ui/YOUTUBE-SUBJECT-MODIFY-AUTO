@@ -19,6 +19,7 @@ import {
   TableWrap,
   useToast,
 } from '../components';
+import { KindBadge } from '../components/KindFilter';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
 import { fmtDate, fmtDateTime, fmtDateTimeSec, fmtNum } from '../lib/format';
@@ -168,6 +169,7 @@ function ItemsTable({ batch }: { batch: Batch }) {
             <tr>
               <th scope="col">{ko.batches.colSeq}</th>
               <th scope="col">{ko.batches.colVideo}</th>
+              <th scope="col">{ko.kind.col}</th>
               <th scope="col">{ko.batches.colChange}</th>
               <th scope="col">{ko.batches.colDate}</th>
               <th scope="col">{ko.batches.colStatus}</th>
@@ -181,6 +183,9 @@ function ItemsTable({ batch }: { batch: Batch }) {
                 <td className="cell-title">
                   <Link to={`/videos/${encodeURIComponent(it.video_id)}`}>{it.video_title}</Link>
                   <div className="muted mono">{it.video_id}</div>
+                </td>
+                <td className="nowrap">
+                  <KindBadge kind={it.video_kind} />
                 </td>
                 <td>
                   <div className="muted">{it.previous_title}</div>

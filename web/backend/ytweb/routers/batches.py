@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Literal
 
 from collections.abc import Callable
 from datetime import date, datetime
@@ -12,7 +13,7 @@ from ytweb.domain.batches import cancel_batch, create_draft, execute_batch, get_
 from ytweb.domain.common import Env
 from ytweb.domain.deps import get_env, idempotent
 from ytweb.domain.schemas import MAX_ID, MAX_PAGE, BatchCreatedOut, BatchCreateIn, BatchExecutedOut, BatchOut, ExecuteIn, Page
-from ytweb.domain.serialize import batch_dict, job_dict
+from ytweb.domain.serialize import batch_dict, job_dict, kind_counts_for
 
 router = APIRouter(prefix="/api/v1/batches", tags=["batches"])
 
@@ -33,9 +34,10 @@ def post_batch(
 
 
 @router.get("", response_model=Page[BatchOut])
-def get_batches(page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200), date_from: date | None = None, date_to: date | None = None, session: Session = Depends(get_session), _=Depends(require_session)):
-    rows, total = list_batches(session, page=page, page_size=page_size, date_from=date_from, date_to=date_to)
-    return {"items": [batch_dict(session, b, with_items=False) for b in rows], "total": total, "page": page, "page_size": page_size}
+def get_batches(page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200), date_from: date | None = None, date_to: date | None = None, kind: Literal["long", "short"] | None = None, session: Session = Depends(get_session), _=Depends(require_session)):
+    rows, total = list_batches(session, page=page, page_size=page_size, date_from=date_from, date_to=date_to, kind=kind)
+    kcs = kind_counts_for(session, rows)
+    return {"items": [batch_dict(session, b, with_items=False, kind_counts=kcs[b.id]) for b in rows], "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/{batch_id}", response_model=BatchOut)
