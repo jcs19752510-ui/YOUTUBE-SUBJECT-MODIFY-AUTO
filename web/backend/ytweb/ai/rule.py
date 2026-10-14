@@ -18,6 +18,8 @@ MAX_CHARS = 60  # config/settings.yaml 의 recommended_max_chars 와 같아야 �
 _PREFIX = re.compile(r"^\s*(\[[^\]]{1,12}\])\s*")
 # '01:10 통역 앱 설치 및 실행 방법 (공식 앱 사용)' 같은 챕터 줄에서 괄호 앞 구절만 뽑는다.
 _CHAPTER = re.compile(r"\d{1,2}:\d{2}\s+([^()\d:]{4,30}?)\s*(?=\(|\d{1,2}:\d{2}|$)")
+# 챕터가 없는 영상(쇼츠 등)용: 문장 부호·여러 칸 공백으로 나눈 구절(2026-10-14)
+_CLAUSE_SPLIT = re.compile(r"[!?.,…~·|:;\n\r]+|\s{2,}")
 _HEALTH = ("건강", "혈압", "당뇨", "관절", "무릎", "허리", "콜레스테롤", "기억력", "영양제", "근력", "숙면", "체조", "스트레칭")
 _FINANCE = ("연금", "적금", "금리", "보험", "대출", "투자", "주식", "재테크", "펀드", "환급", "예금")
 
@@ -44,6 +46,13 @@ class RuleSuggester:
         topic = _topic(f"{brief.title} {ref}")
         phrases = [p for p in phrases if len(p) >= 6 and not p.endswith("소개")]  # 도입부 챕터 이름은 제목으로 쓰지 않는다
         combos: list[tuple[str, tuple[str, ...]]] = []
+        if len(phrases) < 2:  # 챕터가 없는 영상(쇼츠 등): 근거 글(설명이 있으면 설명, 없으면 현재 제목)의 구절을 원래 순서대로 일부만 남긴 짧은 제목을 만든다(어색한 재배열은 하지 않는다)
+            source = ref if ref.strip() else body
+            clauses = [c.strip() for c in _CLAUSE_SPLIT.split(source)]
+            clauses = [c for c in dict.fromkeys(clauses) if 6 <= len(c) <= 40 and not c.startswith(("#", "http"))][:6]
+            for size in range(len(clauses) - 1, 0, -1):
+                for sub in itertools.combinations(clauses, size):
+                    combos.append((" ".join(sub), (sub[0],)))
         for a, b in itertools.combinations(phrases, 2):
             combos.append((f"{a}부터 {b}까지", (a, b)))
         for trio in itertools.combinations(phrases, 3):

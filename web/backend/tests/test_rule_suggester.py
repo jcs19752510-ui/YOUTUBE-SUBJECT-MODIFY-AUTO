@@ -49,3 +49,29 @@ def test_many_distinct_candidates_for_repeated_requests():
 def test_too_short_titles_are_not_offered():
     short_ref = "01:00 앱 설치 방법 (공식 앱 사용)"  # 만들 수 있는 제목이 30자에 못 미치면 내놓지 않는다
     assert RuleSuggester().suggest(VideoBrief("x", TITLE, short_ref), count=3, tone="x") == []
+
+
+SHORT_TITLE = "[시니어 필독2]삼성폰 주인도 놀란 기적의 AI! 길 가다 모르는 건 동그라미만 치면 다 알려주는 서클서치"
+
+
+def _validate(title, evidence, topic, current, ref):
+    s, dic = C.load_settings(str(ROOT)), B.load_dictionary(str(ROOT / "config" / "banned_terms.yaml"))
+    cf = type("CF", (), {"current_title": current, "topic": topic, "summary": ref, "candidates": []})()
+    strict, _ = V.detect_strict(cf, dic)
+    return V._check_title(title, cf, evidence, dic, s, ref, strict).result
+
+
+def test_no_chapters_short_makes_shortened_passing_candidates():
+    """챕터·설명이 없는 쇼츠(2026-10-14 선생님 요청: 긴 영상과 같은 흐름으로 제안): 현재 제목 구절을 원래 순서로 일부만 남긴 후보를 만들고 모두 검증을 통과한다."""
+    out = RuleSuggester().suggest(VideoBrief("vid00000001", SHORT_TITLE, ""), count=3, tone="친근")
+    assert out, "후보가 있어야 한다"
+    for d in out:
+        assert d.title.startswith("[시니어 필독2] ") and d.title != SHORT_TITLE and 30 <= len(d.title) <= 60
+        assert d.evidence in SHORT_TITLE and d.title[len("[시니어 필독2] "):] in SHORT_TITLE.replace("! ", " ")
+        assert _validate(d.title, d.evidence, d.topic, SHORT_TITLE, SHORT_TITLE) == "pass", d.title
+
+
+def test_description_without_chapters_uses_description_clauses_only():
+    desc = "통화 내용을 그대로 저장해 주는 녹음 기능 설정 방법. 대학병원 처방 지시사항을 다시 듣고 싶을 때 바로 확인. 쇼츠로 짧게 정리"
+    out = RuleSuggester().suggest(VideoBrief("vid00000001", SHORT_TITLE, desc), count=3, tone="친근")
+    assert out and all(d.evidence in desc for d in out)

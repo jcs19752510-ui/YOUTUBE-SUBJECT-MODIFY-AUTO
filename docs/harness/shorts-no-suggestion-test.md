@@ -8,3 +8,8 @@
 화면에 나온 실제 이유: `ai_no_candidates` — "AI 응답에서 쓸 수 있는 후보가 없었습니다". → 선생님 PC에서 규칙 기반 제안기가 쓰였고(Gemini 키 파일 `web\secrets\gemini_api_key` 없음/비어 있음) 챕터 없는 쇼츠라 후보 0개. (이 환경에는 키가 없어 Gemini 실호출 시험은 미수행.)
 조치: ①규칙 기반 제안기가 후보를 못 만들면 이유를 "AI(Gemini)가 연결되어 있지 않아…"로, 방법을 `web\scripts\gemini-on.bat`로 안내(`suggestions.py`) ②`web/scripts/gemini-on.ps1/.bat` 추가: 키를 보이지 않게 입력받아 `web\secrets\gemini_api_key`(저장소 제외 폴더)에 저장하고 start.ps1 재시작. Windows 실행 미수행.
 시험: test_live_suggest 신규 1개 포함 관련 서버 시험 모두 통과(test_live_suggest·test_suggestions·verify_wb 01/07·test_routers·test_tick). 취소한 시도: 제목 구절을 순서만 바꿔 잇는 임시 규칙(어색한 제목·검증 차단 1건) → 되돌림. 취소한 시도 2: 해시태그뿐인 설명에서 제목을 검증 근거에 포함(가설 단계, 실제 원인과 달라 반영 안 함).
+
+## 3차: 쇼츠도 긴 영상과 같은 흐름으로 (선생님 지시)
+흐름(생성→검증→승인→배치)은 원래 같았고, 다른 것은 입력(챕터 유무)뿐이었다. 챕터·설명 내용이 없는 영상은 `ai/rule.py`가 현재 제목(설명이 있으면 설명)의 구절을 원래 순서대로 일부만 남긴 짧은 제목을 후보로 만든다. 어색한 재배열은 하지 않음(앞서 취소한 시도: 순서 바꿔 잇기 → 비문·검증 차단).
+예(시험 입력은 가짜 ID): `[시니어 필독2]삼성폰 주인도 놀란 기적의 AI! 길 가다 모르는 건 …서클서치` → `[시니어 필독2] 길 가다 모르는 건 동그라미만 치면 다 알려주는 서클서치`(41자, 검증 통과). 후보 수·품질은 제한적(구절을 덜어낼 뿐이라 새 표현은 없음). 좋은 새 제목은 Gemini 연결(gemini-on.bat)이 필요.
+시험: test_rule_suggester 7개(신규 2) + `tests/domain`·`tests/verify_wb`·test_gemini_suggester 전체 통과(첫 실행부터 통과, 이 3차 변경 후). 미수행: 선생님 PC 확인, Gemini 실호출.
