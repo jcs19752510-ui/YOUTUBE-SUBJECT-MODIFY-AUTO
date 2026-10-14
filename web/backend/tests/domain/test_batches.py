@@ -177,3 +177,22 @@ def test_tc_wb_062_cancel_semantics(seeded, env, clock):
     assert _problem(cancel_batch, seeded, batch.id, now=clock(), env=env).code == "batch_not_cancellable"
     assert _problem(cancel_batch, seeded, 4242, now=clock(), env=env).status == 404
     assert apply_one(seeded, batch.items[1].id, now=clock(), env=env, gateway=None).status == "not_pending"  # 취소된 항목은 실행되지 않는다
+
+
+def test_batch_item_processed_at_only_for_finished_items(seeded, env, clock):
+    """처리 일시(2026-10-14): 성공·실패·건너뜀·취소된 항목만 값이 있고 대기·진행 중이면 None."""
+    from ytweb.domain.serialize import batch_dict
+
+    batch, _sugs, _job = queued_batch(seeded, env, clock(), 3)
+    first, second, third = batch.items
+    first.status, first.updated_at = "success", clock()
+    second.status = "running"
+    seeded.flush()
+    by_id = {i["id"]: i for i in batch_dict(seeded, batch)["items"]}
+    assert by_id[first.id]["processed_at"] == first.updated_at
+    assert by_id[second.id]["processed_at"] is None
+    assert by_id[third.id]["status"] == "pending" and by_id[third.id]["processed_at"] is None
+    for st in ("failed", "skipped", "cancelled"):
+        third.status = st
+        seeded.flush()
+        assert {i["id"]: i for i in batch_dict(seeded, batch)["items"]}[third.id]["processed_at"] == third.updated_at

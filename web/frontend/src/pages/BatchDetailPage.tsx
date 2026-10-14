@@ -21,7 +21,7 @@ import {
 } from '../components';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
-import { fmtDate, fmtDateTime, fmtNum } from '../lib/format';
+import { fmtDate, fmtDateTime, fmtDateTimeSec, fmtNum } from '../lib/format';
 import { batchStatusText, isBatchActive, itemStatusLabel, itemTone } from '../lib/labels';
 import { DiscardDraftButton } from './DiscardDraft';
 
@@ -171,6 +171,7 @@ function ItemsTable({ batch }: { batch: Batch }) {
               <th scope="col">{ko.batches.colChange}</th>
               <th scope="col">{ko.batches.colDate}</th>
               <th scope="col">{ko.batches.colStatus}</th>
+              <th scope="col">{ko.batches.colProcessed}</th>
             </tr>
           </thead>
           <tbody>
@@ -191,6 +192,7 @@ function ItemsTable({ batch }: { batch: Batch }) {
                   <Badge tone={itemTone(it.status)}>{itemStatusLabel(it.status)}</Badge>
                   {it.skip_reason && <div className="muted">{it.skip_reason}</div>}
                 </td>
+                <td className="nowrap mono">{fmtDateTimeSec(it.processed_at)}</td>
               </tr>
             ))}
           </tbody>

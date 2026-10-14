@@ -144,6 +144,7 @@ export interface BatchItem {
   status: BatchItemStatus;
   skip_reason: string | null;
   change_id: number | null;
+  processed_at?: string | null;
 }
 export interface BatchCounts {
   pending: number;

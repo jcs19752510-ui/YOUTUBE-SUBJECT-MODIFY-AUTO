@@ -3445,6 +3445,18 @@
               }
             ],
             "title": "Change Id"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
           }
         },
         "type": "object",

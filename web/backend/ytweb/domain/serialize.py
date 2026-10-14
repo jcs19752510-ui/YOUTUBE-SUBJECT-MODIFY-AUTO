@@ -83,6 +83,7 @@ def _item_dicts(session: Session, items: list[BatchItem]) -> list[dict]:
             "status": it.status,
             "skip_reason": _failure_reason(it, change),
             "change_id": it.change_id,
+            "processed_at": it.updated_at if it.status in ("success", "failed", "skipped", "cancelled") else None,
         })
     return out
 

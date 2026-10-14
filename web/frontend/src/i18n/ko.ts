@@ -622,6 +622,7 @@ export const ko = {
     itemsTitle: '포함된 항목',
     colSeq: '순서',
     colDate: '예정일',
+    colProcessed: '처리 일시',
     colStatus: '상태',
     colSkip: '건너뜀 사유',
     confirmTitle: '실행 확인',

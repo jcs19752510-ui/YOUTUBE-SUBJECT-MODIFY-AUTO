@@ -131,6 +131,7 @@ class BatchItemOut(BaseModel):
     status: Literal["pending", "running", "success", "failed", "skipped", "cancelled"]
     skip_reason: str | None
     change_id: int | None
+    processed_at: datetime | None = None  # 처리(성공·실패·건너뜀·취소)된 시각. 대기·진행 중이면 없음
 
 
 class BatchCounts(BaseModel):

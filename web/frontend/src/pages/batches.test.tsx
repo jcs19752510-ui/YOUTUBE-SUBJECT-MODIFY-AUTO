@@ -274,3 +274,25 @@ describe('배치 진행·중지', () => {
     expect(await screen.findByText('중지했습니다.')).toBeInTheDocument();
   });
 });
+
+describe('처리 일시 열(2026-10-14)', () => {
+  it('TC-FE-BD-PA-001 상태 오른쪽에 처리 일시가 한국 시간 24시 yyyy-mm-dd hh:mm:ss 로 보이고 대기 중이면 - 이다', async () => {
+    const b = draftBatch();
+    const done = {
+      ...b,
+      status: 'completed',
+      items: [
+        { ...b.items[0]!, status: 'success', processed_at: '2026-10-14T10:26:07Z' },
+        { ...b.items[1]!, status: 'pending', processed_at: null },
+      ],
+    } as Batch;
+    const c = await connectedClient([route('GET', '/api/v1/batches/7', () => json(200, done))]);
+    renderWithApp(routes, c.client, '/batches/7');
+    const hdrs = await screen.findAllByRole('columnheader');
+    const names = hdrs.map((h) => h.textContent);
+    expect(names.indexOf('처리 일시')).toBe(names.indexOf('상태') + 1);
+    expect(screen.getByText('2026-10-14 19:26:07')).toBeInTheDocument();
+    const rows = screen.getAllByRole('row');
+    expect(within(rows[2]!).getAllByRole('cell').at(-1)!.textContent).toBe('-');
+  });
+});

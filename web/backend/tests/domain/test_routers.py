@@ -165,7 +165,7 @@ def test_tc_wb_129_create_batch_requires_key_and_replays(api, csrf, data, env, c
     key = str(uuid.uuid4())
     out = _ok(api.post("/api/v1/batches", json={"suggestion_ids": ids, "note": "테스트"}, headers=hdr(csrf, key)), 201)
     assert set(out) == {"batch", "precheck"} and out["precheck"]["confirm_text"] == "실행 3건" and out["batch"]["status"] == "draft" and out["batch"]["counts"]["pending"] == 3
-    assert set(out["batch"]["items"][0]) == {"id", "suggestion_id", "video_id", "video_title", "previous_title", "new_title", "seq", "scheduled_date", "status", "skip_reason", "change_id"}
+    assert set(out["batch"]["items"][0]) == {"id", "suggestion_id", "video_id", "video_title", "previous_title", "new_title", "seq", "scheduled_date", "status", "skip_reason", "change_id", "processed_at"}
     again = _ok(api.post("/api/v1/batches", json={"suggestion_ids": ids, "note": "테스트"}, headers=hdr(csrf, key)), 201)
     assert again == out
     with data() as s:
