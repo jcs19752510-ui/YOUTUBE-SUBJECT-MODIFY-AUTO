@@ -60,7 +60,7 @@ def _summary(v, status: str, count: int, last_change: datetime | None) -> dict:
 
 
 def list_videos(session: Session, *, now: datetime, q: str | None, status: str | None, excluded: bool | None, sort: str, order: str, page: int, page_size: int,
-                date_from: date | None = None, date_to: date | None = None) -> tuple[list[dict], int]:
+                date_from: date | None = None, date_to: date | None = None, kind: str | None = None) -> tuple[list[dict], int]:
     expire_stale_approvals(session, now)
     start, end = kst_range_utc(date_from, date_to)  # 시작>종료면 422
     page, page_size = clamp_page(page, page_size)
@@ -76,6 +76,10 @@ def list_videos(session: Session, *, now: datetime, q: str | None, status: str |
         if status and wf != status:
             continue
         if excluded is not None and bool(reasons) != excluded:
+            continue
+        if kind == "short" and not row.is_short:  # 쇼츠 = 길이가 쇼츠 기준(기본 180초) 이하인 영상
+            continue
+        if kind == "long" and (row.is_short or row.duration_sec is None):  # 롱폼 = 길이를 알고 쇼츠 기준을 넘는 영상(길이 불명은 어느 쪽에도 넣지 않는다)
             continue
         if not in_range(last_map.get(row.video_id), start, end):  # 기간이 지정되면 최근 변경이 없는 영상은 제외
             continue

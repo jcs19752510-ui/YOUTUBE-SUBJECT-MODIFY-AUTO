@@ -43,11 +43,13 @@ function readParams(sp: URLSearchParams): Required<Omit<VideoListQuery, 'date_fr
   };
   const status = sp.get('status') ?? '';
   const excluded = sp.get('excluded') ?? '';
+  const kind = sp.get('kind') ?? '';
   const order = sp.get('order');
   return {
     q: sp.get('q') ?? '',
     status: (STATUSES as string[]).includes(status) ? (status as WorkflowStatus) : '',
     excluded: excluded === 'true' || excluded === 'false' ? excluded : '',
+    kind: kind === 'long' || kind === 'short' ? kind : '',
     sort: sp.get('sort') ?? 'last_change_at',
     order: order === 'asc' ? 'asc' : 'desc',
     page: num('page', 1),
@@ -116,7 +118,7 @@ export function VideosPage() {
     setQInput('');
     setSp(new URLSearchParams(), { replace: true });
   };
-  const filtered = Boolean(p.q || p.status || p.excluded);
+  const filtered = Boolean(p.q || p.status || p.excluded || p.kind);
 
   const closeGen = () => {
     if (genDone) {
@@ -153,6 +155,18 @@ export function VideosPage() {
                 {workflowLabel(s)}
               </option>
             ))}
+          </select>
+        </Field>
+        <Field label={ko.videos.filterKind}>
+          <select
+            name="kind-filter"
+            className="select"
+            value={p.kind}
+            onChange={(e) => update({ kind: e.target.value })}
+          >
+            <option value="">{ko.videos.kindAll}</option>
+            <option value="long">{ko.videos.kindLong}</option>
+            <option value="short">{ko.videos.kindShort}</option>
           </select>
         </Field>
         <Field label={ko.videos.filterExcluded}>
@@ -232,6 +246,7 @@ export function VideosPage() {
                     onSort={() => toggleSort('title')}
                   />
                   <th scope="col">{ko.videos.colStatus}</th>
+                  <th scope="col">{ko.videos.colKind}</th>
                   <SortHeader
                     label={ko.videos.sortKeys.duration_sec ?? ''}
                     active={p.sort === 'duration_sec'}
@@ -381,6 +396,15 @@ function Row({
       </td>
       <td>
         <Badge tone={workflowTone(v.workflow_status)}>{workflowLabel(v.workflow_status)}</Badge>
+      </td>
+      <td>
+        {v.is_short ? (
+          <Badge tone="info">{ko.videos.kindShort}</Badge>
+        ) : v.duration_sec === null ? (
+          '-'
+        ) : (
+          <Badge>{ko.videos.kindLong}</Badge>
+        )}
       </td>
       <td>
         <span className="nowrap">{fmtDuration(v.duration_sec)}</span>

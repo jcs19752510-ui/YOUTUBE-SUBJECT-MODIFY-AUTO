@@ -280,6 +280,7 @@ export interface VideoListQuery {
   q?: string;
   status?: WorkflowStatus | '';
   excluded?: 'true' | 'false' | '';
+  kind?: 'long' | 'short' | '';
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;

@@ -32,10 +32,10 @@ def get_videos(
     status: Literal["none", "suggested", "approved", "queued", "applied", "rolled_back"] | None = None,
     excluded: bool | None = None, sort: SortField = "video_id", order: Literal["asc", "desc"] = "asc",
     page: int = Query(1, ge=1, le=MAX_PAGE), page_size: int = Query(50, ge=1, le=200),
-    date_from: date | None = None, date_to: date | None = None,
+    date_from: date | None = None, date_to: date | None = None, kind: Literal["long", "short"] | None = None,
     session: Session = Depends(get_session), clock: Callable[[], datetime] = Depends(get_clock), _=Depends(require_session),
 ):
-    items, total = list_videos(session, now=clock(), q=q, status=status, excluded=excluded, sort=sort, order=order, page=page, page_size=page_size, date_from=date_from, date_to=date_to)
+    items, total = list_videos(session, now=clock(), q=q, status=status, excluded=excluded, sort=sort, order=order, page=page, page_size=page_size, date_from=date_from, date_to=date_to, kind=kind)
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
