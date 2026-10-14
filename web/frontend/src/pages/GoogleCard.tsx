@@ -93,7 +93,7 @@ export function GoogleCard() {
                   <p>
                     <strong>{ko.google.liveWarnTitle}</strong>
                   </p>
-                  <p>{ko.google.liveWarn(g.live_allowed_count ?? 0)}</p>
+                  <p>{ko.google.liveWarn(g.live_allowed_count ?? 0, g.live_allowed_all ?? false)}</p>
                 </Callout>
               ) : g.write_connected ? (
                 <>

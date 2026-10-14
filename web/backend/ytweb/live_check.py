@@ -23,7 +23,7 @@ def check(env: dict[str, str] | None = None, secrets_dir: Path | None = None) ->
          else "제목 수정 권한이 없다 → 화면의 [제목 수정 권한 연결]을 누르세요"),
         (lg.live_write_enabled(e), "실제 수정 스위치가 켜져 있다(YTWEB_LIVE_WRITE=1)" if lg.live_write_enabled(e)
          else "실제 수정 스위치가 꺼져 있다 → web\\.env 의 YTWEB_LIVE_WRITE=1 로 바꾸고 start.ps1 을 다시 실행하세요"),
-        (bool(allowed), f"수정을 허용한 영상이 {len(allowed)}개 있다" if allowed
+        (bool(allowed), ("모든 영상의 수정을 허용했다(*)" if lg.allows_all(allowed) else f"수정을 허용한 영상이 {len(allowed)}개 있다") if allowed
          else "수정을 허용한 영상이 없다 → web\\.env 의 YTWEB_LIVE_ALLOWED_VIDEOS 에 테스트 영상 ID를 넣고 start.ps1 을 다시 실행하세요"),
     ]
     return items, all(ok for ok, _ in items)

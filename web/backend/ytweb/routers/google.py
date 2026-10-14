@@ -66,7 +66,7 @@ def _status(ctx: GoogleCtx) -> dict:
     write_connected = client_ready and ctx.write_store is not None and ctx.write_store.load() is not None
     allowed = lg.allowed_videos()
     return {"mode": "read" if client_ready else "demo", "connected": connected, "client_ready": client_ready, "message": msg, "last_error": err,
-            "write_connected": write_connected, "live_write_enabled": lg.live_write_enabled(), "live_allowed_count": len(allowed),
+            "write_connected": write_connected, "live_write_enabled": lg.live_write_enabled(), "live_allowed_count": len(allowed - {lg.ALLOW_ALL}), "live_allowed_all": lg.allows_all(allowed),
             "live_write_ready": lg.live_write_enabled() and bool(allowed) and write_connected}
 
 

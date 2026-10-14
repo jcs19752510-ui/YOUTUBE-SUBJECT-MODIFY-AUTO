@@ -3872,6 +3872,11 @@
             "title": "Live Allowed Count",
             "default": 0
           },
+          "live_allowed_all": {
+            "type": "boolean",
+            "title": "Live Allowed All",
+            "default": false
+          },
           "live_write_ready": {
             "type": "boolean",
             "title": "Live Write Ready",

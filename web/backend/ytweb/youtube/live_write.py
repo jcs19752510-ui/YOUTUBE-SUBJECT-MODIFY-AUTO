@@ -66,7 +66,7 @@ class LiveYouTubeGateway:
         return sn if isinstance(sn, dict) else None
 
     def update_snippet(self, video_id: str, body: dict) -> dict:
-        if video_id not in self._allowed:
+        if "*" not in self._allowed and video_id not in self._allowed:
             raise GatewayError("not_allowed", "허용 목록에 없는 영상이라 실제 수정을 하지 않았습니다.")
         snippet = body.get("snippet") if isinstance(body, dict) else None
         if not isinstance(body, dict) or body.get("id") != video_id or not isinstance(snippet, dict):

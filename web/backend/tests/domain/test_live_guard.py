@@ -191,3 +191,22 @@ def test_tc_m3_051_reconcile_leaves_truly_different_and_does_not_reread_again(se
     seeded.refresh(item)
     assert item.status == "failed"
     assert reconcile_verify_failed(seeded, gw, clock()) == []  # 두 번째는 읽지 않는다
+
+
+def test_allow_all_star_allows_any_video_in_live_mode(live_env, monkeypatch):
+    """YTWEB_LIVE_ALLOWED_VIDEOS=* 면 영상 ID 를 하나씩 넣지 않아도 모든 영상이 허용 목록을 통과한다(2026-10-14)."""
+    monkeypatch.setenv("YTWEB_LIVE_ALLOWED_VIDEOS", "aaaaaaaaaaa")
+    assert "허용 영상이 아닙니다" in lg.not_allowed_reason("zzzzzzzzzzz", live_env.secrets_dir)
+    monkeypatch.setenv("YTWEB_LIVE_ALLOWED_VIDEOS", "*")
+    assert lg.allows_all(lg.allowed_videos())
+    assert lg.not_allowed_reason("zzzzzzzzzzz", live_env.secrets_dir) is None
+    assert lg.live_write_ready(live_env.secrets_dir)
+    monkeypatch.setenv("YTWEB_LIVE_ALLOWED_VIDEOS", "")
+    assert not lg.live_write_ready(live_env.secrets_dir)
+
+
+def test_allow_all_helpers():
+    assert lg.video_allowed("zzzzzzzzzzz", frozenset({"*"}))
+    assert not lg.video_allowed("zzzzzzzzzzz", frozenset({"aaaaaaaaaaa"}))
+    assert not lg.video_allowed("zzzzzzzzzzz", frozenset())
+    assert not lg.allows_all(frozenset({"aaaaaaaaaaa"}))

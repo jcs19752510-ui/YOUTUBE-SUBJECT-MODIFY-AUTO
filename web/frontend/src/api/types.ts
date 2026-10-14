@@ -271,6 +271,7 @@ export interface GoogleStatus {
   write_connected?: boolean;
   live_write_enabled?: boolean;
   live_allowed_count?: number;
+  live_allowed_all?: boolean;
   live_write_ready?: boolean;
 }
 

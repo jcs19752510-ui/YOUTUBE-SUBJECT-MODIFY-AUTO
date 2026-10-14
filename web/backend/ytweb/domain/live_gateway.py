@@ -30,6 +30,17 @@ def allowed_videos(env: dict[str, str] | None = None) -> frozenset[str]:
     return frozenset(v.strip() for v in raw.split(",") if v.strip())
 
 
+ALLOW_ALL = "*"  # YTWEB_LIVE_ALLOWED_VIDEOS=* : 영상 ID 를 하나씩 넣지 않고 모든 영상을 허용(선생님 지시 2026-10-14)
+
+
+def allows_all(allowed) -> bool:
+    return ALLOW_ALL in allowed
+
+
+def video_allowed(video_id: str, allowed) -> bool:
+    return video_id in allowed or allows_all(allowed)
+
+
 def live_write_enabled(env: dict[str, str] | None = None) -> bool:
     return (env if env is not None else os.environ).get("YTWEB_LIVE_WRITE", "0") == "1"
 
@@ -92,6 +103,6 @@ def confirm_text(n: int, live: bool) -> str:
 
 def not_allowed_reason(video_id: str, secrets_dir: Path, env: dict[str, str] | None = None) -> str | None:
     """실제 모드에서 허용 목록에 없는 영상이면 사유(한국어), 아니면 None."""
-    if live_mode(secrets_dir, env) and video_id not in allowed_videos(env):
-        return "실제 수정 허용 영상이 아닙니다. 서버 설정 YTWEB_LIVE_ALLOWED_VIDEOS 에 영상 ID를 추가하기 전에는 실제로 바꾸지 않습니다."
+    if live_mode(secrets_dir, env) and not video_allowed(video_id, allowed_videos(env)):
+        return "실제 수정 허용 영상이 아닙니다. 허용 영상 목록에 이 영상이 없어 실제로 바꾸지 않습니다. 모든 영상을 허용하려면 web\\scripts\\live-allow-all.bat 를 실행하세요(또는 web\\.env 의 YTWEB_LIVE_ALLOWED_VIDEOS=* 로 바꾸고 start.ps1 재실행)."
     return None
