@@ -75,7 +75,7 @@ export function createEndpoints(c: ApiClient) {
         risky: true,
         idempotencyKey: key,
       }),
-    batches: (q: { page?: number; page_size?: number }) =>
+    batches: (q: { page?: number; page_size?: number; date_from?: string; date_to?: string }) =>
       c.request<Page<Batch>>('GET', `${V1}/batches`, { query: q }),
     batch: (id: number) => c.request<Batch>('GET', `${V1}/batches/${id}`),
     executeBatch: (id: number, confirmText: string, key: string) =>
@@ -93,6 +93,8 @@ export function createEndpoints(c: ApiClient) {
       result?: string;
       page?: number;
       page_size?: number;
+      date_from?: string;
+      date_to?: string;
     }) => c.request<Page<Change>>('GET', `${V1}/changes`, { query: q }),
     rollback: (id: number, typedVideoId: string, approver: string, key: string) =>
       c.request<Change>('POST', `${V1}/changes/${id}/rollback`, {
@@ -100,9 +102,12 @@ export function createEndpoints(c: ApiClient) {
         risky: true,
         idempotencyKey: key,
       }),
-    reports: (videoId?: string) =>
-      c.request<ReportsResponse>('GET', `${V1}/reports/changes`, { query: { video_id: videoId } }),
-    reportCsv: () => c.requestBlob(`${V1}/reports/export.csv`),
+    reports: (videoId?: string, range: { date_from?: string; date_to?: string } = {}) =>
+      c.request<ReportsResponse>('GET', `${V1}/reports/changes`, {
+        query: { video_id: videoId, ...range },
+      }),
+    reportCsv: (range: { date_from?: string; date_to?: string } = {}) =>
+      c.requestBlob(`${V1}/reports/export.csv`, range),
     audit: (q: { page?: number; page_size?: number }) =>
       c.request<AuditPage>('GET', `${V1}/audit`, { query: q }),
     settings: () => c.request<SettingsData>('GET', `${V1}/settings`),

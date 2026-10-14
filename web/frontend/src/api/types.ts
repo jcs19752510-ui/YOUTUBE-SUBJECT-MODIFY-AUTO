@@ -284,6 +284,14 @@ export interface VideoListQuery {
   order?: 'asc' | 'desc';
   page?: number;
   page_size?: number;
+  date_from?: string;
+  date_to?: string;
+}
+
+/** 조회 기간(YYYY-MM-DD, 한국 시간, 양 끝 포함). 비우면 제한 없음 */
+export interface DateQuery {
+  date_from?: string;
+  date_to?: string;
 }
 
 // ---- 일괄 승인(docs/harness/bulk-approve/CONTRACT.md) ----

@@ -4,6 +4,7 @@ export { ValidationBadge } from './ValidationBadge';
 export { Card } from './Card';
 export { Callout } from './Callout';
 export { Field } from './Field';
+export { DateRangeFilter, useDateRange, type DateRange } from './DateRangeFilter';
 export { Skeleton } from './Skeleton';
 export { EmptyState } from './EmptyState';
 export { Progress } from './Progress';
