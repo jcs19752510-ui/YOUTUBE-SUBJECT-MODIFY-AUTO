@@ -21,6 +21,7 @@ import { useApproverName } from '../hooks/approver';
 import { useIdempotency } from '../hooks/useIdempotency';
 import { ko } from '../i18n/ko';
 import { Pagination } from '../components/Pagination';
+import { fmtDate, fmtDateTimeSec, kstDateOffset } from '../lib/format';
 import { workflowLabel } from '../lib/labels';
 import { scoreTone, suggestionScore } from '../lib/score';
 import { STATUSES } from './VideosPage';
@@ -70,6 +71,7 @@ export function BulkApprovePage() {
   const keys = useIdempotency();
   const [filterText, setFilterText] = useState('');
   const [verdict, setVerdict] = useState('');
+  const [dateRange, setDateRange] = useState<'' | 'today' | 'yesterday' | 'week'>('');
   const [wfStatus, setWfStatus] = useState<WorkflowStatus | ''>('');
   const [pg, setPg] = useState(1);
   const [pgSize, setPgSize] = useState(100);
@@ -119,6 +121,14 @@ export function BulkApprovePage() {
   );
   const needle = filterText.trim().toLowerCase();
   // 최근에 만든 제안이 맨 위에 오도록 번호가 큰 것부터 보여 준다. 글자·판정으로 줄일 수 있다.
+  const today = kstDateOffset(0);
+  const inDateRange = (iso: string): boolean => {
+    if (!dateRange) return true;
+    const day = fmtDate(iso);
+    if (dateRange === 'today') return day === today;
+    if (dateRange === 'yesterday') return day === kstDateOffset(1);
+    return day >= kstDateOffset(6) && day <= today;
+  };
   const shownRows = [...rows]
     .sort((x, y) => y.id - x.id)
     .filter(
@@ -127,6 +137,7 @@ export function BulkApprovePage() {
           s.video_id.toLowerCase().includes(needle) ||
           s.title.toLowerCase().includes(needle)) &&
         (!verdict || s.validation_result === verdict) &&
+        inDateRange(s.created_at) &&
         (wfStatus === '' || statusIds.has(s.video_id)),
     );
 
@@ -417,9 +428,26 @@ export function BulkApprovePage() {
                     <option value="block">{ko.bulk.verdictBlock}</option>
                   </select>
                 </Field>
-                {(needle || verdict || wfStatus) && (
+                <Field label={ko.bulk.dateFilterLabel}>
+                  <select
+                    name="bulk-date-filter"
+                    className="select"
+                    value={dateRange}
+                    onChange={(e) => {
+                      setDateRange(e.target.value as typeof dateRange);
+                      setPg(1);
+                    }}
+                  >
+                    <option value="">{ko.bulk.dateAll}</option>
+                    <option value="today">{ko.bulk.dateToday}</option>
+                    <option value="yesterday">{ko.bulk.dateYesterday}</option>
+                    <option value="week">{ko.bulk.dateWeek}</option>
+                  </select>
+                </Field>
+                {(needle || verdict || wfStatus || dateRange) && (
                   <Button
                     onClick={() => {
+                      setDateRange('');
                       setFilterText('');
                       setVerdict('');
                       setWfStatus('');
@@ -431,7 +459,7 @@ export function BulkApprovePage() {
               </form>
               {!statusLoading &&
                 !statusError &&
-                (needle || verdict || wfStatus) &&
+                (needle || verdict || wfStatus || dateRange) &&
                 shownRows.length === 0 && <p className="muted">{ko.bulk.filterNone}</p>}
               {statusLoading && <Skeleton lines={3} />}
               {statusError && (
@@ -473,6 +501,7 @@ export function BulkApprovePage() {
                       <th scope="col">{ko.bulk.colVerdict}</th>
                       <th scope="col">{ko.bulk.colScore}</th>
                       <th scope="col">{ko.bulk.colLength}</th>
+                      <th scope="col">{ko.bulk.colRequested}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -518,6 +547,7 @@ export function BulkApprovePage() {
                             </Badge>
                           </td>
                           <td>{s.length}</td>
+                          <td className="mono">{fmtDateTimeSec(s.created_at)}</td>
                         </tr>
                       );
                     })}

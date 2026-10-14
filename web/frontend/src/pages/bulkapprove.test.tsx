@@ -572,3 +572,33 @@ describe('차단 제안도 목록에 이유와 함께 보인다(선생님 결정
     expect(within(dialog()).queryByText('새 제목 7')).toBeNull();
   });
 });
+
+describe('요청 날짜 조회·요청 시각 표시(2026-10-14)', () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  it('TC-FE-BA-033 요청 시각이 한국 시간 24시 기준 년-월-일 시:분:초로 보인다', async () => {
+    await setup([...lists([sg(1, { created_at: '2026-10-10T14:05:09Z' })])]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    expect(screen.getByRole('columnheader', { name: '요청 시각' })).toBeInTheDocument();
+    expect(screen.getByText('2026-10-10 23:05:09')).toBeInTheDocument();
+  });
+  it('TC-FE-BA-034 요청 날짜 "오늘"로 오늘 만든 제안만 남고 "전체"로 되돌린다', async () => {
+    const { user } = await setup([
+      ...lists([sg(1, { created_at: daysAgo(0) }), sg(2, { created_at: daysAgo(3) })]),
+    ]);
+    await screen.findByText('새 제목 2', { selector: 'td' });
+    const sel = screen.getByRole('combobox', { name: '요청 날짜' });
+    await user.selectOptions(sel, 'today');
+    expect(screen.getByText('새 제목 1', { selector: 'td' })).toBeInTheDocument();
+    expect(screen.queryByText('새 제목 2', { selector: 'td' })).toBeNull();
+    await user.selectOptions(sel, 'week');
+    expect(screen.getByText('새 제목 2', { selector: 'td' })).toBeInTheDocument();
+    await user.selectOptions(sel, '');
+    expect(screen.getByText('새 제목 1', { selector: 'td' })).toBeInTheDocument();
+  });
+  it('TC-FE-BA-035 "어제"에는 오늘 제안이 없고 맞는 제안이 없으면 안내 글이 나온다', async () => {
+    const { user } = await setup([...lists([sg(1, { created_at: daysAgo(0) })])]);
+    await screen.findByText('새 제목 1', { selector: 'td' });
+    await user.selectOptions(screen.getByRole('combobox', { name: '요청 날짜' }), 'yesterday');
+    expect(screen.getByText(/조건에 맞는 제안이 없습니다/)).toBeInTheDocument();
+  });
+});
