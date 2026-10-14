@@ -466,6 +466,15 @@ export const ko = {
   },
 
   // ---- 일괄 승인 ----
+  kind: {
+    label: '영상 구분',
+    all: '전체(롱폼+쇼츠)',
+    long: '롱폼',
+    short: '쇼츠',
+    col: '구분',
+    unknown: '-',
+    counts: (l: number, s: number) => `롱폼 ${l} · 쇼츠 ${s}`,
+  },
   dateRange: {
     groupLabel: '조회 기간',
     from: '조회 시작일',

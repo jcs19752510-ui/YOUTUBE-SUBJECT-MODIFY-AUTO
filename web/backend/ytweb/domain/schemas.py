@@ -41,6 +41,7 @@ class ApprovalOut(BaseModel):
 class SuggestionOut(BaseModel):
     id: int
     video_id: str
+    video_kind: Literal["long", "short"] | None = None  # 영상 구분(롱폼/쇼츠), 길이 불명이면 None
     title: str
     evidence: str | None
     source: str
@@ -73,6 +74,7 @@ class VideoSummaryOut(BaseModel):
 class ChangeOut(BaseModel):
     id: int
     video_id: str
+    video_kind: Literal["long", "short"] | None = None
     video_title: str | None
     change_type: Literal["apply", "rollback"]
     previous_title: str
@@ -123,6 +125,7 @@ class BatchItemOut(BaseModel):
     id: int
     suggestion_id: int
     video_id: str
+    video_kind: Literal["long", "short"] | None = None
     video_title: str | None
     previous_title: str
     new_title: str
@@ -167,9 +170,16 @@ class PrecheckOut(BaseModel):
     notice: str | None = None  # 면책 고지(POL-002). 이 필드가 없던 옛 사전 점검 기록은 null
 
 
+class KindCounts(BaseModel):
+    long: int = 0
+    short: int = 0
+    unknown: int = 0
+
+
 class BatchOut(BaseModel):
     id: int
     status: str
+    kind_counts: KindCounts | None = None  # 배치에 담긴 영상의 롱폼/쇼츠/길이불명 개수
     note: str | None
     created_at: datetime
     executed_at: datetime | None
@@ -222,6 +232,7 @@ class ReportChangeOut(BaseModel):
 
 class VideoReportOut(BaseModel):
     video_id: str
+    video_kind: Literal["long", "short"] | None = None
     title: str | None
     status: Literal["no_change", "insufficient", "ok"]
     label: str | None

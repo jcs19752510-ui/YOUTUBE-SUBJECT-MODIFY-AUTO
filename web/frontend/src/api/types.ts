@@ -86,9 +86,13 @@ export interface Approval {
   approved_at: string;
   expires_at: string;
 }
+/** 영상 구분: 롱폼/쇼츠. 길이를 모르면 없음 */
+export type VideoKind = 'long' | 'short';
+
 export interface Suggestion {
   id: number;
   video_id: string;
+  video_kind?: VideoKind | null;
   title: string;
   evidence: string | null;
   source: string;
@@ -107,6 +111,7 @@ export interface Suggestion {
 export interface Change {
   id: number;
   video_id: string;
+  video_kind?: VideoKind | null;
   video_title: string;
   change_type: 'apply' | 'rollback' | (string & {});
   previous_title: string;
@@ -136,6 +141,7 @@ export interface BatchItem {
   id: number;
   suggestion_id: number;
   video_id: string;
+  video_kind?: VideoKind | null;
   video_title: string;
   previous_title: string;
   new_title: string;
@@ -171,6 +177,7 @@ export interface Precheck {
 }
 export interface Batch {
   id: number;
+  kind_counts?: { long: number; short: number; unknown: number } | null;
   status: BatchStatus;
   note: string | null;
   created_at: string;
@@ -212,6 +219,7 @@ export interface MetricDelta {
 }
 export interface VideoReport {
   video_id: string;
+  video_kind?: VideoKind | null;
   title: string | null;
   status: 'no_change' | 'insufficient' | 'ok' | (string & {});
   before: MetricSnapshot | null;
