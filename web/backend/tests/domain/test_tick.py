@@ -157,7 +157,9 @@ def test_tc_wb_089_job_handler_generate_isolates_failures(seeded, factory, env, 
     with factory() as s:
         job = s.execute(select(Job)).scalar_one()
         assert job.status == "succeeded" and job.progress == 3
-        assert job.result == {"videos": 3, "suggestions": 4, "skipped": [{"video_id": excluded, "code": "video_excluded"}]}
+        sk = job.result["skipped"]  # 2026-10-14: 건너뛴 영상에 한국어 이유(reason)가 함께 들어간다
+    assert job.result == {"videos": 3, "suggestions": 4, "skipped": [{"video_id": excluded, "code": "video_excluded", "reason": sk[0]["reason"]}]}
+    assert "제외 대상" in sk[0]["reason"]
 
 
 def test_tc_wb_090_tick_batch_filter_and_worker_integration(seeded, factory, env, clock):

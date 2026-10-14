@@ -60,6 +60,37 @@ export function JobPanel({
         {ko.jobStatus[job.status] ?? job.status}
       </p>
       {phase === 'failed' && job.error && <p className="field__error">{job.error}</p>}
+      {phase !== 'active' && <SuggestSummary job={job} />}
+    </div>
+  );
+}
+
+interface SkippedItem {
+  video_id?: string;
+  code?: string;
+  reason?: string;
+}
+
+/** AI 제안 생성 작업의 결과: 만든 제안 수와, 만들지 못한 영상·이유(작업은 '완료'여도 영상별 실패가 있을 수 있다). */
+function SuggestSummary({ job }: { job: Job }) {
+  const r = job.result;
+  if (!r || typeof r.suggestions !== 'number') return null;
+  const skipped: SkippedItem[] = Array.isArray(r.skipped) ? (r.skipped as SkippedItem[]) : [];
+  return (
+    <div className="stack" aria-live="polite">
+      <p>{ko.videos.generateResult(r.suggestions)}</p>
+      {skipped.length > 0 && (
+        <div className="field__error" role="alert">
+          <strong>{ko.videos.generateSkipped(skipped.length)}</strong>
+          <ul>
+            {skipped.map((s, i) => (
+              <li key={`${s.video_id}-${i}`}>
+                <span className="mono">{s.video_id}</span> — {s.reason || s.code || ko.videos.generateSkipUnknown}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

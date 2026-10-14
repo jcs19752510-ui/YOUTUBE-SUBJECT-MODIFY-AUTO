@@ -267,7 +267,8 @@ def test_tc_vb_241_generate_job_via_worker_handles_excluded_and_unknown_per_vide
     assert jobs.process_next(factory, worker_id="vb", clock=clock)
     res = api.get(f"/api/v1/jobs/{r.json()['id']}").json()
     assert res["status"] == "succeeded" and res["result"]["videos"] == 3 and res["result"]["suggestions"] == 4
-    assert res["result"]["skipped"] == [{"video_id": excluded, "code": "video_excluded"}]
+    sk = res["result"]["skipped"]  # 2026-10-14: 한국어 이유(reason) 추가
+    assert [(x["video_id"], x["code"]) for x in sk] == [(excluded, "video_excluded")] and "제외 대상" in sk[0]["reason"]
     with factory() as s:
         assert s.execute(select(func.count()).select_from(AuditLog).where(AuditLog.action == "suggestion.generate")).scalar_one() == 2
 

@@ -265,3 +265,21 @@ def test_tc_wb_136_state_changes_are_audited(api, csrf, data, env, clock):
     assert {"suggestion.generate", "suggestion.approve"} <= set(actions) and audit["chain_ok"] is True
     blob = str(audit)
     assert "approval_hmac" not in blob and sug["plan_hash"] is None
+
+
+def test_bulk_generate_job_reports_skipped_video_reason(api, csrf, data, factory, clock, monkeypatch):
+    """영상 하나가 제외 대상이어도 작업은 '완료'지만, 건너뛴 영상 ID 와 한국어 이유가 결과에 들어간다(2026-10-14)."""
+    from ytweb.db.models import Video
+
+    monkeypatch.setattr(handlers, "utcnow", clock)
+    ok_id, bad_id = _vid(data, 0), _vid(data, 1)
+    with factory() as s:
+        s.get(Video, bad_id).privacy_status = "private"
+        s.commit()
+    job = _ok(api.post("/api/v1/suggestions/generate", json={"video_ids": [ok_id, bad_id], "count": 2}, headers=hdr(csrf)), 202)
+    jobs.process_next(factory, worker_id="t", clock=clock)
+    done = _ok(api.get(f"/api/v1/jobs/{job['id']}"))
+    assert done["status"] == "succeeded" and done["result"]["suggestions"] == 2
+    sk = done["result"]["skipped"]
+    assert [x["video_id"] for x in sk] == [bad_id] and sk[0]["code"] == "video_excluded"
+    assert "제외 대상" in sk[0]["reason"]

@@ -74,7 +74,7 @@ def handle_suggestions_generate(factory: sessionmaker, job: Job) -> dict:
                 s.commit()
             except ProblemError as exc:  # 한 영상의 실패가 나머지를 막지 않는다
                 s.rollback()
-                skipped.append({"video_id": video_id, "code": exc.code})
+                skipped.append({"video_id": video_id, "code": exc.code, "reason": " ".join(x for x in (exc.title, exc.detail, exc.hint) if x)[:400]})
         _progress(factory, job.id, idx)
     return {"videos": len(video_ids), "suggestions": created, "skipped": skipped}
 
