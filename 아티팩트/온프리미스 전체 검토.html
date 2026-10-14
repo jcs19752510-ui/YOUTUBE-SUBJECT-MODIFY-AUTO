@@ -129,7 +129,7 @@ flowchart LR
   <div class="tw" style="margin-top:12px"><table>
     <thead><tr><th>순서</th><th>조치</th><th>효과</th><th>난이도</th></tr></thead>
     <tbody>
-      <tr><td class="k">1</td><td><span class="pill yes">코드 차단 완료</span> (<code>ONPREM_MODE</code>, 외부 AI 어댑터 3종 다층 차단). 운영 PC에서는 아직 <code>DEEPGRAM_API_KEY</code>를 <b>모든 위치</b>(.env, 시스템 환경변수, 배포 스크립트, 백업 파일)에서 제거하고 서버·워커를 재시작, Deepgram 콘솔에서 키 폐기(이전에 대화 화면에 노출된 이력이 있음), 온프리미스 모드에서 코드로 차단, 미연결 외부 어댑터 정리</td><td>음성의 외부 전송 가능성 제거. 키가 없으면 로컬 모델이 처리</td></tr><td>쉬움</td></tr>
+      <tr><td class="k">1</td><td><span class="pill yes">코드 차단 완료</span> (<code>ONPREM_MODE</code>, 외부 AI 어댑터 3종 다층 차단). 운영 PC에서는 아직 <code>DEEPGRAM_API_KEY</code>를 <b>모든 위치</b>(.env, 시스템 환경변수, 배포 스크립트, 백업 파일)에서 제거하고 서버·워커를 재시작, Deepgram 콘솔에서 키 폐기(이전에 대화 화면에 노출된 이력이 있음), 온프리미스 모드에서 코드로 차단, 미연결 외부 어댑터 정리</td><td>음성의 외부 전송 가능성 제거. 키가 없으면 로컬 모델이 처리</td><td>쉬움</td></tr>
       <tr><td class="k">2</td><td><span class="pill yes">완료</span> Monaco 에디터를 설치 시 로컬로 복사해 같은 서버에서 로드</td><td>인터넷 없는 PC에서도 코드 화면 동작 (차단 브라우저 검증 통과)</td><td>완료 (PC에서 <code>git pull</code> 후 <code>npm install</code>)</td></tr>
       <tr><td class="k">3</td><td><span class="pill mid">제외</span> 메일 발송은 지원자에게 가야 하므로 외부 발송(Gmail)을 유지</td><td>방화벽에서 메일 서버 주소만 예외 허용</td><td>해당 없음</td></tr>
       <tr><td class="k">4</td><td>패키지, Docker 이미지, 모델 파일(Whisper, MiniLM, Piper 음성, DeepFace 가중치, llama 모델·실행파일)을 외부망 PC에서 받아 반입하고 경로를 고정</td><td>폐쇄망에서도 설치·첫 실행 성공</td><td>보통(반입 절차 필요)</td></tr>
