@@ -179,15 +179,20 @@ def generate_for_video(session: Session, video_id: str, *, count: int, tone: str
         raise ProblemError(502, "ai_unavailable", "AI 제안기가 응답하지 못했습니다.", hint="잠시 후 다시 시도하거나, 제목을 직접 수정해 사용하세요.") from exc
     guarded = sanitize_drafts(raw, max_count=fetch)
     drafts = list(guarded.drafts)
+    fail_msgs: list[str] = []
     if video.source != "demo":  # 사용자 요청(2026-10-13): 경고·차단 후보는 만들지 않는다. 검증을 '통과'한 후보만 남긴다.
-        drafts = [d for d in drafts if validate_title(env, video, d.title, d.evidence, d.topic)[0].result == "pass"][:count]
+        checked = [(d, validate_title(env, video, d.title, d.evidence, d.topic)[0]) for d in drafts]
+        fail_msgs = list(dict.fromkeys(f.message for _, r in checked if r.result != "pass" for f in r.findings))[:3]  # 통과하지 못한 후보들의 이유(중복 제거, 최대 3개)
+        drafts = [d for d, r in checked if r.result == "pass"][:count]
     run.params = {"count": count, "tone": tone, "returned": len(raw) if hasattr(raw, "__len__") else None, "dropped": [list(d) for d in guarded.dropped]}
     session.flush()
     if not drafts:
         run.status, run.error = "failed", "no_valid_candidates"
         session.commit()
         if guarded.drafts:  # 후보는 있었지만 모두 검증을 통과하지 못함(실제 영상은 통과 후보만 남긴다)
-            raise ProblemError(502, "ai_no_pass_candidates", "만든 후보가 모두 검증을 통과하지 못해 저장하지 않았습니다.", hint="[AI 제안 생성]을 다시 눌러 새 후보를 만들거나, 제목을 직접 입력하세요.")
+            raise ProblemError(502, "ai_no_pass_candidates", "만든 후보가 모두 검증을 통과하지 못해 저장하지 않았습니다.", detail=" / ".join(fail_msgs),
+                               hint=("이 영상은 설명 내용으로는 경고 없는 제목을 만들 수 없습니다. Gemini 연결(web\\scripts\\gemini-on.bat) 후 다시 생성하거나, 제목을 직접 입력하세요." if suggester.name == "rule"
+                                     else "[AI 제안 생성]을 다시 눌러 새 후보를 만들거나, 제목을 직접 입력하세요."))
         if suggester.name == "rule":  # Gemini 키가 연결되지 않아 규칙 기반 제안기가 쓰인 경우: 챕터가 없는 영상(쇼츠 등)은 후보를 만들 수 없다
             raise ProblemError(502, "ai_no_candidates", "AI(Gemini)가 연결되어 있지 않아 이 영상의 제안을 만들 수 없습니다.", detail="간단한 규칙 기반 제안기는 영상 설명에 챕터(0:30 제목)가 있어야 후보를 만듭니다.",
                                hint="web\\scripts\\gemini-on.bat 로 Gemini 키를 한 번 연결한 뒤 다시 생성하세요.")
