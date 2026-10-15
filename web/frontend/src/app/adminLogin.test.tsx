@@ -151,10 +151,11 @@ describe('LoginForm', () => {
     const { container } = renderWithApp(<LoginForm expired />, client);
     const id = screen.getByLabelText('아이디');
     const pw = screen.getByLabelText('비밀번호');
-    expect(id).toHaveAttribute('autocomplete', 'username');
-    expect(id).toHaveAttribute('name', 'username');
+    // 2026-10-15 선생님 지시(보안): 브라우저가 저장해 둔 아이디·비밀번호를 자동으로 채우지 않는다. 옛 기대값은 autocomplete=username/current-password, name=username 이었다(결과서에 보존).
+    expect(id).toHaveAttribute('autocomplete', 'off');
+    expect(id).toHaveAttribute('name', 'admin-login-id');
     expect(pw).toHaveAttribute('type', 'password');
-    expect(pw).toHaveAttribute('autocomplete', 'current-password');
+    expect(pw).toHaveAttribute('autocomplete', 'new-password');
     expect(screen.getByText(/자동 로그아웃되었습니다/)).toBeInTheDocument();
     expect(await axeViolations(container)).toEqual([]);
     await user.type(id, 'test-admin');
