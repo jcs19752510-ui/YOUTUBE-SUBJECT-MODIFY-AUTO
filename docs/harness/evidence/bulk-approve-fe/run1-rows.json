@@ -1,0 +1,57 @@
+{
+ "rows": [
+  {
+   "id": "01-initial",
+   "name": "초기",
+   "expect": "제목 일괄 승인 화면, 방법 A 표에 현재 제목과 새 제목 4행, 선택 0/50건",
+   "actual": "현재 제목 보임=true, 선택 0/50건=true",
+   "ok": true
+  },
+  {
+   "id": "02-methodA",
+   "name": "방법 A 선택",
+   "expect": "체크 3건 활성, 차단 1건 체크박스 비활성, 선택 3/50건, 차단 사유 글",
+   "actual": "차단 비활성=true, 선택 3/50건=true",
+   "ok": true
+  },
+  {
+   "id": "03-methodB-need-choice",
+   "name": "방법 B 붙여넣기",
+   "expect": "영상 5 는 후보 2개라 \"후보 선택 필요\" 글, 영상 6 은 후보 1개 자동 선택, 선택 4/50건",
+   "actual": "선택 4/50건=true, 후보 선택 안내 글=true",
+   "ok": true
+  },
+  {
+   "id": "04-queue",
+   "name": "라디오 선택 후 승인 대기 목록",
+   "expect": "대기 목록 4건(현재 제목→새 제목), 선택 5/50건이 아니라 4/50건",
+   "actual": "선택 4/50건=false",
+   "ok": false
+  },
+  {
+   "id": "05-dialog-blocked",
+   "name": "확인 창, 경고 체크 전",
+   "expect": "현재 제목 표시, 승인 버튼 비활성, 남은 조건 글(경고 1건 확인)",
+   "actual": "버튼 비활성=true, 남은 조건 글=true, 현재 제목=true",
+   "ok": true
+  },
+  {
+   "id": "06-dialog-enabled",
+   "name": "경고 체크 후",
+   "expect": "승인 버튼 활성, 남은 조건 글 사라짐",
+   "actual": "버튼 활성=true",
+   "ok": true
+  },
+  {
+   "id": "07-result",
+   "name": "결과 패널",
+   "expect": "승인 3건 / 제외 1건, 제외 사유 글, 제목은 바뀌지 않음 문구, 요청에 경고확인 ID 2 포함",
+   "actual": "요약=true, 사유=true, 보낸 경고확인=[2], 보낸 ID=[1,2,3,51,61]",
+   "ok": true
+  }
+ ],
+ "log": [
+  "UNHANDLED GET /api/v1/dashboard",
+  "UNHANDLED GET /api/v1/dashboard"
+ ]
+}

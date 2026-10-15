@@ -1,0 +1,14 @@
+{
+ "description": "현재까지 결과물에 대한 장점과 단점, 근거 문서.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "assessment.json",
+  "url": "/_blob/d5c20cba2886902e2baa5438f6347e7e"
+ },
+ "title": "장점과 단점",
+ "updated": {
+  "at": "2026-10-10T09:06:11Z",
+  "by": "Claude"
+ }
+}

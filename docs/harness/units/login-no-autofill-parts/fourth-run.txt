@@ -1,0 +1,29 @@
+PASS a DOM 속성 | expected: form off, id off/admin-login-id, pw new-password/admin-login-secret, type=password | actual: {"form":"off","id":{"ac":"off","name":"admin-login-id","ro":true,"type":"text","val":""},"pw":{"ac":"new-password","name":"admin-login-secret","ro":true,"type":"password","val":""},"active":"BODY"}
+PASS a2 readonly 초기값(자동 포커스 여부 확인) | expected: readonly=true 이고 포커스 없음 | actual: id.ro=true pw.ro=true active=BODY
+PASS b 자동채움 흉내 native setter + input 이벤트 +0ms | expected: 2.3초 안에 두 칸 비워짐 | actual: 채움직후=["",""] 이후=["",""] 안내="아이디를 입력해 주세요."
+PASS b 자동채움 흉내 native setter + input 이벤트 +200ms | expected: 2.3초 안에 두 칸 비워짐 | actual: 채움직후=["값있음",""] 이후=["",""] 안내="아이디를 입력해 주세요."
+PASS b 자동채움 흉내 native setter + input 이벤트 +800ms | expected: 2.3초 안에 두 칸 비워짐 | actual: 채움직후=["값있음",""] 이후=["",""] 안내="아이디를 입력해 주세요."
+PASS b 자동채움 흉내 native setter만(이벤트 없음) +0ms | expected: 2.3초 안에 두 칸 비워짐 | actual: 채움직후=["값있음","값있음"] 이후=["",""] 안내="아이디를 입력해 주세요."
+PASS b 자동채움 흉내 native setter만(이벤트 없음) +200ms | expected: 2.3초 안에 두 칸 비워짐 | actual: 채움직후=["값있음","값있음"] 이후=["",""] 안내="아이디를 입력해 주세요."
+PASS b 자동채움 흉내 native setter만(이벤트 없음) +800ms | expected: 2.3초 안에 두 칸 비워짐 | actual: 채움직후=["값있음","값있음"] 이후=["",""] 안내="아이디를 입력해 주세요."
+PASS b2 2초 뒤 늦은 자동채움(타이머 종료 후, 참고) | expected: 비워지지 않을 수 있음(설계 한계) | actual: ["값있음","값있음"]
+PASS c 사람 입력 유지(2초 대기 후) | expected: 입력값 유지, 버튼 활성 | actual: id일치=true pw일치=true 버튼비활성=false
+PASS c 제출 시 입력값 그대로 전송 | expected: POST body 에 입력값 | actual: [{"login_id":"ID일치","password":"PW일치"}]
+PASS c2 느린 타이핑(타이머 구간과 겹침) | expected: 입력값 유지 | actual: id=true pw=true
+FAIL c3 키 이벤트 없는 입력(insertText: 음성·모바일·가상키보드·IME 확정 흉내) | expected: 입력값 유지(안 지워져야 함) | actual: id=false pw=false
+PASS c3b 키 이벤트 없는 입력을 화면 연 지 2.2초 뒤에 함 | expected: 유지 | actual: id=true pw=true
+PASS c4 붙여넣기 이벤트 후 삽입 | expected: 유지 | actual: id=true
+FAIL c5 한글 IME 흉내(composition 이벤트+insertText, keydown 없음) | expected: 유지 | actual: id=""
+PASS c6 한글 type() | expected: 유지 | actual: "관리자abc"
+PASS d 새로고침 후(사람 입력 뒤) | expected: 비어 있음 | actual: ["",""]
+PASS d2 뒤로가기 후 | expected: 비어 있음 | actual: ["",""]
+PASS d3 앞으로가기 후 | expected: 비어 있음 | actual: ["",""]
+PASS e 로그아웃 후 로그인 화면 칸 | expected: 비어 있음 | actual: ["",""]
+PASS e2 로그아웃 후 새로고침 직후 자동채움 흉내 | expected: 비워짐 | actual: ["",""]
+PASS f 저장소·URL·쿠키·화면글자에 값 없음, type=password | expected: 모두 false, type=password | actual: {"url":false,"ls":false,"ss":false,"ck":false,"type":"password","txt":false}
+PASS g 키보드만(Tab,Tab,Enter)으로 로그인 | expected: 첫 Tab→아이디, 둘째→비밀번호, 제출 성공 | actual: tab1=login-id tab2=login-password 전송=1
+PASS g2 axe-core 위반 | expected: 0건 | actual: []
+PASS g3 axe(칸 활성 후) | expected: 0건 | actual: []
+PASS h 틀린 로그인 후 | expected: 메시지 표시, 아이디 유지/비밀번호 비움 | actual: msg="아이디 또는 비밀번호가 올바르지 않습니다." id=nobody pwEmpty=true
+
+TOTAL 27 FAIL 2

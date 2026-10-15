@@ -1,0 +1,10 @@
+RESULT MIX-READ(8 endpoints) conc=20 n=300 rps=150 p50=122 p95=251 p99=320 max=342 err=0 (0.0%) codes={200: 300}
+RESULT GET /videos?page_size=200 conc=20 n=300 rps=107 p50=174 p95=291 p99=340 max=362 err=0 (0.0%) codes={200: 300}
+RESULT MIX-READ(8 endpoints) conc=50 n=300 rps=134 p50=347 p95=652 p99=823 max=879 err=0 (0.0%) codes={200: 300}
+RESULT GET /videos?page_size=200 conc=50 n=300 rps=102 p50=293 p95=1434 p99=2145 max=2885 err=0 (0.0%) codes={200: 300}
+RESULT MIX-READ(8 endpoints) conc=100 n=300 rps=9 p50=725 p95=31418 p99=32616 max=32680 err=17 (5.7%) codes={200: 283, 503: 3, 500: 14}
+RESULT GET /videos?page_size=200 conc=100 n=300 rps=91 p50=794 p95=2424 p99=2952 max=3201 err=0 (0.0%) codes={200: 300}
+RESULT MIX-READ(8 endpoints) conc=200 n=300 rps=105 p50=1446 p95=2580 p99=2709 max=2739 err=0 (0.0%) codes={200: 300}
+RESULT GET /videos?page_size=200 conc=200 n=300 rps=2 p50=60325 p95=60483 p99=60592 max=60608 err=260 (86.7%) codes={200: 40, 500: 20, 'ReadTimeout': 240}
+RESULT POST /videos/{id}/suggestions conc=20 n=40 rps=0 p50=60103 p95=60107 p99=60107 max=60107 err=40 (100.0%) codes={'ReadTimeout': 40}
+suggestion ids read: 0 of 40

@@ -1,0 +1,14 @@
+{
+ "description": "전체 회귀 테스트와 안전 항목 요약.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "testsummary.json",
+  "url": "/_blob/fc977672bf9197123c95f7f26fcd5752"
+ },
+ "title": "시험 요약",
+ "updated": {
+  "at": "2026-10-10T10:10:00Z",
+  "by": "Claude"
+ }
+}

@@ -1,0 +1,863 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>모의면접 스펙 비교</title>
+<style>
+:root{
+  --bg:#f5f6fb; --surface:#ffffff; --surface-2:#eef0f7; --border:#dfe3ee;
+  --ink:#191d2b; --ink-soft:#5a6280; --ink-faint:#8890a8;
+  --accent:#3a56f0; --accent-soft:#eaeeff; --accent-ink:#2c40c4;
+  --teal:#0d9488; --teal-soft:#e3f6f3;
+  --amber:#b45309; --amber-soft:#fdf1de;
+  --rose:#c0362c; --rose-soft:#fce8e6;
+  --violet:#7c3aed; --violet-soft:#f1e9fe;
+  --mono-bg:#eef0f7; --mono-ink:#2c3350;
+  --shadow:0 1px 2px rgba(20,24,45,.04), 0 10px 24px -14px rgba(20,24,45,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1119; --surface:#161a24; --surface-2:#1d2230; --border:#2a3145;
+    --ink:#e8eaf5; --ink-soft:#a3aac4; --ink-faint:#6e7690;
+    --accent:#8296ff; --accent-soft:#1e2544; --accent-ink:#b7c1ff;
+    --teal:#3fd6c2; --teal-soft:#123330;
+    --amber:#f2b657; --amber-soft:#332510;
+    --rose:#f18b83; --rose-soft:#3a1c1a;
+    --violet:#c4a6ff; --violet-soft:#2a2049;
+    --mono-bg:#1d2230; --mono-ink:#c7cde6;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1119; --surface:#161a24; --surface-2:#1d2230; --border:#2a3145;
+  --ink:#e8eaf5; --ink-soft:#a3aac4; --ink-faint:#6e7690;
+  --accent:#8296ff; --accent-soft:#1e2544; --accent-ink:#b7c1ff;
+  --teal:#3fd6c2; --teal-soft:#123330;
+  --amber:#f2b657; --amber-soft:#332510;
+  --rose:#f18b83; --rose-soft:#3a1c1a;
+  --violet:#c4a6ff; --violet-soft:#2a2049;
+  --mono-bg:#1d2230; --mono-ink:#c7cde6;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:"Noto Sans KR",system-ui,sans-serif; font-size:14.5px; line-height:1.62; padding-inline:20px;}
+.wrap{max-width:1120px; margin:0 auto; padding-block:34px 80px;}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+
+header.hero{padding-block:4px 26px; border-bottom:1px solid var(--border); margin-bottom:24px;}
+.eyebrow{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--accent-ink); background:var(--accent-soft); border-radius:100px; padding:5px 12px;}
+h1{font-size:clamp(24px,3.6vw,32px); line-height:1.2; margin:14px 0 8px; font-weight:900; letter-spacing:-.01em;}
+.sub{color:var(--ink-soft); font-size:14.5px; max-width:760px; margin:0;}
+.srclinks{margin-top:12px; display:flex; flex-wrap:wrap; gap:7px;}
+.srclinks span{font-size:11px; color:var(--ink-faint); background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:4px 9px; font-family:"JetBrains Mono",monospace;}
+
+.dash{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; box-shadow:var(--shadow); margin-bottom:24px;}
+.dash-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+.dash-head h2{font-size:14.5px; margin:0; font-weight:900;}
+.dash-head span{font-size:11.5px; color:var(--ink-faint);}
+.dash-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;}
+.dash-grid.g5{grid-template-columns:repeat(5,1fr);}
+.dash-grid.g6{grid-template-columns:repeat(6,1fr);}
+@media (max-width:640px){ .dash-grid{grid-template-columns:repeat(2,1fr);} .dash-grid.g5,.dash-grid.g6{grid-template-columns:repeat(2,1fr);} }
+@media (min-width:641px) and (max-width:900px){ .dash-grid.g6{grid-template-columns:repeat(3,1fr);} }
+.dash-card.partial b{color:var(--accent-ink);}
+.dash-card.impossible b{color:var(--ink-faint);}
+.dash-card.draft b{color:var(--violet);}
+.dash-card{background:var(--surface-2); border-radius:11px; padding:13px 14px;}
+.dash-card b{display:block; font-size:26px; font-weight:900; line-height:1.1;}
+.dash-card span{font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+.dash-card.total b{color:var(--ink);}
+.dash-card.done b{color:var(--teal);}
+.dash-card.left b{color:var(--rose);}
+.dash-card.pct b{color:var(--accent-ink);}
+.progress-track{width:100%; height:10px; border-radius:100px; background:var(--surface-2); overflow:hidden;}
+.progress-fill{height:100%; border-radius:100px; background:linear-gradient(90deg, var(--teal), var(--accent)); width:6%;}
+.dash-sub{margin-top:10px; font-size:11.5px; color:var(--ink-faint);}
+.dash.dash2{margin-top:14px;}
+.breakdown{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+.bd-pill{display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; border-radius:9px; padding:7px 11px; flex:1 1 160px;}
+.bd-pill b{font-size:15px; font-weight:900;}
+.bd-pill.g-ok{background:var(--teal-soft); color:var(--teal);}
+.bd-pill.g-caution{background:var(--amber-soft); color:var(--amber);}
+.bd-pill.g-no{background:var(--rose-soft); color:var(--rose);}
+.progress-fill.zero{width:0%; background:var(--ink-faint);}
+.changelog{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 20px; box-shadow:var(--shadow); margin-bottom:24px;}
+.changelog h2{font-size:14.5px; margin:0 0 10px; font-weight:900;}
+.changelog ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px;}
+.changelog li{display:flex; gap:10px; font-size:12.5px; align-items:baseline;}
+.changelog .cl-date{color:var(--ink-faint); font-family:"JetBrains Mono",monospace; font-size:11px; flex:none; width:132px;}
+.changelog .cl-badge{display:inline-block; font-size:10.5px; font-weight:800; border-radius:100px; padding:2px 8px; flex:none;}
+.changelog .cl-badge.done{color:var(--teal); background:var(--teal-soft);}
+.changelog .cl-badge.hold{color:var(--amber); background:var(--amber-soft);}
+.changelog .cl-text{color:var(--ink-soft);}
+.changelog .cl-group{font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; margin:14px 0 2px; padding-top:10px; border-top:1px solid var(--border);}
+.changelog .cl-group:first-child{margin-top:0; padding-top:0; border-top:none;}
+.changelog .cl-group.done{color:var(--teal);}
+.changelog .cl-group.partial{color:var(--accent-ink);}
+.changelog .cl-group.hold{color:var(--amber);}
+.row-status{display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:800; border-radius:100px; padding:2px 8px; white-space:nowrap;}
+.row-status.done{color:var(--teal); background:var(--teal-soft);}
+.row-status.hold{color:var(--amber); background:var(--amber-soft);}
+.row-status.wip{color:var(--accent-ink); background:var(--accent-soft);}
+.row-status.todo{color:var(--ink-faint); background:var(--surface-2);}
+.row-status.draft{color:var(--violet); background:var(--violet-soft);}
+
+nav.jump{position:sticky; top:0; z-index:5; background:var(--bg); padding-block:12px; margin-bottom:6px; display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid var(--border);}
+nav.jump a{text-decoration:none; font-size:12px; font-weight:700; color:var(--ink-soft); background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:6px 11px; white-space:nowrap;}
+nav.jump a:hover{color:var(--accent-ink); border-color:var(--accent);}
+
+section.block{margin-top:36px;}
+h2{font-size:19px; font-weight:900; margin:0 0 4px; letter-spacing:-.01em; scroll-margin-top:58px;}
+.h2sub{color:var(--ink-faint); font-size:12.5px; margin:0 0 14px;}
+
+/* legend */
+.legend{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
+.legend .item{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:6px 10px;}
+.dot{width:9px; height:9px; border-radius:50%; flex:none;}
+.dot.s{background:var(--teal);} .dot.m{background:var(--amber);} .dot.l{background:var(--rose);}
+
+/* feature spec (details/summary) */
+.spec{background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; box-shadow:var(--shadow); overflow:hidden;}
+.spec summary{cursor:pointer; list-style:none; padding:13px 16px; display:flex; align-items:center; gap:12px; font-weight:800; font-size:14px;}
+.spec summary::-webkit-details-marker{display:none;}
+.spec summary .car{width:28px; height:28px; border-radius:8px; background:var(--accent-soft); color:var(--accent-ink); font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; flex:none;}
+.spec summary .ttl{flex:1;}
+.spec summary .req{font-family:"JetBrains Mono",monospace; font-weight:500; font-size:11px; color:var(--ink-faint); display:block; margin-top:1px;}
+.spec summary .chev{color:var(--ink-faint); font-size:12px; transition:transform .15s;}
+.spec[open] summary .chev{transform:rotate(90deg);}
+.spec-body{padding:0 16px 16px; display:grid; gap:12px; grid-template-columns:1fr 1fr;}
+@media (max-width:700px){ .spec-body{grid-template-columns:1fr;} }
+.specbox{background:var(--mono-bg); border-radius:10px; padding:11px 13px;}
+.specbox .lbl{font-size:10.5px; font-weight:800; color:var(--ink-faint); letter-spacing:.04em; text-transform:uppercase; margin-bottom:6px;}
+.specbox table{width:100%; border-collapse:collapse; font-size:12px;}
+.specbox td{padding:3px 0; vertical-align:top; color:var(--mono-ink);}
+.specbox td:first-child{color:var(--ink-faint); white-space:nowrap; padding-right:10px; font-size:11px;}
+.specbox code{font-size:11.5px;}
+.specbox ul{margin:0; padding-left:16px;}
+.specbox li{margin-bottom:3px; font-size:12px; color:var(--mono-ink);}
+.fullspan{grid-column:1/-1;}
+.specbox p{margin:0; font-size:12.5px; color:var(--mono-ink);}
+.specbox.diff-partial{background:var(--amber-soft);}
+.specbox.diff-partial .lbl{color:var(--amber);}
+.specbox.diff-diverge{background:var(--rose-soft);}
+.specbox.diff-diverge .lbl{color:var(--rose);}
+.matchbox{border-radius:10px; padding:12px 14px; margin-bottom:14px; background:var(--teal-soft); border:1px solid color-mix(in srgb, var(--teal) 30%, transparent);}
+.matchbox .lbl{font-size:10.5px; font-weight:800; color:var(--teal); letter-spacing:.04em; text-transform:uppercase; margin-bottom:5px;}
+.matchbox p{margin:0; font-size:13px; color:var(--mono-ink);}
+tr.grouprow td{font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; padding:8px 13px; border-bottom:1px solid var(--border);}
+tr.grouprow.g-ok td{background:var(--teal-soft); color:var(--teal);}
+tr.grouprow.g-caution td{background:var(--amber-soft); color:var(--amber);}
+tr.grouprow.g-no td{background:var(--rose-soft); color:var(--rose);}
+tr.subgrouprow td{font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:6px 13px 6px 24px; border-bottom:1px solid var(--border); background:var(--surface-2); color:var(--ink-faint);}
+table.blk{width:100%; border-collapse:collapse; font-size:12.5px; min-width:980px;}
+table.blk th,table.blk td{text-align:left; padding:10px 13px; border-bottom:1px solid var(--border); vertical-align:top;}
+table.blk th{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; background:var(--surface-2);}
+table.blk tr:last-child td{border-bottom:none;}
+table.blk td.item{font-weight:800; white-space:nowrap;}
+table.blk td.why{color:var(--ink-soft);}
+table.blk td.how{color:var(--ink-soft);}
+table.blk td.purpose{color:var(--ink-soft);}
+.blk-badge{display:inline-block; font-size:10px; font-weight:800; border-radius:100px; padding:2px 8px; margin-top:5px; white-space:nowrap;}
+.blk-badge.res{color:var(--amber); background:var(--amber-soft);}
+.blk-badge.legal{color:var(--violet); background:var(--violet-soft);}
+.blk-badge.hw{color:var(--rose); background:var(--rose-soft);}
+.blk-badge.platform{color:var(--accent-ink); background:var(--accent-soft);}
+
+/* comparison table */
+.tablewrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow);}
+table.cmp{width:100%; border-collapse:collapse; font-size:12.8px; min-width:820px;}
+table.cmp th,table.cmp td{text-align:left; padding:10px 13px; border-bottom:1px solid var(--border); vertical-align:top;}
+table.cmp th{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; background:var(--surface-2); position:sticky; top:0;}
+table.cmp tr:last-child td{border-bottom:none;}
+table.cmp td.plan{color:var(--ink-soft);}
+table.cmp td.actual{font-weight:600;}
+.tag{display:inline-block; font-size:10.5px; font-weight:800; border-radius:100px; padding:2px 8px; white-space:nowrap;}
+.tag.match{color:var(--teal); background:var(--teal-soft);}
+.tag.partial{color:var(--amber); background:var(--amber-soft);}
+.tag.diverge{color:var(--rose); background:var(--rose-soft);}
+
+/* matrix table */
+table.mtx{width:100%; border-collapse:collapse; font-size:12.8px; min-width:940px;}
+table.mtx th,table.mtx td{text-align:left; padding:10px 13px; border-bottom:1px solid var(--border); vertical-align:top;}
+table.mtx th{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; background:var(--surface-2);}
+table.mtx tr:last-child td{border-bottom:none;}
+.size{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; border-radius:100px; padding:3px 9px 3px 7px; white-space:nowrap;}
+.size.s{color:var(--teal); background:var(--teal-soft);}
+.size.m{color:var(--amber); background:var(--amber-soft);}
+.size.l{color:var(--rose); background:var(--rose-soft);}
+.verdict{display:block; font-size:11px; font-weight:700; margin-top:3px;}
+.verdict.ok{color:var(--teal);}
+.verdict.caution{color:var(--amber);}
+.verdict.no{color:var(--rose);}
+.reason{font-size:12px; color:var(--ink-soft);}
+
+/* reason cards */
+.rgrid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:760px){ .rgrid{grid-template-columns:1fr;} }
+.rcard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; box-shadow:var(--shadow);}
+.rcard .icon{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:10px;}
+.rcard h3{margin:0 0 8px; font-size:15px; font-weight:800;}
+.rcard p{margin:0 0 8px; font-size:13px; color:var(--ink-soft);}
+.rcard p:last-child{margin-bottom:0;}
+.rcard b{color:var(--ink);}
+
+footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--border); font-size:11.5px; color:var(--ink-faint);}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">● 원 계획서 대조 · 구현 스펙 · 전환 가능성</span>
+  <h1>모의면접 스펙 비교</h1>
+  <p class="sub">원본 기획서 2종(텍스트/슬라이드)의 설계 스펙과 현재 코드베이스의 실제 구현을 1:1로 대조하고, 원안으로 되돌리거나 확장할 때 개발기간(대/중/소)과 그 판단 근거를 정리했습니다.</p>
+  <div class="srclinks">
+    <span>📄 웹 AI 모의면접 프로젝트 계획서.pdf (전 14p)</span>
+    <span>📊 웹 AI 모의면접 프로젝트 계획서_슬라이드.pdf (전 15p)</span>
+    <span>💻 backend/app/{models,services,api/v1}</span>
+  </div>
+</header>
+
+<div class="dash">
+  <div class="dash-head">
+    <h2>📊 원안 기준 변경 반영 현황</h2>
+    <span>② 원 계획서 vs 실제 구현 대조 16개 항목 기준</span>
+  </div>
+  <div class="dash-grid">
+    <div class="dash-card total"><b>16</b><span>전체 항목</span></div>
+    <div class="dash-card done"><b>2</b><span>반영 완료(일치)</span></div>
+    <div class="dash-card left"><b>14</b><span>미반영(부분·대체 7 + 전면편차 7)</span></div>
+    <div class="dash-card pct"><b>13%</b><span>전체 진행률</span></div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" style="width:13%;"></div></div>
+  <div class="dash-sub">진행률 = 반영 완료(일치) 2건 ÷ 전체 16건. "일치" 자체는 unit-23(2026-09-22) 이후 늘지 않았지만, 미반영 14건 중 상당수의 <b>실제 구현 내용은 2026-09-23~25 사이 크게 진전</b>(아래 표 참고) — 판정(부분/대체 vs 전면편차)이 바뀌지 않았다고 진전이 없다는 뜻은 아니다.</div>
+
+  <div class="tablewrap" style="margin-top:16px;">
+    <table class="blk">
+      <thead><tr><th style="width:20%">미반영 14개 — 항목</th><th style="width:44%">2026-09-23~25 사이 실제 진행 결과</th><th style="width:36%">분류</th></tr></thead>
+      <tbody>
+        <tr><td class="item">STT(Deepgram)</td><td class="why">✅ 사용자가 API 키 제공 → 실배선+실HTTP E2E 완료(무료 faster-whisper와 스마트 폴백 공존, 운영 기본값은 그대로 무료). ③매트릭스 "완료"</td><td><span class="row-status done">🟢 완료</span></td></tr>
+        <tr><td class="item">화이트보드 AI비전</td><td class="why">✅ 로컬 SmolVLM(무료)로 실연결 + 실HTTP E2E 완료. 품질은 낮음(disclaimer 필수). ③매트릭스 "완료"</td><td><span class="row-status done">🟢 완료</span></td></tr>
+        <tr><td class="item">감정/비언어 분석(DeepFace)</td><td class="why">✅ 사용자가 "개인PC 임시테스트, 법무불필요"로 범위축소 승인 → 진단 전용 엔드포인트 실연결, 실HTTP E2E 완료(confidence 0.97). 실제 채용 파이프라인과는 분리 유지</td><td><span class="row-status done">🟢 완료(범위한정)</span></td></tr>
+        <tr><td class="item">코드 테스트(샌드박스)</td><td class="why">✅ 사용자 명시 승인 → 실행 엔드포인트 배선, 보안격리 수준은 무변경(사용자의 완화 요청은 거절, DEC-060). 실HTTP+실브라우저 8TC 전부 PASS</td><td><span class="row-status done">🟢 완료</span></td></tr>
+        <tr><td class="item">배포/인프라(K8s)</td><td class="why">✅ 로컬 kind 클러스터로 메커니즘 검증(파드/PVC/HPA/스케일링 4TC PASS). 단 실제 앱 이미지가 아닌 테스트 이미지(nginx/busybox)로 검증 — 진짜 프로덕션 배포는 아님</td><td><span class="row-status done">🟢 완료(로컬 메커니즘)</span></td></tr>
+        <tr><td class="item">리포트/스코어링</td><td class="why">✅ unit-37로 원안이 요구한 "루브릭 템플릿 기반" 채점 완성(채용담당자 지정 템플릿의 항목별 1~5점+근거, 기존 3축 병행 유지). 이미 "일치"였던 것이 더 원안에 가까워짐</td><td><span class="row-status done">🟢 완료(강화)</span></td></tr>
+        <tr><td class="item">보안/규정(GDPR/CCPA)</td><td class="why">코드로 가능한 부분(적법근거·CCPA고지·데이터이동권)은 전부 구현됨 — <b>남은 건 DPO 지정·역외이전 안전조치인데, 이건 코드가 아니라 조직적·법적 행위</b>라 "완료"로 승격 불가능, 실행할 코드 자체가 없음(DEC-071)</td><td><span class="row-status hold">🟡 코드 천장 도달</span></td></tr>
+        <tr><td class="item">LLM(LangChain)</td><td class="why">검증모듈은 이미 완료 상태 유지, 운영 전환은 회귀위험 대비 실익 낮아 보류 유지</td><td><span class="size m">🟡 중</span> 권장 안 함</td></tr>
+        <tr><td class="item">실시간 통신(WebRTC)</td><td class="why">시그널링만(unit-28)에서 진전 없음 — 사용자가 DEC-072에서 "지금은 그대로 둔다" 확정</td><td><span class="size l">🔴 대</span> 보류 확정</td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">TTS(ElevenLabs)</td><td class="why">사용자가 "유료는 모두 진행 안 함"으로 명시 선언(DEC-059) → ③매트릭스 "개발불가(유료결제 필수)"로 재분류</td><td><span class="row-status todo">💳 유료 — 진행 안 함(사용자 선택)</span></td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">벡터DB→Pinecone</td><td class="why">동일 사유(DEC-059) — 애초 ②표는 이미 "일치"(pgvector가 원안의 공식 대안)라 이 전환 자체가 불필요</td><td><span class="row-status todo">💳 유료 — 진행 불필요</span></td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">아키텍처(모놀리스)</td><td class="why">DEC-004 의도적 확정. <b>[2026-09-23 재평가, DEC-059]</b> 순수 예산이 아니라 개발 <b>시간</b> 문제로 재분류(5계층 MSA 재설계 자체는 무료지만 대규모 재작성 필요)</td><td><span class="row-status todo">⚫ 시간 문제로 재평가</span></td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">메인DB(PostgreSQL)</td><td class="why">DEC-004 의도적 확정, "비권장"으로 결론 — 순수 예산 문제(Oracle 라이선스) 그대로 유지</td><td><span class="row-status todo">⚫ 예산 문제</span></td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">실시간 개입(VAD)</td><td class="why">REQ-004 의도적 확정(턴제 대체). <b>[2026-09-23 재평가, DEC-059]</b> 예산이 아니라 아키텍처 재설계 <b>시간</b> 문제로 재분류</td><td><span class="row-status todo">⚫ 시간 문제로 재평가</span></td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">동시접속(500명)</td><td class="why">GPU 1개 물리 한계 그대로 — 순수 하드웨어 예산 문제</td><td><span class="row-status todo">⚫ 예산 문제</span></td></tr>
+        <tr style="background:var(--surface-2);"><td class="item">지연시간(&lt;1.5s)</td><td class="why">로컬 CPU/저사양 GPU 한계 그대로 — 순수 하드웨어 예산 문제</td><td><span class="row-status todo">⚫ 예산 문제</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="dash-sub" style="margin-top:8px;">🟢 6개는 2026-09-23~25 세션들에서 사용자 승인을 받아 실제로 완료됐습니다(위 판정이 "부분/대체"에 머무는 이유는 원안 스펙 전체 — 예: "&lt;300ms 스트리밍"·"AI 자동 시간복잡도 분석"·"실제 클라우드 배포" — 을 100% 충족하진 않기 때문이지, 진전이 없어서가 아닙니다). ⚫ 7개 중 2개(아키텍처·VAD)는 2026-09-23 재검토로 "예산"이 아니라 "개발 시간" 문제임이 밝혀졌고, 나머지(Oracle·동시접속·지연시간)만 순수 예산 문제입니다. GDPR/CCPA는 유일하게 "코드로 더 할 게 없는" 항목 — 남은 것은 사람이 내리는 법적·조직적 결정입니다.</div>
+</div>
+
+<div class="dash dash2">
+  <div class="dash-head">
+    <h2>🔧 전환 작업 착수 현황</h2>
+    <span>③ 전환 가능성 매트릭스 18개 항목 기준</span>
+  </div>
+  <div class="dash-grid g6">
+    <div class="dash-card done"><b>11</b><span>완료</span></div>
+    <div class="dash-card partial"><b>2</b><span>부분착수</span></div>
+    <div class="dash-card draft"><b>0</b><span>코드준비·미검증</span></div>
+    <div class="dash-card left"><b>0</b><span>미착수·보류</span></div>
+    <div class="dash-card impossible"><b>5</b><span>개발 불가</span></div>
+    <div class="dash-card pct"><b>100%</b><span>전체 착수율</span></div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" style="width:100%;"></div></div>
+  <div class="dash-sub">"가능" 판정 13개 기준(2026-09-25 갱신, TTS-ElevenLabs·벡터DB-Pinecone은 사용자가 09-23 유료중단 선언 후 "개발 불가(유료결제 필수)"로 재분류돼 분모에서 빠짐): 완료 11(합격불합격필드·Prosody·TLS+AES·LangChain검증모듈·AI안전장치·STT-Deepgram·화이트보드AI비전·코드샌드박스·DeepFace·K8s로컬·STT실시간스트리밍) + 부분착수 2(WebRTC시그널링 — 사용자가 보류 확정, GDPR/CCPA — 코드로 갈 수 있는 데까지 도달했으나 남은 건 법적·조직적 행위라 완료 불가) = 13. <b>"가능" 13개 전 항목 착수 완료, 순수 완료율도 11/13=85%로 상승</b>(2026-09-23 당시 5/15=33%). 개발 불가 5건(유료결제 필수 2 + 하드웨어·아키텍처 근본한계 3)은 별도 그룹이라 분모 제외.</div>
+  <div class="dash-sub">진행률 = 실제 코드 변경·마이그레이션·테스트까지 끝난 항목만 반영(가짜 진행률 금지, 프로젝트 자체 원칙과 동일). 항목별 완료 표시는 ③ 매트릭스 "진행상태" 열 참고. 2026-09-23~25 사이 다수 세션에 걸쳐 사용자가 직접 API 키 제공·명시 승인·로컬 kind/Docker 기동·실기기 마이크 테스트 등을 수행하며 진행됨(상세는 changelog 및 `docs/harness/decisions.md` DEC-058~075).</div>
+</div>
+
+<div class="dash" style="margin-bottom:24px;">
+  <div class="dash-head">
+    <h2>🚧 처리 불가 / 진행 불가 항목 상세</h2>
+    <span>2026-09-25 기준 — 6개 항목(2026-09-23 버전 10개 중 4개는 아래 ✅ 해결됨)</span>
+  </div>
+  <div class="matchbox" style="margin-bottom:14px;">
+    <div class="lbl">✅ 2026-09-23 당시 여기 있었으나 이제 해결된 4개</div>
+    <p><b>코드 실행 샌드박스</b>(플랫폼 제약이라 여겼으나 재시도 시 정상 실행됨을 확인, DEC-069로 배선) · <b>DeepFace 서비스 연결</b>(개인PC 진단용으로 범위 축소해 법무 조건 우회, DEC-070) · <b>STT 실시간 스트리밍</b>(사용자 실기기 마이크 테스트로 최종 검증, DEC-075) · <b>화이트보드 AI 비전</b>(무료 로컬 SmolVLM으로 대체 연결, DEC-061/062) — 상세는 ③ 매트릭스와 changelog 참고.</p>
+  </div>
+  <p class="h2sub" style="margin:0 0 12px;">
+    <span class="blk-badge res">자원 필요</span> API키·계정 등 외부 자원만 있으면 진행 가능(사용자가 비용상 진행 안 함 선택) ·
+    <span class="blk-badge legal">법무 필요</span> 법률 자문/판단이 선행돼야 함 ·
+    <span class="blk-badge hw">하드웨어·시간 한계</span> 물리적 컴퓨팅 자원 또는 대규모 재설계 시간 필요
+  </p>
+  <div class="tablewrap">
+    <table class="blk">
+      <thead><tr><th style="width:14%">항목</th><th style="width:27%">목적 — 왜 필요한가</th><th style="width:27%">왜 막혀있는가(현재 상태)</th><th style="width:32%">어떻게 해야 진행 가능한가</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="item">TTS→ElevenLabs<br>벡터DB→Pinecone<span class="blk-badge res">자원 필요</span></td>
+          <td class="purpose">TTS는 면접관 음성에 감정(격려/압박 톤)을 실어 몰입감을 높이고, 벡터DB는 질문은행이 커질 때 매니지드 확장성을 제공.</td>
+          <td class="why">어댑터 코드는 전부 작성 완료(unit-32). <b>2026-09-23(DEC-059) 사용자가 "원안에 유료는 모두 진행하지 않겠다"고 명시 선언 — 예산 문제가 아니라 사용자의 선택.</b> (STT는 Deepgram 키를 받아 이미 완료로 전환됨 — 여기서 제외)</td>
+          <td class="how">사용자가 유료 서비스 이용을 원할 경우에만: ① 각 벤더에서 유료 API 키 발급 → ② `.env`에 등록 → ③ 실제 호출로 검증. <b>지금은 진행 의사 없음 — 재개 시 언제든 수일 내 가능.</b></td>
+        </tr>
+        <tr>
+          <td class="item">WebRTC 실제<br>영상 기능 완성<span class="blk-badge hw">하드웨어·시간 한계</span></td>
+          <td class="purpose">AI 면접관이 지원자의 실제 영상을 "보고" 비언어적 신호(DeepFace 등)를 분석하는 최종 목표 — 현재는 시그널링(연결 수립)만 되고 영상 자체는 전송되지 않음.</td>
+          <td class="why">unit-28에서 시그널링 서버(SDP/ICE 중계)만 실제 구현·검증. 실제 미디어(RTP 오디오/비디오) 처리는 별도의 대규모 작업(aiortc 미디어 서버). <b>2026-09-24(DEC-072) 사용자가 "지금은 그대로 두겠다"고 명시 확정.</b></td>
+          <td class="how">① aiortc 기반 미디어 서버 프로세스 신설 → ② 프론트엔드에 RTCPeerConnection/getUserMedia 코드 작성(현재 전무) → ③ STUN/TURN 서버 구성 → ④ 실제 브라우저로 검증. <b>수주 단위 전담 작업 필요 — 사용자가 원할 때 재개.</b></td>
+        </tr>
+        <tr>
+          <td class="item">GDPR/CCPA<br>완전 준수<span class="blk-badge legal">법무 필요</span></td>
+          <td class="purpose">해외(EU/미국 캘리포니아) 사용자 대상 서비스 확장 시 법적 리스크 회피.</td>
+          <td class="why">코드로 가능한 부분(적법근거·CCPA고지·데이터이동권)은 전부 구현·검증 완료. <b>2026-09-24(DEC-071) 재조사 결과 남은 항목(DPO 지정, 역외이전 안전조치)은 실행할 코드·엔드포인트 자체가 없는 조직적·법적 행위임을 확인 — 이 항목은 유일하게 "코드로 더 갈 수 없는" 항목.</b></td>
+          <td class="how">① 실제 법무 자문으로 이 서비스가 EU/CA 거주자를 대상으로 하는지부터 확인 → ② 필요 시 사람을 DPO로 지정 + SCC 등 이전계약 체결(둘 다 소프트웨어 작업이 아님).</td>
+        </tr>
+        <tr>
+          <td class="item">VAD 기반<br>실시간 끼어들기<span class="blk-badge hw">하드웨어·시간 한계</span></td>
+          <td class="purpose">사람같은 자연스러운 대화 흐름(답변이 길어지면 면접관이 정중히 개입) — 실제 면접 현장감 향상.</td>
+          <td class="why">§4.3 설계서가 "턴제"를 이미 확정(WS는 서버→클라이언트 푸시 전용) — 실시간 오디오 채널 자체가 아키텍처에 없음. <b>2026-09-23(DEC-059) 재평가 — 예산이 아니라 대규모 재설계 시간 문제.</b></td>
+          <td class="how">클라이언트→서버 실시간 오디오 스트림 채널 신설 + VAD 라이브러리 통합 + TTS 재생 중단 로직까지 전면 재설계. STT 실시간 스트리밍은 이미 완료됐으나, 그 위에 VAD까지 얹는 건 별도의 큰 추가 작업.</td>
+        </tr>
+        <tr>
+          <td class="item">메인DB→Oracle<span class="blk-badge hw">하드웨어·시간 한계</span></td>
+          <td class="purpose">원 계획서 작성 시점 조직이 보유했을 Oracle 라이선스/운영 경험과의 정합.</td>
+          <td class="why">이미 JSONB·pgvector(Vector 타입) 등 PostgreSQL 전용 기능에 스키마 전반이 의존 중 — 순수 예산 문제(라이선스 비용).</td>
+          <td class="how">전체 스키마를 Oracle 23ai 벡터 타입 기준으로 재작성 + 모든 Alembic 마이그레이션 재작성 + 상용 라이선스 구매. <b>비권장 — 되돌릴 이유(기술적 이점)가 명확하지 않음.</b></td>
+        </tr>
+        <tr>
+          <td class="item">500명<br>동시접속 처리<span class="blk-badge hw">하드웨어·시간 한계</span></td>
+          <td class="purpose">채용 성수기 등 다수 지원자가 동시에 몰려도 응답 지연 없이 서비스 품질 유지.</td>
+          <td class="why">단일 GPU·단일 LLM 서버 직렬 처리(<code>--pool=solo</code>)가 물리적 하드웨어 전제. K8s로 API 계층 수평확장 메커니즘은 검증됐지만(2026-09-25), 무거운 연산(STT/LLM/TTS) 워커는 GPU 1개에 묶여있어 병목은 그대로 — 순수 예산 문제.</td>
+          <td class="how">GPU 노드/인스턴스를 요청량만큼 추가 확보 — 순수 하드웨어/클라우드 예산 투자. <b>코드로 해결되지 않음.</b> CLAUDE.md 참고: "10명 동시접속"(연습 인원 기준) 목표는 이미 추가 투자 없이 가능하다는 이론 분석이 별도로 있음(실측 부하테스트는 미실시).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="dash-sub" style="margin-top:10px;">남은 6개 중 GDPR만 "코드로 더 할 게 없는" 항목이고, 나머지 5개는 전부 사용자의 명시적 선택(비용/시간 미투자, 또는 보류 확정)으로 지금 멈춰 있는 상태입니다 — 기술적 미비가 아닙니다.</div>
+</div>
+
+<div class="changelog">
+  <h2>🕓 최근 업데이트 <span style="font-weight:600; font-size:11px; color:var(--ink-faint);">(KST, 24시간제)</span></h2>
+  <ul>
+    <li class="cl-group done">✅ 완료 — 11건 (최신순, 아래 2026-09-28~30 보강분은 기존 완료 항목의 후속 강화/결함 정정, 하네스 자체 작업, 또는 원 계획서에 없던 신규 요청(Feature J)이라 11건 카운트는 불변 — Feature J는 애초에 ②/③표의 "16개/18개" 비교 대상이 아님)</li>
+    <li><span class="cl-date">2026-09-30 18:12</span><span class="cl-badge done">완료</span><span class="cl-text"><b>[결함 수정] 지원자 앱 동의 체크박스가 화면 전체 너비의 거대한 막대로 깨지는 문제</b> — 사용자가 실제 화면 스크린샷과 함께 강하게 지적했습니다("화면이 왜 또 깨지게 했나요? 오전에도 이런 경우로 수정했는데... 대충대충 작업할꺼야? 똑바로해")(DEC-119). 추측하지 않고 코드부터 직접 확인한 결과, 텍스트 입력칸을 위해 만든 공용 CSS 규칙(<code>.field input</code>이 폭 100%+테두리+안쪽여백을 강제)이 체크박스에도 그대로 적용되고 있던 것이 원인이었습니다 — 이 결함은 "이력서제출_합격통보" 기능을 처음 만든 2026-09-29부터 계속 있었던 것으로 코드상 확인됐고, 이 세션이 오늘 오전에 이 정확한 문제를 고친 기록은 없었습니다(다른 화면을 보고 착각하셨거나 다른 시점 작업을 말씀하신 것으로 추정되지만, 누구 탓인지보다 실제로 결함이 있었다는 사실이 중요하다고 판단해 바로 고쳤습니다). 회원가입 화면과 이력서 제출 화면 2곳 모두에 영향이 있어 둘 다 수정했고, 같은 결함이 다른 화면에서도 재발하지 않도록 두 앱의 전역 스타일시트에 체크박스 전용 규칙(18×18px 고정)을 넣어뒀습니다. <b>이전 검증(2026-09-29, DEC-101)이 "클릭하면 체크 상태가 바뀐다"는 것까지만 확인하고 실제로 화면에 어떻게 그려지는지는 스크린샷으로 안 봤던 것이 이 결함을 놓친 원인 중 하나</b>라고 판단해, 이번엔 수치(<code>getBoundingClientRect</code>)와 스크린샷 둘 다로 재검증했습니다 — 두 화면 모두 정상 크기(18×18px)로 렌더링되고 텍스트와 깔끔하게 정렬된 것을 눈으로 직접 확인했습니다. 코드·레이아웃만 바뀐 순수 CSS 수정이라 API/DB는 무관하고, 헬스체크도 재확인했습니다(규칙 K-6).</span></li>
+    <li><span class="cl-date">2026-09-30 18:06</span><span class="cl-badge done">완료</span><span class="cl-text"><b>[Feature J 후속] 이력서 1회 제출 후 재제출 완전 차단(화면 + 백엔드 이중 방어)</b> — 사용자가 실제 화면 스크린샷(빨간 테두리)과 함께 "이력서를 1번이라도 제출했다면 샘플양식 다운로드·파일 선택·동의 체크박스·제출 버튼이 전부 보이지 않아야 하고, 제출 이후에는 상태만 확인 가능해야 한다"고 요청했습니다(DEC-118). 예전 정책(원 설계)은 재제출을 언제든 허용하고 기존 지원서를 덮어쓰는 방식이었는데, 이번 요청으로 완전히 뒤집혔습니다. <b>착수 전에 먼저 확인 질문을 드렸습니다</b> — "화면에서 기능을 막으려고 합니다"라는 표현이 화면(프런트)만 가리켰는데, 화면만 막으면 개발자도구나 API를 직접 호출해서 우회할 수 있다는 점을 설명하고 백엔드도 함께 막을지 여쭤봤고, 사용자가 "백엔드도 막기(권장)"를 선택했습니다. 그래서 <b>화면은 UX, 실제 방어는 백엔드</b>라는 이중 구조로 구현했습니다 — 이미 지원서가 있으면 백엔드가 파일을 받기도 전에 즉시 409로 거부하고, 화면은 지원서가 없을 때만 그 4개 요소를 보여줍니다. <b>실제로 우회 공격을 재현해서 검증</b>했습니다 — 실제 로그인 토큰으로 이력서를 1차로 정상 제출(201)한 뒤, 화면을 거치지 않고 동일 계정으로 같은 API를 다시 직접 호출해 진짜로 409가 뜨는지, 그 시도가 기존 데이터를 조금도 건드리지 않았는지(제출 기록의 id·제출시각이 그대로인지)까지 확인했습니다. 화면 쪽도 실브라우저로 두 가지 경우 다 확인했습니다 — 이미 제출한 계정으로 접속하면 4개 요소가 DOM에서 아예 사라지는 것(CSS로 숨긴 게 아니라 렌더링 자체를 안 함), 아직 제출 안 한 신규 계정으로 접속하면 예전처럼 정상적으로 다 보이는 것(회귀 없음, 대조군). 테스트 계정은 검증 직후 삭제, 헬스체크도 재확인했습니다(규칙 K-6). 이 변경은 스키마 변경이 없는 순수 로직 변경이라 되돌리기도 쉽습니다.</span></li>
+    <li><span class="cl-date">2026-09-30 17:57</span><span class="cl-badge done">완료</span><span class="cl-text"><b>[Feature J 후속] "이력서제출절차" 안내 화면을 실제 앱 안에 추가(지원자·관리자 양쪽, 로그인 후 탭 메뉴)</b> — 직전 항목(자동 메일 발송) 완료 보고 때 미답변으로 남겨뒀던 질문에 사용자가 "실제 앱 안에 만들어주세요. 이력서 제출자와 관리자화면 모두 로그인 이후에 탭 메뉴로 확인할 수 있도록"이라고 명확히 답했습니다(DEC-117). 그동안 외부 Claude Artifact(별도 링크)로만 존재하던 절차 설명을, 지원자 앱(3002번 포트)에는 처음으로 탭 메뉴를 신설해 "이력서 제출" 옆에 "제출 절차 안내"를, 관리자 앱(3001번 포트)에는 기존 탭 메뉴에 같은 이름의 탭을 추가했습니다. 원본 아티팩트는 Claude 전용 다이어그램 도구(mermaid)를 썼지만, <b>이 프로덕션 앱들에는 그런 도구가 없어 화면 하나를 위해 새 라이브러리를 추가하는 대신 이미 쓰던 번호 단계 카드 스타일로 표현</b>했습니다 — 정보 전달력은 동일하게 유지하면서 불필요한 의존성을 늘리지 않는 선택입니다. <b>내용을 그대로 복사하지 않고 최신 상태로 갱신</b>했습니다 — 원본이 "안내 메일은 관리자가 직접 발송"이라고 설명하던 부분은 바로 직전 항목(자동발송 전환)으로 이제 사실이 아니어서, "시스템이 자동 발송, 실패 시에만 관리자가 대신 발송"으로 고쳐 썼습니다. 검증은 실브라우저로 양쪽 앱 모두: 신규 회원가입→로그인→새 탭 클릭→내용 확인, 로그인 세션을 강제로 지운 뒤 직접 주소로 접속했을 때 로그인 화면으로 튕기는지, 지원자 계정으로 관리자 전용 화면에 접속했을 때 "권한이 없습니다"가 뜨는지까지 전부 실제로 재현해 확인했습니다. <b>덤으로, 이 작업을 하며 원래 있던 외부 아티팩트도 같은 이유로 낡아있던 것을 발견해 함께 고쳤습니다</b>(같은 "관리자가 직접 발송" 문구 + 다이어그램의 발송 단계) — 화면 문구 갱신 요청은 소스코드만이 아니라 그 기능을 설명하는 모든 산출물을 포괄한다는 이전 교훈(2026-09-30 메모리 기록)을 그대로 적용한 것입니다. 테스트 계정은 검증 직후 삭제, 백엔드+프런트 2개 앱 헬스체크까지 재확인했습니다(규칙 K-6). 이 작업은 신규 화면 추가일 뿐 API/DB 변경이 없어 ②/③표 수치와는 무관합니다.</span></li>
+    <li><span class="cl-date">2026-09-30 17:45</span><span class="cl-badge done">완료</span><span class="cl-text"><b>[Feature J 후속] 합격/불합격 결정 시 안내 메일 완전 자동발송(Gmail SMTP)</b> — 갱신 ⑰(DEC-102)에서 언급됐던 "화면이 준비해준 문구를 관리자가 직접 이메일로 보낸다"(반자동) 방식을, 사용자 요청으로 <b>백엔드가 판단 저장 즉시 스스로 발송</b>하는 방식으로 전환했습니다(DEC-116). 예전에 대기 중이던 "자동 이메일+Notion 자동기록" 기능(갱신 ⑰) 중 이메일 부분만 먼저 진행 — Notion을 같이 할지 확인 질문했더니 사용자가 "지금은 이메일만 먼저"를 선택했습니다. 발송 수단은 Gmail SMTP+앱 비밀번호로, 사용자가 본인 Google 계정에서 2단계 인증을 켜고 앱 비밀번호를 직접 발급해 전달했습니다(비밀번호 입력은 사용자 본인이 수행, Claude가 대신 입력하지 않는다는 보안 원칙 그대로 준수). <b>지어낸 검증이 아니라 실제로 발송해서 확인했습니다</b> — 사용자의 실제 Gmail 주소로 메일을 1통 직접 보내 정상 수락(SMTP 250 OK 상당)을 확인한 뒤, 진짜 로그인 토큰으로 합격/불합격 결정 API를 각각 실제로 호출해 두 경우 다 서버가 응답 필드(`notified_at`)를 자동으로 채우는 것까지 확인했고, 초안 미리보기 화면과 실제 발송 내용이 같은 로직(공유 함수로 리팩터링)을 쓰는지도 함께 검증했습니다. <b>실패해도 안전하도록 설계</b> — 메일 발송이 안 되거나 설정이 없어도 합격/불합격 처리 자체는 막히지 않고, 예전부터 있던 "발송 완료로 표시" 수동 버튼이 그대로 대체 수단으로 남아있습니다(성공 발송이 실제로 확인된 경우에만 "발송 완료" 표시가 뜨도록 함 — 가짜 진행률 금지 원칙 그대로 적용). 관리자 화면 두 곳(목록·상세)의 "자동으로 발송되지는 않아요" 구식 안내 문구도 실제 동작에 맞게 고쳐 실브라우저로 재확인했습니다. 테스트에 쓴 임시 계정·이력서는 검증 직후 모두 삭제했고, 헬스체크로 서버 정상 동작까지 재확인했습니다(규칙 K-6). Notion 자동기록은 이번 범위에 포함하지 않았습니다 — 별도 요청 시 진행 예정입니다.</span></li>
+    <li><span class="cl-date">2026-09-29 21:16</span><span class="cl-badge done">완료</span><span class="cl-text"><b>[Feature J 후속] "100% 검증됐냐"는 사용자 재확인 → 실클릭 재검증 중 실제 결함 발견·수정(DEF-J03)</b> — 직전 항목의 검증이 "합격 처리"/"불합격 처리" 버튼과 파일 다운로드 링크를 실클릭이 아니라 API로만 했었다는 것을 스스로 인정하고 다시 파고든 결과, <b>파일 다운로드가 실제 화면에서는 로그인 토큰이 안 실려서 항상 401로 깨지는 Critical 결함을 발견</b>(백엔드 API 테스트만으로는 절대 못 잡는 종류) — 즉시 인증된 방식으로 고치고 실클릭 재검증(200 OK 확인), "합격/불합격 처리" 버튼도 실제 텍스트 입력+클릭으로 재검증(기존 정상, 신규 결함 없음)(DEC-099). 최초 PASS 판정이 사실은 아직 이 결함을 발견하기 전이었다는 점을 숨기지 않고 결과서에 그대로 남김.</span></li>
+    <li><span class="cl-date">2026-09-29 20:51</span><span class="cl-badge done">완료</span><span class="cl-text"><b>[신규 기능] 이력서 제출 → 서류 합격/불합격 → 모의면접 진행(Feature J)</b> — 원 계획서에는 없던 항목으로, 사용자가 별도 프롬프트(<code>이력서제출_합격통보_신규기능_요청프롬프트.md</code>)로 신규 요청해 "그 프롬프트 기준으로 개발 진행해줘"라고 지시받아 구현. 확정 설계 4가지(같은 저장소 새 경로로 확장·모의면접 계정과 완전 공유·통보는 반자동(백엔드 미발송, 관리자가 MCP 메일도구로 직접 발송)·면접 일정은 강제력 없는 안내용)와 착수 직전 재확인한 하위호환 결정(이력서 기록 없는 기존 계정은 게이트 없이 자유 진행) 그대로 구현(DEC-098). <code>/apply/*</code>(이력서 제출자 회원가입·로그인·제출), <code>/recruiter/resumes/*</code>(관리자 검토·합격불합격 판단·통보초안·발송완료 체크), 모의면접 홈에 게이트 로직(지원서가 accepted가 아니면 시작 버튼 대신 안내 배너) 신설. 실HTTP 27케이스+실브라우저 13케이스 전부 PASS, 과정에서 실제 결함 2건(업로드가 항상 422 나던 검증 버그, 마이페이지 타입 누락) 발견 즉시 수정 — 상세는 <code>docs/harness/feature-j-resume-application-20260929-test.md</code>. REQ-040~044(신규 "Feature J" 섹션)로 <code>traceability.md</code>에 기록, 이 REQ들은 원안에 없던 항목이라 위 ②/③표 통계에는 포함하지 않음.</span></li>
+    <li><span class="cl-date">2026-09-28 22:15</span><span class="cl-badge done">완료</span><span class="cl-text"><b>QUEUE_FULL(429) 구현 + Redis 성능결함 발견·수정</b> — 직전 갱신 ⑨가 "사용자만 결정할 수 있는 것"으로 남겨뒀던 QUEUE_FULL 착수 여부에 대해, 사용자가 상세 설명(은행 창구 비유)을 들은 뒤 "QUEUE_FULL진행해 주세요"라고 명시 승인 — 답변 제출(<code>/turns</code>, 텍스트·음성 공통) 경로에 GPU 큐(50개) 초과 시 즉시 429 QUEUE_FULL로 거절하는 방어를 신설(음성은 무거운 STT 파싱 전에 거절, 원 설계서 §1.3/§4.1의 429 그대로 채택 — recruiter 503과는 별개 엔드포인트별 결정)(DEC-096). <b>검증 중 실제 성능결함 2건을 부수 발견·수정</b>: (1) Redis 접속 호스트명 <code>localhost</code>가 이 Windows 환경에서 IPv6 우선 시도 후 실패·폴백하는 데 매 신규연결마다 약 2초 소요 — <code>127.0.0.1</code>로 고정. (2) <code>queue_length()</code>가 매 호출 신규 Redis 연결을 만들던 것을 기존 <code>prompt_safety.py</code>와 동일한 캐시 패턴으로 리팩터링. 두 수정 후에도 재현된 동일 지연을 서버 내부 타임스탬프로 끝까지 추적한 결과 <b>서버 처리 자체는 이미 1~4ms로 빨랐고, 최종 원인은 테스트 클라이언트가 접속에 쓴 <code>localhost</code>(동일한 Windows IPv6 패턴)였음을 확인</b> — 두 원인을 뭉뚱그리지 않고 구분해 기록(정직성 원칙). 실HTTP 8케이스 전부 PASS, 재기동 후 헬스체크 정상 확인(규칙 K-6). <i>이로써 갱신 ⑨가 남긴 "사용자 결정 대기" 2건(QUEUE_FULL·GDPR) 중 1건이 해소됐습니다.</i></span></li>
+    <li><span class="cl-date">2026-09-28 21:30</span><span class="cl-badge done">완료</span><span class="cl-text"><b>원 계획서 대조 전수 재점검</b> — 사용자가 "Git작업 이외에 원본에 맞추어 작업할 내용이 더이상 없는건가요?"라고 질문 — 추측으로 답하지 않고 `traceability.md` 전체를 "미구현/잔여부채/사용자결정대기" 키워드로 처음부터 끝까지 재조사(DEC-095). <b>진짜 코드 갭 1건 발견·보고</b>: 답변 제출(<code>/turns</code>) 경로에 429 QUEUE_FULL 방어와 WS <code>queue_status</code>(대기열 위치/ETA) push가 여전히 미구현 — 단 이건 처음부터 <code>job_queue.py</code> 자체 docstring에 "REQ-038과 겹쳐 09단계 인계 대상"으로 명시돼 있던 항목이라 임의로 만들지 않고 존재만 보고. <b>실제로 처리한 것 1건</b>: unit-19 DEF-001(100자 경계값 이름 시 홈 헤더 가로스크롤)이 2026-09-20 수정 이후 "08 착수 전 필수 게이트"로 남아있었는데 실제 앱으로 한 번도 재확인되지 않았던 것을 발견 — 100자 이름 계정을 실제로 만들어 375px 모바일 실브라우저로 열어 가로스크롤 없음을 처음으로 실측 확정. <b>문서만 낡았던 것 2건 정정</b>(코드 변경 없음): 루브릭 기본 템플릿 시드·코드/화이트보드 재접속 복원이 이미 다른 작업에서 해결됐는데 옛 기록이 그대로 남아있던 것을 정정.</span></li>
+    <li><span class="cl-date">2026-09-28 21:05</span><span class="cl-badge done">완료</span><span class="cl-text"><b>미완료 항목 재검토 — beat 실발화 실증·태블릿/모바일 재검증·설계질문 종결</b> — 직전 작업(자동 파기 배치)에서 "부분착수"로 남겼던 항목을 사용자가 "처리 가능한지 재검토"해 달라고 지시. <b>beat 스케줄 실발화</b>: 검증 시각이 마침 정시 10분 전이라 실제로 `celery worker`+`celery beat`를 띄우고 실시간 대기 — <b>21:00:06에 이 세션의 개입 없이 스케줄러가 스스로 삭제 요청을 처리하는 것을 워커 로그+DB로 실시간 확인</b>. <b>unit-20 태블릿/모바일</b>: 실브라우저로 768px/375px 뷰포트 재현 — 분할비율·dialog/aria-modal/inert·Esc+포커스복귀 전부 실측 PASS. <b>switch_to_coding</b>: 실LLM으로 2회 시도했으나 재현 안 됨 — 시스템 프롬프트에 트리거 조건 지시문 자체가 없다는 근본원인까지 코드로 특정(결함 아님, 프롬프트 설계 공백). <b>설계질문 4개</b>(계정탈퇴 API 신설·[C-05]장치점검화면·데스크톱패널 기본상태·비-live 읽기전용열람)는 AskUserQuestion으로 한 번에 질의해 <b>전부 "현행 유지"로 확정 종결</b>(DEC-094). 이로써 unit-20의 남은 미검증은 재접속 실패 경계·접근성 자동검사(둘 다 이 환경에 도구가 없어 구조적으로 불가)뿐으로 크게 축소.</span></li>
+    <li><span class="cl-date">2026-09-28 18:10</span><span class="cl-badge done">완료</span><span class="cl-text"><b>자동 파기 배치(unit-21) + 루브릭 weight 합계 검증</b> — 사용자가 "07단계 통합테스트 부채" 완료 후 정리해준 "남은 작업" 중 "코드로 실제 해결 가능한 항목" 진행 지시. 2026-09-20(DEC-029)부터 미착수였던 <code>delete_requested_data</code>(REQ-030, 삭제요청 매시간 처리)·<code>purge_expired_data</code>(REQ-033, 180일 보관기간 만료 매일 파기) 두 Celery beat 배치를 신규 구현, REQ-014(루브릭 weight 합계 검증 누락)도 함께 정산 — 실DB 16TC+실HTTP 6TC 전부 PASS(DEC-093). <b>작업 도중 이 컴퓨터의 Anaconda가 완전히 삭제된 것을 발견</b> — 임의로 재설치하지 않고 사용자에게 즉시 확인, "의도적 삭제·재설치 금지·독립 venv로 개발 전환"을 확인받은 뒤 독립 Python 3.12로 <code>backend/.venv</code>를 재구축(torch/tensorflow 포함 약 150개 패키지 재설치, 서버·워커 실기동까지 재확인)(DEC-092). <b>정직한 한계 공개(사용자가 "20년차 기준 부분착수 여부 검토"를 별도 요청)</b>: beat 스케줄의 실제 시간기반 자동발화 자체는 미검증(수 시간 대기 필요), <code>full_account</code> 삭제는 이를 생성하는 API가 아직 없어 방어적 구현에 그침. 같은 요청 범위에서 unit-20의 정식 06단계 문서(<code>unit-20-test.md</code>)도 신규 작성했으나, 처음부터 재현한 게 아니라 07단계 기존 증거와 대조하는 방식이라 태블릿/모바일·실제 AI發 자동화면전환·접근성검사·미해결 설계질문 4개(Q1~Q4)까지 포함하면 "완료"가 아닌 <b>"부분 PASS"</b>로 정직하게 판정.</span></li>
+    <li><span class="cl-date">2026-09-28 17:55</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature C(핵심 AI 파이프라인, 마지막 5건)</b> — 사용자 지시 "남은건 5건 진행해 주세요"로 "07단계 통합테스트 부채 21건" 전체 정산 완료(REQ-003~007). 이 프로젝트 07단계 역사상 처음으로 <b>Celery AI 워커(LLM/STT/TTS)를 실가동한 채</b> 검증 — 텍스트/음성 턴 에러경로 12케이스, wav/webm 포맷 STT 디코딩(원문 100% 일치), TTS 동시 3건 실제 병렬처리, Celery `--pool=solo` 직렬 큐잉 실증(gap 10.85초). <b>실브라우저로 답변 제출→실제 LLM이 답변 맥락을 반영한 후속질문을 2턴 연속 생성하는 것까지 직접 확인</b>(지어낸 질문이 아니라 실제 RAG/LLM 파이프라인이 만든 질문). <b>unit-7-note.md가 유일하게 미검증으로 남겼던 CPU 폴백 경로도 강제 재현</b> — GPU 바이너리를 임시로 못 쓰게 만들었더니 실제로 "CPU 전용 빌드로 폴백" 로그가 뜨고 26초 만에 정상 응답 생성(GPU 메모리 거의 무변화로 순수 CPU 실행 확인), 검증 후 즉시 원복(DEC-091). 23개 TC 전부 PASS.</span></li>
+    <li><span class="cl-date">2026-09-28 17:15</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature H(웹캠 프리뷰/운영 모니터링/화이트보드)</b> — 사용자 지시 "나머지 19개 REQ 계속 진행" 중 5번째(REQ-015/016/017). 화이트보드 PUT/GET 에러경로 7케이스, <code>/ops/health</code> 인증·권한 3케이스 실측 전부 PASS + 실브라우저로 웹캠 타일 off→권한거부 전이(크래시 없음), 화이트보드 실제 마우스 드로잉+저장(PUT 200 확인), <code>/admin/ops</code> admin 정상 렌더링(4지표 카드)·미인증 렌더링까지 검증(DEC-090). 기존 DEF-001(hydration mismatch 가능성)은 이번에도 재현되지 않았으나 확정 근거가 부족해 <b>Deferred 상태를 정직하게 유지</b>(낙관적 Closed 처리 금지). traceability.md REQ-015/016/017의 "L1 부채" 표시 해소.</span></li>
+    <li><span class="cl-date">2026-09-28 16:45</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature F(채용담당자 대시보드/루브릭)</b> — "나머지 19개 REQ 계속 진행" 중 4번째(REQ-011/014). <code>/recruiter</code>(목록)·<code>/recruiter/{id}</code>(상세) 실브라우저 렌더링 확인. 검증 중 <code>/recruiter/rubric-templates</code>가 <code>/recruiter</code>로 자동 리다이렉트되는 것을 발견 — 소스 코드 추적 결과 2026-09-22 사용자가 "연결된 곳이 없다"며 의도적으로 숨긴 화면임을 확인, 그런데 그 다음날(09-23) unit-37이 루브릭을 실제 채점에 연결했음도 함께 확인(DEC-089). <b>화면 재활성화 여부는 제품 판단이라 임의로 되돌리지 않고 사실만 보고.</b></span></li>
+    <li><span class="cl-date">2026-09-28 16:20</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature D(라이브 코딩 에디터)</b> — "나머지 19개 REQ 계속 진행" 중 3번째(REQ-008). 백엔드 에러경로 8케이스(POST/GET 인증없음401/존재하지않는id404/타인세션403/화이트리스트외언어422) 전부 PASS + 실제 면접장에서 코드 탭 전환→Monaco 입력→"제출"(201)→새로고침→재접속 복원까지 실브라우저로 확인(스크린샷 대조)(DEC-088). 코드 변경 없음(결함 없음).</span></li>
+    <li><span class="cl-date">2026-09-28 16:00</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature 규제컴플라이언스(사전고지/법률고지)</b> — "나머지 19개 REQ 계속 진행" 중 2번째(REQ-031~034). unit-15-test.md가 "브라우저 자동화 도구 부재"로 반복 보류해온 인수조건을 이 세션 환경(Claude Browser pane)으로 실제 검증 — 스크롤 완독 시에만 동의 체크박스 활성화, live 세션 접근 시 면접장 자동 리다이렉트, completed 세션 접근 시 오류 안내, 미인증 시 로그인 리다이렉트 전부 확인(DEC-087). 검증 도중 사용량 한도로 세션이 한 차례 중단됐으나 재개 시 규칙 K대로 잔존물 확인 후 미완료분을 처음부터 재검증.</span></li>
+    <li><span class="cl-date">2026-09-28 15:30</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature G(개인정보·생체정보 동의)</b> — 사용자가 "나머지 19개 REQ 계속 진행해 주세요"라고 명시 지시한 후 첫 대상(REQ-029/030). unit-14-test.md가 제외했던 재철회409/존재하지않는id404/타인소유403/잘못된enum422/인증없음401(동의 등록·조회·삭제요청·삭제이력 4개 엔드포인트) 8케이스 실측 전부 PASS(DEC-086). 코드 변경 없음(결함 없음).</span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature B(면접 세션 상태머신)</b> — 승인 "07단계 통합테스트 부채 21건" 중 우선순위 2번째. unit-2/unit-3-test.md(06단계 L1)가 제외했던 중복시작/종료 409, completed상태 resume 409, 수평권한상승 403(GET/resume/end), 인증없음 401, 존재하지않는id 404, 세션만료 410(resume) 등 10케이스를 하나의 연속 상태전이 시나리오로 실측 — 전부 PASS(DEC-084). 테스트 설계 중 "만료 세션은 GET도 410이어야 한다"는 잘못된 가정을 코드·설계문서 재대조로 스스로 발견·정정(결함 아님, 의도된 설계 확인). traceability.md REQ-002/REQ-013의 "L1 부채" 표시 해소.</span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>07단계 통합테스트 — Feature A(인증/회원)</b> — 승인 "07단계 통합테스트 부채 21건" 중 우선순위 1번째. unit-1-test.md(06단계 L1)가 제외했던 이메일중복409/role422/비밀번호422/로그인401 4종 실측 + <b>이 프로젝트 최초로 실제 브라우저(Claude Browser pane)를 이용해 회원가입→로그인→홈 화면 흐름까지 실제 클릭으로 검증</b>(과거 모든 세션이 "브라우저 자동화 도구 부재"로 보류해온 항목). 검증 중 <code>frontend/.env.local</code>이 옛 세션이 쓰던 포트(8010)를 그대로 가리켜 "네트워크 오류"가 나는 부수 결함 1건 발견·수정(로컬 환경설정 문제, 코드 결함 아님)(DEC-083). traceability.md REQ-001의 "L1 부채" 표시 해소. <i>21건 중 나머지(핵심 AI 응답 파이프라인 등)는 다음 우선순위로 남음.</i></span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>503 QUEUE_FULL 실측</b> — 승인 "나머지 6개 후보" 중 #4. 재채점 엔드포인트의 큐 상한 방어 로직을 실제 서버+Redis 큐를 진짜로 50건까지 채워 처음으로 실측 — 정확히 503 반환, DB 상태 오염 없음, 큐 해소 후 정상 200(대조군)까지 확인(코드 변경 없음, 기존 코드가 올바르게 동작함을 실증)(DEC-085).</span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>Celery 워커 크래시 복구</b> — 승인 "나머지 6개 후보" 중 #3. unit-10 정적검토 DEF-002(워커 크래시 시 리포트가 "생성 중"에서 영구 고착, 화면은 폴링만 써서 복구 불가) 수정 — 감시 로직이 리포트 job의 타임아웃을 감지하면 <code>report_status</code>를 직접 <code>failed</code>로 전이시켜, 이미 있던 "다시 생성하기" 버튼이 실제로 동작하는 조건을 만듦(신규 UI 없음). 실제 Redis+DB로 5케이스 전부 PASS(DEC-082).</span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>화이트보드 캔버스 크기 정정</b> — 사용자가 승인한 "나머지 6개 후보" 중 #6. unit-35-note.md §5-1이 "후속 확인 필요"로 남겨뒀던 렌더링 상수 <code>_CANVAS_SIZE</code>(1200×800으로 가정)를 실제 배선 코드와 대조 — <code>InterviewSidePanel.tsx</code>가 <code>WhiteboardCanvas</code>를 width/height 미지정으로 호출해 실제로는 컴포넌트 기본값 640×400(종횡비도 다름)을 쓰고 있음을 발견. 그림이 좌상단 절반 이하에만 그려지고 나머지 큰 여백이 SmolVLM에 전달되던 것을 상수 정정으로 해소 — 수정 전(여백 실증)/후(전체 채움) 픽셀 단위로 대조 검증(DEC-081). <i>(화이트보드 AI비전 unit-35의 결함 정정)</i></span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>리포트 파싱 실패 폴백 유출가드 적용</b> — 승인 "나머지 6개 후보" 중 #5. unit-10 정적검토가 지적한 DEF-003(리포트 생성 실패 시 LLM 원문을 그대로 사용자에게 노출, 턴 응답과 달리 REQ-039 유출검사 미적용)을 수정 — 지원자·채용담당자 공용 직렬화 지점(<code>_report_to_out</code>)에 기존 REQ-039 탐지 함수를 재적용, 유출 마커 검출 시 안내 문구로 치환+감사 로그. DB 원문 저장은 그대로 유지(마이그레이션 불필요), 정상 폴백 텍스트는 회귀 없이 그대로 보존(DEC-080). <i>(unit-10 DEF-003 결함 정정)</i></span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>프롬프트 인젝션 Critical 수정</b> — 사용자 승인 보강 3건(1→6→8) 중 1번째. 채용담당자 루브릭 템플릿 <code>description</code> 필드에 실제 공격 페이로드를 주입해 실측 테스트한 결과, 세부 점수는 정직하게 유지되면서도 <code>overall_recommendation</code>/<code>pass_fail_recommendation</code>만 "recommend/pass"로 이탈하는 <b>DEF-001(Critical)</b> 발견 — 프롬프트 방어만으로는 우회 가능함을 실증. <code>tasks.py::_apply_recommendation_consistency_guard()</code>로 서버측 정합성 재검증(점수&lt;3.0인데 recommend/pass면 자동으로 neutral/borderline 보정)을 신설, 6개 LLM 실측TC+6개 가드함수TC 전부 PASS, 2차 내부검증 완료(DEC-077). <i>(AI 안전장치 5종 unit-27의 후속 강화)</i></span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>content_text·코드제출 내용 암호화 확대</b> — 승인 보강 3건 중 2번째. unit-25가 "손상 결함 조사 우선"으로 보류했던 <code>transcripts.content_text</code>/<code>code_submissions.content</code>를 신규 <code>EncryptedText</code>(AES-256-GCM)로 전환(마이그레이션 f1a3c7e92b04). 기존 실데이터 268건(96+172) 전체를 SHA-256 해시로 전/후 대조해 0 mismatch 확인, downgrade→re-upgrade 왕복 재검증까지 완료. JSONB 필드(star_json 등)는 별도의 더 큰 구조변경 결정이라 의도적으로 이번 범위에서 제외(DEC-078). <i>(TLS+AES 암호화 unit-25의 후속 강화)</i></span></li>
+    <li><span class="cl-date">2026-09-28</span><span class="cl-badge done">완료</span><span class="cl-text"><b>합격/불합격 필드 법무 검토 안내서 작성</b> — 승인 보강 3건 중 3번째. unit-23(2026-09-22)이 "배포 전 법무 검토 필수"라 남긴 뒤 실제 법무 자문 요청이 없었던 공백을 메움 — 실제 법무팀/변호사에게 그대로 전달 가능한 브리핑 문서(<code>docs/legal/pass-fail-recommendation-review-brief.md</code>)를 작성. 필드 설명·관련 법조항(개인정보보호법 제37조의2) 요지·기존 기술적 완화장치 5가지·법무 확인 질문 예시를 정리하되, 세션 자신의 법적 판단은 넣지 않고 최종 결정은 전부 법무에 위임(DEC-079). <b>주의: 이 문서 작성 자체가 법무 검토 완료를 의미하지 않음 — 실제 법무 전달·회신은 여전히 미완.</b> <i>(합격/불합격 필드 복원 unit-23의 후속 강화)</i></span></li>
+    <li><span class="cl-date">2026-09-25</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-36 최종해소</b> — STT 실시간 스트리밍. 사용자가 본인 PC 일반 브라우저(세션 환경 아님)로 직접 마이크 테스트 수행, 4초 간격 실시간 텍스트 갱신·최종제출·AI응답까지 전부 확인(DEC-075). 부수 발견: 이전 세션이 남긴 중복 Celery 워커 프로세스(`DuplicateNodenameWarning`), 기능 영향 없어 재검증만 반복.</span></li>
+    <li><span class="cl-date">2026-09-25</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-30 실배포검증</b> — K8s 로컬 클러스터. 사용자가 Docker Desktop에서 kind 활성화 후 승인, 격리 네임스페이스+테스트 이미지로 실제 배포(원본 매니페스트 무변경). 파드3/3·PVC2/2·자동복구·로드밸런싱·스케일링 4TC 전부 PASS(DEC-074).</span></li>
+    <li><span class="cl-date">2026-09-24</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-29 API배선</b> — 코드 실행 샌드박스. 사용자 명시 승인으로 <code>/code-submissions/execute</code> 신설(보안격리 완화 요청은 거절, DEC-060 유지). 실HTTP+실브라우저 8TC PASS(DEC-069).</span></li>
+    <li><span class="cl-date">2026-09-24</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-31 API배선</b> — DeepFace. 사용자가 "개인PC 진단용, 법무불필요"로 범위축소 승인, <code>/webcam-emotion</code> 신설(리포트 파이프라인과 분리). 배선 중 실측 결함 2건(cp949 콘솔 크래시, venv 의존성 소실) 발견·수정 후 3TC PASS(DEC-070).</span></li>
+    <li><span class="cl-date">2026-09-23</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-32 후속</b> — STT→Deepgram. 사용자가 API키 제공(DEC-058) → 실HTTP 검증 → <code>stt_router.py</code>로 실제 음성 제출 경로에 배선(무료 폴백 유지, DEC-063).</span></li>
+    <li><span class="cl-date">2026-09-23</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-35 후속</b> — 화이트보드 AI비전. 유료 GPT-4V 대신 무료 로컬 SmolVLM 연결(DEC-061), Docker 기동 후 실HTTP E2E 완료(DEC-062). 응답 품질 낮아 disclaimer 필수.</span></li>
+    <li><span class="cl-date">2026-09-22 23:4x대</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-27</b> — AI 안전장치(인젝션탐지·레이트리밋·유출감사로그). 레이트리밋 실제 HTTP 10/11 경계 검증, 설계 결함 1건 실측 발견·수정.</span></li>
+    <li><span class="cl-date">2026-09-22 23:0x대</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-26</b> — LangChain 검증모듈(운영 파이프라인은 별도 유지). 운영 전환은 09-24 재확인 후에도 회귀위험으로 계속 보류.</span></li>
+    <li><span class="cl-date">2026-09-22 22:46:44</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-25</b> — TLS 1.3 + AES-256 저장암호화(consents.ip_address). "모든 데이터"는 아직 아님.</span></li>
+    <li><span class="cl-date">2026-09-22 21:44:22</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-24</b> — 음성 Prosody 분석(pitch/jitter/voiced_ratio). 실제 한국어 음성 E2E 검증 완료.</span></li>
+    <li><span class="cl-date">2026-09-22 21:27:11</span><span class="cl-badge done">완료</span><span class="cl-text"><b>unit-23</b> — "합격/불합격" 추천 필드 복원. REQ-031과 긴장 관계라 배포 전 법무 검토 필요.</span></li>
+
+    <li class="cl-group partial">◐ 부분착수 — 2건 (최신순)</li>
+    <li><span class="cl-date">2026-09-24</span><span class="cl-badge hold">부분착수</span><span class="cl-text"><b>GDPR/CCPA 재검토</b> — 코드로 가능한 부분(unit-33/34)은 전부 완료됐으나, 남은 DPO지정·역외이전은 코드가 아닌 법적·조직 행위임을 확인 — 유일하게 "완료 승격 불가능"한 항목으로 정직하게 유지(DEC-071).</span></li>
+    <li><span class="cl-date">2026-09-24</span><span class="cl-badge hold">부분착수</span><span class="cl-text"><b>WebRTC 시그널링</b>(unit-28) — 사용자가 "지금은 그대로 두겠다"고 명시 확정(DEC-072). 미디어서버는 수주 단위 작업이라 보류.</span></li>
+  </ul>
+  <div class="dash-sub" style="margin-top:10px; font-weight:700;">✅ "가능" 13개 전부 착수, 11개 완료(85%)·2개 부분착수. "코드준비·미검증" 카테고리는 소멸(TTS-ElevenLabs·Pinecone은 사용자가 09-23 유료중단 선언 후 개발불가 그룹으로 이동, STT-Deepgram은 완료로 승격).</div>
+  <div class="dash-sub" style="margin-top:8px;">🛠 <b>이 기간 발견·수정된 버그(참고)</b>: Next.js 로컬 빌드캐시로 인한 404(DEC-064) · React Strict Mode 이중호출로 인한 면접 목록 중복생성 DEF-002(DEC-064) 및 그 수정의 자체회귀 DEF-003(DEC-065, 사용자 재검증 요구로 발견) · 로컬 환경설정 시 Celery 워커 프로세스 누락(DEC-066) · REQ-007(핵심 LLM 엔진) 06단계 재검증 정식 종료(DEC-073) · unit-37로 REQ-010/012 루브릭 템플릿 기반 채점 완성(DEC-054→056).</div>
+  <div class="dash-sub">🕓 모든 타임스탬프는 <b>대한민국 표준시(KST, UTC+9) · 24시간제</b> 기준입니다. 날짜만 있는 항목은 정확한 시각 기록이 없어 날짜만 표기.</div>
+  <div class="dash-sub" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ①</b>: 이 아티팩트는 9/23 이후 다른 세션·다른 PC에서 갱신되던 버전(CLAUDE.md가 가리키던 링크)이 이 계정에서 열리지 않아, 이 세션이 <code>docs/harness/decisions.md</code> DEC-053~075 전체를 재검토해 이 링크(2026-09-23 이후 첫 갱신 시점 버전)에 소급 반영했습니다. 코드 변경은 없음 — 문서 동기화만 수행.</div>
+  <div class="dash-sub" style="margin-top:6px;">📋 <b>2026-09-28 갱신 ②</b>: 위 ①의 "추가로 작업할 게 있다면" 점검에서 나온 9개 후보 중 사용자가 승인한 3개(프롬프트 인젝션 실측 테스트 → content_text 등 암호화 확대 → 합격/불합격 필드 법무검토 안내서, 순서대로 진행)를 완료 — DEC-077/078/079, 내부 테스트 결과서 각 1건씩(<code>docs/harness/prompt-injection-20260928-rubric-test.md</code>, <code>content-encryption-20260928-test.md</code>), <code>개발작업내용/</code> 폴더에도 각 작업 단위별 요약 반영.</div>
+  <div class="dash-sub" style="margin-top:6px;">📋 <b>2026-09-28 갱신 ③</b>: 갱신 ②가 "미착수"로 남겼던 6개 후보 중 사용자가 추가로 2개(#5 unit-10 DEF-003 리포트 유출가드, #6 화이트보드 캔버스 크기 불일치)를 승인해 완료 — DEC-080/081, 내부 테스트 결과서 각 1건씩(<code>docs/harness/def003-persona-leak-guard-20260928-test.md</code>, <code>docs/harness/whiteboard-canvas-size-20260928-test.md</code>).</div>
+  <div class="dash-sub" style="margin-top:6px;">📋 <b>2026-09-28 갱신 ④</b>: 남은 4개 후보 중 3개(#2 07단계 통합테스트 부채, #3 Celery 크래시 복구, #4 503 QUEUE_FULL 실측)를 추가 승인받아 완료 — #2는 21건 전부가 아니라 "우선순위 높은 몇 개부터" 방식으로 진행하기로 확인 질문을 거쳐 확정, 첫 대상으로 Feature A(인증)·Feature B(면접 세션 상태머신) 2개를 정식화(DEC-083/084). #3(DEC-082)·#4(DEC-085)는 각각 실측 완료. <b>#2는 21건 중 2건만 처리된 상태 — 나머지(핵심 AI 응답 파이프라인 등)는 사용자가 다음 우선순위를 정할 때 이어서 진행</b>. 남은 것은 #9 GDPR DPO/역외이전(애초 코드 작업이 아님, 조직적·법적 결정 대기) 뿐입니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑤</b>: 사용자가 "#2(07단계 통합테스트) 나머지 19개 REQ 계속 진행해 주세요"라고 명시 지시 — Feature G(개인정보·동의)→규제컴플라이언스(사전고지/법률고지)→D(라이브코딩)→F(채용담당자 대시보드)→H(웹캠/운영모니터링/화이트보드) 순으로 5개 Feature, REQ 13건(REQ-029/030/031/032/033/034/008/011/014/015/016/017)을 추가 정산(DEC-086~090). <b>docs/harness/traceability.md 기준 "L1 부채" 표시 REQ 20건 중 15건(75%) 정산 완료</b> — 남은 5건은 전부 Feature C(REQ-003 텍스트답변·004 음성답변·005 STT·006 TTS·007 핵심 LLM+RAG, 이 프로젝트의 핵심 AI 파이프라인)로, "가장 크고 마지막에 처리할 덩어리"로 의도적으로 남겨둔 상태입니다. Feature F 작업 중 <code>/recruiter/rubric-templates</code> 화면이 2026-09-22 사용자 결정으로 숨겨져 있는데 그 다음날 실제로 채점에 연결됐다는 사실관계를 발견해 별도 보고했습니다(재활성화 여부는 제품 판단, 임의 조치 없음). 이후 사용자가 "중지" 지시 — 이 갱신을 끝으로 다음 지시 대기 중입니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑥</b>: 사용자가 "남은건 5건 진행해 주세요"라고 지시 — 남아있던 Feature C(REQ-003~007, 핵심 AI 파이프라인)를 정산해 <b>"07단계 통합테스트 부채" 20건 전체(100%) 완료</b>(DEC-091). 이 검증을 위해 이 프로젝트 07단계에서 처음으로 Celery AI 워커(LLM/STT/TTS)를 실가동한 채 테스트했고, 실브라우저로 "답변 제출 → 실제 LLM이 만든 맥락기반 후속질문"이 2턴 연속으로 화면에 뜨는 것을 직접 확인했습니다. 덤으로 unit-7이 "확인 못 했다"고 정직하게 남겨뒀던 <b>GPU→CPU 자동 폴백 경로도 이번에 실제로 강제 재현해 정상 동작을 확인</b>(GPU 바이너리를 일부러 못 쓰게 만들었다가 검증 후 원상 복구). 코드 결함은 발견되지 않았습니다(전부 기존 코드가 설계대로 동작함을 실증).</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑦</b>: "07단계 통합테스트" 완료 보고 후 사용자에게 "git 제외 남은 작업"을 정리해드렸고, 그중 "코드로 실제 해결 가능한 항목"(자동 파기 배치 2건 + weight 검증 + unit-20 문서화)을 진행해 달라는 지시를 받아 완료(DEC-093). 도중 이 PC의 Anaconda가 삭제돼있어 개발 환경이 멈추는 사고가 있었으나, 임의 조치 없이 사용자 확인 후 독립 Python venv로 정상 복구했습니다(DEC-092). 사용자가 별도로 "부분착수 불가능한 항목인지 20년차 기준 검토"를 요청해, beat 스케줄 실발화 미검증·unit-20 문서의 "부분 PASS" 판정 등 한계를 숨기지 않고 명시했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑧</b>: 사용자가 "미완료건 처리가능한지 재검토"를 요청 — ⑦이 "부분착수"로 남겼던 항목을 다시 파고들어, 실제로 가능한 건 전부 실측했습니다(DEC-094). beat 스케줄이 정말 스스로 도는지는 검증 시각이 마침 정시 10분 전이라 실시간 대기로 확인, unit-20 태블릿/모바일 화면은 실브라우저로 재현, AI 자동 화면전환은 2번 시도해 재현은 안 됐지만 "왜 안 되는지"(프롬프트에 지시문 자체가 없음) 원인을 찾았습니다. 남아있던 설계 질문 4개는 한 번에 몰아서 여쭤봐 전부 "현행 유지"로 확정했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑨</b>: 사용자가 "Git작업 이외에 원본에 맞추어 작업할 내용이 더이상 없는건가요?"라고 재차 확인 — 이번엔 개별 작업단위가 아니라 <code>traceability.md</code> 전체를 처음으로 전수 스윕했습니다(DEC-095). 그 결과 <b>진짜 남아있던 코드 갭 1건</b>(답변 제출 시 대기열 꽉 참 방어 — 원래부터 "09단계에서 처리"로 계획돼 있던 항목이라 임의로 만들지 않고 보고만 함)과 <b>2026-09-20부터 방치돼 있던 검증 게이트 1건</b>(100자 이름 화면 깨짐 수정을 실제 앱으로 재확인한 적이 없었음 — 이번에 실제로 확인해 통과 확정)을 찾아 처리했습니다. 문서만 낡아있던 기록 2건도 정정했습니다. 이때는 남은 건 사용자만 결정할 수 있는 것(QUEUE_FULL 착수 여부, #9 GDPR)뿐이라고 정리했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑩</b>: 갱신 ⑨가 "사용자 결정 대기"로 남긴 것 중 하나였던 QUEUE_FULL을, 사용자가 상세 설명을 들은 뒤 "QUEUE_FULL진행해 주세요"라고 승인해 구현했습니다(DEC-096). 답변 제출 시 AI 처리 대기열이 50개를 넘으면 무거운 음성 인식(STT)을 시작하기도 전에 즉시 "지금은 안 됩니다"를 알려주는 방어입니다. <b>구현 자체보다 검증 과정에서 얻은 게 더 컸습니다</b> — 첫 실측에서 거절 응답이 4~6초나 걸려("즉시"여야 하는데) 원인을 추적하던 중, 이 컴퓨터(Windows)가 <code>localhost</code>라는 이름을 실제 주소로 바꿀 때 매번 약 2초씩 허비하는 근본적인 성능 문제를 발견해 함께 고쳤습니다(Redis 접속 방식 1건, 서버 내부 연결 재사용 1건). 두 번 고친 뒤에도 여전히 느려서 더 깊이 추적한 결과, 최종 범인은 서버 코드가 아니라 <b>테스트 도구 자신이 같은 방식으로 접속하고 있었던 것</b>이었습니다 — 이 사실을 숨기지 않고 그대로 기록했습니다. 실제 HTTP 요청 8가지 시나리오 전부 통과, 재기동 후 서버 정상 응답까지 확인했습니다. 이때는 남은 유일한 항목이 #9 GDPR(법무·조직 결정 대기)뿐이라고 정리했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-28 갱신 ⑪</b>: 사용자가 "Git 이외에 더이상 남은건 없죠? 20년차 기준으로 검토해줘"라고 다시 한번 확인 — 이번엔 그냥 "네"라고 답하지 않고 <code>traceability.md</code> 전체를 처음부터 다시 훑었습니다(DEC-097). 그 결과 <b>이 아티팩트를 채워온 과정 자체의 실수 하나</b>를 찾았습니다 — 같은 항목(루브릭 기본 템플릿 시드)에 대해 서로 다른 날짜의 기록 두 개가 "이미 해결됨"과 "아직 미해결"로 정반대 얘기를 하고 있었던 것으로, 실제 DB를 다시 조회해 "이미 해결됨"이 맞다는 걸 확인하고 모순을 바로잡았습니다. 그리고 <b>실제로 검증 가능했던 마지막 빈틈 하나</b>(화이트보드에 그린 그림이 페이지를 새로고침해도 정확히 복원되는지)를 이번에 직접 실브라우저로 그리고→저장하고→진짜로 새로고침한 뒤 다시 열어, 저장했던 것과 좌표 하나하나까지 완전히 일치하는 것을 확인했습니다. <b>이로써 코드로 지금 확인·처리할 수 있는 것은 전부 끝났습니다</b> — 남은 항목들은 전부 (1)법무·조직의 결정을 기다리거나, (2)정식 보안감사 단계를 별도로 거쳐야 하거나, (3)새벽 3시가 되어야 실제로 도는 배치처럼 시간이 지나야만 확인 가능한 것들이라, 코드를 더 작성한다고 앞당길 수 있는 성격이 아닙니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-29 갱신 ⑫</b>: 사용자가 "로컬 서버 띄워줘. 로컬에서 테스트 하고 싶어요"라고 요청 — 이 PC에 이 저장소의 정식 <code>docker-compose.yml</code>에는 없는 정체불명 Docker 컨테이너 5개(<code>final-project-app-1</code> 등, 과거 배포 테스트 잔여물 추정)가 백엔드·프런트 기본 포트(8000/3000/8080)를 이미 점유하고 있음을 발견 — 임의로 중지시키지 않고 사용자에게 처리 방식을 확인 질문했고, 사용자가 "다른 포트로 실행"을 선택해 로컬 개발 서버를 8001/3001로 옮겼습니다(<code>.claude/launch.json</code>, <code>backend/.env</code>, <code>frontend/.env.local</code> 갱신). 서버띄우기접속방법.md를 신규 작성해 전달. <b>직후 사용자가 실제로 면접 화면에 진입했다가 "AI 면접관이 첫 질문을 준비하고 있습니다..."가 10초 넘게 멈추고 "다시 확인하기" 버튼이 뜨는 것을 스크린샷으로 보고</b> — 원인을 추적한 결과 <b>백엔드·프런트만 안내하고 AI 처리를 실제로 수행하는 Celery 워커를 띄우라는 안내를 빠뜨린 제 실수</b>였음을 확인(대기열에 작업 2건이 쌓인 채 아무도 처리하지 못하고 있었음). 즉시 워커를 기동해 밀려 있던 작업이 정상 처리되는 것을 DB로 직접 확인했고, 문서에서 워커를 "(선택)"으로 잘못 표기했던 부분을 "[필수]"로 정정했습니다. 화면에 함께 떴던 Next.js "2 Issues" 배지도 짚어, 프런트 로그를 근거로 우리 코드 결함이 아니라 브라우저 확장 프로그램이 HTML을 건드려 생기는 hydration mismatch 경고로 추정된다는 근거(모든 요소에 동일한 <code>user-select:auto</code>가 붙는 패턴)와 시크릿 창으로 확정하는 방법을 함께 안내했습니다. 이번 건은 REQ 추적 대상 기능 변경이 아니라 로컬 개발환경 지원 작업이라 ②/③ 매트릭스 수치는 변경하지 않았습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-29 갱신 ⑬</b>: 사용자가 직전 세션에서 이 세션이 작성해 전달했던 요청 프롬프트(<code>이력서제출_합격통보_신규기능_요청프롬프트.md</code>)를 첨부하며 "이 프롬프트 기준으로 개발 진행해줘"라고 지시 — 원 계획서에는 전혀 없던 <b>완전히 새로운 기능(Feature J)</b>을 처음부터 구현했습니다. 이력서 제출자가 모의면접과는 다른 주소(같은 서버 안의 다른 경로)에서 회원가입하고 이력서를 내면, 관리자가 기존 화면에 새로 생긴 메뉴에서 그 이력서를 보고 합격/불합격을 정하고, 그 결과를 관리자가 직접 이메일로(자동발송이 아니라 화면이 준비해준 문구를 복사해서) 보내주고, 합격한 사람은 원래 쓰던 모의면접 계정 그대로 로그인해 합격 여부를 확인한 뒤 모의면접을 이어서 봅니다 — 이 전체 흐름을 백엔드 API 8개, 프런트 화면 6개로 새로 만들었습니다. 만드는 과정에서 실제 결함 2개를 직접 찾아 바로 고쳤습니다(이력서를 정상적으로 올려도 항상 "파일이 필요합니다" 오류가 나던 버그, 마이페이지 화면이 새 항목을 몰라서 나던 타입 오류). 완성 후에는 실제 HTTP 요청 27가지와 실제 화면 클릭 13가지로 처음부터 끝까지 검증했습니다. 이 기능은 원 계획서 비교 대상이 아니라서 위 ②/③표 숫자에는 반영하지 않았고, 별도로 <code>traceability.md</code>에 REQ-040~044로 새 섹션을 만들어 기록했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-29 갱신 ⑭</b>: 갱신 ⑬ 직후 사용자가 "관리자 화면에서 이력서 확인하는 화면과 처리로직 100%검증된거죠? 20년차 기준 반드시 기억하세요"라고 다시 확인했습니다 — 그냥 "네, 100%입니다"라고 답하지 않고 스스로 다시 점검해본 결과, "합격 처리"/"불합격 처리" 버튼과 "이력서 파일 열기/다운로드" 링크를 <b>실제 화면 클릭이 아니라 백엔드 API 호출로만 검증했었다는 것을 인정</b>했습니다. 즉시 실제로 클릭해 재검증한 결과, <b>파일 다운로드 링크가 실제 화면에서는 항상 접속 거부(401)로 깨지는 진짜 결함을 발견</b>했습니다 — 이 시스템은 로그인 토큰을 보통의 링크 클릭으로는 함께 보낼 수 없는 방식(Bearer 토큰 인증)을 쓰는데, 그 점을 놓치고 평범한 링크로 만들었던 것이 원인이었습니다(백엔드 API 테스트만으로는 이 문제를 절대 잡아낼 수 없는 구조였다는 점도 함께 기록했습니다). 즉시 "버튼 클릭 → 로그인 정보를 제대로 실어서 파일을 받아온 뒤 여는" 방식으로 고치고, 고친 화면에서 다시 실제로 클릭해 정상 동작을 확인했습니다. 여기서 멈추지 않고 "합격 처리"/"불합격 처리" 버튼도 새 이력서로 직접 텍스트를 입력해 실제로 클릭해봤고, 이 둘은 원래부터 정상 동작하고 있었음을 재확인했습니다(신규 결함 없음). <b>테스트 결과서에는 "처음 PASS라고 적었을 때는 이 결함이 없었던 게 아니라 아직 발견되지 않았던 것"이라는 사실을 숨기지 않고 그대로 남겼습니다</b> — 지금은 이 발견·수정까지 포함해 실제로 100% 실클릭 검증이 끝난 상태입니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-29 갱신 ⑮</b>: 사용자가 이력서 제출 화면을 완전히 별도 포트(3002)로 분리해 달라고 지시하며 동시에 4가지를 물었습니다 — 관리자가 PDF를 바로 볼 수 있는지, 샘플 이력서 양식 다운로드 기능, 초등학생도 이해할 전체 흐름 그림, MCP로 자동 이메일 발송이 되는지. <b>포트 분리</b>는 새 앱(<code>frontend-apply</code>, 3002번)을 만들어 기존 화면을 그대로 옮겼습니다(중복이 아니라 이사 — 두 곳에 똑같은 화면을 두면 나중에 한쪽만 고치는 실수가 생기기 쉬워서입니다). <b>PDF 바로보기를 다시 확인하다가 또 다른 진짜 문제를 찾았습니다</b> — 직전에 401 오류를 고치며 넣은 "새 탭 열기" 방식이, 이번엔 크롬의 팝업 차단 기능에 걸려서 아무 반응도 없이 조용히 실패하고 있었습니다(에러 메시지조차 안 뜨는 종류라 알아채기 어려웠습니다). 새 탭을 여는 방식 자체를 버리고, <b>같은 화면 안에 PDF를 바로 띄우는 방식</b>으로 고쳐서 이 문제를 근본적으로 없앴습니다 — 오히려 사용자가 원래 바라신 "바로 확인"에 더 맞는 방식이 됐습니다. <b>샘플 이력서</b>는 실제로 읽을 수 있는 한글 양식 PDF를 새로 만들어 다운로드 버튼을 붙였고, <b>쉬운 설명 그림</b>은 별도 페이지로 만들어드렸습니다(<a href="https://claude.ai/artifact/SMLjdhndgNUjs7iEsKuM4e" target="_blank" rel="noreferrer">바로 보기</a>). <b>자동 이메일 발송</b>은 지어내지 않고 있는 그대로 답했습니다 — 이전에 이미 사용자와 "화면이 문구만 준비하고 관리자가 직접 보낸다"로 확정했던 것 그대로이고, 완전 자동으로 바꾸려면 실제 메일 발송 수단부터 정해야 한다고 안내했습니다. 새로 생긴 것들도 실제 화면 클릭·실제 파일 요청으로 전부 확인했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-29 갱신 ⑯</b>: 사용자가 "이력서 제출/상태 확인, 전체적으로 진행하는데 문제가 없는지 20년 경력자 기준으로 검토만 해줘. 2번 일 시키지 않게 확실하게"라고 요청했습니다. 코드를 눈으로 다시 읽는 대신, 포트를 나눈 뒤로 한 번도 직접 눌러보지 않았던 것들을 실제로 다시 확인했습니다 — 합격·불합격·심사중 3가지 상태 화면을 새 포트(3002)에서 각각 실제 로그인으로 다시 보고, "제출하기" 버튼이 파일 없이는 여전히 눌리지 않는 것도 확인하고, <b>특히 PDF 미리보기는 "화면 구조상 존재한다"까지만 확인했던 게 진짜 눈으로 보이는지 불확실했던 점을 스스로 짚어 실제 스크린샷을 찍어 확인</b>했습니다 — 크롬 내장 PDF 뷰어(썸네일, 확대/축소, 인쇄 버튼까지)가 화면 안에 정확히 떠 있는 것을 눈으로 직접 봤습니다. 옛 이력서 페이지 주소가 코드 어디에도 남아있지 않은지도 전체 코드에서 다시 찾아봤습니다. <b>결과: 문제 0건, 전부 정상입니다.</b> 유일하게 남은 것은 이 세션의 브라우저 자동화 도구 자체가 "실제 파일 선택 창 클릭"을 대신해줄 수 없다는 도구 한계뿐이며(이미 알려진 사실), 그 부분은 실제 파일 업로드 요청을 백엔드에 직접 보내 바이트 단위로 확인하는 방식으로 이미 보완돼 있습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-29 갱신 ⑰</b>: 사용자가 "자동 이메일 발송 + Notion 자동 기록" 신규 기능을 요청했으나(제목/내용/면접일시/면접장소 4개 필드, 백엔드가 완전 자동으로 처리) Gmail 앱 비밀번호·Notion 연동 토큰이 아직 없어 그 작업은 일단 대기시키고, 대신 "이력서제출여정 지원자, 관리자 화면 모두" 문구를 25세가 바로 이해할 수 있게 바꿔달라는 요청을 먼저 진행했습니다(DEC-102). 지원자 앱(3002번 포트)과 관리자 이력서 검토 화면(3001번 포트) 양쪽에서 딱딱한 격식체를 부드러운 말투로, 중복·이중부정 표현을 단문으로 정리했습니다. <b>문구를 다듬다가 실제 문제 2건도 함께 찾아 고쳤습니다</b> — (1) 권한 오류 화면에 "지원자(candidate) 계정만" 처럼 개발용 내부 역할 코드가 영어 그대로 사용자에게 노출되고 있던 것을 한글만 남기도록 수정, (2) 관리자가 합격/불합격을 알릴 때 뜨는 안내문이 "Claude+MCP 메일 도구로 발송해주세요"라고 되어 있어 채용담당자 입장에서는 알아들을 수 없는 내부 개발도구 이름이 그대로 노출되고 있던 것을 "이메일로 직접 보내주세요"로 바꿨습니다. 격식체 단어 "통보"도 "안내"로 화면 전체에서 통일했습니다. 새 문구는 테스트 계정으로 회원가입→이력서 제출→관리자 합격 처리→통보 초안 확인→발송 완료 표시까지 전 구간을 실제로 클릭해 화면에 정확히 반영되는 것을 확인했습니다. 이번 작업은 화면 문구만 바꾼 것이라 ②/③ 매트릭스 수치나 원 계획서 대조와는 무관합니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-30 갱신 ⑱</b>: 갱신 ⑰(DEC-102) 완료 보고 직후, 사용자가 모바일 스크린샷을 보내며 "이 파일 25세 기준으로 변경 안한건가요?"라고 지적했습니다. 확인해보니 그건 실제 앱 화면이 아니라, 하루 전(DEC-100) 별도로 만들었던 <b>독립 설명용 아티팩트</b>(이력서제출 흐름을 "초등학생도 이해할" 수준으로 그린 다이어그램 문서)였습니다 — DEC-102 작업이 "화면"을 소스코드 파일로만 좁게 해석해 이 아티팩트를 놓쳤던 것을 그대로 인정하고 즉시 수정했습니다(DEC-103). 책가방 이모지·"~하는 길" 같은 초등학생向 말투, 합격/불합격 갈림길의 "정말 잘했어요!"/"아쉬워요"(교사가 채점하는 듯한 말투)를 어른 대상 담백한 표현으로 바꿨습니다. 이어서 사용자가 "여정이라는 단어를 전부 절차로 바꾸고, 전체 문구를 20년차 기획자 기준으로 다시 봐달라"고 추가 지시해, 문서 안 "여정" 2건을 전부 "절차"로 바꾸고, 문서 전체에서 혼용되던 "담당자"/"회사 담당자"를 앱이 실제로 쓰는 "채용담당자"로, "이메일 문구"를 DEC-102에서 통일한 "안내" 용어에 맞춰 "안내 초안"으로, 버튼 안내 문구도 앱의 실제 버튼 라벨과 정확히 일치하도록 다듬었습니다. <b>이번 일로 두 가지를 기억해두기로 했습니다</b>: 이 프로젝트에서는 "여정"보다 "절차"를 쓰고, "OO 화면 문구를 바꿔달라"는 요청은 소스코드뿐 아니라 그 기능을 설명하는 모든 산출물(별도 아티팩트 포함)을 다 가리킨다는 것 — 다음부터는 작업 시작 전에 관련 아티팩트가 더 있는지 먼저 확인합니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-30 갱신 ⑲</b>: 사용자가 WhisperX 작업은 잠시 보류하기로 하고("추후 다시 할지 고민"), 대신 갱신 ⑰에서 자격증명이 없어 대기 중이던 "자동 이메일+Notion" 기능을 다시 꺼내 "면접관리자가 합격/불합격 처리시 이력서 제출자 로그인아이디로 메일 전송" 방식을 물었습니다. Notion을 같이 할지 확인 질문에 사용자가 "지금은 이메일만 먼저"를 선택해, 이번엔 이메일 자동발송만 구현했습니다(DEC-116, 상세는 위 완료 목록 참고). 사용자가 Google 계정 2단계 인증을 직접 켜고 앱 비밀번호를 발급해 전달하는 과정을 스크린샷으로 하나씩 확인하며 안내했고, 완성 후에는 실제로 메일을 발송해보고 실제 API를 호출해보고 실제 화면을 클릭해보는 3단계로 전부 검증했습니다. Notion 자동기록은 여전히 대기 중입니다 — 사용자가 별도로 요청할 때 진행합니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-30 갱신 ⑳</b>: 갱신 ⑲ 완료 보고에서 사용자가 실제로 메일을 받았다고 직접 확인해줬고("면접결과 합격/불합격 메일은 정상적으로 수신 확인했습니다"), 이어서 예전에 답을 못 받고 남아있던 질문 — "이력서제출절차" 설명을 외부 참고 자료로만 둘지 실제 앱 화면으로 만들지 — 에 "실제 앱 안에 만들어주세요. 지원자·관리자 둘 다 로그인 이후 탭 메뉴로"라고 확정 답변했습니다(DEC-117, 상세는 위 완료 목록 참고). 두 앱 모두에 로그인 후 볼 수 있는 새 화면과 탭을 만들면서, 그 김에 원래 외부 아티팩트에 남아있던 "관리자가 메일을 직접 보낸다"는 옛 설명(갱신 ⑲ 이전 방식)도 함께 최신화했습니다 — 화면 문구를 손볼 때는 소스코드만이 아니라 그 기능을 설명하는 모든 산출물을 다 같이 확인한다는, 이 프로젝트가 이전에 이미 한번 배운 교훈을 그대로 실천한 것입니다. 사용자는 이어서 "MCP로 받아볼 수 있는 기능"에 대해 물었는데, 이는 별도 주제라 이 화면 작업을 먼저 마무리한 뒤 답변으로 안내했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-30 갱신 ㉑</b>: 갱신 ⑳ 작업이 끝나기도 전에 사용자가 스크린샷과 함께 "이력서 1번이라도 제출했으면 화면의 이 부분(빨간 테두리)이 전부 안 보이게 해달라"고 새 요청을 보냈고, "위의 작업이 마무리 된 이후에" 확인해달라고 순서를 명시했습니다 — 진행 중이던 갱신 ⑳ 작업(문서화까지)을 먼저 끝낸 뒤 이 요청을 처리했습니다(DEC-118, 상세는 위 완료 목록 참고). 요청 문구가 "화면에서 막으려고"였지만, 화면만 막으면 실제로는 개발자도구로 API를 직접 불러 우회할 수 있다는 걸 먼저 설명하고 백엔드도 같이 막을지 확인 질문을 드렸습니다 — 사용자가 "백엔드도 막기"를 선택해, 화면(UX)과 백엔드(실제 방어) 이중 구조로 구현했습니다. 실제로 같은 계정으로 API를 두 번 호출해 두 번째가 진짜로 막히는지, 그 시도가 첫 제출 기록을 건드리지 않았는지까지 실측으로 확인했습니다.</div>
+  <div class="dash-sub" style="margin-top:6px; padding-top:10px; border-top:1px solid var(--border);">📋 <b>2026-09-30 갱신 ㉒(마지막)</b>: 사용자가 이번엔 화면 스크린샷을 첨부하며 강한 어조로 문제를 지적했습니다 — 이력서 제출 화면의 동의 체크박스가 정상적인 작은 네모가 아니라 화면 전체 너비를 채우는 거대한 막대로 깨져 있었고, "오전에도 이런 경우로 수정했는데 대충대충 작업하냐"는 질책이 있었습니다(DEC-119, 상세는 위 완료 목록 참고). 변명하지 않고 코드부터 직접 추적한 결과, 텍스트 입력칸용으로 만든 공용 스타일 규칙이 체크박스에도 무차별 적용되고 있던 실제 결함을 확인했습니다 — 이 세션이 오늘 아침 이 정확한 문제를 고친 기록은 없었지만(다른 화면·다른 시점과 혼동하신 것으로 추정), 실제 결함이 있었다는 사실 자체가 중요하다고 보고 바로 고쳤습니다. 같은 결함이 있던 화면 2곳(회원가입·이력서제출)을 모두 고치고, 다른 화면에서 재발하지 않도록 전역 규칙도 함께 넣었습니다. <b>이번엔 "클릭하면 상태가 바뀐다"는 것만 보고 넘어갔던 이전 검증 방식의 한계를 인정하고, 실제 화면 스크린샷으로 눈으로 직접 확인하는 절차를 추가했습니다.</b></div>
+</div>
+
+<nav class="jump">
+  <a href="#specs">① 기능별 구현 스펙</a>
+  <a href="#compare">② 원안 vs 실제 비교</a>
+  <a href="#matrix">③ 전환 가능성 매트릭스</a>
+  <a href="#reasons">④ 안 되는 이유 상세</a>
+</nav>
+
+<section class="block" id="specs">
+  <h2>① 기능별 구현 스펙 (Feature A~I)</h2>
+  <p class="h2sub">카드를 클릭하면 데이터 모델 필드·API·알고리즘 파라미터가 펼쳐집니다. 소스 경로는 이전 "모의면접 기능맵" 아티팩트 참고.</p>
+
+  <details class="spec">
+    <summary><span class="car">A</span><span class="ttl">인증/회원<span class="req">users 테이블 · JWT</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">데이터 모델 — users</div>
+        <table>
+          <tr><td>id</td><td>UUID PK</td></tr>
+          <tr><td>email</td><td>varchar(255) UNIQUE</td></tr>
+          <tr><td>password_hash</td><td>varchar(255)</td></tr>
+          <tr><td>role</td><td>enum(candidate/recruiter/admin)</td></tr>
+          <tr><td>name</td><td>varchar(100)</td></tr>
+          <tr><td>deleted_at</td><td>nullable — 소프트 삭제 전제</td></tr>
+        </table>
+      </div>
+      <div class="specbox">
+        <div class="lbl">인증 파라미터</div>
+        <ul>
+          <li>JWT HS256, access 15분 / refresh 7일</li>
+          <li>role 3종: candidate·recruiter·admin(관리자는 /ops 전용)</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">B</span><span class="ttl">면접 세션 상태머신<span class="req">interviews 테이블 · 5-state</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">데이터 모델 — interviews</div>
+        <table>
+          <tr><td>status</td><td>scheduled→live→paused→completed / expired</td></tr>
+          <tr><td>report_status</td><td>none/queued/ready/failed</td></tr>
+          <tr><td>overall_score</td><td>numeric(3,1)</td></tr>
+          <tr><td>rubric_template_id</td><td>UUID nullable, FK 제약 없음(설계 부채)</td></tr>
+        </table>
+      </div>
+      <div class="specbox">
+        <div class="lbl">정책</div>
+        <ul>
+          <li>세션 만료: 24h, 조회 시점 lazy-evaluation(DEC-026) — 하트비트 기반 자동 paused 전이는 없음</li>
+          <li>재개(resume): live/paused → live로 멱등 복귀</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec" open>
+    <summary><span class="car">C</span><span class="ttl">AI 질문·응답 파이프라인 (핵심)<span class="req">transcripts · questions · STT/LLM/RAG/TTS</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">STT — faster-whisper</div>
+        <ul>
+          <li>모델 <code>small</code>, device=<code>cpu</code>, compute_type=<code>int8</code></li>
+          <li>언어 <code>ko</code> 고정(자동감지 비활성)</li>
+          <li>원본 오디오 디스크 미저장(메모리 BytesIO만 사용)</li>
+        </ul>
+      </div>
+      <div class="specbox">
+        <div class="lbl">LLM — llama.cpp 서브프로세스</div>
+        <ul>
+          <li>Qwen2.5-1.5B-Instruct GGUF q4_k_m (Apache-2.0)</li>
+          <li>llama-server.exe, OpenAI 호환 <code>/v1/chat/completions</code></li>
+          <li>Vulkan GPU(-ngl 99) 우선, 실패 시 CPU 자동 폴백</li>
+          <li>context 4096 tok · 생성 타임아웃 25s</li>
+          <li>구조화 출력: speak_text, control(next_question/end_interview/switch_to_coding/none), 1~5점 필드</li>
+        </ul>
+      </div>
+      <div class="specbox">
+        <div class="lbl">RAG — pgvector + MMR</div>
+        <ul>
+          <li>임베딩: paraphrase-multilingual-MiniLM-L12-v2, 384차원, CPU</li>
+          <li>코사인거리 상위 pool → MMR(λ=0.5) 재정렬</li>
+          <li>후속질문 top_k=3, 유사도 &lt;0.30 제외, opening 카테고리 제외</li>
+        </ul>
+      </div>
+      <div class="specbox">
+        <div class="lbl">TTS — Piper 서브프로세스</div>
+        <ul>
+          <li>보이스 <code>ko_KR-kss-medium</code> (GPL-3.0-or-later, 별도 프로세스 격리)</li>
+          <li>합성 타임아웃 10s, 실패해도 텍스트는 전달(그레이스풀 디그레이드)</li>
+        </ul>
+      </div>
+      <div class="specbox fullspan">
+        <div class="lbl">컨텍스트/안전장치</div>
+        <table>
+          <tr><td>이력 창</td><td>최근 8턴, 줄당 300자 절단(LLM 입력용만, 원문 전체는 그대로 저장)</td></tr>
+          <tr><td>답변 길이</td><td>LLM 전송 시 1,500자 초과분 절단(2,500자 이상 시 컨텍스트 초과 결함 실측 후 도입)</td></tr>
+          <tr><td>품질 가드</td><td>후속질문 질문형·플레이스홀더·한국어비율 검증 → 실패 시 1회 재시도 → 재실패 시 질문은행 원문 폴백</td></tr>
+          <tr><td>전달 경로</td><td>Celery 워커 → Redis Pub/Sub → WS 릴레이 → <code>turn_result</code> 이벤트</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">D</span><span class="ttl">라이브 코딩<span class="req">code_submissions · 11개 언어 화이트리스트</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">데이터 모델</div>
+        <table>
+          <tr><td>language</td><td>varchar(32), 저장은 자유 문자열</td></tr>
+          <tr><td>content</td><td>text, 최대 20,000자(API 경계 검증)</td></tr>
+        </table>
+      </div>
+      <div class="specbox">
+        <div class="lbl">API 경계 검증</div>
+        <ul>
+          <li>언어 화이트리스트: python·javascript·typescript·java·c·cpp·csharp·go·rust·sql·plaintext</li>
+          <li>저장은 매 저장이 새 이력 행(append-only), 실행과 완전 분리</li>
+        </ul>
+      </div>
+      <div class="specbox fullspan">
+        <div class="lbl">✅ (2026-09-24, DEC-069) 실행 엔드포인트 신규 배선</div>
+        <ul>
+          <li><code>POST /interviews/{id}/code-submissions/execute</code> — Docker 9중 격리(네트워크차단·읽기전용FS·비루트·capability제거 등, DEC-060 보안 완화 요청 거절로 격리수준 무변경 유지) 그대로 실제 실행</li>
+          <li>전용 레이트리밋 분당 5회(다른 한도보다 보수적), 실행 결과는 DB 미저장(저장/실행 완전 분리 원칙)</li>
+          <li>실HTTP E2E + 실브라우저(신규 탭/계정, 실행 버튼 클릭) 8개 TC 전부 PASS, 좀비 컨테이너 0건 확인</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">E</span><span class="ttl">평가 리포트<span class="req">evaluation_reports · STAR + 3단계 추천</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">데이터 모델</div>
+        <table>
+          <tr><td>technical/communication/cultural_fit_score</td><td>integer, 1~5점</td></tr>
+          <tr><td>overall_recommendation</td><td>enum(recommend/neutral/not_recommend) — "합격/불합격 확정" 필드 자체가 스키마에 없음</td></tr>
+          <tr><td>star_json</td><td>{situation,task,action,result}, 파싱 실패 시 null</td></tr>
+          <tr><td>summary_text</td><td>star_json 파싱 실패 시에만 채워지는 폴백 원문</td></tr>
+        </table>
+      </div>
+      <div class="specbox">
+        <div class="lbl">생성 파라미터</div>
+        <ul>
+          <li>입력: 전체 TRANSCRIPTS(턴 이력 창 8이 아닌 전체), 줄당 500자 절단</li>
+          <li>interview_id UNIQUE — 1면접 1리포트, regenerate는 upsert</li>
+          <li>파싱 실패(구조화 실패)와 LLM 호출 자체 실패(타임아웃)를 구분해 각각 ready(요약폴백)/failed로 분기</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">F</span><span class="ttl">채용담당자 대시보드<span class="req">rubric_templates · 전체열람</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">데이터 모델 — rubric_templates</div>
+        <table>
+          <tr><td>recruiter_id</td><td>null=시스템 기본 템플릿, 값 있음=본인 전용(타인 비공개)</td></tr>
+          <tr><td>criteria_json</td><td>[{name, weight(0~100), description}, ...]</td></tr>
+        </table>
+      </div>
+      <div class="specbox">
+        <div class="lbl">권한 정책</div>
+        <ul>
+          <li>/recruiter/reports: MVP 단일조직 정책 — recruiter 전원이 전체 지원자 리포트 열람(세분화 없음)</li>
+          <li>✅ (2026-09-28, DEC-093) weight 합계 검증 — 생성/수정 시 합계≠100이면 422</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">G</span><span class="ttl">개인정보·생체정보 동의<span class="req">consents · deletion_requests</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">데이터 모델</div>
+        <table>
+          <tr><td>consent_type</td><td>biometric_voice / ai_interview_notice</td></tr>
+          <tr><td>deletion target</td><td>biometric_only / full_account</td></tr>
+          <tr><td>deletion status</td><td>pending / completed (2값만, ERD 원문 그대로)</td></tr>
+        </table>
+      </div>
+      <div class="specbox">
+        <div class="lbl">정책</div>
+        <ul>
+          <li>음성 동의 게이트: /start가 아니라 음성 턴 제출(/turns multipart) 시점마다 실시간 재검사</li>
+          <li>보관기간: 음성원본 STT완료 즉시삭제, transcript/리포트 180일(법률자문 미확정 임시값, 화면에 명시)</li>
+          <li>✅ (2026-09-28, DEC-093) 자동 파기 배치 실배선 — <code>delete_requested_data</code>(매시)/<code>purge_expired_data</code>(매일) Celery beat 신규, 실DB 검증 완료(beat 실발화 자체는 미검증)</li>
+          <li>실삭제 배치(pending→completed 전이)는 미구현 — 요청 접수까지만</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">H</span><span class="ttl">웹캠·화이트보드·운영모니터링<span class="req">whiteboard_snapshots · ops/health</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox">
+        <div class="lbl">화이트보드</div>
+        <ul>
+          <li>canvas_json(JSONB) — 저장 시마다 새 행 추가(append-only 이력), 최신 행이 정답</li>
+          <li>✅ (2026-09-23, DEC-061/062) <code>POST .../whiteboard/analyze</code> 신규 — 로컬 SmolVLM-500M-Instruct(무료, GPT-4V 대신)로 실제 분석, 실HTTP E2E 검증 완료. ⚠ 모델 응답 품질이 매우 낮아(예: "2"만 반환) 저신뢰 disclaimer 필수 동봉</li>
+        </ul>
+      </div>
+      <div class="specbox">
+        <div class="lbl">운영 모니터링(/ops/health)</div>
+        <ul>
+          <li>active_sessions: INTERVIEWS.status='live' 실측 카운트</li>
+          <li>queue_length·gpu_memory_used_bytes·error_rate: <b>근거 시스템 미구축으로 상시 0 고정</b>(response.notes에 스텁 여부 명시)</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="spec">
+    <summary><span class="car">I</span><span class="ttl">면접장 통합 UI<span class="req">반응형 배선</span></span><span class="chev">▸</span></summary>
+    <div class="spec-body">
+      <div class="specbox fullspan">
+        <ul>
+          <li>Desktop 60:40 분할, Tablet 1:1, Mobile 전체화면 모달(dialog·inert·Esc·포커스 복귀)</li>
+          <li>코드에디터는 Monaco 입력 전용 — HTML 렌더링 경로 없음(XSS 프로브 통과 확인)</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</section>
+
+<section class="block" id="compare">
+  <h2>② 원 계획서 vs 실제 구현 — 항목별 대조</h2>
+  <p class="h2sub"><span class="tag match">일치</span> 원안 의도 유지 · <span class="tag partial">부분/대체</span> 목표는 같으나 수단이 다름 · <span class="tag diverge">전면 편차</span> 원안 기능 자체가 없음</p>
+  <div class="tablewrap">
+    <table class="cmp">
+      <thead><tr><th style="width:15%">항목</th><th style="width:35%">원 계획서 스펙</th><th style="width:35%">실제 구현</th><th style="width:15%">판정</th></tr></thead>
+      <tbody>
+        <tr><td>아키텍처</td><td class="plan">이벤트기반 마이크로서비스 5계층(Presentation/Gateway/App&Realtime/AI Worker/Data), NGINX/Traefik 게이트웨이</td><td class="actual">단일 FastAPI 모놀리스 + Celery 워커(--pool=solo) 1개 프로세스</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>실시간 통신</td><td class="plan">WebRTC(SFU/서버사이드), aiortc·GStreamer 미디어서버, 영상/음성 서버 수신</td><td class="actual">WebSocket은 서버→클라이언트 결과 푸시 전용. 영상은 브라우저 로컬 미리보기뿐, 서버 전송 코드 자체 없음</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>STT</td><td class="plan">Deepgram Nova-2, 스트리밍, &lt;300ms</td><td class="actual">faster-whisper(무료, 운영 기본값) + <b>(2026-09-23~25) Deepgram Nova-2 실배선 완료</b>(API키 있으면 우선 사용, 없거나 실패 시 자동 폴백, `stt_router.py`) + <b>4초 간격 미니 세그먼트 실시간 미리보기</b>(unit-36, 사용자 실기기로 최종 검증 완료). 진짜 &lt;300ms 연속 스트리밍은 아님</td><td><span class="tag partial">부분/대체</span></td></tr>
+        <tr><td>TTS</td><td class="plan">Hume AI/ElevenLabs, 감정적 어조 생성, WebSocket 양방향 스트림</td><td class="actual">Piper(ko_KR-kss-medium), 감정 표현 없는 단일 톤, 파일 생성 후 전달</td><td><span class="tag partial">부분/대체</span></td></tr>
+        <tr><td>LLM 오케스트레이션</td><td class="plan">LangChain + LangGraph, 메모리 모듈</td><td class="actual">자체 구현(llm_engine.py + interview_prompts.py), 동등 기능을 프레임워크 없이 직접 구현</td><td><span class="tag partial">부분/대체</span></td></tr>
+        <tr><td>감정/비언어 분석</td><td class="plan">DeepFace 7종 표정 + 음성 Prosody(Pitch/Jitter/Speed), 타임라인 시각화</td><td class="actual"><b>(2026-09-22~23, unit-24/31) 부분 구현으로 정정</b> — 음성 Prosody(pitch/jitter/voiced_ratio 원시수치, 해석 라벨 없음)와 DeepFace(정지이미지 1장→7종 감정 확률분포, confidence 0.97 실측)는 각각 독립 서비스로 실제 구현·검증됨. 단 원안이 요구한 "실시간 연속 프레임+타임라인 시각화"는 미구현(선행조건인 WebRTC 영상수신 자체가 시그널링만 있음), DeepFace는 법무검토 전 서비스 연결 금지</td><td><span class="tag partial">부분/대체</span></td></tr>
+        <tr><td>실시간 개입</td><td class="plan">VAD 기반 turn-taking, 주제이탈 시 AI 개입</td><td class="actual">없음 — 턴제(녹음 완료 후 제출)로 REQ-004에서 의도적으로 대체 확정. <b>(2026-09-23, DEC-059 재평가)</b> 막힌 이유가 예산이 아니라 아키텍처 재설계 시간이라는 점 재확인</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>벡터DB</td><td class="plan">Pinecone(주), pgvector(대안)</td><td class="actual">pgvector — 원안이 이미 인정한 대안 그대로 채택</td><td><span class="tag match">일치</span></td></tr>
+        <tr><td>메인DB</td><td class="plan">Oracle</td><td class="actual">PostgreSQL(DEC-004로 대체 확정)</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>코드 테스트</td><td class="plan">샌드박스 실행 + 시간복잡도/스타일/주석 AI 분석</td><td class="actual">Monaco 에디터 저장 + <b>(2026-09-24, DEC-069) 실제 실행 엔드포인트 배선 완료</b>(Docker 9중 격리 그대로, 사용자의 격리완화 요청은 보안상 거절, 실HTTP+실브라우저 8TC PASS). AI의 시간복잡도/스타일/주석 자동 분석은 미구현</td><td><span class="tag partial">부분/대체</span></td></tr>
+        <tr><td>화이트보드</td><td class="plan">GPT-4V로 아키텍처 다이어그램 시각 인식·타당성 평가</td><td class="actual">캔버스 스냅샷 저장/조회 + 좌표→PNG 렌더링(unit-35) + <b>(2026-09-23, DEC-061/062) 로컬 SmolVLM으로 실제 AI 분석 연결·실HTTP E2E 검증 완료</b>(GPT-4V는 유료라 사용자가 진행 안 함, DEC-059). ⚠ 응답 품질이 낮아(예: "2"만 반환) 저신뢰 disclaimer 필수 동봉</td><td><span class="tag partial">부분/대체</span></td></tr>
+        <tr><td>리포트/스코어링</td><td class="plan">STAR 분석 + 1~5점 루브릭 + 합격/불합격 추천 의견</td><td class="actual">STAR + <b>(2026-09-22 unit-23) pass_fail_recommendation 필드로 합격/불합격 추천 의견 복원</b>(recommend/neutral/not_recommend 3단계 병행 유지) + <b>(2026-09-23, unit-37) 채용담당자 지정 루브릭 템플릿의 항목별 1~5점+근거로 채점 방식 자체를 원안대로 전환</b>(기존 고정 3축 점수도 하위호환 유지)</td><td><span class="tag match">일치</span><div style="font-size:10px;color:var(--amber);margin-top:3px;">⚠ 법무검토 대기</div></td></tr>
+        <tr><td>배포/인프라</td><td class="plan">AWS/GCP, Kubernetes(EKS) 오토스케일링, Blue/Green 배포, Prometheus/Grafana</td><td class="actual">로컬 서버 단일 인스턴스, Docker Compose + <b>(2026-09-25, DEC-074) 로컬 kind 클러스터로 K8s 배포 메커니즘 실검증</b>(파드/PVC/HPA/스케일링 4TC PASS, 단 테스트용 이미지로 검증 — 실제 앱 컨테이너 빌드·클라우드 레지스트리·Blue/Green·모니터링은 여전히 없음). /ops/health 지표는 상시 0(근거 시스템 미구축)</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>동시접속</td><td class="plan">Kubernetes 기반 수백~500명 동시 처리, Locust 부하테스트</td><td class="actual">단일 GPU/단일 LLM 워커 직렬 처리(--pool=solo) — 동시성 설계 자체가 없음</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>지연시간</td><td class="plan">End-to-End &lt;1.5s (STT+LLM+TTS 합산)</td><td class="actual">턴당 약 4.5~7초 실측(로컬 CPU/저사양 GPU 전제)</td><td><span class="tag diverge">전면 편차</span></td></tr>
+        <tr><td>보안/규정</td><td class="plan">TLS 1.3 전송 + AES-256 저장 암호화, GDPR/CCPA 준수</td><td class="actual">한국 개인정보보호법(PIPA) 대응(REQ-029~034) + nginx TLS1.3/AES-256-GCM(unit-25) + GDPR 적법근거·CCPA 판매안함 고지·데이터 이동권(unit-33/34) 구현 완료. <b>(2026-09-24, DEC-071) 남은 GDPR 요건(DPO 지정·역외이전 안전조치)은 코드가 아니라 조직적·법적 결정이라 "완료"로 승격 불가 — 코드로 갈 수 있는 데까지는 도달함.</b> <b>(2026-09-28, DEC-078) content_text/code_submissions.content도 AES-256-GCM 암호화 확대 완료(268건 무손실 검증)</b></td><td><span class="tag partial">부분/대체</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="block" id="matrix">
+  <h2>③ 원안 전환 가능성 매트릭스</h2>
+  <p class="h2sub">원 계획서 스펙으로 되돌리거나 확장할 때 예상 개발기간과 최종 판단</p>
+  <div class="legend">
+    <span class="item"><span class="dot s"></span>소 — 수일, 어댑터/설정 교체 수준</span>
+    <span class="item"><span class="dot m"></span>중 — 1~3주, 신규 연동 + 부분 재설계</span>
+    <span class="item"><span class="dot l"></span>대 — 3주 이상, 아키텍처 근본 변경 / 인프라·법무 재검토</span>
+  </div>
+  <div class="tablewrap">
+    <table class="mtx">
+      <thead><tr><th style="width:17%">전환 항목</th><th style="width:9%">기간</th><th style="width:13%">판단</th><th style="width:12%">진행상태</th><th style="width:49%">핵심 근거</th></tr></thead>
+      <tbody>
+        <tr class="grouprow g-ok"><td colspan="5">가능 — 13개 (완료 11 + 부분착수 2)</td></tr>
+        <tr>
+          <td>STT 실시간 스트리밍 전환</td>
+          <td><span class="size m">● 중</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-36)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-25</span></td>
+          <td class="reason">"미니 세그먼트 주기 업로드"(4초마다 독립 녹음, 완전한 파일 단위 전송) 방식으로 백엔드는 09-23에 이미 실제 합성 음성으로 완전 검증됐으나, 이 세션 환경(Browser pane)이 마이크 장치 접근 자체를 차단해 실사용 검증(TC-010)만 남아있었음. <b>2026-09-25(DEC-075) 사용자가 본인 PC의 일반 브라우저(이 세션 환경 아님)로 직접 실제 마이크 테스트 수행 — "4초마다 텍스트가 실제로 갱신됐다" 확인, 최종 제출·AI 응답까지 정상, 콘솔 에러 0건. TC-010 최종 해소, PASS로 승격.</b></td>
+        </tr>
+        <tr>
+          <td>K8s/클라우드 배포 + 오토스케일링</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-30, 로컬 메커니즘)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-25</span></td>
+          <td class="reason">클라우드 계정·예산 없이도 로컬 Docker Desktop의 Kubernetes(kind)로 배포 메커니즘 자체는 검증 가능함이 확인됨. <b>2026-09-25(DEC-074) 사용자 승인으로 실제 kind 클러스터에 격리 네임스페이스+테스트 이미지(nginx/busybox, 원본 매니페스트는 무변경)로 실배포 — 파드3/3 Running·PVC 2/2 Bound·자동복구(10초내)·로드밸런싱(4/4)·수동스케일링(2→4→2) 4개 TC 전부 PASS. 단 실제 앱 컨테이너 빌드·클라우드 레지스트리·진짜 오토스케일 지표(kind엔 metrics-server 없음)는 여전히 미검증 — "메커니즘 검증 완료"이지 "프로덕션 배포 완료"는 아님.</b></td>
+        </tr>
+        <tr>
+          <td>코드 실행 샌드박스 + AI 분석</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-29)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-24</span></td>
+          <td class="reason">Docker 9중 격리 코드는 이미 작성돼 있었으나 실행 검증·서비스 배선이 남아있었음. <b>2026-09-24(DEC-069) 사용자가 "K8s와 샌드박스 둘 다 최대한 완료해달라"고 명시 승인 — <code>POST /interviews/{id}/code-submissions/execute</code> 신규 배선(전용 레이트리밋 분당5회, 결과 DB 미저장). 사용자가 별도로 요청한 "보안 격리 완화"·"이 세션이 직접 실행하도록 정책변경"은 둘 다 명시적으로 거절(DEC-060, 제3자 신뢰불가 코드 실행이라는 위험 성격은 로컬 배포와 무관). 실HTTP+실브라우저(신규 탭/계정, 실행버튼 클릭) 8개 TC 전부 PASS.</b> AI의 시간복잡도/스타일/주석 자동 분석은 여전히 미구현.</td>
+        </tr>
+        <tr>
+          <td>DeepFace 표정 감정분석</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-31, 범위한정)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-24</span></td>
+          <td class="reason">기술 검증(정지이미지→감정분포, confidence 0.97)은 09-23에 끝났으나 법무검토 전 서비스 연결 금지 상태였음. <b>2026-09-24(DEC-070) 사용자가 "개인PC 임시테스트, 실제 채용 파이프라인 미연결"로 범위를 명시적으로 좁혀 연결 승인 — <code>POST /interviews/{id}/webcam-emotion</code> 신규(면접 평가·리포트와 완전 분리, 결과 미저장, 매 응답에 disclaimer 동봉). 배선 중 실측 결함 2건 발견·수정(cp949 콘솔 이모지 로그 크래시, venv 재생성으로 소실된 의존성 4종) 후 실HTTP E2E 3종 전부 PASS.</b> 실제 채용 프로세스 연결은 여전히 법무 검토 필수(원칙 불변).</td>
+        </tr>
+        <tr>
+          <td>STT → Deepgram Nova-2</td>
+          <td><span class="size s">● 소</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-32)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-23</span></td>
+          <td class="reason">어댑터 코드는 09-23 오전에 작성됐으나 API 키가 없어 미검증이었음. <b>2026-09-23 사용자가 Deepgram 키를 제공(DEC-058) → 실제 호출로 검증(원문과 정확히 일치). 이어서(DEC-063) <code>stt_router.py::transcribe_audio_smart()</code> 신설로 실제 음성 제출 2개 경로에 배선 완료 — 키 있으면 Deepgram 우선, 없거나 실패 시 무료 faster-whisper로 자동 폴백(운영 기본값은 그대로 무료, 회귀위험 낮음). 실HTTP E2E까지 검증 완료.</b></td>
+        </tr>
+        <tr>
+          <td>화이트보드 AI 비전 분석</td>
+          <td><span class="size m">● 중</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-35)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-23</span></td>
+          <td class="reason">렌더링(좌표→PNG)은 09-23 이전에 이미 완료. <b>2026-09-23(DEC-061) 유료 GPT-4V 대신 이미 다운로드돼 있던 무료 로컬 SmolVLM-500M-Instruct를 연결해 <code>POST .../whiteboard/analyze</code> 신규 배선, 저신뢰 disclaimer 프런트 표시 추가. Docker 미기동으로 실HTTP 검증이 남았었으나(DEC-062) 사용자 요청으로 Docker Desktop을 직접 기동해 회원가입→로그인→면접생성→화이트보드저장→분석 전 구간 실HTTP E2E 완료(200 OK). 응답 품질은 매우 낮음(예: "2"만 반환) — disclaimer로 명시.</b> <b>[2026-09-28, DEC-081]</b> unit-35-note.md §5-1이 미해결로 남겼던 렌더링 캔버스 크기 가정(1200×800)을 실제 배선 코드(640×400)와 대조 — 불일치 확인 후 정정. 그림이 이미지 절반 이하에만 그려지고 나머지가 빈 여백으로 AI에 전달되던 문제 해소(픽셀 단위 전/후 대조 검증).</td>
+        </tr>
+        <tr>
+          <td>"합격/불합격" 자동 확정 필드 복원</td>
+          <td><span class="size s">● 소(기술)</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-23)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-22 21:27:11</span></td>
+          <td class="reason">⚠ enum 값만 바꾸면 되는 기술적으로는 가장 쉬운 항목이지만, 개인정보보호법 제37조의2(자동화된 결정 거부권)를 의식해 의도적으로 뺀 필드 — 기술적 가능과 별개로 법무 검토 없이 진행하지 말 것. <b>구현: <code>pass_fail_recommendation</code> 필드(모델~프론트 전 계층), 실 DB/API 검증 완료. 배포 전 법무 검토 필수.</b> <b>[2026-09-28, DEC-079]</b> 실제 법무 자문 요청이 한 번도 없었던 공백을 확인 — 법무팀에 그대로 전달 가능한 브리핑 문서(<code>docs/legal/pass-fail-recommendation-review-brief.md</code>)를 작성해 요청 절차를 갖춤. <b>이 문서 작성 = 법무 검토 완료가 아님 — 실제 법무 회신은 여전히 미완, "배포 전 법무 검토 필수" 상태는 그대로 유지.</b></td>
+        </tr>
+        <tr>
+          <td>음성 Prosody 분석(자신감/긴장도)</td>
+          <td><span class="size m">● 중</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-24)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-22 21:44:22</span></td>
+          <td class="reason">librosa는 오픈소스라 예산 문제는 없음. 다만 "자신감/긴장도"라는 정성적 해석의 정확도(80% 기준)를 검증할 벤치마크 데이터셋 확보가 별도로 필요(신뢰도 검증 선행). <b>구현: PyAV 디코딩+librosa.pyin, 원시 수치만 반환(해석 라벨 없음). 실제 한국어 음성 E2E 검증 완료.</b></td>
+        </tr>
+        <tr>
+          <td>LLM 오케스트레이션 → LangChain/LangGraph</td>
+          <td><span class="size m">● 중</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-26, 검증모듈만)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-22 23:0x대</span></td>
+          <td class="reason">현재 llm_engine.py가 멀티턴 컨텍스트·RAG·구조화출력을 프레임워크 없이 이미 구현. 프레임워크 교체는 기능 추가가 아니라 리팩터링에 가까워 실익은 낮음. <b>구현: 운영 파이프라인은 그대로 두고 동등 기능의 LangChain 검증 모듈 별도 구축, 실제 llama-server로 정상/재시도/실패 3분기 전부 실측 확인. 운영 전환은 09-24 재확인 후에도 회귀위험 때문에 계속 보류(진행 안 함).</b></td>
+        </tr>
+        <tr>
+          <td>TLS 1.3 + AES-256 암호화</td>
+          <td><span class="size m">● 중</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-25, 부분)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-22 22:46:44</span></td>
+          <td class="reason">전송 구간(TLS)은 배포 시 리버스프록시 설정으로 해결 가능(소). 저장 암호화(AES-256)는 DB 컬럼/디스크 암호화 도입이 필요해 스키마·드라이버 작업 발생. <b>구현: nginx TLS1.3 샘플+보안헤더, AES-256-GCM 암호화 모듈 실제 적용(consents.ip_address, 기존 699건 포함). <b>[2026-09-28, DEC-078]</b> content_text 등 핵심 컬럼 확장 완료 — 손상 결함(당시 조사 사유)이 09-23 재조사로 이미 오탐 확정된 뒤 방치돼 있던 것을 정리, <code>transcripts.content_text</code>/<code>code_submissions.content</code>를 신규 <code>EncryptedText</code>로 전환(기존 실데이터 268건 SHA-256 대조 0 mismatch). JSONB 필드(star_json 등)는 구조 변경이 더 커서 별도 결정 대기 중.</b></td>
+        </tr>
+        <tr>
+          <td>AI 안전장치 5종(프롬프트 인젝션 방어 등)</td>
+          <td><span class="size m">● 중</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status done">✓ 완료(unit-27)</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-22 23:4x대</span></td>
+          <td class="reason">원 계획서에는 없고 개발 하네스 자체 보안 규칙(REQ-035~039)으로 추가된 항목. <b>구현: REQ-036/037은 기존 코드로 이미 충족 확인, REQ-035(인젝션 감사로그)/038(레이트리밋)/039(유출 감사로그) 신규 구현 + 실제 HTTP로 검증. 2026-09-24 REQ-007 전체 재검증에서도 Redis 인증 등 관련 항목 재확인·PASS(DEC-073).</b> <b>[2026-09-28, DEC-077]</b> 실제 공격 페이로드로 재검증하다 루브릭 설명필드를 통한 프롬프트 인젝션이 <code>overall_recommendation</code>/<code>pass_fail_recommendation</code>만 부분적으로 이탈시킬 수 있음(DEF-001, Critical)을 발견 — 서버측 정합성 가드(<code>_apply_recommendation_consistency_guard</code>)를 추가해 프롬프트 방어만으로는 막을 수 없던 우회를 원천 차단. <b>[2026-09-28, DEC-080]</b> unit-10 정적검토가 별도로 남겨뒀던 DEF-003(리포트 파싱 실패 폴백에는 REQ-039 유출검사가 빠져있던 것)도 같은 날 함께 정정 — 기존 탐지 함수를 리포트 직렬화 지점에 재적용.</td>
+        </tr>
+        <tr>
+          <td>WebRTC 영상 스트리밍 + 미디어서버</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict ok">가능</span></td>
+          <td><span class="row-status hold">◐ 부분착수(unit-28) — 보류 확정</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-24</span></td>
+          <td class="reason">Signaling Server(WebSocket SDP/ICE 교환)만 실제 구현·검증 완료, Media Server(aiortc/GStreamer)는 여전히 수주 단위 신규 개발 필요. <b>2026-09-24(DEC-072) 사용자가 "지금은 그대로 두겠다"고 명시적으로 확정 — 남은 부분착수 4건 중 하나로 우선순위 보류.</b></td>
+        </tr>
+        <tr>
+          <td>GDPR/CCPA 동시 준수</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict ok">가능(코드 한도까지)</span></td>
+          <td><span class="row-status hold">◐ 부분착수 — 코드 천장 도달</span><br><span style="font-size:9.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;">2026-09-24</span></td>
+          <td class="reason">적법근거 기록(unit-34)·CCPA 판매안함 고지·데이터 이동권(unit-33)까지 코드로 가능한 부분은 전부 구현·검증됨. <b>2026-09-24(DEC-071) 사용자가 "개인PC 테스트라 법적판단 불필요"로 완료 전환을 요청했으나, 재조사 결과 남은 항목(DPO 지정, EU/미국 역외이전 안전조치)은 실행할 코드·엔드포인트 자체가 없는 조직적·법적 행위임을 확인 — 정직하게 "완료 불가"로 보고, 상태를 부분착수로 유지(거짓 완료 금지).</b></td>
+        </tr>
+
+        <tr class="grouprow g-no"><td colspan="5">개발 불가 — 5개</td></tr>
+        <tr class="subgrouprow"><td colspan="5">💳 유료결제 필수 (2개) — 사용자가 비용 이유로 진행 안 함을 명시 선택(DEC-059)</td></tr>
+        <tr>
+          <td>TTS → Hume AI/ElevenLabs</td>
+          <td><span class="size s">● 소(기술)</span></td>
+          <td><span class="verdict no">유료 결제 필요</span></td>
+          <td><span class="row-status todo">코드준비(unit-32, 미검증)</span></td>
+          <td class="reason">어댑터 클래스는 작성 완료(<code>synthesize_speech_file()</code> 계약으로 이미 격리, 구현체만 교체하면 기술적으로는 수일 내 전환 가능). <b>2026-09-23(DEC-059) 사용자가 "원안에 유료는 모두 진행하지 않겠다"고 명시 선언 — 키 발급 자체를 중단. 순수 비용 문제이지 기술 난이도 문제가 아님.</b></td>
+        </tr>
+        <tr>
+          <td>벡터DB → Pinecone</td>
+          <td><span class="size s">● 소(기술)</span></td>
+          <td><span class="verdict no">유료 결제 필요 · 불필요</span></td>
+          <td><span class="row-status todo">코드준비(unit-32, 미검증)</span></td>
+          <td class="reason">클라이언트(upsert/query)는 작성 완료. <b>2026-09-23(DEC-059) 동일 사유로 진행 중단. 참고: ②표가 이미 pgvector를 "일치" 판정 — 애초에 이 전환 자체가 정합성 개선이 아니라 유료화 선택이라, 진행할 이유 자체가 약함.</b></td>
+        </tr>
+        <tr class="subgrouprow"><td colspan="5">⚙ 하드웨어·아키텍처 근본 한계 (3개)</td></tr>
+        <tr>
+          <td>VAD 기반 실시간 끼어들기</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict no">근본 재설계 필요</span></td>
+          <td><span class="row-status todo">해당없음</span></td>
+          <td class="reason">"턴제"는 §4.3 설계서가 명시적으로 확정한 아키텍처 전제(WS는 서버→클라이언트 푸시 전용). 클라이언트→서버 실시간 오디오 스트림 채널 신설 + VAD 통합 + TTS 재생 중단 로직까지 전면 재설계. <b>2026-09-23(DEC-059 재평가) 막힌 이유가 예산이 아니라 순수 개발 시간(대규모 재설계) 문제임을 재확인.</b></td>
+        </tr>
+        <tr>
+          <td>메인DB → Oracle</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict no">비권장</span></td>
+          <td><span class="row-status todo">해당없음</span></td>
+          <td class="reason">JSONB, pgvector(Vector 타입) 등 PostgreSQL 전용 기능을 스키마 전반에서 사용 중 — Oracle은 미지원(23ai 벡터타입 쓰려면 드라이버·마이그레이션 전면 재작성). 상용 라이선스 비용도 별도 발생 — 순수 예산 문제.</td>
+        </tr>
+        <tr>
+          <td>500명 동시접속 처리</td>
+          <td><span class="size l">● 대</span></td>
+          <td><span class="verdict no">현 하드웨어로 사실상 불가</span></td>
+          <td><span class="row-status todo">해당없음</span></td>
+          <td class="reason">단일 GPU·단일 LLM 서버 직렬 처리 구조. GPU 인스턴스를 요청량만큼 수평확장하지 않는 한 대기열이 선형으로 쌓여 지연이 폭증 — 코드 문제가 아니라 물리적 컴퓨팅 자원의 한계(순수 예산 문제).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="block" id="reasons">
+  <h2>④ 왜 전환이 어려운가 — 그룹별 상세 근거</h2>
+  <p class="h2sub">'대(大)' 판정 항목들이 공통으로 부딪히는 5가지 제약. 코드 몇 줄로 해결되지 않는 이유</p>
+  <div class="rgrid">
+
+    <div class="rcard">
+      <div class="icon" style="background:var(--rose-soft); color:var(--rose);">⚙</div>
+      <h3>1. 하드웨어 물리적 한계</h3>
+      <p>LLM(Qwen2.5-1.5B)이 이미 GPU VRAM을 <b>598MiB → 1,717MiB</b>까지 점유(실측). 로컬 GPU 1개(가용 예산 약 3,387MiB) 안에서 실시간 영상 감정분석·다중 동시추론까지 얹으면 자원 경합이 발생합니다.</p>
+      <p>Celery 워커가 <code>--pool=solo</code>(단일 프로세스 직렬)로 고정된 것도 "GPU는 물리적으로 1개"라는 전제 때문 — 동시접속 500명은 코드 최적화가 아니라 GPU 인스턴스를 요청량만큼 늘리는 하드웨어 투자로만 해결됩니다.</p>
+    </div>
+
+    <div class="rcard">
+      <div class="icon" style="background:var(--violet-soft); color:var(--violet);">⚖</div>
+      <h3>2. 라이선스 · 법적 제약</h3>
+      <p>Piper TTS는 <b>GPL-3.0-or-later</b> — 상용 폐쇄 배포 시 소스공개 의무 등 법무검토가 아직 미해결(원 계획서도 자체적으로 "법무검토 필요"라고 명시).</p>
+      <p>DeepFace류 감정인식 AI는 EU AI Act가 특정 감정인식 활용을 금지 목록에 올리는 논의가 진행 중이고, 국내법상 얼굴·음성은 민감정보(생체인식정보)라 별도 동의·안전조치 의무가 가중됩니다.</p>
+    </div>
+
+    <div class="rcard">
+      <div class="icon" style="background:var(--amber-soft); color:var(--amber);">💳</div>
+      <h3>3. 예산 제약</h3>
+      <p>Deepgram·Hume AI·ElevenLabs·Pinecone·GPT-4V·Oracle·AWS/GCP는 전부 유료 서비스입니다. 현재 프로젝트는 이미 문서화된 결정(DEC-004~007)으로 "예산 없음"을 전제로 전량 오픈소스/로컬 대체를 확정했습니다.</p>
+      <p>역으로 말하면, 예산만 확보되면 <b>TTS·STT·벡터DB 전환은 대부분 '소' 난이도</b>입니다 — 진짜 제약은 코드가 아니라 예산인 항목이 많습니다.</p>
+    </div>
+
+    <div class="rcard">
+      <div class="icon" style="background:var(--accent-soft); color:var(--accent-ink);">🏗</div>
+      <h3>4. 아키텍처 근본 차이</h3>
+      <p>원안은 5계층 이벤트기반 마이크로서비스(영상 스트리밍용 Signaling/Media Server 포함)였지만, 실제는 단일 FastAPI 모놀리스입니다. 영상 스트림 자체가 없으므로 감정분석·VAD 끼어들기·GPT-4V 화이트보드분석은 전부 "없는 전제" 위에서 설계된 기능입니다.</p>
+      <p>되돌리려면 새 계층을 처음부터 신설해야 하고, 이는 기존 "턴제 REST 단일경로"(§4.3에서 이미 확정한 설계 결정)를 뒤집는 근본적 재작업입니다.</p>
+    </div>
+
+    <div class="rcard fullspan" style="grid-column:1/-1;">
+      <div class="icon" style="background:var(--teal-soft); color:var(--teal);">🗓</div>
+      <h3>5. 일정 · 스코프</h3>
+      <p>원안은 <b>7주 완성 로드맵</b>이었지만, 실제로는 13단계 하네스 + unit-1~21 체계로 이미 그 이상 소요되었고, 현재도 보안장치(unit-8), 삭제 배치잡(unit-21) 등이 미완입니다. '대' 항목을 동시에 되돌리면 사실상 새 프로젝트 규모의 재기획이 필요합니다 — 우선순위를 정해 하나씩("소"→"중"→"대" 순) 순차 진행하는 것을 권장합니다.</p>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  출처: <code>웹 AI 모의면접 프로젝트 계획서.pdf</code>(1~14p) · <code>_슬라이드.pdf</code>(1~15p) — 원 계획서 원문 직접 확인. 현재 구현: <code>backend/app/models</code>, <code>backend/app/services</code>, <code>backend/app/api/v1</code>, <code>docs/harness/traceability.md</code>, <code>docs/harness/decisions.md</code>(DEC-053~103) 직접 확인. 작성 기준일 2026-09-30(2026-09-25까지의 실제 작업 내역 + 2026-09-28~30 보강 25건(DEC-077~103) 반영 — "07단계 통합테스트 부채" 20건 전체 완료, 자동 파기 배치·weight 검증 정산, beat 실발화/unit-20 태블릿·모바일 재검증, 원 계획서 대조 전수 재점검, 신규 이력서제출 기능(Feature J) 구현+전수 재검증, 이력서제출 절차 화면+설명 아티팩트 25세/20년차 기획자 기준 문구 재작성(지원자+관리자)).
+</footer>
+
+</div>
+
+</body></html>

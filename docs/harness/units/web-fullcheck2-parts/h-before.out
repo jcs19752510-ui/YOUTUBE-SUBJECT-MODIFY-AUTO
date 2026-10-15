@@ -1,0 +1,10 @@
+RESULT MIX-READ(8 endpoints) conc=20 n=300 rps=115 p50=170 p95=257 p99=319 max=379 err=0 (0.0%) codes={200: 300}
+RESULT GET /videos?page_size=200 conc=20 n=300 rps=90 p50=218 p95=280 p99=336 max=391 err=0 (0.0%) codes={200: 300}
+RESULT MIX-READ(8 endpoints) conc=50 n=300 rps=108 p50=445 p95=720 p99=832 max=862 err=0 (0.0%) codes={200: 300}
+RESULT GET /videos?page_size=200 conc=50 n=300 rps=79 p50=617 p95=1054 p99=1263 max=1928 err=0 (0.0%) codes={200: 300}
+RESULT MIX-READ(8 endpoints) conc=100 n=300 rps=117 p50=608 p95=1864 p99=2280 max=2476 err=0 (0.0%) codes={200: 300}
+RESULT GET /videos?page_size=200 conc=100 n=300 rps=3 p50=30531 p95=61405 p99=61504 max=61511 err=125 (41.7%) codes={200: 175, 500: 51, 'ReadTimeout': 74}
+
+real	1m47.681s
+user	0m6.995s
+sys	0m0.563s

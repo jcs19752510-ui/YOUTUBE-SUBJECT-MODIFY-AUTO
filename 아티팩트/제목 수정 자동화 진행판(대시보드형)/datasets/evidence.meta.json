@@ -1,0 +1,14 @@
+{
+ "description": "1단계 조사서의 사실 항목을 근거 등급별로 센 값. 공식 원문 미열람.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "evidence.json",
+  "url": "/_blob/dd4092b3bb804efd5b4b28cd51b4b7d7"
+ },
+ "title": "사실 근거 등급 분포",
+ "updated": {
+  "at": "2026-10-10T09:06:11Z",
+  "by": "Claude"
+ }
+}

@@ -1,0 +1,17 @@
+file:///home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/login.e2e.mjs:16
+  await page.route('**/api/v1/**', async route=>{ const rq=route.request(); const u=new URL(rq.url()); const p=u.pathname; const m=rq.method();
+                                                                                    ^
+
+TypeError: URL is not a constructor
+    at file:///home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/login.e2e.mjs:16:85
+    at RouteHandler._handleInternal (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:61687:11)
+    at RouteHandler._handleImpl (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:61654:29)
+    at /home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:61648:59
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14)
+    at _Zone.run (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:11049:40)
+    at RouteHandler.handle (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:61648:38)
+    at _Page._onRoute (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:62968:46)
+    at Proxy.<anonymous> (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:62914:63)
+    at Proxy._callHandler (/home/user/youtube-subject-modify-auto/web/tests_fullcheck/login/node_modules/playwright-core/lib/coreBundle.js:11647:33)
+
+Node.js v22.22.0

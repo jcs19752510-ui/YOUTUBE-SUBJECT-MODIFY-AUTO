@@ -1,0 +1,44 @@
+E       assert not [('web/backend/tests/verify_m23/test_vm_05_live_write.py', 27, 'oauth_refresh_token_json'), ('web/backend/tests/verify..._03_live_read.py', 258, 'oauth_refresh_token_json'), ('web/tests_infra/test_vinf2_live.py', 577, 'client_secret_json')]
+
+web/tests_security/test_sec_03_static_repo.py:78: AssertionError
+______________________ test_no_secret_like_files_in_tree _______________________
+
+    def test_no_secret_like_files_in_tree():
+        bad_names = re.compile(r"^(\.env(\..*)?|token.*\.json|client_secret.*\.json|.*\.pem|.*\.key|id_rsa.*|.*\.p12|.*\.pfx|.*\.dump|credentials.*|.*\.sqlite3?|.*\.db)$", re.I)
+        allowed = {"settings.local.yaml.example"}
+        hits = [p.relative_to(ROOT).as_posix() for p in walk() if bad_names.match(p.name) and p.name not in allowed]
+>       assert not hits, hits
+E       AssertionError: ['web/.env.example']
+E       assert not ['web/.env.example']
+
+web/tests_security/test_sec_03_static_repo.py:85: AssertionError
+_ test_powershell_scripts_have_no_dangerous_constructs_and_confirm_destructive_ops _
+
+    def test_powershell_scripts_have_no_dangerous_constructs_and_confirm_destructive_ops():
+        d = ROOT / "web" / "scripts"
+        allp = {p.name: p.read_text(encoding="utf-8") for p in d.glob("*.ps1")}
+        assert len(allp) >= 9
+        for name, t in allp.items():
+            if name not in ("pin-digests.ps1", "status.ps1"):  # pin-digests: Docker Hub 다이제스트 조회, status: 127.0.0.1 상태 확인 - 아래에서 따로 확인
+>               assert not re.search(r"(?i)\b(iex|Invoke-Expression|Invoke-WebRequest|Invoke-RestMethod|DownloadString|Start-BitsTransfer|Add-Type|\[Reflection\.Assembly\]::Load)\b", t), name
+E               AssertionError: e2e.ps1
+E               assert not <re.Match object; span=(795, 812), match='Invoke-WebRequest'>
+E                +  where <re.Match object; span=(795, 812), match='Invoke-WebRequest'> = <function search at 0x7f3ed6d78220>('(?i)\\b(iex|Invoke-Expression|Invoke-WebRequest|Invoke-RestMethod|DownloadString|Start-BitsTransfer|Add-Type|\\[Reflection\\.Assembly\\]::Load)\\b', '\ufeff<#\n.SYNOPSIS\n  내 PC에서 떠 있는 서버(http://127.0.0.1:8080)를 대상으로 기능 자동 시험(E2E) 21개를 실행하고 결과표와 화면 캡처를 남깁니다.\n.DESCRI...talSeconds, $out)\nif ($OpenReport -and (Test-Path "$out\\RESULT.md")) { Invoke-Item "$out\\RESULT.md" }\nexit $code\n')
+E                +    where <function search at 0x7f3ed6d78220> = re.search
+
+web/tests_security/test_sec_03_static_repo.py:386: AssertionError
+=============================== warnings summary ===============================
+.harness-tmp/venv_fix_be/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/user/youtube-subject-modify-auto/.harness-tmp/venv_fix_be/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED web/tests_security/test_sec_02_injection_ai_integrity.py::test_ytweb_has_no_outbound_capable_imports
+FAILED web/tests_security/test_sec_03_static_repo.py::test_no_secrets_in_current_tree
+FAILED web/tests_security/test_sec_03_static_repo.py::test_no_secret_like_files_in_tree
+FAILED web/tests_security/test_sec_03_static_repo.py::test_powershell_scripts_have_no_dangerous_constructs_and_confirm_destructive_ops
+
+real	0m51.065s
+user	0m35.560s
+sys	0m3.911s

@@ -1,0 +1,52 @@
+[
+ {
+  "kind": "FR",
+  "label": "기능 요구",
+  "count": 20
+ },
+ {
+  "kind": "NFR",
+  "label": "비기능 요구",
+  "count": 11
+ },
+ {
+  "kind": "POL",
+  "label": "서비스 정책",
+  "count": 4
+ },
+ {
+  "kind": "SEC",
+  "label": "보안 요구",
+  "count": 20
+ },
+ {
+  "kind": "EVT",
+  "label": "인터페이스",
+  "count": 19
+ },
+ {
+  "kind": "UX",
+  "label": "사용자 흐름",
+  "count": 9
+ },
+ {
+  "kind": "SCR",
+  "label": "출력 화면",
+  "count": 10
+ },
+ {
+  "kind": "ADR",
+  "label": "아키텍처 결정",
+  "count": 10
+ },
+ {
+  "kind": "RISK",
+  "label": "리스크",
+  "count": 17
+ },
+ {
+  "kind": "OOS",
+  "label": "범위 제외",
+  "count": 6
+ }
+]

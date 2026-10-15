@@ -1,0 +1,40 @@
+rules:
+- id: subprocess-shell-true
+  languages: [python]
+  severity: ERROR
+  message: subprocess with shell=True
+  pattern: subprocess.$F(..., shell=True, ...)
+- id: eval-exec
+  languages: [python]
+  severity: ERROR
+  message: eval/exec
+  pattern-either: [{pattern: eval(...)}, {pattern: exec(...)}]
+- id: yaml-unsafe-load
+  languages: [python]
+  severity: ERROR
+  message: yaml.load without safe loader
+  pattern: yaml.load(...)
+- id: requests-verify-false
+  languages: [python]
+  severity: ERROR
+  message: TLS verify disabled
+  pattern-either: [{pattern: "$X(..., verify=False, ...)"}, {pattern: ssl._create_unverified_context(...)}]
+- id: sql-string-format
+  languages: [python]
+  severity: WARNING
+  message: SQL built by string formatting
+  pattern-either:
+  - pattern: $C.execute(f"...", ...)
+  - pattern: $C.execute("..." % ..., ...)
+  - pattern: $C.execute("...".format(...), ...)
+  - pattern: $C.execute("..." + ..., ...)
+- id: hardcoded-secret
+  languages: [python]
+  severity: WARNING
+  message: possible hardcoded secret
+  pattern-regex: '(?i)(password|secret|api_key|token)\s*=\s*["''][A-Za-z0-9_\-]{12,}["'']'
+- id: weak-hash
+  languages: [python]
+  severity: WARNING
+  message: md5/sha1
+  pattern-either: [{pattern: hashlib.md5(...)}, {pattern: hashlib.sha1(...)}]

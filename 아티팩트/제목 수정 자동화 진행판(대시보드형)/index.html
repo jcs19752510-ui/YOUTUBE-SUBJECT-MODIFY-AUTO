@@ -1,0 +1,177 @@
+<style>
+#dash-root{--dash-gutter:clamp(16px,4vw,40px)}
+.pj{max-width:1080px;margin-inline:auto;font-family:var(--font-anthropic-sans);color:var(--color-fg)}
+.pj *{box-sizing:border-box}
+.pj h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0 0 var(--cds-gap-xs)}
+.pj h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:var(--cds-gap-xl) 0 var(--cds-gap-sm)}
+.pj .lede{color:var(--color-fg-muted);margin:0 0 var(--cds-gap-md)}
+.pj .grid{display:grid;gap:var(--cds-gap-md);grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr))}
+.pj .card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg);min-width:0}
+.pj .card h3{margin:0 0 var(--cds-gap-xs);font-size:var(--cds-font-size-caption);font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);letter-spacing:.04em}
+.pj .card p{margin:0;line-height:1.6}
+.pj .note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:var(--cds-gap-xs) 0 0}
+.pj .big{font-family:var(--font-anthropic-serif);font-weight:400;font-size:3.2rem;line-height:1;font-variant-numeric:tabular-nums}
+.pj .big small{font-size:1.2rem;color:var(--color-fg-muted);margin-left:.15em}
+.pj .bar{height:10px;border-radius:5px;background:var(--cds-chart-grid);overflow:hidden;margin-top:var(--cds-gap-sm)}
+.pj .bar>i{display:block;height:100%;width:0;background:var(--color-fg);border-radius:5px;transition:width var(--cds-dur-slow) var(--cds-ease-out)}
+.pj .gcard .gpct{font-size:2rem;font-family:var(--font-anthropic-serif);font-variant-numeric:tabular-nums}
+.pj .gcard .gname{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.pj .tablebox{max-height:26rem;overflow:auto;border:1px solid var(--color-border-line);border-radius:var(--cds-radius);background:var(--color-panel)}
+.pj table{border-collapse:collapse;width:100%;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.pj th{position:sticky;top:0;background:var(--color-panel);text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);padding:8px 10px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
+.pj td{padding:8px 10px;border-bottom:1px solid var(--color-border-line);vertical-align:top;line-height:1.5}
+.pj tr:last-child td{border-bottom:0}
+.pj td.num{text-align:right;white-space:nowrap}
+.pj .pill{display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid currentColor;font-size:var(--cds-font-size-caption);white-space:nowrap}
+.pj .s-PASS,.pj .l-하,.pj .k-장점{color:var(--color-ok)}
+.pj .s-CONDITIONAL,.pj .s-WAITING,.pj .l-중{color:var(--color-warn)}
+.pj .s-PENDING{color:var(--color-fg-muted)}
+.pj .s-IN_PROGRESS{color:var(--color-warn)}
+.pj .l-상,.pj .k-단점{color:var(--color-bad)}
+.pj .vrow{display:grid;grid-template-columns:minmax(7rem,12rem) 1fr;gap:var(--cds-gap-sm);align-items:center;padding:6px 0}
+.pj .vname{font-size:var(--cds-font-size-caption)}
+.pj .vbars{display:flex;gap:6px;align-items:flex-end;height:64px}
+.pj .vb{flex:0 0 auto;width:min(44px,12vw);display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.pj .vb i{display:block;width:100%;background:var(--cds-chart-muted);border-radius:4px 4px 0 0;min-height:2px}
+.pj .vb.last i{background:var(--color-ok)}
+.pj .vb span{font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums;color:var(--color-fg-muted)}
+.pj .hrow{display:grid;grid-template-columns:7.5rem 1fr 2.5rem;gap:var(--cds-gap-sm);align-items:center;padding:3px 0;font-size:var(--cds-font-size-caption)}
+.pj .hrow i{display:block;height:12px;background:var(--color-fg);border-radius:0 6px 6px 0;min-width:2px}
+.pj .hrow b{font-weight:var(--cds-font-weight-medium);text-align:right;font-variant-numeric:tabular-nums}
+.pj ul.pts{margin:0;padding-left:1.2em;line-height:1.7}
+@media (prefers-reduced-motion:reduce){.pj .bar>i{transition:none}}
+</style>
+<div class="pj">
+  <h1>제목 수정 자동화 진행판</h1>
+  <p class="lede" id="takeaway">설계 승인을 받아 구현에 들어갔고, 개발 단위 7개 중 4개(공통 기반·인증·조회·후보 검증)가 내부 테스트를 통과했습니다. 실제로 영상 제목을 바꾸는 코드는 아직 한 줄도 없습니다.</p>
+
+  <div class="grid">
+    <div class="card"><h3>주제</h3><p>'시니어 생활팁' 채널의 기존 영상 제목을 안전하게 검증하고, 사람이 승인한 뒤에만 바꾸며, 모든 변경을 기록하고 되돌릴 수 있게 하는 로컬 도구</p></div>
+    <div class="card"><h3>목적</h3><p>계정 제재 위험을 최소화하면서 제목 개선 과정을 자동화하고 기록합니다. 더 자극적으로가 아니라 더 정확하고 안전하게 만드는 것이 목표입니다.</p></div>
+    <div class="card"><h3>현재 상태</h3><p>준비·문서·설계와 개발 단위 4개가 합격했습니다. 안전 핵심 단위인 WU-4(변경 계획·롤백 계획)를 구현 중이고, 이어서 WU-5(실제 수정 가드)와 WU-6(리포트)를 병렬로 진행합니다. 다음 사용자 관문은 12단계의 릴리즈·첫 실제 수정 승인입니다.</p></div>
+    <div class="card">
+      <h3>전체 진행률 (가중치 기준)</h3>
+      <div class="big"><span id="overall-pct" data-source="overall" data-row="0" data-field="pct">—</span><small>%</small></div>
+      <div class="bar" id="overall-bar"><i></i></div>
+      <p class="note">합격은 단계 가중치 전부, 조건부 합격은 일부만 인정합니다.</p>
+    </div>
+  </div>
+
+  <h2>영역별 진행</h2>
+  <div class="grid">
+    <div class="card gcard"><div class="gname">준비 (세팅·프롬프트·시작 질문)</div><div class="gpct"><span data-source="groups" data-where="group=g1" data-field="pct">—</span>%</div><div class="bar"><i id="gb-g1"></i></div></div>
+    <div class="card gcard"><div class="gname">문서·설계</div><div class="gpct"><span data-source="groups" data-where="group=g2" data-field="pct">—</span>%</div><div class="bar"><i id="gb-g2"></i></div></div>
+    <div class="card gcard"><div class="gname">개발·단위 테스트</div><div class="gpct"><span data-source="groups" data-where="group=g3" data-field="pct">—</span>%</div><div class="bar"><i id="gb-g3"></i></div></div>
+    <div class="card gcard"><div class="gname">검증·릴리즈·운영</div><div class="gpct"><span data-source="groups" data-where="group=g4" data-field="pct">—</span>%</div><div class="bar"><i id="gb-g4"></i></div></div>
+  </div>
+
+  <h2>단계별 상태</h2>
+  <div class="tablebox"><table id="t-stages" data-source="stages" data-row-key="name">
+    <thead><tr><th data-field="name">단계</th><th data-field="weight">가중치</th><th data-field="status">상태</th><th data-field="earned">인정 점수</th><th data-field="note">비고</th></tr></thead><tbody></tbody></table></div>
+
+  <h2>개발 단위별 내부 테스트 결과</h2>
+  <p class="lede">변이 점검은 안전 로직을 일부러 망가뜨려 테스트가 잡아내는지 보는 검사입니다. 분모는 망가뜨린 곳, 분자는 잡아낸 곳입니다.</p>
+  <div class="tablebox"><table id="t-units" data-source="units" data-row-key="unit">
+    <thead><tr><th data-field="unit">단위</th><th data-field="name">내용</th><th data-field="track">트랙</th><th data-field="tests">테스트 수</th><th data-field="coverage">커버리지</th><th data-field="mutation">변이 점검</th><th data-field="verdict">판정</th></tr></thead><tbody></tbody></table></div>
+  <h2>시험 요약</h2>
+  <div class="tablebox"><table id="t-sum" data-source="testsummary" data-row-key="item">
+    <thead><tr><th data-field="item">항목</th><th data-field="value">결과</th></tr></thead><tbody></tbody></table></div>
+
+  <h2>검수가 결함을 줄여 간 과정</h2>
+  <div class="card" id="c-verif" data-source="verification"></div>
+  <p class="note">막대는 검수 회차별 발견 결함 수이고 초록색이 마지막 회차입니다. 오탐은 결함으로 세지 않았습니다.</p>
+
+  <div class="grid" style="margin-top:var(--cds-gap-lg)">
+    <div><h2 style="margin-top:0">요구사항 규모</h2><div class="card" id="c-scope" data-source="scope"></div></div>
+    <div><h2 style="margin-top:0">1단계 사실의 근거 강도</h2><div class="card" id="c-evid" data-source="evidence"></div>
+      <p class="note">공식 원문을 직접 읽지 못해 확정으로 표기한 사실은 없습니다.</p></div>
+  </div>
+
+  <h2>장점과 단점</h2>
+  <div class="tablebox"><table id="t-assess" data-source="assessment" data-row-key="id">
+    <thead><tr><th data-field="id">번호</th><th data-field="kind">구분</th><th data-field="item">항목</th><th data-field="evidence">근거</th></tr></thead><tbody></tbody></table></div>
+
+  <h2>리스크 (위험도 순)</h2>
+  <div class="tablebox"><table id="t-risks" data-source="risks" data-row-key="id">
+    <thead><tr><th data-field="id">번호</th><th data-field="level">위험도</th><th data-field="name">리스크</th><th data-field="mitigation">완화 방법</th></tr></thead><tbody></tbody></table></div>
+
+  <h2>20년차 관점: 아직 열려 있는 것들</h2>
+  <p class="lede">사용자 결정, 미수행, 가정, 외부 의존, 한계를 한곳에 모았습니다. 막힘 여부가 "예"인 항목이 다음 단계의 관문입니다.</p>
+  <div class="tablebox"><table id="t-open" data-source="open_items" data-row-key="id">
+    <thead><tr><th data-field="id">번호</th><th data-field="kind">구분</th><th data-field="item">내용</th><th data-field="impact">영향</th><th data-field="action">필요한 조치</th><th data-field="blocking">막힘</th></tr></thead><tbody></tbody></table></div>
+
+  <div class="grid" style="margin-top:var(--cds-gap-lg)">
+    <div class="card"><h3>가장 큰 위험은 기술이 아닙니다</h3><ul class="pts"><li>공식 원문을 못 읽은 상태라 사실 근거가 약합니다.</li><li>검수가 모두 같은 모델의 역할 전환이라 사람의 독립 검토가 필요합니다.</li><li>실제 쓰기 경로는 아직 한 줄도 구현되지 않았습니다.</li></ul></div>
+    <div class="card"><h3>구현에서 가장 먼저 증명할 것</h3><ul class="pts"><li>승인 조건이 하나라도 빠지면 쓰기 호출이 일어나지 않는다.</li><li>제목 외 설명·태그·카테고리가 그대로 보존된다.</li><li>기록된 모든 변경이 한 명령으로 되돌려진다.</li></ul></div>
+    <div class="card"><h3>지금 필요한 결정</h3><ul class="pts"><li>산출물을 GitHub로 올리는 방법(AI는 git 금지라 지시가 필요합니다).</li><li>금칙어 사전 초안 검토 일정.</li><li>공식 문서 도메인 허용 여부, 로그인 방식.</li></ul></div>
+  </div>
+
+  <h2>산출물</h2>
+  <div class="tablebox"><table id="t-docs" data-source="docs" data-row-key="file">
+    <thead><tr><th data-field="file">파일</th><th data-field="stage">단계</th><th data-field="kind">종류</th><th data-field="lines">줄 수</th></tr></thead><tbody></tbody></table></div>
+</div>
+<script>
+const fmt=d3.format(',');
+dash.calc('overall',{title:'전체 진행률',description:'단계 가중치 합 대비 인정 점수 합',inputs:['stages'],
+  fn:(stages)=>{const w=stages.reduce((a,x)=>a+x.weight,0),e=stages.reduce((a,x)=>a+x.earned,0);return [{pct:Math.round(e/w*1000)/10,earned:Math.round(e*10)/10,weight:w}];}});
+dash.calc('groups',{title:'영역별 진행률',description:'영역별 가중치 합 대비 인정 점수 합',inputs:['stages'],
+  fn:(stages)=>['g1','g2','g3','g4'].map(g=>{const r=stages.filter(x=>x.group===g),w=r.reduce((a,x)=>a+x.weight,0),e=r.reduce((a,x)=>a+x.earned,0);return {group:g,pct:w?Math.round(e/w*1000)/10:0,earned:Math.round(e*10)/10,weight:w};})});
+
+const cell=(tr,text,cls)=>{const td=document.createElement('td');if(cls)td.className=cls;td.textContent=text;tr.appendChild(td);return td;};
+const pill=(td,text,cls)=>{td.textContent='';const s=document.createElement('span');s.className='pill '+cls;s.textContent=text;td.appendChild(s);};
+const STATUS={PASS:'합격',CONDITIONAL:'조건부 합격',WAITING:'승인 대기',PENDING:'대기',IN_PROGRESS:'진행 중'};
+function table(id,ds,cols){
+  const tb=document.querySelector('#'+id+' tbody');tb.textContent='';
+  const r=dash.data(ds);if(r.status!=='ok')return;
+  r.data.forEach(row=>{const tr=document.createElement('tr');
+    cols.forEach(c=>{const v=row[c];
+      if(c==='status'||c==='verdict'){const td=cell(tr,'');pill(td,STATUS[v]||v,'s-'+v);}
+      else if(c==='level'){const td=cell(tr,'');pill(td,v,'l-'+v);}
+      else if(c==='kind'&&ds==='assessment'){const td=cell(tr,'');pill(td,v,'k-'+v);}
+      else if(typeof v==='number'){cell(tr,fmt(v),'num');}
+      else cell(tr,v==null?'':String(v));
+    });tb.appendChild(tr);});
+}
+function bars(id,ds,labelKey,valueKey,sort){
+  const box=document.getElementById(id);box.textContent='';
+  const r=dash.data(ds);if(r.status!=='ok')return;
+  const rows=r.data.slice();if(sort)rows.sort((a,b)=>b[valueKey]-a[valueKey]);
+  const max=d3.max(rows,x=>x[valueKey])||1;
+  rows.forEach(x=>{const row=document.createElement('div');row.className='hrow';
+    const l=document.createElement('span');l.textContent=x[labelKey];
+    const w=document.createElement('div');const i=document.createElement('i');i.style.width=(x[valueKey]/max*100)+'%';w.appendChild(i);
+    const b=document.createElement('b');b.textContent=fmt(x[valueKey]);
+    row.append(l,w,b);box.appendChild(row);});
+}
+function verif(){
+  const box=document.getElementById('c-verif');box.textContent='';
+  const r=dash.data('verification');if(r.status!=='ok')return;
+  const max=d3.max(r.data,x=>x.defects)||1;
+  d3.group(r.data,x=>x.artifact).forEach((rows,name)=>{
+    const row=document.createElement('div');row.className='vrow';
+    const n=document.createElement('div');n.className='vname';n.textContent=name;
+    const bars=document.createElement('div');bars.className='vbars';
+    rows.sort((a,b)=>a.round-b.round).forEach((x,i)=>{
+      const vb=document.createElement('div');vb.className='vb'+(i===rows.length-1?' last':'');
+      const bar=document.createElement('i');bar.style.height=(x.defects/max*44)+'px';
+      const t=document.createElement('span');t.textContent=fmt(x.defects);
+      vb.append(bar,t);bars.appendChild(vb);});
+    row.append(n,bars);box.appendChild(row);});
+}
+dash.onData(()=>{
+  const g=dash.data('groups');
+  if(g.status==='ok')g.data.forEach(x=>{const el=document.getElementById('gb-'+x.group);if(el)el.style.width=x.pct+'%';});
+  const o=dash.data('overall');
+  if(o.status==='ok'&&o.data[0])document.querySelector('#overall-bar i').style.width=o.data[0].pct+'%';
+  table('t-stages','stages',['name','weight','status','earned','note']);
+  table('t-assess','assessment',['id','kind','item','evidence']);
+  table('t-risks','risks',['id','level','name','mitigation']);
+  table('t-open','open_items',['id','kind','item','impact','action','blocking']);
+  table('t-docs','docs',['file','stage','kind','lines']);
+  table('t-units','units',['unit','name','track','tests','coverage','mutation','verdict']);
+  table('t-sum','testsummary',['item','value']);
+  verif();
+  bars('c-scope','scope','label','count',true);
+  bars('c-evid','evidence','label','count',false);
+});
+</script>

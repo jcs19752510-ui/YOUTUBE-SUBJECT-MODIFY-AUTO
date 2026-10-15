@@ -1,0 +1,121 @@
+[
+ {
+  "file": "01_policy_research.md",
+  "path": "docs/yt/01_policy_research.md",
+  "stage": "1",
+  "kind": "조사서",
+  "lines": 163
+ },
+ {
+  "file": "02_planning.md",
+  "path": "docs/yt/02_planning.md",
+  "stage": "2",
+  "kind": "기획서(PRD)",
+  "lines": 171
+ },
+ {
+  "file": "02_risk_assessment.md",
+  "path": "docs/yt/02_risk_assessment.md",
+  "stage": "2",
+  "kind": "위험도 평가",
+  "lines": 40
+ },
+ {
+  "file": "traceability.md",
+  "path": "docs/harness/traceability.md",
+  "stage": "2~4",
+  "kind": "추적 매트릭스",
+  "lines": 139
+ },
+ {
+  "file": "03_manual_setup.md",
+  "path": "docs/yt/03_manual_setup.md",
+  "stage": "3",
+  "kind": "수동 준비 가이드",
+  "lines": 166
+ },
+ {
+  "file": "DESIGN.md",
+  "path": "docs/yt/DESIGN.md",
+  "stage": "3",
+  "kind": "설계서(TRD)",
+  "lines": 348
+ },
+ {
+  "file": "threat_model.md",
+  "path": "docs/yt/threat_model.md",
+  "stage": "3",
+  "kind": "위협 모델",
+  "lines": 64
+ },
+ {
+  "file": "04_ux_design.md",
+  "path": "docs/yt/04_ux_design.md",
+  "stage": "4",
+  "kind": "UX 설계서",
+  "lines": 120
+ },
+ {
+  "file": "decisions.md",
+  "path": "docs/harness/decisions.md",
+  "stage": "전체",
+  "kind": "의사결정 로그",
+  "lines": 31
+ },
+ {
+  "file": "DECISIONS.md",
+  "path": "docs/yt/DECISIONS.md",
+  "stage": "전체",
+  "kind": "충돌·기본값 색인",
+  "lines": 31
+ },
+ {
+  "file": "STATE.md",
+  "path": "docs/harness/STATE.md",
+  "stage": "전체",
+  "kind": "진행 상태",
+  "lines": 44
+ },
+ {
+  "file": "유튜브제목수정자동화(프롬프트)_v2.MD",
+  "path": "유튜브제목수정자동화(프롬프트)_v2.MD",
+  "stage": "준비",
+  "kind": "프로젝트 개요서 v2",
+  "lines": 156
+ },
+ {
+  "file": "unit-0-test.md",
+  "path": "docs/harness/units/unit-0-test.md",
+  "stage": "5",
+  "kind": "내부 테스트 결과서",
+  "lines": 217
+ },
+ {
+  "file": "unit-1-test.md",
+  "path": "docs/harness/units/unit-1-test.md",
+  "stage": "5",
+  "kind": "내부 테스트 결과서",
+  "lines": 126
+ },
+ {
+  "file": "unit-2-test.md",
+  "path": "docs/harness/units/unit-2-test.md",
+  "stage": "6",
+  "kind": "내부 테스트 결과서",
+  "lines": 206
+ },
+ {
+  "file": "unit-3-test.md",
+  "path": "docs/harness/units/unit-3-test.md",
+  "stage": "6",
+  "kind": "내부 테스트 결과서",
+  "lines": 202
+ },
+ {
+  "file": "decisions.md",
+  "path": "docs/harness/decisions.md",
+  "stage": "전체",
+  "kind": "의사결정 로그",
+  "lines": 33
+ }
+]

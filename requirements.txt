@@ -1,0 +1,7 @@
+# 직접 의존성(조회 시점 PyPI 최신, 2026-10-10 실존·라이선스 확인: DESIGN.md 2-1)
+google-api-python-client==2.201.0
+google-auth-oauthlib==1.5.0
+google-auth-httplib2==0.4.4
+PyYAML==6.0.3
+python-dotenv==1.2.4
+tzdata==2026.5

@@ -1,0 +1,120 @@
+/* 디자인 토큰: 색·간격·타이포·반지름·그림자 (명도 대비 WCAG AA 이상, 라이트 기본 + 시스템 다크 선택 지원)
+   본문 글자 대비는 모두 4.5:1 이상, 큰 글자·UI 경계는 3:1 이상으로 맞췄다. */
+:root {
+  color-scheme: light dark;
+
+  /* 색: 표면 */
+  --c-bg: #f4f6f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #eceff4;
+  --c-border: #c4ccd8;
+  --c-border-strong: #5b6676; /* 입력칸 경계: 흰 배경 대비 5.8:1 */
+
+  /* 색: 글자 */
+  --c-text: #111827;
+  --c-text-muted: #444f5e;
+  --c-text-on-primary: #ffffff;
+
+  /* 색: 의미 */
+  --c-primary: #1d4ed8;
+  --c-primary-hover: #1e3fae;
+  --c-primary-soft: #e3ebff;
+  --c-primary-text: #1b3fa8;
+
+  --c-success-bg: #dcf5e4;
+  --c-success-fg: #14532d;
+  --c-success-border: #2f855a;
+  --c-warning-bg: #fdf0c8;
+  --c-warning-fg: #6b3a00;
+  --c-warning-border: #b7791f;
+  --c-danger-bg: #fde3e3;
+  --c-danger-fg: #8f1616;
+  --c-danger-border: #c53030;
+  --c-danger-solid: #b91c1c;
+  --c-info-bg: #e0ecff;
+  --c-info-fg: #17357e;
+  --c-info-border: #3b6fd8;
+  --c-demo-bg: #fff2bf;
+  --c-demo-fg: #5c3300;
+
+  --c-ins-bg: #cdeedb;
+  --c-del-bg: #fbd5d5;
+  --c-focus: #1d4ed8;
+  --c-overlay: rgb(15 23 42 / 0.55);
+
+  /* 타이포 */
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    'Noto Sans CJK KR', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'D2Coding', monospace;
+  --fs-base: 1rem; /* 16px 이상만 사용 */
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+  --lh-base: 1.6;
+  --lh-tight: 1.3;
+  --fw-medium: 600;
+  --fw-bold: 700;
+
+  /* 간격 (4px 단위) */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+
+  /* 모양 */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow-1: 0 1px 2px rgb(15 23 42 / 0.08), 0 1px 3px rgb(15 23 42 / 0.06);
+  --shadow-2: 0 10px 30px rgb(15 23 42 / 0.2);
+
+  /* 조작 영역 */
+  --hit: 2.75rem; /* 44px 이상 */
+  --sidebar-w: 14rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #0e141c;
+    --c-surface: #172130;
+    --c-surface-2: #1f2c3f;
+    --c-border: #34455c;
+    --c-border-strong: #8a99ae;
+
+    --c-text: #e9eef5;
+    --c-text-muted: #b2bdcc;
+    --c-text-on-primary: #08101f;
+
+    --c-primary: #8db3ff;
+    --c-primary-hover: #b0caff;
+    --c-primary-soft: #1d2f55;
+    --c-primary-text: #a9c5ff;
+
+    --c-success-bg: #123524;
+    --c-success-fg: #a6efc3;
+    --c-success-border: #48b97c;
+    --c-warning-bg: #3b2c08;
+    --c-warning-fg: #fcd98a;
+    --c-warning-border: #d69e2e;
+    --c-danger-bg: #431818;
+    --c-danger-fg: #ffb4b4;
+    --c-danger-border: #f06a6a;
+    --c-danger-solid: #ff8f8f;
+    --c-info-bg: #16284d;
+    --c-info-fg: #b6cdff;
+    --c-info-border: #6c9bf5;
+    --c-demo-bg: #4a3600;
+    --c-demo-fg: #ffe9a3;
+
+    --c-ins-bg: #1c4a32;
+    --c-del-bg: #5a2323;
+    --c-focus: #b0caff;
+    --c-overlay: rgb(0 0 0 / 0.7);
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow-2: 0 10px 30px rgb(0 0 0 / 0.6);
+  }
+}

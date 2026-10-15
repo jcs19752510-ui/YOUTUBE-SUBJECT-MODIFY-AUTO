@@ -1,0 +1,348 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>영상 제작 단계별 가이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f6f7f4; --surface:#ffffff; --fg:#1d2420; --muted:#5b665f; --line:#d9ded8;
+  --accent:#0f6b5c; --accent-fg:#ffffff; --accent-soft:#dff0ea; --warn:#8a4b00; --warn-bg:#fff1dc;
+  --code-bg:#eef1ec;
+  --f-body:'Noto Sans KR',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121715; --surface:#1a211e; --fg:#e8ede9; --muted:#9aa89f; --line:#2f3a35;
+  --accent:#5fcfb4; --accent-fg:#0b1512; --accent-soft:#183029; --warn:#ffc27a; --warn-bg:#33260f;
+  --code-bg:#222b27; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121715; --surface:#1a211e; --fg:#e8ede9; --muted:#9aa89f; --line:#2f3a35;
+  --accent:#5fcfb4; --accent-fg:#0b1512; --accent-soft:#183029; --warn:#ffc27a; --warn-bg:#33260f;
+  --code-bg:#222b27; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.75;margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.rail{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.rail-in{max-width:880px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.rail-title{font-weight:700;font-size:15px;white-space:nowrap}
+.chips{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;padding-bottom:2px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid var(--line);background:transparent;color:var(--fg);font:inherit;font-size:14px;font-weight:500;
+  padding:5px 12px;border-radius:999px;cursor:pointer;text-decoration:none;line-height:1.4}
+.chip:hover{border-color:var(--accent)}
+.chip.done{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip.cur{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.bar{height:3px;background:var(--line)}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+main{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:24px 96px}
+.md > p:first-child{background:var(--warn-bg);color:var(--warn);padding:12px 14px;border-radius:8px;font-size:15px;margin-top:0}
+.md hr{border:0;border-top:1px solid var(--line);margin:40px 0 0}
+.md h2{font-size:26px;line-height:1.35;margin:28px 0 8px;text-wrap:balance;scroll-margin-top:84px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.md h2 .h2t{flex:1;min-width:0}
+.donebtn{flex:none;font:inherit;font-size:14px;font-weight:500;border:1px solid var(--accent);color:var(--accent);background:transparent;padding:5px 14px;border-radius:999px;cursor:pointer}
+.donebtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.md h3{font-size:20px;margin:24px 0 6px}
+.md p{margin:10px 0}
+.md ul,.md ol{padding-left:1.4em;margin:8px 0}
+.md li{margin:4px 0}
+.md strong{font-weight:700}
+.md code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:1px 6px;border-radius:5px;overflow-wrap:anywhere}
+.md pre{background:var(--code-bg);padding:14px 16px;border-radius:8px;overflow-x:auto;line-height:1.55}
+.md pre code{background:none;padding:0;font-size:15px;white-space:pre}
+.md blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--accent);background:var(--surface);color:var(--muted);border-radius:0 8px 8px 0}
+.md blockquote p{margin:4px 0}
+.tw{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.md table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;line-height:1.6}
+.md th,.md td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.md th{background:var(--accent-soft);font-weight:700;white-space:nowrap}
+.md tr:last-child td{border-bottom:0}
+.top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:14px;padding:8px 14px;border-radius:999px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:560px){body{font-size:16px}.rail-title{display:none}.md h2{font-size:22px}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style></head><body>
+<div class="rail">
+  <div class="rail-in"><span class="rail-title">영상 제작 가이드</span><nav class="chips" id="chips" aria-label="단계 이동"></nav></div>
+  <div class="bar"><i id="prog"></i></div>
+</div>
+<main><article class="md" id="out"></article></main>
+<button class="top" id="top" type="button">맨 위로</button>
+<script type="text/plain" id="src">
+> 30분본 기준 · 2026-10-07 갱신. 얼굴 없이 **AI 음성 + 앱 화면 녹화**로 만듭니다. 음성 96개와 초안 영상(21분 51초)은 **이미 만들어져 있고**, 남은 일은 **내가 앱 화면을 녹화해서 끼워 넣는 것**입니다. ⚠ 표시는 실제 화면과 비교하세요.
+
+## 지금 어디까지 왔나
+
+| 항목 | 상태 |
+|---|---|
+| 대본 30분본 (챕터 ①~⑳, 96문단) | 완료 |
+| AI 음성 96/96 (Gemini, Kore) | 완료 · **귀로 전체 확인은 아직** |
+| 도식·챕터 카드·엔드카드·5줄 요약 그래픽 | 완료 |
+| 썸네일 (30분 표기) · 제목 후보 · 업로드 패키지 | 완료 |
+| 초안 영상 `조립결과/클로드데스크탑_AI음성_초안.mp4` (21:51) | **앱 화면 없이 카드로 채움** |
+| 강조 자막 91개 | 초안 (일부 시간은 추정) |
+| **앱 화면 녹화 B1~B17** | **내가 할 일** |
+| 최종 길이 확정 → 썸네일 숫자·설명란 시간 | 녹화·편집 후 |
+
+---
+
+## 1단계. 준비물 갖추기
+
+**필요한 것**: 클로드 유료 계정, 촬영 전용 외부 계정, 화면 녹화 프로그램, 폴더.
+
+| 항목 | 내용 |
+|---|---|
+| 클로드 계정 | **Pro 이상**. 코드·코워크 탭이 유료입니다. ⚠ 요금·한도는 공식 페이지 확인 |
+| 촬영 전용 외부 계정 | 커넥터(예: 구글 캘린더)용. **가짜 일정만 있는 새 계정**. 내 실제 일정·메일 계정은 쓰지 않기 |
+| 프로그램 | OBS Studio(화면 녹화), CapCut 또는 Vrew(편집·자막) |
+| 마이크·카메라 | **불필요** (얼굴·목소리 없음) |
+| 헤드폰 | 음성 확인용 |
+
+**폴더 만들기** (바탕화면 `클로드데스크탑영상/`)
+```
+01_화면녹화/   ← B1~B17 저장
+02_음성/       ← 영상제작/음성의 mp3 96개
+03_그래픽/     ← 그래픽/영상_mp4
+04_자막/       ← 강조자막_초안.srt
+05_음악/  06_편집프로젝트/  07_완성본/
+08_연습데이터/ ← 부업_거래내역.csv, 복붙용 프롬프트 메모
+```
+
+**앱에서 고를 시연 폴더 3개** (개인 파일이 없는 곳에 새로 만들기)
+
+| 폴더 | 안에 넣을 것 | 쓰는 챕터 |
+|---|---|---|
+| `profit-calc` | 비어 있음 | ⑦ ⑧ ⑬ ⑭ |
+| `cowork-practice` | `부업_거래내역.csv` **1개만** | ⑲ 실전 1 |
+| `profit-calc-full` | 비어 있음 | ⑳ 실전 2 |
+
+---
+
+## 2단계. 사실 확인과 연습
+
+**필요한 것**: 메인 대본 부록 C·D·E, 스톱워치.
+
+**① 내 화면에서 직접 확인** (대본 부록 C-2: 문서에서 확인하지 못한 것)
+- 앱 한국어 메뉴 이름, 특히 **Customize**
+- **내 화면이 탭 세 개(챗·코워크·코드)인지** (확인됨: 세 개)
+- 스킬 만들기 방식 A/B, 커넥터 허용 화면, 플러그인 적용 범위, 코워크 폴더 연결·승인 화면, 플랜 승인 버튼 이름
+
+다르면 **대본을 고치고**, 그 문단 음성을 **다시 만들어야** 합니다.
+
+**② 끝까지 해 보기 3번** (걸린 시간 적기)
+
+| 연습 | 할 일 | 확인할 것 |
+|---|---|---|
+| ⑦ 코드 탭 첫 세션 | `profit-calc` 폴더 → 요청 → Accept → 결과 열기 | 대본의 시간·결과가 실제와 같은지 |
+| **⑲ 코워크 실전 1** | `cowork-practice` → 목표 붙여넣기 → `월별_요약.md` 열기 | 정답과 같은지: **7월 143,000 / 8월 418,000 / 9월 285,000 / 합계 846,000원**. 원본 CSV가 안 바뀌었는지 |
+| **⑳ 코드 탭 실전 2** | `profit-calc-full` → Plan → 승인 → 만들기 | 확인 기준 두 가지: **1,200,000** 입력, **-500,000** 빨간색 |
+
+> 정답표는 제가 만든 가짜 데이터로 계산한 값입니다. **실제 코워크 결과가 다르면 `V19_p06` 대사를 고쳐 그 문단만 다시 만듭니다.**
+
+**③ 그 밖의 사전 시험**
+- 스킬 만들기 분기 A(클로드에게 `SKILL.md` 만들게 하기) / B(폴더에 직접 저장) 둘 다 해 보고 **되는 쪽만** 남기기
+- 새 스킬이 `/` 목록에 안 보이면 새 세션에서 다시 확인
+- 커넥터는 촬영 전용 계정으로 한 번 연결해 보기, 플러그인은 공식 마켓플레이스 1개 설치·삭제 해 보기
+- 에러는 **실제로 났을 때만** 보여 주기. 안 났는데 만들어 넣지 않기
+
+---
+
+## 3단계. 앱 화면 녹화 (B1~B17)
+
+**필요한 것**: OBS 설정, 개인정보 가리기, 복붙용 메모장.
+
+**OBS 설정 (한 번만)** ⚠ 메뉴는 버전마다 다름
+- 소스 `+` → **창 캡처**로 클로드 앱 창 추가 (알림이 덜 찍힘)
+- 영상: 1920×1080 / 30fps · 출력: `mkv` → 끝난 뒤 mp4로 변환
+- **오디오는 모두 끄기** (목소리는 AI 음성이 따로 깔림)
+
+**녹화 전 가릴 것**: 계정 이메일·이름, 사이드바의 이전 세션·프로젝트 이름, 폴더 경로의 내 사용자 이름, 내 개인 스킬·커넥터·플러그인 이름, 알림·메신저, **API 키·토큰·인증 코드**. 로그인 입력 장면은 찍지 않기. 시연 데이터는 가짜만.
+
+**촬영 순서 (추천)**
+
+| 순서 | 클립 | 내용 |
+|---|---|---|
+| 1 | **B6 → B6b → B1 → B7 → B8a~e → B10 → B11 → B12** | `profit-calc` 폴더 한 흐름: 첫 세션, 10분 체크포인트, 완성 시연, 권한 모드·Plan, 5가지 팁, `+` 메뉴, 슬래시, 스킬 만들기 |
+| 2 | **B4 → B5 → B3** | 챗 → 코워크 맛보기 → 세 탭 둘러보기 |
+| 3 | **B13 → B14 → B15** | 커넥터 연결 → 일 시키기 → 플러그인. **끝나면 커넥터 해제·플러그인 삭제** |
+| 4 | **B16** | 실전 1: 코워크로 거래 내역 정리 (실행이 길어 따로) |
+| 5 | **B17** | 실전 2: 코드 탭으로 계산기 완성 |
+| 6 | **B9** | 요금제 안내·막힘 화면 (선택) |
+| 7 | **B2** | 설치·로그인 (새 계정/새 PC 상태가 필요하면 마지막) |
+
+**클립마다**: 녹화 시작 → **3초 가만히** → 시연 → **3초 가만히** → 중지 → 틀리면 **그 클립만** 다시. 파일 이름은 `B6_코드탭첫세션_1.mp4`처럼 번호_내용_순번.
+
+**촬영 규칙**
+- 타이핑하지 말고 **메모장에서 복붙**하기 (복붙용 프롬프트는 대본 부록 E)
+- 예상 시간은 **약 2~4시간**(어림값, 재촬영 제외). 연습 때 잰 시간으로 바꾸세요
+
+---
+
+## 4단계. AI 음성 확인·수정
+
+**필요한 것**: 이어폰, `10_AI음성_입력용_대본.md`.
+
+음성 96개는 **이미 만들어져 있습니다.** 이 단계는 **귀로 확인하고 필요한 문단만 고치는 것**입니다.
+
+| 할 일 | 방법 |
+|---|---|
+| 전체 듣기 | 재생 순서대로 끝까지 한 번 듣기 |
+| 이상한 발음 | `10_…입력용_대본`의 발음 표기를 고친 뒤 **그 챕터만** 다시 생성 |
+| 대사를 바꿨을 때 | 바꾼 문단 음성만 다시 생성 (예: ⑲ 숫자가 달랐다면 `V19_p06`) |
+
+**재생 순서**: ① ② ③ ④ ⑤ ⑥ ⑦(앞부분) → ⑪ → ⑦(끝) → ⑧ ⑨ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ → ⑩
+
+⚠ 음성 생성은 Gemini 하루 한도에 걸릴 수 있습니다. 한도가 풀린 뒤 다시 실행하면 만든 파일은 건너뜁니다. **키는 채팅·파일·화면에 쓰지 마세요.**
+
+---
+
+## 5단계. 편집
+
+**필요한 것**: CapCut(또는 Vrew), 음성·그래픽·녹화 파일, `06_샷리스트_편집타임라인.md`.
+
+**큰 흐름**: 음성을 재생 순서로 올리기(줄기) → 앱 화면 녹화 얹기 → 도식·챕터 카드 → 자막 → 챕터 마커 → 소리 다듬기 → 확인
+
+| 시작 | 챕터 | 시작 | 챕터 |
+|---|---|---|---|
+| 0:00 | ① 하이라이트 | 13:45 | ⑫ 스킬·커넥터·플러그인 구분 |
+| 0:25 | ② 통증 + 약속 | 14:40 | ⑬ 슬래시(/) |
+| 1:40 | ③ 설치·로그인 | 15:20 | ⑭ 내 스킬 만들기 |
+| 3:55 | ④ 세 개의 탭 | 16:35 | ⑮ 커넥터 연결 |
+| 5:10 | ⑤ 챗 | 17:30 | ⑯ 커넥터로 일 시키기 |
+| 6:05 | ⑥ 코워크 맛보기 | 18:05 | ⑰ 플러그인 |
+| 7:10 | ⑦ 코드 탭 첫 세션 (⑪ 포함) | 18:45 | ⑱ 안전 수칙 5가지 |
+| 10:25 | ⑧ 권한 모드·플랜 | 19:55 | ⑲ 실전 1 · 코워크 |
+| 12:15 | ⑨ 더 잘 쓰는 5가지 | 23:55 | ⑳ 실전 2 + 5줄 요약 |
+| | | 28:55 | ⑩ 오늘 할 일 + 다음 영상 |
+
+> 위 시간은 목표입니다. 초안 영상은 앱 화면이 빠져 **21:51**이고, 녹화를 끼우면 30분 안팎이 됩니다. 실제 길이가 크게 다르면 제목·썸네일의 "30분"을 고치세요.
+
+**편집 요령**
+- 긴 대기(설치·생성·코워크 진행)는 **2~4배속**. 단 **허용 화면, 삭제 허락 화면, 정답 숫자 맞춰 보는 장면, 확인 기준 결과는 원속도**
+- 중요한 부분은 **줌인**, 개인정보는 **블러**
+- 음성보다 화면이 길면 배속·자르기, 짧으면 마지막 프레임 정지·도식 이어 붙이기
+- 챕터 시작마다 마커(M01~M20)
+- **재참여 장치 2개**: 약 10:00(⑪ `10 / 30분`), 19:55(⑲ 첫 문단 `20 / 30분`). 위치가 옮겨지면 진행 바 숫자만 고치기
+- 30~40초마다 화면이 바뀌게(앱 화면 → 도식 → 카드)
+
+**자막**
+- 대사 자막은 자동 자막 후 **직접 교정** (CLAUDE.md, SKILL.md, Accept, Customize 같은 영어는 오타가 많음)
+- 강조 자막 `자막/강조자막_초안.srt`(91개)를 불러오되, **시간은 초안(21분 51초본) 기준이라 녹화를 끼운 뒤 다시 맞추기.** 도식이 이미 보여 주는 문구는 지우기
+- 모양: 흰 글씨 + 검은 외곽선, 화면 아래 1/3, 한 줄 15자 내외
+
+**배경음**: 가요·팝 금지. 상업 이용 가능한 무료 음원만. 없어도 됩니다.
+
+---
+
+## 6단계. 내보내기
+
+**필요한 것**: 내보내기 설정, 스마트폰.
+
+| 항목 | 값 |
+|---|---|
+| 해상도 / 프레임 | 1080p / 30fps |
+| 형식 | MP4 (H.264) |
+| 파일 이름 | `클로드데스크탑_클로드코드_30분_v1.mp4` |
+
+**마지막 확인**
+1. 스마트폰으로 **처음부터 끝까지** 보기 (30분이 길면 챕터별로 나눠도 되지만 개인정보 점검은 전 구간)
+2. 자막 크기, 소리 급변, **화면에 키·계정·이메일이 나오는지** 확인
+3. **최종 길이를 적어 두기** → 썸네일·제목·설명란의 "30분" 확인
+
+---
+
+## 7단계. 유튜브 업로드
+
+**필요한 것**: 영상, 썸네일, `12_업로드_패키지_30분.md`.
+
+| 항목 | 내용 |
+|---|---|
+| 제목 | `썸네일/제목후보_30분.md`의 후보. 권장: **"클로드 사용법 30분 총정리 \| 설치부터 챗·코워크·코드까지 (AI 왕초보 2026)"** |
+| 썸네일 | `썸네일/최종_확정_챗COWORK_30분_1280x720.jpg` ⚠ 규격은 스튜디오 안내 확인 |
+| 설명란 | 업로드 패키지의 최종본. **타임라인은 실제 영상 기준으로 교체** (틀리면 챕터가 어긋남) |
+| 시청자층 | "아니요, 아동용이 아닙니다" |
+| 재생목록 | "클로드 코드 입문" 시리즈 |
+| 최종 화면 | 마지막 20초에 구독 + 다음 영상 |
+| **AI 음성 고지** | 설명란 문구 + ② 영상 안 고지. ⚠ **변경된 콘텐츠(AI) 질문은 YouTube 정책에서 기준을 직접 확인해 정직하게 답하세요** (확인 필요) |
+
+**공개 순서**: **비공개**로 올림 → 한 번 더 시청 → 문제없으면 **예약** 공개.
+**공개 직후**: 고정 댓글(부록 B) 올리고 **고정** · 설명란 링크와 타임스탬프를 직접 눌러 확인 · 실전 프롬프트 모음은 별도 댓글.
+
+**확인 필요한 것 (제가 단정하지 못한 것)**
+- Gemini TTS 음성의 **상업적 이용 조건**
+- YouTube의 AI 음성 표시 기준
+- ⑩ 마지막의 "다음 영상: 예약 작업" 주제가 맞는지
+
+---
+
+## 8단계. 24시간·72시간 뒤 점검
+
+**필요한 것**: YouTube Studio → 분석.
+
+| 시점 | 볼 곳 | 조치 |
+|---|---|---|
+| **24시간** | 개요: 노출 클릭률(CTR), 평균 시청 지속 시간, 초반 30초 이탈 | 이전 내 영상과 비교. 낮으면 썸네일·제목 교체. 초반 이탈이 크면 ①② 점검 |
+| **72시간** | 참여도: 시청 지속률 그래프 | 급락 구간 2곳 확인. **10분(⑪)·20분(⑲) 근처**의 오르내림 확인 → 그 챕터를 쇼츠로 재가공하거나 다음 영상에서 보완 |
+| **1주** | 댓글 | 막힌 화면(코워크·스킬·커넥터)을 다음 영상 소재로, 고정 댓글 보강 |
+
+> 조회수는 보장할 수 없습니다. 이 점검을 영상마다 반복하는 것이 가장 확실합니다. 쇼츠 아이디어 8개는 `12_업로드_패키지_30분.md`에 있습니다.
+
+---
+
+## 한 장 요약 (순서대로)
+
+| # | 단계 | 오늘 할 일 |
+|---|---|---|
+| 1 | 준비 | 유료 계정, 촬영 전용 외부 계정, 폴더 3개 + CSV |
+| 2 | 확인·연습 | ⑦·⑲·⑳ 끝까지 해 보기, 정답 숫자 맞춰 보기 |
+| 3 | 화면 녹화 | 위 순서대로 B1~B17, 앞뒤 3초 가만히 |
+| 4 | 음성 확인 | 96개 전체 듣기, 이상한 문단만 다시 생성 |
+| 5 | 편집 | 음성 줄기 → 녹화 → 도식 → 자막 → 마커 |
+| 6 | 내보내기 | 1080p / MP4, 폰으로 전체 시청, 최종 길이 기록 |
+| 7 | 업로드 | 비공개 → 확인 → 예약, 타임라인은 실제 길이로 |
+| 8 | 점검 | 24시간 CTR, 72시간 지속률 그래프 |
+
+**제 제안**: 다음 일은 **2단계의 ⑲ 연습**입니다. 코워크 결과가 정답과 맞는지가 대본 숫자와 음성에 직접 영향을 주기 때문입니다. 막히면 어느 단계의 무엇이 안 되는지와 화면 캡처를 알려 주세요.
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script>
+(function(){
+  var md=document.getElementById('src').textContent.replace(/^\n/,'');
+  var out=document.getElementById('out');
+  out.innerHTML=marked.parse(md,{mangle:false,headerIds:false});
+  var store={};
+  try{store=JSON.parse(localStorage.getItem('guide-done')||'{}')}catch(e){}
+  function save(){try{localStorage.setItem('guide-done',JSON.stringify(store))}catch(e){}}
+  out.querySelectorAll('table').forEach(function(t){var w=document.createElement('div');w.className='tw';t.parentNode.insertBefore(w,t);w.appendChild(t)});
+  var chips=document.getElementById('chips'), steps=[];
+  out.querySelectorAll('h2').forEach(function(h,i){
+    var txt=h.textContent.trim(), m=txt.match(/^(\d+)단계/), label=m?(m[1]+'단계'):'요약', id='s'+i;
+    h.id=id;
+    var span=document.createElement('span');span.className='h2t';span.textContent=txt;
+    h.textContent='';h.appendChild(span);
+    var b=document.createElement('button');b.type='button';b.className='donebtn';b.textContent='완료 표시';b.setAttribute('aria-pressed','false');
+    h.appendChild(b);
+    var a=document.createElement('a');a.className='chip';a.href='#'+id;a.textContent=label;
+    a.addEventListener('click',function(e){e.preventDefault();h.scrollIntoView({behavior:'smooth',block:'start'})});
+    chips.appendChild(a);
+    var s={h:h,b:b,a:a,key:label};steps.push(s);
+    b.addEventListener('click',function(){store[s.key]=!store[s.key];save();paint()});
+  });
+  function paint(){
+    var n=0,tot=steps.filter(function(s){return /단계/.test(s.key)}).length;
+    steps.forEach(function(s){var d=!!store[s.key];s.b.setAttribute('aria-pressed',d);s.b.textContent=d?'완료됨':'완료 표시';
+      s.a.classList.toggle('done',d);if(d&&/단계/.test(s.key))n++});
+    document.getElementById('prog').style.width=(tot?n/tot*100:0)+'%';
+  }
+  function cur(){
+    var y=window.scrollY+120,c=null;
+    steps.forEach(function(s){if(s.h.offsetTop<=y)c=s});
+    steps.forEach(function(s){s.a.classList.toggle('cur',s===c)});
+    if(c){var el=c.a,box=chips;var l=el.offsetLeft-box.clientWidth/2+el.clientWidth/2;box.scrollTo({left:l})}
+  }
+  window.addEventListener('scroll',cur,{passive:true});
+  document.getElementById('top').addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+  paint();cur();
+})();
+</script>
+</body></html>
+
+</body></html>

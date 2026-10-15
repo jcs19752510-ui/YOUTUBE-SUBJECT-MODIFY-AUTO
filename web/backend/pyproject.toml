@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ytweb"
+version = "0.1.0"
+description = "유튜브 제목 웹 백엔드(데모 모드 M1)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.143.0",
+    "uvicorn==0.54.0",
+    "pydantic==2.14.0",
+    "sqlalchemy==2.1.4",
+    "alembic==1.20.0",
+    "psycopg[binary]==3.3.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["ytweb*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+markers = [
+    "postgres: PostgreSQL 서버가 필요한 테스트(YTWEB_TEST_PG_URL 이 없으면 건너뜀)",
+    "no_idle: 세션 유휴 만료를 끄고 절대 만료(TTL)만 시험한다",
+]
+
+[tool.coverage.run]
+source = ["ytweb"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true

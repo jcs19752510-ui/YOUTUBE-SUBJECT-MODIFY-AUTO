@@ -1,0 +1,674 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>국내주식현상</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 문서형 한 칼럼. 상단 앵커 칩 → 번호 없는 섹션들. 한국 시장 관례(상승 빨강/하락 파랑)를 의미색으로만 사용 */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5d6677;
+  --line: #dde1e8;
+  --accent: #1f4fd8;
+  --accent-soft: #e6ecfd;
+  --up: #c8302b;
+  --down: #1f6fc5;
+  --ok: #1d7a46;
+  --ok-soft: #e1f3e8;
+  --warn: #9a5b00;
+  --warn-soft: #fdf0d6;
+  --no: #8a2f2f;
+  --no-soft: #fbe4e2;
+  --local: #6b3fc2;
+  --local-soft: #eee6fb;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a2029; --fg: #e8ecf3; --muted: #9aa4b5; --line: #2c3544;
+    --accent: #8fa8ff; --accent-soft: #232d4a; --up: #ff7b72; --down: #6cb0ff;
+    --ok: #6fd39a; --ok-soft: #173325; --warn: #f0b95a; --warn-soft: #3a2c10;
+    --no: #ff9f98; --no-soft: #3a1f1d; --local: #b79bff; --local-soft: #2b2145;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e8ecf3; --muted: #9aa4b5; --line: #2c3544;
+  --accent: #8fa8ff; --accent-soft: #232d4a; --up: #ff7b72; --down: #6cb0ff;
+  --ok: #6fd39a; --ok-soft: #173325; --warn: #f0b95a; --warn-soft: #3a2c10;
+  --no: #ff9f98; --no-soft: #3a1f1d; --local: #b79bff; --local-soft: #2b2145;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.65; padding-inline: 16px; padding-block: 28px 64px; }
+.wrap { max-width: 980px; margin-inline: auto; }
+h1 { font-size: clamp(26px, 5vw, 36px); line-height: 1.2; margin: 0 0 6px; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 21px; margin: 0 0 4px; text-wrap: balance; }
+h3 { font-size: 16px; margin: 20px 0 6px; }
+p { margin: 6px 0; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
+.lead { color: var(--muted); max-width: 68ch; }
+.asof { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; background: var(--surface); }
+nav.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 6px; }
+nav.chips a { color: var(--fg); text-decoration: none; font-size: 13px; border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; border-radius: 999px; }
+nav.chips a:hover, nav.chips a:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+section { margin-top: 44px; scroll-margin-top: 16px; }
+.sub { color: var(--muted); margin: 0 0 14px; max-width: 70ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.scroll { overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
+.t-ok { background: var(--ok-soft); color: var(--ok); }
+.t-part { background: var(--warn-soft); color: var(--warn); }
+.t-no { background: var(--no-soft); color: var(--no); }
+.t-local { background: var(--local-soft); color: var(--local); }
+.t-pub { background: var(--accent-soft); color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; background: var(--bg); }
+td.n { white-space: nowrap; font-weight: 600; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.card h3 { margin-top: 0; }
+.card ul { margin: 6px 0 0; padding-left: 18px; }
+.up { color: var(--up); font-weight: 600; }
+.down { color: var(--down); font-weight: 600; }
+.steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.steps li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; }
+.steps b.i { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--surface); display: grid; place-items: center; font-size: 13px; }
+
+.bar { height: 12px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.bar.ok > span { background: var(--ok); }
+.big { font-size: clamp(34px, 7vw, 52px); font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.hero { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 20px; align-items: center; }
+@media (max-width: 560px) { .hero { grid-template-columns: 1fr; } }
+td.pct { white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mini { display: block; width: 96px; margin-top: 4px; }
+.t-doing { background: var(--accent-soft); color: var(--accent); }
+pre.mermaid { margin: 0; background: transparent; min-width: 560px; text-align: center; }
+footer { margin-top: 56px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 520px) { body { font-size: 14px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>화면 전체 플로우</h1>
+    <p class="lead">국내 주식 조건 스크리닝 정보 서비스의 전체 진행 상태를 한 장에 모았습니다. 맨 위에 <b>지금까지 어디까지 작업했는지(진행률 %)</b>를 두고, 이어서 화면 이동, 종목 상세 탭, 데이터 흐름, 실시간 개발 설계, 로컬 모드 접근 통제, 로그인·회원 흐름, 참고 이미지 대비 현황, 운영 배포 구성과 남은 결정 사항을 정리했습니다.</p>
+    <span class="asof">기준일 2026-10-06(화) · 브랜치 PROD_SCH · 운영 반영 방식: 푸시 시 Render 자동 배포 · 실시간 개발 진행 약 95%</span>
+    <div class="legend">
+      <span><span class="tag t-pub">공개</span> 로그인한 회원이 보는 화면</span>
+      <span><span class="tag t-local">로컬 모드</span> 내 PC에서 증권사 앱키로만</span>
+      <span><span class="tag t-ok">구현</span></span>
+      <span><span class="tag t-part">일부</span></span>
+      <span><span class="tag t-no">미구현·제외</span></span>
+    </div>
+    <nav class="chips" aria-label="섹션 바로가기">
+      <a href="#progress">진행 현황</a>
+      <a href="#realtime">실시간 개발</a>
+      <a href="#now">현재 상태</a>
+      <a href="#auth">로그인·회원</a>
+      <a href="#map">화면 지도</a>
+      <a href="#tabs">종목 상세 탭</a>
+      <a href="#chart">차트 상태</a>
+      <a href="#data">데이터 흐름</a>
+      <a href="#guard">로컬 모드 통제</a>
+      <a href="#states">공통 상태 화면</a>
+      <a href="#gap">참고 이미지 대비</a>
+      <a href="#deploy">운영 배포</a>
+      <a href="#ops">운영 현황</a>
+    </nav>
+  </header>
+
+
+  <section id="progress">
+    <h2>진행 현황 — 어디까지 했나</h2>
+    <p class="sub">이번 대화에서 진행한 작업을 완료와 진행 중, 예정으로 나눴습니다. 진행률은 실시간 개발 전체(5단계)를 기준으로 단계별 가중치(수신 엔진 25, API 15, 화면 25, 문서 10, 전종목 25)를 합산한 값입니다.</p>
+    <div class="panel">
+      <div class="hero">
+        <div><div class="big">95%</div><div class="sub" style="margin:4px 0 0">실시간 개발 전체</div></div>
+        <div>
+          <div class="bar" role="img" aria-label="전체 진행률 95퍼센트"><span style="width:95%"></span></div>
+          <p class="sub" style="margin:8px 0 0">집계 기준: 완료·시험 통과한 산출물만 합산합니다(A1 25 + A2 15 + A3 20 + A4 10 + B 20). 남은 5%는 실제 증권사 연결 확인(장중, 사용자 PC에서 실행: 실시간 웹소켓 확인 도구와 HTS 조건검색 확인 도구)입니다. 증권사 조건검색 화면(관리자 전용)까지 완료했습니다. 스크리닝 장중 재계산은 하지 않기로 한 범위입니다. 시험: 단위 1026건, 웹 서버 대행 종단 18건, 로그인 회귀 326건, 로컬 모드 종단 58+9건, 화면 실제 스택 64+7건 통과.</p>
+        </div>
+      </div>
+    </div>
+    <div class="panel scroll" style="margin-top:12px">
+      <table>
+        <thead><tr><th>단계</th><th>진행률</th><th>상태</th><th>내용과 근거</th></tr></thead>
+        <tbody>
+          <tr><td class="n">A1 수신 엔진</td><td class="pct">100%<span class="bar ok mini"><span style="width:100%"></span></span></td><td><span class="tag t-ok">완료</span></td><td>증권사 웹소켓 프로토콜(통합 체결가 H0UNCNT0·호가 H0UNASP0), 허브(최신값·1분봉·체결 300건), 연결 관리자(재연결·PINGPONG·구독 한도 40건), 서비스 계층, 모의 증권사 웹소켓 서버. <b>시험 45건 통과</b></td></tr>
+          <tr><td class="n">A2 스트리밍 API</td><td class="pct">100%<span class="bar ok mini"><span style="width:100%"></span></span></td><td><span class="tag t-ok">완료</span></td><td>SSE 스트림 <code>/api/v1/local/stocks/코드/stream</code>(관리자만, 5분마다 권한 재확인, 화면 닫으면 구독 해지, 동시 종목 한도 429)와 웹 서버 대행(BFF) 경로. <b>API 시험 8건 + 로그인을 켠 실제 구성 종단 시험 18건 통과</b>, 조회용 대행 경로 정리 후 로그인 회귀 322/322 통과</td></tr>
+          <tr><td class="n">A3 화면</td><td class="pct">100%<span class="bar ok mini"><span style="width:100%"></span></span></td><td><span class="tag t-ok">완료</span></td><td>현재가·호가·체결·분/틱 차트가 새로고침 없이 갱신(폴링 0건, 연결 1개), 재연결·한도 안내, 연결 배지. <b>순수 로직 42, 실제 스택 64+7, axe 위반 0, 폭 320~1280 통과</b>. 실제 증권사 연결은 미확인</td></tr>
+          <tr><td class="n">A4 문서·결과서</td><td class="pct">90%<span class="bar mini"><span style="width:90%"></span></span></td><td><span class="tag t-doing">진행 중</span></td><td>완료: 백엔드·화면·전 종목 API 결과서, DEC-084, 인수인계, 연결 확인 도구와 가이드. 남음: 최종 정리(실연결 확인 결과 반영)</td></tr>
+          <tr><td class="n">B 전 종목 준실시간</td><td class="pct">100%<span class="bar ok mini"><span style="width:100%"></span></span></td><td><span class="tag t-ok">완료</span></td><td>일괄 시세 모듈, 앱 연결 API(관리자만), 스크리닝 결과 "현재가" 열과 검색·관심종목·패턴 목록에 준실시간 값 연결, 실시간/지연 표지. 운영 빌드는 변화 없음(시험 확인). <b>순수 로직 16, 종단 14 추가, 로그인 회귀 324 통과</b>. 실제 증권사 한 바퀴 시간은 미측정</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>오늘 완료해서 운영 브랜치에 반영한 작업</h3>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>구분</th><th>내용</th><th>검증</th></tr></thead>
+        <tbody>
+          <tr><td class="n">DEC-078</td><td>웹+API를 Render 서비스 1개로 통합, Starter 유료 전환, 주소 유지</td><td>단위 20, 로그인 종단 322/322, 운영 로그인 확인</td></tr>
+          <tr><td class="n">DEC-079</td><td>전역 메뉴를 화면 하단에서 상단으로 이동, 스크롤해도 배너 아래에 고정, 선택 메뉴를 파란 면으로 강조(모드 전환 탭 포함)</td><td>화면 시험 1,146건, 접근성 위반 0</td></tr>
+          <tr><td class="n">DEC-080</td><td>회원 메뉴(회원 관리·로그아웃·모든 기기에서 로그아웃)를 버튼으로 변경</td><td>420건 통과</td></tr>
+          <tr><td class="n">DEC-081</td><td>Render 자동 배포 켬(<code>autoDeployTrigger: commit</code>). 푸시하면 자동 배포, DB 구조 변경은 수동</td><td>배포 파일 시험 11건, 전체 단위 시험 통과</td></tr>
+          <tr><td class="n">DEC-082·083</td><td>상단 영역 순서를 ① 메뉴 줄 → ② 회원 메뉴 → ③ 제목으로 변경, 데스크톱도 세 줄</td><td>612건 통과</td></tr>
+          <tr><td class="n">DEC-084 A1·A2</td><td>본인 전용 실시간 시세 수신 엔진, 스트림 API, 웹 서버 대행(로컬 모드 전용, 운영은 꺼짐)</td><td>단위·통합 54건, 종단 18건, 로그인 회귀 326건</td></tr>
+          <tr><td class="n">점검·검토</td><td>데이터 갱신 점검, 실시간 개발 가능성 검토서(<code>docs/stock-detail/06-realtime-review.md</code>)</td><td>공식 샘플 코드로 구독 한도·통합시세 TR 확인</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>결정 대기 (답을 주시면 바로 진행)</h3>
+    <div class="cols">
+      <div class="card"><h3>범위</h3><p>"모든 데이터 실시간"은 한 연결 구독 한도(40건) 때문에 틱 단위로는 최대 20종목입니다. 나머지 전 종목은 수 초~수십 초 갱신으로 진행하는 데 동의하는지 확인이 필요합니다.</p></div>
+      <div class="card"><h3>소유자 계정</h3><p>실시간을 볼 관리자 아이디를 정해야 합니다(기본은 관리자 권한 계정 전체).</p></div>
+      <div class="card"><h3>증권사 앱키</h3><p>실제 연결 확인은 한국투자증권 앱키를 <code>.env</code>에 넣고 장중에 한 번 해야 합니다.</p></div>
+      <div class="card"><h3>데이터 갱신 점검</h3><p>PC 작업 스케줄러 상태, GitHub 보조 배치(기본 브랜치에 워크플로가 없어 동작하지 않음), 투자자 수급 자동화 결정이 남아 있습니다.</p></div>
+    </div>
+  </section>
+
+  <section id="realtime">
+    <h2>실시간 개발 설계</h2>
+    <p class="sub">본인 계좌의 증권사 Open API(웹소켓)로 내 PC에서 본인만 보는 방식입니다. 서버(Render) 경유는 증권사 약관 확인 전까지 보류합니다. 아래 그림에서 ✔는 완료, ◐는 진행 중, ○는 예정입니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart LR
+  KIS["한국투자증권 웹소켓<br/>통합 체결가 · 호가<br/>(구독 한도 40건)"] -->|"체결·호가 즉시"| RX["✔ 수신기<br/>연결 1개 · 자동 재연결<br/>PINGPONG 응답"]
+  SEED["✔ 시작 값(REST)<br/>오늘 1분봉 · 체결 120건"] --> HUB
+  RX --> HUB["✔ 허브(메모리)<br/>최신값 · 1분봉 · 체결 300건<br/>틱은 저장하지 않음"]
+  HUB --> SSE["✔ SSE 스트림 API<br/>관리자만 · 5분마다 권한 재확인<br/>초당 10회로 합침"]
+  SSE --> BFF["✔ 웹 서버 대행(BFF)<br/>로그인·권한 확인"]
+  BFF --> UI["◐ 화면(개발 중)<br/>현재가 · 호가 · 체결 · 분봉<br/>연결 상태 배지"]
+</pre>
+    </div>
+    <h3>어디까지 실시간이 되나</h3>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>화면</th><th>방식</th><th>갱신 수준</th><th>상태</th></tr></thead>
+        <tbody>
+          <tr><td class="n">종목 상세: 현재가·호가·체결·분봉</td><td>보고 있는 종목만 웹소켓 구독(종목당 2건)</td><td><b>체결 즉시</b></td><td><span class="tag t-doing">개발 중(엔진·API 완료, 화면 병렬 진행)</span></td></tr>
+          <tr><td class="n">장중 조건 체크</td><td>일봉 지표 + 오늘 진행 중인 봉으로 서버가 재계산</td><td>체결마다(1초 이내)</td><td><span class="tag t-part">예정</span></td></tr>
+          <tr><td class="n">관심종목 현재가</td><td>20종목까지 웹소켓</td><td>실시간</td><td><span class="tag t-part">예정</span></td></tr>
+          <tr><td class="n">전 종목 스크리닝</td><td>일괄 시세 조회 30종목/회를 순환</td><td>수 초~수십 초</td><td><span class="tag t-part">범위 확인 후</span></td></tr>
+          <tr><td class="n">투자자 수급</td><td>증권사 투자자 조회(장중은 시점별 잠정치로 알려짐)</td><td>실시간 아님</td><td><span class="tag t-no">시장 구조상 한계</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>설계 원칙</h3>
+    <ul>
+      <li>분봉 거래량은 체결의 <b>당일 누적 거래량 차이</b>로 만들어, 체결이 빠지거나 중복돼도 합계가 증권사 누적과 어긋나지 않습니다.</li>
+      <li>틱은 디스크·DB에 저장하지 않습니다(재배포·용량·약관 위험 최소화).</li>
+      <li>화면을 닫으면 30초 뒤 구독을 해지하고, 끊기면 지수 백오프로 재연결해 구독을 복구합니다.</li>
+      <li>앱키·접속키는 서버 환경변수에만 있고 화면·로그·응답에 나오지 않습니다.</li>
+    </ul>
+  </section>
+
+  <section id="now">
+    <h2>현재 상태 (2026-10-06)</h2>
+    <p class="sub">웹과 API를 Render 서비스 1개로 합치는 전환을 마쳤고, 운영 로그인도 정상입니다. 어제 열려 있던 "운영 로그인 불가" 문제는 해결됐습니다.</p>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>항목</th><th>상태</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td class="n">통합 서비스 전환</td><td><span class="tag t-ok">운영 반영</span></td><td>서비스 <code>stock-analyzer-web</code> 1개 안에서 API(내부 127.0.0.1:8000)와 웹(공개 PORT)이 함께 동작합니다. 주소는 그대로(<code>stock-analyzer-web-q7cx.onrender.com</code>). 기동·감시는 <code>scripts/run_unified.py</code>, 이미지는 <code>deploy/unified.Dockerfile</code> (DEC-078)</td></tr>
+          <tr><td class="n">요금제</td><td><span class="tag t-ok">Starter 유료</span></td><td>월 $7, 0.5 CPU/512MB. 15분 유휴 후 잠들지 않아 콜드스타트가 없습니다. 48시간 평균 메모리 사용률 10~25%. <code>render.yaml</code>의 <code>plan: starter</code>와 동기화됨</td></tr>
+          <tr><td class="n">운영 로그인</td><td><span class="tag t-ok">정상</span></td><td>소유자 계정 로그인 200(1.6초), 세션 쿠키 발급, <code>/</code>·<code>/screener</code>·<code>/stocks/005930</code>·<code>/admin/members</code> 모두 200. <code>/auth/status</code> web·api 모두 ok. 틀린 비밀번호는 401, 비로그인 접근은 차단. 어제의 내부 토큰 불일치는 통합 구성에서 같은 컨테이너 한 값으로 해소됨</td></tr>
+          <tr><td class="n">내부 시험</td><td><span class="tag t-ok">통과</span></td><td>기동·감시 단위 9, 배포 파일 정적 11, 실제 프로세스 시험(바인딩·종료 신호·메모리 약 245MB), 로그인 E2E 322/322(통합 구성), 전체 단위 시험 통과(실시간 관련 54건 포함), 화면 시험 상단 메뉴 1,146건·회원 메뉴 420건·상단 순서 612건. 결과서 <code>docs/qa/2026-10-06-unified-service-test-result.md</code></td></tr>
+          <tr><td class="n">로그인·회원가입·관리자 화면</td><td><span class="tag t-ok">완료</span></td><td>가입 신청 → 관리자 승인, 관리자 화면(승인·거절·추가·이름 수정·권한 변경·사용 중지·비밀번호 초기화·모든 기기 로그아웃·삭제). 회원 정보는 DB 기준(일반/관리자 2종)</td></tr>
+          <tr><td class="n">로컬 서버(내 PC)</td><td><span class="tag t-part">확인 대기</span></td><td><code>py -3.12 scripts\setup_local_auth.py</code> 한 번으로 켜고 <code>--off</code>로 끕니다. 코드는 푸시됨. 사용자 PC에서 실행 확인은 아직 못 받았습니다(DEC-075)</td></tr>
+          <tr><td class="n">옛 API 서비스</td><td><span class="tag t-part">Suspended</span></td><td><code>stock-analyzer-api</code>는 정지 상태로 롤백 경로로만 남아 있습니다. 며칠 안정 확인 뒤 삭제 예정</td></tr>
+          <tr><td class="n">운영 반영 방식</td><td><span class="tag t-ok">자동 배포 켬</span></td><td><code>autoDeployTrigger: commit</code>(DEC-081). <code>PROD_SCH</code>에 푸시하면 Render가 빌드·배포하고, 새 버전이 <code>/healthz</code>를 통과하지 못하면 기존 버전을 유지합니다. 푸시한 화면 변경이 운영에 반영된 것은 사용자 캡처로 확인했습니다. <b>DB 구조 변경(마이그레이션)은 자동 적용되지 않아</b> 푸시 전에 먼저 처리합니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>사용자가 남은 일</h3>
+    <ol class="steps">
+      <li><b class="i">1</b><span>며칠 사용해 이상이 없으면 Render의 <code>stock-analyzer-api</code>(Suspended)를 삭제합니다.</span></li>
+      <li><b class="i">2</b><span>내 PC에서 <code>git pull</code> → <code>py -3.12 scripts\setup_local_auth.py</code> → <code>scripts\start_local_api.ps1</code>, <code>npx next dev -p 4000</code>을 다시 시작해 로컬 로그인을 확인합니다.</span></li>
+      <li><b class="i">3</b><span>GitHub Secrets 등록은 필요 없습니다. 자동 배포는 Render 자체 기능으로 켰고, <code>RENDER_DEPLOY_HOOK_WEB</code>을 등록하면 이중 배포가 되므로 등록하지 않습니다.</span></li>
+      <li><b class="i">4</b><span>브라우저에서 표·차트 모양을 눈으로 한 번 확인합니다. 운영 검증은 HTTP 응답까지만 했습니다.</span></li>
+    </ol>
+  </section>
+
+  <section id="auth">
+    <h2>로그인·회원 흐름</h2>
+    <p class="sub">로그인 기능을 켠 환경(운영, 로컬 기본값)에서는 모든 화면이 로그인 뒤에만 열립니다. 회원은 가입 신청 후 관리자가 승인해야 쓸 수 있습니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart LR
+  V["방문자"] -->|"/signup 가입 신청"| P["승인 대기"]
+  P -->|"관리자 승인"| A["활성 회원"]
+  P -->|"관리자 거절"| X["신청 삭제"]
+  A -->|"/login"| S["로그인 상태<br/>8시간 · 유지 선택 시 30일"]
+  A -->|"관리자: 사용 중지"| D["사용 중지<br/>기존 로그인 모두 끊김"]
+  D -->|"관리자: 재사용"| A
+  A -->|"관리자: 비밀번호 초기화"| A
+</pre>
+    </div>
+    <div class="cols" style="margin-top:12px">
+      <div class="card"><h3>일반 사용자</h3><p>조회 화면 전체. 투자자 수급은 보이지 않습니다(관리자 전용).</p></div>
+      <div class="card"><h3>관리자</h3><p>머리글의 "회원 관리"(<code>/admin/members</code>)와 투자자 수급 탭. 본인은 중지·삭제·강등할 수 없고, 마지막 활성 관리자는 어떤 경로로도 없앨 수 없습니다.</p></div>
+      <div class="card"><h3>로그인 화면</h3><p>아이디 저장, 로그인 상태 유지(30일), 모든 기기에서 로그아웃. 비밀번호는 8자 이상. 비밀번호를 잃으면 관리자가 초기화합니다. 잠든 서버를 깨우는 동안의 일시 실패는 자동으로 재시도합니다(DEC-077).</p></div>
+      <div class="card"><h3>회원 DB</h3><p>Neon DB의 <code>auth</code> 스키마. 운영과 로컬이 같은 회원 DB를 공유하므로 로컬 관리 작업이 운영 회원에 바로 반영됩니다. 현재 회원은 관리자 1명, 일반 1명입니다.</p></div>
+    </div>
+  </section>
+
+  <section id="map">
+    <h2>화면 지도</h2>
+    <p class="sub">모바일에서는 하단 탭바(홈 · 조건 스크리닝 · 종목 검색 · 관심종목), 데스크톱에서는 상단 탭입니다. 종목 상세로 들어가는 길은 세 가지이고, 존재하지 않는 종목코드는 안내 화면에서 종목 검색으로 돌아옵니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart LR
+  BN["상단 배너<br/>자세히 보기"] --> AB["/about<br/>이용안내"]
+  FT["푸터 링크"] --> AB
+  HM["/ 홈<br/>시장 동향 요약"] --> SC["/screener<br/>조건 스크리닝"]
+  HM --> SR["/stocks<br/>종목 검색"]
+  HM --> WL["/watchlist<br/>관심종목"]
+  WL --> DT
+  SR -->|"별 버튼"| WL
+  DT -->|"헤더 별 버튼"| WL
+  SC <--> PT["/screener/pattern<br/>패턴 스크리닝"]
+  SC --> DT["/stocks/종목코드<br/>종목 상세"]
+  PT --> DT
+  SR --> DT
+  DT -->|"헤더 돋보기"| SR
+  DT -->|"없는 종목코드"| NF["종목 없음 안내"]
+  NF --> SR
+  LG["/login · /signup"] -->|"로그인 성공"| HM
+  AD["/admin/members<br/>관리자 전용"]
+</pre>
+    </div>
+    <h3>상단 영역 순서 (모든 화면 공통, DEC-082·083)</h3>
+    <ol class="steps">
+      <li><b class="i">0</b><span>면책 배너: 항상 맨 위에 고정</span></li>
+      <li><b class="i">1</b><span><b>메뉴 줄</b>(홈·조건 스크리닝·종목 검색·관심종목): 선택된 메뉴는 파란 면으로 표시, 스크롤해도 배너 아래에 붙어 따라옴</span></li>
+      <li><b class="i">2</b><span><b>회원 메뉴</b>: 이름 + [회원 관리] [로그아웃] [모든 기기에서 로그아웃] 버튼(모바일·데스크톱 모두 세 줄 구조)</span></li>
+      <li><b class="i">3</b><span><b>서비스 제목</b>(홈 링크)</span></li>
+    </ol>
+    <div class="cols" style="margin-top:12px">
+      <div class="card"><h3>홈 <span class="tag t-pub">공개</span></h3><p>전일 시장 요약, 업종 요약. 개별 종목 원시 시세 나열은 없습니다.</p></div>
+      <div class="card"><h3>조건 스크리닝 <span class="tag t-pub">공개</span></h3><p>직접 고르는 수치 조건 → 결과 표·카드 → 종목 상세. 패턴 스크리닝과 모드 전환으로 오갑니다.</p></div>
+      <div class="card"><h3>관심종목 <span class="tag t-pub">공개</span></h3><p>이 브라우저에만 저장되는 개인 목록. 통합 탭과 그룹 탭, 편집(순서·그룹 이동·삭제)을 지원합니다.</p></div>
+      <div class="card"><h3>패턴 스크리닝 <span class="tag t-pub">공개</span></h3><p>6개 패턴 조건의 충족 여부로 거르는 화면. 점수·순위는 없습니다. 기능 스위치로 끄면 404입니다. 운영은 켜져 있습니다.</p></div>
+    </div>
+  </section>
+
+  <section id="tabs">
+    <h2>종목 상세 탭 구성</h2>
+    <p class="sub">헤더(종목명, 현재가, ▲<span class="up">상승 빨강</span> ▼<span class="down">하락 파랑</span>) 아래에 탭이 놓입니다. 로컬 모드가 꺼진 공개 화면에서는 호가·체결 탭이 보이지 않습니다.</p>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>탭</th><th>공개 화면</th><th>개인 로컬 모드</th><th>데이터 출처</th></tr></thead>
+        <tbody>
+          <tr><td class="n">호가</td><td><span class="tag t-no">없음</span></td><td><span class="tag t-local">10단계 호가·잔량·예상체결가, 2초 갱신 → <b>웹소켓 실시간으로 전환 중</b></span></td><td>KIS 실시간 조회</td></tr>
+          <tr><td class="n">차트</td><td>일·주·월, 이평선, 매물대, 거래량, MACD(≡ 순서 바꾸기, ⊠ 닫기), 차트 요약, <b>그리기 도구 ✎(일봉에서 추세선·수평선)</b>. 분·틱 버튼은 눌러도 사유 안내만</td><td><span class="tag t-local">분 1~60 · 틱 1~30 추가</span></td><td>일봉은 공공데이터포털, 분·틱은 KIS</td></tr>
+          <tr><td class="n">체결</td><td><span class="tag t-no">없음</span></td><td><span class="tag t-local">최근 체결 목록, 3초 갱신 → <b>웹소켓 실시간으로 전환 중</b></span></td><td>KIS</td></tr>
+          <tr><td class="n">일자별 시세</td><td>최근 60거래일 종가·전일대비·등락률·거래량</td><td>동일</td><td>공공데이터포털</td></tr>
+          <tr><td class="n">실적</td><td>연간 매출·영업이익·당기순이익 3개 연도(억 원)</td><td>동일</td><td>DART 사업보고서</td></tr>
+          <tr><td class="n">투자자</td><td>운영은 관리자 계정에만 표시, 일반 사용자는 탭 없음(DEC-074)</td><td><span class="tag t-local">일별 개인·외국인·기관 순매수 30일(관리자만)</span></td><td>KIS 투자자 조회, 운영은 PC 수집분을 Neon에 적재</td></tr>
+          <tr><td class="n">조건 체크</td><td>패턴 조건 6개 + 실적 점검(영업이익 흑자·전년 대비 증가), 면책 문구</td><td><span class="tag t-local">수급 점검 2개 추가: 최근 20거래일 누적, 또는 기관 3일 연속 순매수(⑪)</span></td><td>가공 데이터, DART, KIS</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub" style="margin-top:12px">뉴스, 비교, 시간별 탭은 만들지 않았습니다(기사 재배포 라이선스 문제).</p>
+  </section>
+
+  <section id="chart">
+    <h2>차트 탭의 상태 흐름</h2>
+    <p class="sub">로컬 모드가 꺼져 있을 때 분·틱을 누르면 아무 반응이 없던 문제를 고쳐서, 지금은 이유를 보여줍니다. 분·틱을 고르면 일·주·월의 선택 표시가 풀리고 고른 버튼이 검은색으로 바뀝니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  state "일·주·월 차트" as D
+  state "분·틱 메뉴 열림" as M
+  state "분·틱 불러오는 중" as L
+  state "분·틱 차트<br/>10초(분) · 5초(틱) 자동 갱신" as I
+  state "사용 불가 안내" as O
+  [*] --> D
+  D --> M: 분 또는 틱 (로컬 모드 켜짐)
+  D --> O: 분 또는 틱 (로컬 모드 꺼짐)
+  O --> D: 다시 누르기
+  M --> L: 간격 선택
+  L --> I: 데이터 수신
+  L --> L: 오류면 간격을 늘려 재시도
+  I --> L: 다른 간격 선택
+  I --> D: 일 · 주 · 월
+</pre>
+    </div>
+    <h3>그리기 도구 (일봉 전용)</h3>
+    <p class="sub">✎ 버튼을 누르면 도구 패널이 열립니다. 추세선은 차트에서 두 점을 차례로 누르고, 수평선은 차트를 한 번 누르거나 가격을 직접 입력합니다. 그림은 종목별로 이 브라우저에만 저장되고 최대 20개입니다. 주·월·분·틱에서는 안내만 나옵니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  state "패널 닫힘" as C
+  state "도구 선택 대기" as W
+  state "첫 점 찍음" as P
+  [*] --> C
+  C --> W: ✎ 누름 (일봉)
+  W --> P: 추세선 + 차트 클릭
+  P --> W: 두 번째 클릭 (선 저장)
+  P --> W: Esc (취소)
+  W --> W: 수평선 + 클릭 또는 가격 입력 (선 저장)
+  W --> W: 목록에서 삭제 / 모두 지우기 (2단계 확인)
+  W --> C: ✎ 다시 누름
+</pre>
+    </div>
+    <h3>거래량·MACD 패널</h3>
+    <div class="panel scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  state "두 패널 표시" as B
+  state "한 패널만 표시" as O
+  state "모두 닫힘(가격만)" as N
+  [*] --> B
+  B --> B: ≡ 순서 바꾸기
+  B --> O: ⊠ 닫기
+  O --> N: ⊠ 닫기
+  O --> B: ⚙ 설정에서 다시 켜기
+  N --> O: ⚙ 설정에서 다시 켜기
+</pre>
+    </div>
+  </section>
+
+  <section id="data">
+    <h2>데이터가 화면까지 오는 길</h2>
+    <p class="sub">화면은 하루 두 번 도는 배치가 Neon DB에 채운 데이터를 읽기 전용 계정으로 보여줍니다. 웹 서버가 API를 대신 호출하므로 브라우저는 웹만 부릅니다. 로컬 모드만 별도 API로 증권사에 직접 묻습니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart LR
+  subgraph SRC["데이터 출처"]
+    G["공공데이터포털 주식시세<br/>+1영업일 공개"]
+    DA["DART 전자공시<br/>실적·재무 원문"]
+    K["한국투자증권 KIS<br/>내 앱키 · 내 PC만"]
+  end
+  subgraph JOB["배치 (DB에 직접 쓰기)"]
+    I["수집 Ingestion<br/>매일 14:30 · 18:30"] --> V["가공 Derivation<br/>순위 · 이평 · 거래량 · PER/PBR 백분위"]
+    FR["신선도 점검<br/>매일 09:10"]
+  end
+  PC["PC 작업 스케줄러 (주)"] --> I
+  GA["GitHub Actions (보조, 20분 뒤)<br/>겹치면 DB 잠금으로 한쪽 양보"] -.-> I
+  E1["enrich_earnings<br/>연 1회"]
+  E2["enrich_corp_financials<br/>분기 1회"]
+  DB[("Neon PostgreSQL<br/>public_serving · auth")]
+  subgraph RS["Render 서비스 1개 (컨테이너 1개)"]
+    API["API 읽기 전용 계정<br/>내부 127.0.0.1:8000"]
+    WEB["웹 Next.js<br/>공개 PORT · 로그인 확인 후 API 대행"]
+  end
+  LAPI["로컬 모드 API<br/>/api/v1/local/*"]
+  LWEB["내 PC 웹<br/>localhost:4000"]
+  G --> I
+  DA --> E1
+  DA --> E2
+  E1 --> DB
+  E2 --> DB
+  I --> DB
+  V --> DB
+  DB --> API
+  FR -.-> DB
+  API --> WEB
+  K --> LAPI
+  LAPI --> LWEB
+</pre>
+    </div>
+    <h3>주기와 시점</h3>
+    <ul>
+      <li>공공데이터포털 시세는 영업일 다음 날에 올라옵니다. 금요일 데이터는 월요일에 공개되므로, 주말에 새 거래일이 없는 것이 정상입니다.</li>
+      <li>배치는 이미 최신이면 API를 호출하지 않고 끝나며, 빠진 거래일은 오래된 날부터 따라잡습니다.</li>
+      <li>PER·PBR은 배치가 시가총액과 DART 재무 원문을 조합해 계산합니다. 원문 수집을 먼저 해야 값이 나옵니다.</li>
+      <li>금융위원회 공공데이터는 거래일 <b>다음 영업일 13시 이후</b>에 공개됩니다. 현재 배치(14:30 시작)는 이를 약 1~2시간 늦게 반영하므로, 13:10부터 15분 간격으로 재시도하는 방식이 제안돼 있습니다(결정 대기).</li>
+      <li>화면의 "갱신" 시각은 데이터가 반영된 시각이 아니라 <b>화면을 불러온 시각</b>입니다(오해 소지, 문구 정정 결정 대기).</li>
+      <li>GitHub 보조 배치(14:50·18:50)는 기본 브랜치(<code>main</code>)에 워크플로 파일이 없어 <b>동작하지 않는 상태</b>입니다. PC가 꺼져 있으면 갱신이 멈출 수 있습니다.</li>
+      <li>실시간 경로는 위 "실시간 개발 설계"를 참고하세요(내 PC 로컬 모드 전용, 개발 중).</li>
+      <li>일일 배치 스케줄링은 지금은 다루지 않기로 한 보류 항목입니다(2026-10-02 사용자 결정). 위 시각은 현재 구성의 기준값입니다.</li>
+    </ul>
+  </section>
+
+  <section id="guard">
+    <h2>개인 로컬 모드 접근 통제</h2>
+    <p class="sub">네 가지를 모두 통과해야 응답하고, 하나라도 어긋나면 기능이 있다는 사실도 드러내지 않도록 404를 돌려줍니다. 프런트는 설정 스위치와 사설 주소일 때만 호가·체결·분·틱·투자자 UI를 보여주는 보조 방어선입니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart TD
+  R["브라우저 요청<br/>/api/v1/local/…"] --> C1{"① LOCAL_INTRADAY_ENABLED = true"}
+  C1 -->|아니오| X["404 기능 비공개"]
+  C1 -->|예| C2{"② 요청 주소가 허용 목록<br/>기본 127.0.0.1"}
+  C2 -->|아니오| X
+  C2 -->|예| C3{"③ 프록시·터널 헤더 없음"}
+  C3 -->|아니오| X
+  C3 -->|예| C4{"④ Host가 localhost 또는 사설 IP"}
+  C4 -->|아니오| X
+  C4 -->|예| C5{"앱키·시크릿 설정됨"}
+  C5 -->|아니오| E5["503 앱키 미설정 안내"]
+  C5 -->|예| KS["증권사 조회, 읽기 전용<br/>응답 Cache-Control no-store"]
+</pre>
+    </div>
+    <p class="sub" style="margin-top:12px"><b>실시간 스트림(DEC-084)도 같은 4중 통제를 쓰고</b>, 로그인을 켠 환경에서는 요청마다 DB에서 "유효한 세션 + 활성 + 관리자"를 확인하며 스트림이 이어지는 동안 5분마다 다시 확인합니다. 권한이 사라지면 스트림을 끝냅니다.</p>
+    <p class="sub" style="margin-top:12px">공개 배포에서는 <code>LOCAL_INTRADAY_ENABLED</code>와 <code>NEXT_PUBLIC_LOCAL_INTRADAY_ENABLED</code>를 설정하지 않아야 합니다(통합 이미지 정적 시험이 이 값의 미설정을 검사합니다). 주문·계좌 API는 코드에 없습니다. 로컬 로그인을 켜면 브라우저가 API(4001)를 직접 부르지 않고 웹 서버(4000)가 로그인을 확인한 뒤 대신 호출하며, 그 대행은 로컬 모드 빌드에서만 열립니다.</p>
+  </section>
+
+  <section id="states">
+    <h2>공통 상태 화면</h2>
+    <div class="cols">
+      <div class="card"><h3>데이터 지연 배지·기준 안내</h3><p>"예상보다 1영업일 지연된 데이터입니다"와 기준일·갱신 시각이 헤더 아래에 나옵니다. 로컬 모드에서 호가·체결·분·틱을 보는 동안에는 기준 안내가 "내 증권사 시세(지연·누락 가능)"로 바뀝니다.</p></div>
+      <div class="card"><h3>로딩 · 빈 값 · 오류</h3><p>탭마다 "불러오는 중", "아직 없습니다", 오류 문구로 나뉩니다. 값이 없으면 0이 아니라 "–"로 표시합니다. "서버를 깨우는 중" 팝업은 제거했습니다(DEC-076).</p></div>
+      <div class="card"><h3>고지 문구</h3><p>상단 배너와 푸터에 투자자문업 미등록·투자 조언 아님이 항상 있고, 로컬 모드 화면에는 시세 외부 제공 금지 안내가 붙습니다.</p></div>
+      <div class="card"><h3>시세 원값 노출 스위치</h3><p>운영은 켜짐(<code>PRICE_EXPOSURE_ENABLED=true</code>)입니다. 끄면 차트·일자별 시세 탭이 빠지고 요약 정보만 남습니다.</p></div>
+    </div>
+  </section>
+
+  <section id="gap">
+    <h2>참고 이미지·선발 기준 대비 현황</h2>
+    <p class="sub">참고 폴더의 증권사 앱 화면 11장과 "급등 전 압축주" 선발 기준 10가지를 기준으로 비교했습니다.</p>
+
+    <h3>선발 기준 ①~⑪ 와 조건 체크 탭</h3>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>기준</th><th>현재 조건 체크 탭</th><th>상태</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td class="n">① 긴 횡보</td><td>긴 횡보(횡보 폭, 80거래일 변화)</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">② 5·10·20일선 수렴</td><td>이평선 수렴(간격, 변동성 수축비)</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">③ 60일선 접근</td><td>60일선 접근(60일선 대비 %, 간격)</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">④ 돌파 직전·초기</td><td>60일선 돌파 단계</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">⑤ 거래량 아직 폭발 안 함</td><td>거래량(5일 평균 대비 60일 평균 배수)</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">⑥ 외국인·기관 수급</td><td>최근 20거래일 외국인+기관 누적 순매수 &gt; 0 <b>또는 ⑪ 기관 3일 연속 순매수</b></td><td><span class="tag t-local">로컬 모드</span></td><td>외국인이 팔아도 기관이 연속 매수면 충족. 공개 화면은 출처가 없어 안내만</td></tr>
+          <tr><td class="n">⑦ 개인 주도 제외</td><td>같은 기간 개인 누적 순매수 ≤ 0. <b>예외: ⑪ 충족 + 기관 누적 &gt; 개인 누적이면 충족</b></td><td><span class="tag t-local">로컬 모드</span></td><td>10거래일 미만이면 산정 불가. 근거 문구에 예외 적용 여부 표시</td></tr>
+          <tr><td class="n">⑧ 실적 개선 가능성</td><td>최근 사업연도 영업이익 흑자 + 전년 대비 증가</td><td><span class="tag t-ok">구현</span></td><td>공개 화면에도 표시. 수집된 종목만</td></tr>
+          <tr><td class="n">⑨ 호재 이미 반영된 종목 제외</td><td>급등 이력(최근 20거래일 급등·거래량 급증, 대리 지표)</td><td><span class="tag t-part">일부</span></td><td>뉴스 자체는 제공하지 않음</td></tr>
+          <tr><td class="n">⑩ 급등 전 위치 종합</td><td>충족 여부와 수치 근거만 나열</td><td><span class="tag t-ok">구현</span></td><td>점수·순위는 의도적으로 없음</td></tr>
+          <tr><td class="n">⑪ 기관 연속 순매수</td><td>오늘 포함 3일 이상 연속 순매수. 0·값 없음은 연속 중단</td><td><span class="tag t-local">로컬 모드</span></td><td>⑥의 대안. 리노공업 화면 수치로 시험. 실제 KIS 응답은 장중 확인 항목</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>증권사 앱 화면 요소</h3>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>참고 화면 요소</th><th>상태</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td class="n">색 띠 헤더, 현재가 ▲▼ 등락률</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">일·주·월·분▾·틱▾ 버튼과 선택 표시</td><td><span class="tag t-ok">구현</span></td><td>분·틱은 로컬 모드</td></tr>
+          <tr><td class="n">이평 5·10·20·60, 매물대(7), 표시 봉 수</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">최고·최저 화살표 표기, 현재가 배지</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">거래량 패널과 이평 5·20·60·200, K 단위</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">MACD·Signal, 골든/데드 화살표</td><td><span class="tag t-ok">구현</span></td><td></td></tr>
+          <tr><td class="n">AI로 차트 분석하기</td><td><span class="tag t-part">대체</span></td><td>사실 서술형 "차트 요약"으로 대체(전망·판단 없음)</td></tr>
+          <tr><td class="n">호가·체결현황</td><td><span class="tag t-local">로컬 모드</span></td><td>공개 화면은 일자별 시세로 대체</td></tr>
+          <tr><td class="n">투자자</td><td><span class="tag t-local">관리자·로컬</span></td><td>운영은 관리자 계정에만 표시</td></tr>
+          <tr><td class="n">패널 우측 ≡ 순서 변경, ⊠ 닫기 아이콘</td><td><span class="tag t-ok">구현</span></td><td>닫은 패널은 ⚙ 설정에서 복원</td></tr>
+          <tr><td class="n">도구(렌치) 그리기</td><td><span class="tag t-part">최소 구현</span></td><td>추세선·수평선만, 일봉 전용, 브라우저 저장. 도형·색 선택·기기 간 동기화는 없음</td></tr>
+          <tr><td class="n">가격축 옆 빨강·파랑 세로선</td><td><span class="tag t-no">보류</span></td><td>의미를 이미지만으로 확정할 수 없음</td></tr>
+          <tr><td class="n">관심종목 그룹 탭, 편집, 목록 행</td><td><span class="tag t-ok">구현</span></td><td>이 브라우저에만 저장(계정과 연동되지 않음)</td></tr>
+          <tr><td class="n">뉴스·비교·시간별 탭</td><td><span class="tag t-no">제외</span></td><td>기사 재배포 라이선스</td></tr>
+          <tr><td class="n">주식주문·잔고/손익 메뉴</td><td><span class="tag t-no">범위 밖</span></td><td>조회 전용 서비스</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="deploy">
+    <h2>운영 배포 (Render 서비스 1개 + Neon DB)</h2>
+    <p class="sub">2026-10-06에 웹과 API를 한 컨테이너로 합쳤습니다. 구성 파일은 <code>render.yaml</code>, <code>deploy/unified.Dockerfile</code>, <code>scripts/run_unified.py</code>이고 절차서는 <code>docs/ops/unified-service-guide.md</code>입니다. 이전 2개 서비스 구성은 <code>deploy/render/render.two-services.yaml</code>에 롤백용으로 보관합니다.</p>
+
+    <h3>컨테이너 한 개 안의 구성</h3>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart TB
+  U["사용자 브라우저"] -->|"https"| RP["Render 프록시<br/>stock-analyzer-web-q7cx.onrender.com"]
+  subgraph CT["Render 서비스 1개 · Starter · 컨테이너 1개"]
+    RU["run_unified.py<br/>기동 순서 · 감시 · 종료 신호 전달"]
+    RP -->|"공개 PORT 3000"| W["웹 Next.js<br/>로그인 확인 · 세션 쿠키"]
+    W -->|"서버 측 호출 + 내부 토큰<br/>127.0.0.1:8000"| A["API FastAPI<br/>외부에 열리지 않음"]
+    RU -.->|"1 먼저 기동 · /api/v1/live 확인"| A
+    RU -.->|"2 그 뒤 기동"| W
+  end
+  A --> N[("Neon PostgreSQL<br/>public_serving 읽기 · auth 스키마")]
+  B["배치<br/>PC 스케줄러 + GitHub Actions"] -->|"직접 쓰기"| N
+</pre>
+    </div>
+    <p class="sub" style="margin-top:12px">어느 한쪽 프로세스가 죽으면 기동기가 나머지도 종료하고 비정상 종료 코드로 끝나 Render가 재시작합니다(<code>kill -9</code> 시험으로 확인). 종료 신호(SIGTERM)는 0.3초 안에 둘 다 정리합니다. 실측 메모리는 로컬 약 245MB, 운영 48시간 평균 사용률은 10~25%입니다.</p>
+
+    <h3>반영 흐름</h3>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart LR
+  PUSH["git push<br/>PROD_SCH"] --> GH[("GitHub")]
+  GH --> RD["Render가 변경을 감지<br/>autoDeployTrigger: commit"]
+  RD --> BLD["이미지 빌드"]
+  BLD --> HC{"/healthz 통과?"}
+  HC -->|"예"| LIVE["새 버전 반영"]
+  HC -->|"아니오 · 빌드 실패"| KEEP["기존 버전 유지"]
+  DB["DB 구조 변경이 있으면<br/>푸시 전에 먼저 마이그레이션"] -.-> PUSH
+  LIVE --> CHK["/auth/status 로<br/>웹 · API 연결 확인"]
+</pre>
+    </div>
+    <p class="sub" style="margin-top:12px">문서만 바꾼 푸시도 재배포됩니다(경로 필터 미사용). 롤백은 <code>render.two-services.yaml</code>을 <code>render.yaml</code>로 되돌리고 옛 API 서비스를 다시 켜는 방식입니다. 옛 API 서비스는 삭제 전까지 이 경로로 남아 있습니다. 블루프린트는 대시보드에서만 바꾸면 동기화 때 되돌아갈 수 있어, 요금제 같은 값은 <code>render.yaml</code>에도 함께 반영합니다.</p>
+
+    <h3>통합 전환 시험 결과</h3>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>항목</th><th>상태</th><th>근거·남은 일</th></tr></thead>
+        <tbody>
+          <tr><td class="n">기동·감시 단위 시험</td><td><span class="tag t-ok">9건 통과</span></td><td>API 준비 후 웹 기동, 한쪽 종료 시 종료 코드 전달, 시작 실패 처리, SIGTERM 정리</td></tr>
+          <tr><td class="n">배포 파일 정적 시험</td><td><span class="tag t-ok">11건 통과</span></td><td>Dockerfile 복사 경로, 환경변수 합치기(기존 두 서비스 값 누락 없음), 비밀값 <code>sync:false</code>, 로컬 전용 기능 미설정</td></tr>
+          <tr><td class="n">실제 프로세스 시험</td><td><span class="tag t-ok">통과</span></td><td>API는 127.0.0.1에만 바인딩, 웹은 0.0.0.0, 유휴 약 190MB, 부하 후 약 245MB</td></tr>
+          <tr><td class="n">로그인 E2E(통합 구성)</td><td><span class="tag t-ok">322/322</span></td><td>분리 구성과 같은 시나리오 A~M. 시험 도구의 환경 병합 결함 1건을 고치고 재실행</td></tr>
+          <tr><td class="n">운영 검증(옛 API Suspended 상태)</td><td><span class="tag t-ok">통과</span></td><td>healthz 200, auth/status ok, 소유자 로그인과 4개 화면 200, 조회 API 200. 웹이 옛 API에 기대지 않음을 확인</td></tr>
+          <tr><td class="n">Docker 이미지 로컬 빌드</td><td><span class="tag t-part">미시험</span></td><td>개발 환경에 Docker가 없어 Render 빌드로 대신 확인했습니다(운영 반영됨)</td></tr>
+          <tr><td class="n">표·차트 화면 모양</td><td><span class="tag t-part">눈 확인 전</span></td><td>HTTP 응답까지만 확인. 사용자 브라우저 확인 항목</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>대안 보관: 서버 1대 구성 (Oracle VM + Cloudflare R2)</h3>
+    <p class="sub">Oracle 가입이 막혀 Render로 먼저 운영을 시작했습니다. 서버 1대 구성의 파일과 절차서(<code>deploy/docker-compose.yml</code>, <code>deploy/Caddyfile</code>, <code>docs/ops/oracle-deploy-guide.md</code>)는 저장소에 남아 있고, 현재 쓰지 않습니다. 서버를 다시 검토하면 임시 PostgreSQL에서 마이그레이션 적용과 계정 권한 분리, 백업·복구, 배포 스크립트 78개 항목은 시험을 마쳤습니다. Docker 이미지 빌드(ARM), 인증서 발급, R2 실제 업로드는 아직 시험하지 못했습니다.</p>
+
+    <h3>아직 정해지지 않은 것</h3>
+    <div class="cols">
+      <div class="card"><h3>도메인</h3><p>지금은 <code>onrender.com</code> 주소입니다. 본인 도메인을 쓸지는 정해지지 않았습니다.</p></div>
+      <div class="card"><h3>시세 원값 공개</h3><p>약관·법률 검토(REQ-022) 전입니다. 현재 운영은 켜져 있고, 외부 공개 전에 끌지 여부를 사용자가 결정합니다.</p></div>
+      <div class="card"><h3>방문자 IP 속도 제한</h3><p>프록시 단계 설정(<code>FRONTEND_TRUSTED_PROXY_HOPS=0</code>) 때문에 전 사용자가 한 버킷으로 계산됩니다. 기존 한계로 남아 있습니다.</p></div>
+      <div class="card"><h3>자동 배포 주의</h3><p>잘못된 코드를 푸시하면 바로 운영에 배포됩니다(상태 점검을 통과하지 못하면 기존 버전 유지). 끄려면 <code>render.yaml</code>의 값을 <code>"off"</code>로 되돌립니다.</p></div>
+    </div>
+  </section>
+
+  <section id="ops">
+    <h2>운영 현황 (2026-10-06 기준)</h2>
+    <div class="cols">
+      <div class="card"><h3>일일 배치</h3><p>마지막 확인 발행일은 2026-10-01입니다. 이후 거래일은 공공데이터포털이 영업일 다음 날 공개하는 대로 따라잡습니다. PC 작업 스케줄러 실행 기록은 PC에서 직접 확인해야 합니다. 스케줄링 재설계는 보류 중입니다.</p></div>
+      <div class="card"><h3>실적 수집</h3><p>삼성전자에서 2023~2025 연결 실적이 표시됩니다. 조건 체크의 실적 점검도 이 데이터를 씁니다.</p></div>
+      <div class="card"><h3>PER·PBR 원천 재무</h3><p>수집 전인 종목은 "산정 불가"로 보입니다. 수집 후 가공을 다시 돌리면 값이 채워지고, 비는 종목은 "적자·자본잠식"과 "재무 데이터 없음"으로 나뉘어 표시됩니다. DB 마이그레이션은 0018(인증 역할·가입·관리 기록)까지 적용돼 있습니다.</p></div>
+      <div class="card"><h3>메모리·콜드스타트</h3><p>Starter 전환으로 유휴 잠들기와 콜드스타트가 사라졌습니다. 로그인의 재시도(DEC-077)는 Neon DB 자동 정지 대비로 유지합니다.</p></div>
+      <div class="card"><h3>장중 확인 항목</h3><p>분봉·투자자 당일 값, 새 기준 ⑪(실제 증권사 응답)은 장중에 PC에서 확인합니다.</p></div>
+      <div class="card"><h3>시험 결과서 위치</h3><p><code>docs/qa/2026-10-06-*-test-result.md</code>(통합 전환·상단 메뉴·회원 메뉴·상단 순서·자동 배포), <code>docs/qa/2026-10-05-auth-redesign-test-result.md</code>(로그인·관리자), 실시간 검토서 <code>docs/stock-detail/06-realtime-review.md</code>, 인수인계 <code>docs/HANDOFF.md</code>, 결정 이력 <code>docs/harness/decisions.md</code>(DEC-074~083).</p></div>
+    </div>
+  </section>
+
+  <footer>이 문서는 저장소의 소스 구조(라우트, 탭, API 경로), HANDOFF.md, 결정 이력(DEC-074~083)과 시험 결과서, 실시간 개발 진행 상태를 근거로 2026-10-06 기준으로 갱신했습니다. 증권사 시세는 지연·누락될 수 있고 투자 판단의 근거가 아닙니다.</footer>
+</div>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

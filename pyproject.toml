@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "youtube_title"
+version = "0.0.0"
+description = "유튜브 영상 제목을 안전하게 검증·반영·기록·롤백하는 로컬 CLI"
+requires-python = ">=3.10"
+dependencies = [
+    "google-api-python-client>=2.0",
+    "google-auth-oauthlib>=1.0",
+    "google-auth-httplib2>=0.2",
+    "PyYAML>=6.0",
+    "python-dotenv>=1.0",
+    "tzdata",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["windows_only: Windows에서만 의미 있는 테스트(이 Linux 환경에서는 건너뜀)"]
+
+[tool.coverage.run]
+source = ["youtube_title"]
+branch = true

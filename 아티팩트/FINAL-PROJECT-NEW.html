@@ -1,0 +1,434 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>FINAL-PROJECT-NEW</title>
+<meta name="description" content="13단계 개발 하네스 파이프라인의 현재 진행 상태 — 카드/보드 형식">
+<style>
+:root{
+  --bg:#f5f6f9; --surface:#ffffff; --surface-2:#eef0f5; --surface-3:#e4e7ee; --border:#dde1e9;
+  --text:#171a22; --text-dim:#5b6274; --text-faint:#8991a3;
+  --accent:#2454e0; --accent-bg:#e8edfc;
+  --ok:#127a45; --ok-bg:#e2f6ea; --ok-line:#a9e2c1;
+  --run:#4338ca; --run-bg:#ecebfd; --run-line:#c7c4f7;
+  --wait:#6b7280; --wait-bg:#eef0f4; --wait-line:#d8dbe2;
+  --warn:#b1610a; --warn-bg:#fdf0dd; --warn-line:#f2cd99;
+  --crit:#c22b2b; --crit-bg:#fceaea; --crit-line:#f3b9b9;
+  --new:#7e22ce; --new-bg:#f6ecfd; --new-line:#e2c6f5;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --sans:'Noto Sans KR',-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111319; --surface:#181b22; --surface-2:#1f232c; --surface-3:#272c37; --border:#2b303c;
+    --text:#e8eaef; --text-dim:#a7adbc; --text-faint:#767d90;
+    --accent:#7c9bff; --accent-bg:#1c2440;
+    --ok:#49d98a; --ok-bg:#0f2a1c; --ok-line:#1c5636;
+    --run:#a5a0f7; --run-bg:#211f3f; --run-line:#3d3877;
+    --wait:#9aa1b2; --wait-bg:#20242e; --wait-line:#333846;
+    --warn:#f2a34c; --warn-bg:#2c220f; --warn-line:#5c4218;
+    --crit:#ff6b6b; --crit-bg:#301316; --crit-line:#5c2323;
+    --new:#d18df0; --new-bg:#271733; --new-line:#4b2f5e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111319; --surface:#181b22; --surface-2:#1f232c; --surface-3:#272c37; --border:#2b303c;
+  --text:#e8eaef; --text-dim:#a7adbc; --text-faint:#767d90;
+  --accent:#7c9bff; --accent-bg:#1c2440;
+  --ok:#49d98a; --ok-bg:#0f2a1c; --ok-line:#1c5636;
+  --run:#a5a0f7; --run-bg:#211f3f; --run-line:#3d3877;
+  --wait:#9aa1b2; --wait-bg:#20242e; --wait-line:#333846;
+  --warn:#f2a34c; --warn-bg:#2c220f; --warn-line:#5c4218;
+  --crit:#ff6b6b; --crit-bg:#301316; --crit-line:#5c2323;
+  --new:#d18df0; --new-bg:#271733; --new-line:#4b2f5e;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5;}
+.wrap{max-width:1120px; margin:0 auto; padding:26px 16px 60px;}
+code,.mono{font-family:var(--mono);}
+h1,h2{margin:0;}
+
+.header{border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:20px;}
+.eyebrow{font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-faint); font-weight:700;}
+h1{font-size:24px; font-weight:900; margin-top:3px;}
+.metarow{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; font-size:12px;}
+.chip{padding:3px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); font-weight:700; white-space:nowrap;}
+.chip.crit{background:var(--crit-bg); color:var(--crit); border-color:var(--crit-line);}
+
+.sec{margin-top:30px;}
+.sec-h{font-size:13px; font-weight:800; color:var(--text-dim); letter-spacing:.02em; margin-bottom:10px;}
+
+.progrow{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:680px){.progrow{grid-template-columns:1fr;}}
+.pcard{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px;}
+.pcard .top{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+.pcard .ttl{font-size:13.5px; font-weight:800;}
+.pcard .pct{font-family:var(--mono); font-size:26px; font-weight:800;}
+.pcard .pct.up{color:var(--ok);}
+.stackbar{display:flex; height:14px; border-radius:7px; overflow:hidden; margin-top:10px; background:var(--surface-3);}
+.stackbar span{height:100%;}
+.pcard .legend{display:flex; gap:12px; font-size:11.5px; color:var(--text-dim); margin-top:8px; flex-wrap:wrap;}
+.pcard .legend i{width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:4px; vertical-align:-1px;}
+.pcard .note{font-size:11px; color:var(--text-faint); margin-top:9px; border-top:1px dashed var(--border); padding-top:8px;}
+.delta{font-size:11.5px; color:var(--ok); font-weight:700; margin-top:4px;}
+
+.stagegrid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+@media (max-width:820px){.stagegrid{grid-template-columns:repeat(4,1fr);}}
+.stagebox{border-radius:10px; padding:10px 8px; text-align:center; font-size:12px; border:1px solid transparent;}
+.stagebox .num{font-family:var(--mono); font-size:10.5px; font-weight:700; opacity:.75;}
+.stagebox .nm{font-weight:800; margin-top:2px; font-size:12.5px;}
+.stagebox.done{background:var(--ok-bg); color:var(--ok); border-color:var(--ok-line);}
+.stagebox.run{background:var(--run-bg); color:var(--run); border-color:var(--run-line); box-shadow:0 0 0 2px var(--run-line) inset;}
+.stagebox.wait{background:var(--wait-bg); color:var(--wait); border-color:var(--wait-line);}
+.stagerow2{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:22px; position:relative;}
+@media (max-width:820px){.stagerow2{grid-template-columns:repeat(3,1fr);}}
+.connector{text-align:center; color:var(--text-faint); font-size:11px; margin:10px 0; letter-spacing:.05em;}
+.approvebadge{position:absolute; top:-11px; left:50%; transform:translateX(-50%); background:var(--crit-bg); color:var(--crit); font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; border:1px solid var(--crit-line); white-space:nowrap;}
+.stagebox.approve{position:relative; overflow:visible;}
+.stagecap{font-size:12px; color:var(--text-dim); margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px;}
+
+.flow3{display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:10px; align-items:start;}
+@media (max-width:900px){.flow3{grid-template-columns:1fr;}}
+.flow3 .arrow{display:flex; align-items:center; justify-content:center; color:var(--text-faint); font-size:20px; padding-top:40px;}
+@media (max-width:900px){.flow3 .arrow{padding:2px 0; transform:rotate(90deg);}}
+.flowcol{display:flex; flex-direction:column; gap:8px;}
+.flowcol .colttl{font-size:11.5px; font-weight:800; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;}
+.fcard{border-radius:10px; padding:10px 12px; font-size:12.5px; border:1px solid var(--border); background:var(--surface);}
+.fcard.now{background:var(--run-bg); border-color:var(--run-line); color:var(--run);}
+.fcard.next{background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn);}
+.fcard.later{background:var(--wait-bg); border-color:var(--wait-line); color:var(--wait-dim,var(--text-dim));}
+.fcard b{display:block; font-size:12.5px; margin-bottom:2px;}
+.flowcap{font-size:12px; color:var(--text-dim); margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px;}
+
+.feature{margin-bottom:16px;}
+.feature-h{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.feature-h .fname{font-size:12.5px; font-weight:800; color:var(--text-dim); min-width:150px;}
+.feature-h .tag{font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px;}
+.tag.l1{background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-line);}
+.tag.l3{background:var(--accent-bg); color:var(--accent); border:1px solid var(--border);}
+.tag.newf{background:var(--new-bg); color:var(--new); border:1px solid var(--new-line);}
+.ugrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px;}
+.ucard{border:1px solid var(--border); border-radius:9px; padding:9px 10px; background:var(--surface);}
+.ucard.hl{border-color:var(--warn-line); box-shadow:0 0 0 1px var(--warn-line) inset;}
+.ucard .uid{font-family:var(--mono); font-weight:800; font-size:12.5px;}
+.ucard .req{font-family:var(--mono); font-size:10px; color:var(--text-faint); margin-top:1px;}
+.ucard .pills{display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;}
+.pill{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:6px; white-space:nowrap;}
+.pill.done{background:var(--ok-bg); color:var(--ok);}
+.pill.run{background:var(--run-bg); color:var(--run);}
+.pill.wait{background:var(--wait-bg); color:var(--wait);}
+.pill.warn{background:var(--warn-bg); color:var(--warn);}
+.ucard .sub{font-size:10px; color:var(--text-faint); margin-top:5px;}
+
+.leg2{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--text-dim); margin-top:14px;}
+.leg2 span{display:flex; align-items:center; gap:5px;}
+.leg2 i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+table.wtab{width:100%; border-collapse:collapse; font-size:12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+table.wtab th,table.wtab td{padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top;}
+table.wtab th{background:var(--surface-2); font-size:11px; color:var(--text-faint); text-transform:uppercase; font-weight:700;}
+table.wtab td.mono{font-family:var(--mono); font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
+table.wtab tr:last-child td{border-bottom:none;}
+
+.watch{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px;}
+.watch ul{margin:0; padding-left:20px; font-size:12.5px; color:var(--text-dim); display:flex; flex-direction:column; gap:8px;}
+.watch li b{color:var(--text);}
+.watch li.resolved{color:var(--text-faint); text-decoration:line-through; text-decoration-color:var(--ok-line);}
+.watch li.resolved b{color:var(--text-faint); text-decoration:none;}
+.resolved-tag{font-size:10px; font-weight:700; color:var(--ok); text-decoration:none; margin-left:4px;}
+
+footer{margin-top:34px; padding-top:14px; border-top:1px solid var(--border); font-size:11px; color:var(--text-faint);}
+footer p{margin:3px 0;}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="eyebrow">13단계 개발 하네스</div>
+    <h1>FINAL-PROJECT-NEW</h1>
+    <div class="metarow">
+      <span class="chip">기준 시각 2026-09-21 09:56 KST</span>
+      <span class="chip crit">위험도 등급 High</span>
+      <span class="chip">기본 속도 트랙 L1 · 예외 유닛(8·10·11·19·20·21·22) L3</span>
+      <span class="chip" style="background:var(--run-bg); color:var(--run); border-color:var(--run-line);">unit-7·unit-20 06 백그라운드 진행 중(09:37 KST 착수)</span>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">전체 진행률</div>
+    <div class="progrow">
+      <div class="pcard">
+        <div class="top"><span class="ttl">개발 구간 (05·06단계, 유닛 22개)</span><span class="pct up">77.3%</span></div>
+        <div class="stackbar">
+          <span style="width:77.3%; background:var(--ok);"></span>
+          <span style="width:2.3%; background:var(--run);"></span>
+          <span style="width:20.4%; background:var(--wait-line);"></span>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--ok);"></i>완료 34칸</span>
+          <span><i style="background:var(--run);"></i>진행 중 1칸</span>
+          <span><i style="background:var(--wait-line);"></i>대기 9칸</span>
+        </div>
+        <div class="delta">▲ 어제 72.7% → 오늘 77.3% (unit-22 06 재작업이 v5로 PASS 확정됨)</div>
+        <div class="note">22유닛 × 2단계 = 44칸. 완료 34 ÷ 44 = 77.3%. CONDITIONAL PASS(unit-7 06)는 "산출물 존재"로 완료 칸에 포함하되, 최종 재검증 전까지는 8절 판정 자체가 확정이 아님을 아래 표에 별도 표기.</div>
+      </div>
+      <div class="pcard">
+        <div class="top"><span class="ttl">13단계 파이프라인 전체 (참고용)</span><span class="pct up">42.7%</span></div>
+        <div class="stackbar"><span style="width:42.7%; background:var(--ok);"></span><span style="width:57.3%; background:var(--wait-line);"></span></div>
+        <div class="legend"><span><i style="background:var(--ok);"></i>완료 환산 5.55단계</span><span><i style="background:var(--wait-line);"></i>남은 7.45단계</span></div>
+        <div class="delta">▲ 어제 42.0% → 오늘 42.7%</div>
+        <div class="note">4개 단계 완료 + 5·6단계 × 77.3% = 4 + 1.545 = 5.545 ÷ 13 = 42.7%. 단계별 같은 무게로 단순 환산한 참고 수치이며, 7~13단계는 착수 자체가 안 됐으므로 시간과는 무관.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">13단계 파이프라인 위치</div>
+    <div class="stagegrid">
+      <div class="stagebox done"><div class="num">01</div><div class="nm">트렌드 분석</div></div>
+      <div class="stagebox done"><div class="num">02</div><div class="nm">기획서</div></div>
+      <div class="stagebox done"><div class="num">03</div><div class="nm">설계서</div></div>
+      <div class="stagebox done"><div class="num">04</div><div class="nm">디자인서</div></div>
+      <div class="stagebox run"><div class="num">05</div><div class="nm">단위 개발</div></div>
+      <div class="stagebox run"><div class="num">06</div><div class="nm">단위 테스트</div></div>
+      <div class="stagebox wait"><div class="num">07</div><div class="nm">통합 테스트</div></div>
+    </div>
+    <div class="stagerow2">
+      <div class="stagebox wait"><div class="num">08</div><div class="nm">전체시스템테스트</div></div>
+      <div class="stagebox wait"><div class="num">09</div><div class="nm">보안 검증</div></div>
+      <div class="stagebox wait"><div class="num">10</div><div class="nm">배포 테스트</div></div>
+      <div class="stagebox wait"><div class="num">11</div><div class="nm">문서화·인수인계</div></div>
+      <div class="stagebox wait approve"><span class="approvebadge">사용자 승인 필요</span><div class="num">12</div><div class="nm">배포</div></div>
+      <div class="stagebox wait"><div class="num">13</div><div class="nm">배포 후 검증</div></div>
+    </div>
+    <div class="stagecap">1~4단계는 검증을 마쳤습니다. 지금은 5·6단계(구현→단위테스트) 루프를 유닛 22개에 대해 도는 중이며, 7단계(통합테스트)는 아직 한 건도 시작하지 않았습니다. <b>7단계 전량 + 8단계 착수 조건(전 feature 07 PASS)은 트랙과 무관한 안전장치라 지금 생략할 수 없습니다.</b></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">지금부터의 실행 순서</div>
+    <div class="flow3">
+      <div class="flowcol">
+        <div class="colttl">지금 · 방금 끝난 것</div>
+        <div class="fcard now"><b>unit-22 06 재작업 v5 → PASS 확정</b>DEF-001·002·003 전부 Fixed, 결함 0건</div>
+        <div class="fcard now"><b>unit-7 Q1~Q5 결정 완료</b>DEC-035 — 가드추가·Redis즉시·실패통지·서버측요약·유니크제약</div>
+        <div class="fcard now"><b>규칙K 정리 완료</b>좀비 프로세스 6개 PID 종료, git status 클린(DEC-036)</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flowcol">
+        <div class="colttl">다음 · 선행 조건 끝난 것</div>
+        <div class="fcard next"><b>unit-7 05 재작업 착수 가능</b>DEC-035 5개 결정 전부 반영 후 06 재검증</div>
+        <div class="fcard next"><b>unit-19 06 재개 가능</b>API 스펙 21건 중 20건 완료 상태에서 이어서</div>
+        <div class="fcard next"><b>unit-20 06 착수 가능</b>05는 이미 완료, 06 전체 신규 진행</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flowcol">
+        <div class="colttl">이후 · 순차 조건 풀리면</div>
+        <div class="fcard later"><b>unit-8 → unit-10 → unit-11</b>unit-7 재검증 PASS 후 파일 겹침 순서대로</div>
+        <div class="fcard later"><b>unit-21</b>unit-10과 파일 겹침, 그 이후 순차</div>
+        <div class="fcard later"><b>07 feature별 통합테스트</b>L1 부채 정산 + 신규 feature 07 정식 실행</div>
+        <div class="fcard later"><b>08→09→10→11→12→13</b>12 배포는 사용자 승인 필수</div>
+      </div>
+    </div>
+    <div class="flowcap">unit-7은 06 결과가 CONDITIONAL PASS로 남아있고, unit-8·unit-21이 같은 파일을 수정하므로 unit-7 재작업·재검증이 끝나야 순서가 풀립니다(DEC-032). unit-19·unit-20은 unit-7과 독립이라 병렬로 바로 재개할 수 있습니다.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">작업 단위 22개 현황</div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature A · 인증/사용자</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-1</div><div class="req">REQ-001</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature B · 면접 세션 관리</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-2</div><div class="req">REQ-002</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-3</div><div class="req">REQ-013</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard hl"><div class="uid">unit-19</div><div class="req">REQ-002 · 내 면접 목록</div><div class="pills"><span class="pill done">05 완료</span><span class="pill run">06 재개대기</span></div><div class="sub">L3 · 03:1x 중단→v0 초안 저장됨</div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature C · 대화형 인터뷰 엔진</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-4</div><div class="req">REQ-003</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-5</div><div class="req">REQ-004,005</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-6</div><div class="req">REQ-006</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard hl"><div class="uid">unit-7</div><div class="req">REQ-007 · 재작업v2 완료</div><div class="pills"><span class="pill done">05 재작업 완료</span><span class="pill run">06 재검증 진행중</span></div><div class="sub">09:37 KST 착수, 백그라운드 진행</div></div>
+        <div class="ucard"><div class="uid">unit-8</div><div class="req">REQ-035~039</div><div class="pills"><span class="pill wait">05 대기</span><span class="pill wait">06 대기</span></div><div class="sub">L3 · unit-7 재검증 후 착수</div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature D · 라이브 코딩</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid"><div class="ucard"><div class="uid">unit-9</div><div class="req">REQ-008</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div></div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature E · 리포트/평가</span><span class="tag l3">L3</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-10</div><div class="req">REQ-009</div><div class="pills"><span class="pill wait">05 대기</span><span class="pill wait">06 대기</span></div><div class="sub">unit-7과 파일 겹침 · 순차 대기</div></div>
+        <div class="ucard"><div class="uid">unit-11</div><div class="req">REQ-010~012</div><div class="pills"><span class="pill wait">05 대기</span><span class="pill wait">06 대기</span></div><div class="sub">unit-10 이후 착수</div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature F · 채용담당자 대시보드</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-12</div><div class="req">REQ-011</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-13</div><div class="req">REQ-014</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature G · 규제 컴플라이언스</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-14</div><div class="req">REQ-029,030</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-15</div><div class="req">REQ-031~034</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-21</div><div class="req">REQ-030,033 · 자동파기</div><div class="pills"><span class="pill wait">05 대기</span><span class="pill wait">06 대기</span></div><div class="sub">L3 · unit-10과 파일 겹침, 순차 대기</div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature H · 부가 UX</span><span class="tag l1">L1 부채</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-16</div><div class="req">REQ-015</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-17</div><div class="req">REQ-017</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+        <div class="ucard"><div class="uid">unit-18</div><div class="req">REQ-016</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료</span></div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">Feature I · 면접장 통합 UI</span><span class="tag newf">신규 등록</span><span class="tag l3">L3</span></div>
+      <div class="ugrid">
+        <div class="ucard hl"><div class="uid">unit-20</div><div class="req">REQ-008,015,017</div><div class="pills"><span class="pill done">05 완료</span><span class="pill run">06 정식 진행중</span></div><div class="sub">09:37 KST 착수, 백그라운드 진행</div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-h"><span class="fname">공통 · 테스트 인프라</span><span class="tag newf">신규 등록</span><span class="tag l3">L3</span></div>
+      <div class="ugrid">
+        <div class="ucard"><div class="uid">unit-22</div><div class="req">DEF 3건 전부 Fixed</div><div class="pills"><span class="pill done">05 완료</span><span class="pill done">06 완료(v5)</span></div><div class="sub">PASS 확정 · teardown-프로세스 불일치는 정리 완료(DEC-036)</div></div>
+      </div>
+    </div>
+
+    <div class="leg2">
+      <span><i style="background:var(--ok);"></i>완료</span>
+      <span><i style="background:var(--run);"></i>진행 중 / 재개 대기</span>
+      <span><i style="background:var(--wait-line);"></i>대기</span>
+      <span><i style="background:var(--warn);"></i>조건부 통과 · 결정 완료 · 재작업 대기</span>
+      <span><i style="background:var(--new);"></i>신규 등록</span>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">잔여 작업 상세 및 예상 소요 시간 — 건별(20분 단위)</div>
+    <div class="stagecap" style="margin-bottom:14px;">예상 시간은 이 프로젝트에서 지금까지 실제로 걸린 시간(예: unit-7 1차 06=106분/47TC, unit-19·20 06 세션 등)을 근거로 추정한 <b>참고용 범위</b>입니다. 에이전트 기반 개발/테스트는 결함 발견 시 재작업 루프가 생기고 LLM·브라우저 자동화는 매 실행마다 변동이 있어 확정치가 아닙니다 — 모든 값은 20분(=1블록) 배수로 반올림했습니다.</div>
+
+    <div class="sec-h" style="margin-top:18px;">① 지금 진행 중 (백그라운드, 09:37 KST 착수)</div>
+    <table class="wtab">
+      <tr><th>작업</th><th>경과</th><th>잔여 예상</th><th>근거</th></tr>
+      <tr><td><b>unit-7</b> 06 재검증(DEC-035 Q1~Q5 반영 확인)</td><td class="mono">약 19분</td><td class="mono">40~80분(2~4블록)</td><td>1차 06(47TC 전체)이 106분 소요. 이번엔 지정 TC 11개+Q1~5 확인이라 범위는 좁지만 llama-server/Celery/Redis 재기동 오버헤드는 동일.</td></tr>
+      <tr><td><b>unit-20</b> 06 정식(L3, 브라우저 자동화)</td><td class="mono">약 19분</td><td class="mono">60~120분(3~6블록)</td><td>동종 L3 06(unit-19)은 다중 세션에 걸쳐 총 여러 시간 소요. 브라우저 시나리오 12개+반응형 3구간+웹캠 모킹까지 신규 착수라 가장 오래 걸릴 항목.</td></tr>
+    </table>
+
+    <div class="sec-h" style="margin-top:18px;">② 남은 신규 개발 — 05(미착수 4유닛)</div>
+    <table class="wtab">
+      <tr><th>유닛</th><th>REQ</th><th>내용</th><th>선행 조건</th><th>05 예상</th><th>06 예상</th><th>소계</th></tr>
+      <tr><td class="mono">unit-8</td><td class="mono">REQ-035~039(5건)</td><td>LLM 큐 한도/429, 레이트리밋, 프롬프트 인젝션 정식 방어, queue_status push</td><td>unit-7 재검증 PASS</td><td class="mono">120~160분(6~8)</td><td class="mono">100~140분(5~7)</td><td class="mono"><b>220~300분</b></td></tr>
+      <tr><td class="mono">unit-10</td><td class="mono">REQ-009</td><td>면접 리포트 생성·재생성(LLM 요약 파이프라인 연결)</td><td>unit-8 완료(파일 겹침)</td><td class="mono">80~120분(4~6)</td><td class="mono">60~100분(3~5)</td><td class="mono"><b>140~220분</b></td></tr>
+      <tr><td class="mono">unit-11</td><td class="mono">REQ-010~012(3건)</td><td>리포트 열람·채용담당자 평가 화면</td><td>unit-10 완료</td><td class="mono">60~100분(3~5)</td><td class="mono">60~80분(3~4)</td><td class="mono"><b>120~180분</b></td></tr>
+      <tr><td class="mono">unit-21</td><td class="mono">REQ-030,033</td><td>개인정보 보관기간 자동 파기(컴플라이언스)</td><td>unit-10 완료(파일 겹침)</td><td class="mono">60~100분(3~5)</td><td class="mono">60~80분(3~4)</td><td class="mono"><b>120~180분</b></td></tr>
+      <tr><td colspan="6" style="text-align:right; color:var(--text-faint);">소계</td><td class="mono"><b>600~880분<br>(10~14.7시간)</b></td></tr>
+    </table>
+
+    <div class="sec-h" style="margin-top:18px;">③ 보완건 — L1 경량 06 → 정식판 업그레이드 (08 착수 전 필수 부채 정산, 14유닛)</div>
+    <table class="wtab">
+      <tr><th>Feature</th><th>대상 유닛</th><th>비고</th><th>예상</th></tr>
+      <tr><td>A · 인증/사용자</td><td class="mono">unit-1</td><td>단순 인증 CRUD</td><td class="mono">40~60분(2~3)</td></tr>
+      <tr><td>B · 면접 세션 관리</td><td class="mono">unit-2, unit-3</td><td>세션 상태전이 409/403/401/404 경로 등 미검증분</td><td class="mono">80~120분(4~6)</td></tr>
+      <tr><td>C · 대화형 인터뷰 엔진</td><td class="mono">unit-4, unit-5, unit-6</td><td>WS·음성(STT)·TTS 각각 예외/동시성 경로</td><td class="mono">140~200분(7~10)</td></tr>
+      <tr><td>D · 라이브 코딩</td><td class="mono">unit-9</td><td>unit-20이 브라우저측 이미 커버 — API 회귀만</td><td class="mono">40~60분(2~3)</td></tr>
+      <tr><td>F · 채용담당자 대시보드</td><td class="mono">unit-12, unit-13</td><td>권한/필터 경로</td><td class="mono">80~120분(4~6)</td></tr>
+      <tr><td>G · 규제 컴플라이언스</td><td class="mono">unit-14, unit-15</td><td>4개 REQ 포함, 법률 민감 — 꼼꼼한 케이스 필요</td><td class="mono">140~180분(7~9)</td></tr>
+      <tr><td>H · 부가 UX</td><td class="mono">unit-16, unit-17, unit-18</td><td>unit-20이 통합화면 브라우저측 일부 커버</td><td class="mono">120~160분(6~8)</td></tr>
+      <tr><td colspan="3" style="text-align:right; color:var(--text-faint);">소계</td><td class="mono"><b>640~900분<br>(10.7~15시간)</b></td></tr>
+    </table>
+
+    <div class="sec-h" style="margin-top:18px;">④ 남은 통합 테스트 — 07(업무 단위 9건, 08 착수 전 전량 PASS 필수)</div>
+    <table class="wtab">
+      <tr><th>Feature</th><th>포함 유닛</th><th>특이사항</th><th>예상</th></tr>
+      <tr><td>A</td><td class="mono">unit-1</td><td>단독 유닛</td><td class="mono">40~60분(2~3)</td></tr>
+      <tr><td>B</td><td class="mono">unit-2,3,19</td><td>unit-19 DEF-001 수정 공식 재확인 포함</td><td class="mono">80~100분(4~5)</td></tr>
+      <tr><td>C</td><td class="mono">unit-4,5,6,7,8</td><td>가장 큰 feature — LLM+음성+보안가드 데이터흐름 전체</td><td class="mono">140~180분(7~9)</td></tr>
+      <tr><td>D</td><td class="mono">unit-9</td><td>단독 유닛</td><td class="mono">40~60분(2~3)</td></tr>
+      <tr><td>E</td><td class="mono">unit-10,11</td><td>신규 L3, 07 최초 실행</td><td class="mono">80~100분(4~5)</td></tr>
+      <tr><td>F</td><td class="mono">unit-12,13</td><td>-</td><td class="mono">60~80분(3~4)</td></tr>
+      <tr><td>G</td><td class="mono">unit-14,15,21</td><td>컴플라이언스 규제 검증 포함</td><td class="mono">100~120분(5~6)</td></tr>
+      <tr><td>H</td><td class="mono">unit-16,17,18</td><td>-</td><td class="mono">80~100분(4~5)</td></tr>
+      <tr><td>I</td><td class="mono">unit-20</td><td>신규 L3, 07 최초 실행</td><td class="mono">60~80분(3~4)</td></tr>
+      <tr><td colspan="3" style="text-align:right; color:var(--text-faint);">소계</td><td class="mono"><b>680~880분<br>(11.3~14.7시간)</b></td></tr>
+    </table>
+
+    <div class="sec-h" style="margin-top:18px;">⑤ 파이프라인 후반 단계 (08~13)</div>
+    <table class="wtab">
+      <tr><th>단계</th><th>내용</th><th>선행 조건</th><th>예상</th></tr>
+      <tr><td class="mono">08</td><td>전체시스템테스트(E2E+성능/부하+UAT, 축 병렬화)</td><td>전 feature 07 PASS</td><td class="mono">180~240분(9~12)</td></tr>
+      <tr><td class="mono">09</td><td>보안검증(인증인가/인젝션/시크릿/CVE/개인정보/규제, 카테고리 병렬)</td><td>08 PASS</td><td class="mono">180~240분(9~12)</td></tr>
+      <tr><td class="mono">10</td><td>배포 테스트</td><td>09 PASS</td><td class="mono">80~120분(4~6)</td></tr>
+      <tr><td class="mono">11</td><td>문서화 4종(Runbook/사용자/관리자/API, 병렬)</td><td>10 PASS</td><td class="mono">80~100분(4~5)</td></tr>
+      <tr><td class="mono">12</td><td>배포 실행(<b>사용자 명시적 승인 필수</b>, 대기시간 제외 실행시간만)</td><td>11 PASS + 사용자 승인</td><td class="mono">20~40분(1~2)</td></tr>
+      <tr><td class="mono">13</td><td>배포 후 검증</td><td>12 완료</td><td class="mono">40~60분(2~3)</td></tr>
+      <tr><td colspan="3" style="text-align:right; color:var(--text-faint);">소계</td><td class="mono"><b>580~800분<br>(9.7~13.3시간)</b></td></tr>
+    </table>
+
+    <div class="sec-h" style="margin-top:18px;">⑥ 총계</div>
+    <div class="progrow">
+      <div class="pcard">
+        <div class="top"><span class="ttl">전부 순차 진행 시(병렬 없음)</span><span class="pct" style="color:var(--warn);">43~61시간</span></div>
+        <div class="note">①100~200분 + ②600~880분 + ③640~900분 + ④680~880분 + ⑤580~800분 = 2,600~3,660분. 1인 개발자가 하루 8시간씩 순수 작업한다면 약 5.5~7.6일 분량.</div>
+      </div>
+      <div class="pcard">
+        <div class="top"><span class="ttl">병렬 진행 시(오늘처럼 2~3건 동시)</span><span class="pct up">17~31시간</span></div>
+        <div class="note">DEC-032/5-1·5-2 기준 파일이 겹치지 않는 유닛·feature는 동시 진행 가능(오늘 unit-7↔unit-20처럼). 07/08/09도 내부 축 병렬화 가능. 병렬계수 약 2~2.5배 가정. 다만 08·09·12는 안전장치상 병렬화·생략이 불가능한 단계라 이 구간은 그대로 직렬 반영됨.</div>
+      </div>
+    </div>
+    <div class="stagecap">참고: 이 프로젝트는 2026-09-18 시작 이후 현재(09-21)까지 3일에 걸쳐 05·06 구간(22유닛)의 77.3%를 진행했습니다. 위 병렬 추정(17~31시간)은 세션이 끊기지 않고 이어진다는 가정이며, 실제로는 API 사용량 한도·강제중단 등으로 여러 세션에 걸쳐 나뉠 가능성이 높습니다(지금까지도 그래왔습니다).</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">작업 현황 (최근)</div>
+    <table class="wtab">
+      <tr><th>작업</th><th>단계</th><th>최초 시작(KST)</th><th>재개/갱신(KST)</th><th>상태</th></tr>
+      <tr><td>unit-7 단위 테스트(LLM·RAG 파이프라인)</td><td class="mono">06</td><td class="mono">01:18:05</td><td class="mono">03:04:28</td><td>CONDITIONAL PASS · 결함11(High2) · Q1~Q5 22:30 결정완료(DEC-035) → 05 재작업 착수 대기</td></tr>
+      <tr><td>unit-22 테스트 인프라 재작업(v5)</td><td class="mono">06</td><td class="mono">02:26:23</td><td class="mono">07:3x경 2차 중단</td><td>PASS 확정(v5, 결함0). 백엔드 프로세스 2개가 teardown 기록과 달리 살아있던 것을 22:2x 발견·정리(DEC-036)</td></tr>
+      <tr><td>unit-20 면접장 화면 배선 · 06 테스트</td><td class="mono">06</td><td class="mono">03:06:23</td><td class="mono">07:31경 중단</td><td>06 미완료 상태로 중단. 프로세스 22:2x 종료. 재개 대기</td></tr>
+      <tr><td>unit-19 내 면접 목록 · 지원자 홈</td><td class="mono">06</td><td class="mono">03:06:23</td><td class="mono">07:31경 중단</td><td>API 21건 중 20건 pass, v0 초안 저장. 프로세스 22:2x 종료. 재개 대기</td></tr>
+      <tr><td>규칙 K 재개 점검 · 좀비 프로세스 정리</td><td class="mono">-</td><td class="mono">22:16:48</td><td class="mono">22:19경 완료</td><td>PID 6개(unit-19/20/22) 개별 종료 확인, git status 클린 재확인</td></tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">확인 대기와 주의 사항</div>
+    <div class="watch">
+      <ul>
+        <li class="resolved"><b>unit-7 Q1~Q5 결정</b> — LLM 가드/Redis/워커크래시/긴답변/유니크제약 <span class="resolved-tag">✓ 22:30 DEC-035로 해결</span></li>
+        <li class="resolved"><b>규칙K 좀비 프로세스 6개</b> — unit-19/20/22 관련 <span class="resolved-tag">✓ 22:19 DEC-036으로 해결</span></li>
+        <li><b>unit-22 teardown 기록 불일치</b> — 06 결과서는 "Teardown 완료"를 주장했는데 실제 프로세스는 15시간 동안 살아있었음. 근본 원인(2차 강제중단 시점)은 확정하지 못했고, 이후 06 에이전트들이 "Teardown 완료"를 기재할 때 실제 프로세스 종료를 재확인하는 절차 보강이 필요해 보임 — 다음 세션에서 지시문 개선 여부를 확인받을 예정.</li>
+        <li><b>07 통합테스트 0건</b> — 08 착수 전 모든 feature의 07(과 L1 유닛의 06 정식화)을 정산해야 함(안전장치, 트랙 무관).</li>
+        <li><b>L1 부채</b> — Feature A,B,C,D,F,G,H의 07 통합테스트는 아직 착수한 적이 없는 부채 상태.</li>
+        <li><b>배포 승인</b> — 12단계 배포는 이 대화 세션에서 사용자가 직접 준 승인만 유효(외부 채널 응답 불인정).</li>
+        <li><b>법률/라이선스 확인 필요</b> — Piper TTS의 GPL-3.0 라이선스, 개인정보 보관기간 180일 임시값은 실제 법무 검토가 필요함.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    <p><strong>이 화면은 스냅샷입니다.</strong> 2026-09-20 22:30:42 KST 기준, <code>docs/harness/decisions.md</code>(DEC-001~036) · <code>docs/harness/units/*-test.md</code> · 실측 프로세스 조회(PowerShell) 근거.</p>
+    <p>어제(2026-09-20 07:29 KST) 세션 스냅샷 이미지와 같은 형식으로 다시 그렸습니다. 다음 갱신은 "다시 그려줘"라고 요청하시면 됩니다.</p>
+  </footer>
+
+</div>
+
+</body></html>

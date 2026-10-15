@@ -1,0 +1,360 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>프로젝트 전체 지도</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&display=swap">
+<style>
+/* 레이아웃: 좌측 고정 목차 + 본문(읽기 폭 ~46em). 모바일은 상단 가로 스크롤 목차 */
+:root{
+  --bg:#f5f7f8; --surface:#ffffff; --fg:#14232b; --muted:#53666f; --line:#d5dde1;
+  --accent:#0b6e75; --accent-soft:#dcf0f1; --code:#eaf0f2;
+  --hi:#b42318; --hi-bg:#fde8e6; --mid:#9a5b00; --mid-bg:#fdf0d5; --lo:#2f6b2f; --lo-bg:#e3f2e1;
+  --svg-fill:#ffffff; --svg-soft:#e9f2f3; --svg-warn:#fdf0d5; --svg-local:#e3f2e1;
+  --font:"Noto Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif; --display:"Noto Serif KR",Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1a1f; --surface:#17262d; --fg:#e6eef1; --muted:#9db0b8; --line:#2b3f48;
+  --accent:#4fc3cb; --accent-soft:#17383c; --code:#1d2f37;
+  --hi:#ff9a8f; --hi-bg:#4a1f1b; --mid:#f0c46a; --mid-bg:#45361a; --lo:#8fd68b; --lo-bg:#1f3a1f;
+  --svg-fill:#17262d; --svg-soft:#1b3238; --svg-warn:#45361a; --svg-local:#1f3a1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1a1f; --surface:#17262d; --fg:#e6eef1; --muted:#9db0b8; --line:#2b3f48;
+  --accent:#4fc3cb; --accent-soft:#17383c; --code:#1d2f37;
+  --hi:#ff9a8f; --hi-bg:#4a1f1b; --mid:#f0c46a; --mid-bg:#45361a; --lo:#8fd68b; --lo-bg:#1f3a1f;
+  --svg-fill:#17262d; --svg-soft:#1b3238; --svg-warn:#45361a; --svg-local:#1f3a1f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:17px;line-height:1.75;padding-inline:16px;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:24px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start;font-size:14px;line-height:1.5}
+nav.toc b{display:block;font-size:12px;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+nav.toc a{display:block;padding:6px 10px;border-left:3px solid var(--line);color:var(--muted);text-decoration:none}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);border-color:var(--accent);outline:none}
+main{min-width:0}
+h1{font-family:var(--display);font-size:clamp(30px,6vw,44px);line-height:1.25;margin:0 0 10px;text-wrap:balance}
+.lede{font-size:19px;color:var(--muted);margin:0 0 8px}
+.stamp{font-size:13px;color:var(--muted)}
+h2{font-family:var(--display);font-size:clamp(24px,4.5vw,30px);line-height:1.3;margin:64px 0 16px;padding-top:8px;border-top:2px solid var(--accent);text-wrap:balance;scroll-margin-top:16px}
+h3{font-size:19px;margin:28px 0 8px}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}li{margin-bottom:6px}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88em;background:var(--code);padding:1px 6px;border-radius:4px;word-break:break-all}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0 0 16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.grid2>*{min-width:0}
+.tbl{overflow-x:auto;margin:0 0 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;line-height:1.55}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:13px;letter-spacing:.04em;color:var(--muted);background:var(--accent-soft)}
+tr:last-child td{border-bottom:0}
+.b{display:inline-block;font-size:13px;font-weight:700;padding:1px 9px;border-radius:99px;white-space:nowrap}
+.b.hi{background:var(--hi-bg);color:var(--hi)}.b.mid{background:var(--mid-bg);color:var(--mid)}.b.lo{background:var(--lo-bg);color:var(--lo)}
+.unv{background:var(--mid-bg);color:var(--mid);font-size:12px;font-weight:700;padding:1px 7px;border-radius:4px;white-space:nowrap}
+figure{margin:20px 0}
+.svgbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
+svg{display:block;width:100%;max-width:520px;height:auto;margin:0 auto;color:var(--fg);font-family:var(--font)}
+figcaption{font-size:14px;color:var(--muted);margin-top:8px}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding:0 0 0 44px;margin-bottom:12px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:2px;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--bg);font-weight:700;text-align:center;line-height:30px;font-size:15px}
+dl.gl dt{font-weight:700;color:var(--accent);margin-top:14px}
+dl.gl dd{margin:2px 0 0}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:0 0 16px}
+.kpi div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi b{display:block;font-size:26px;color:var(--accent);font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--muted)}
+.five{background:var(--accent-soft);border-radius:10px;padding:18px 22px}
+.five ol{margin:0}
+@media(max-width:820px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:12px}
+  nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:6px;overflow-x:auto;padding:8px 0;border-bottom:1px solid var(--line)}
+  nav.toc b{display:none}nav.toc a{white-space:nowrap;border:1px solid var(--line);border-radius:99px;padding:4px 12px}
+  body{font-size:16px}
+}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="목차">
+<b>목차</b>
+<a href="#s1">1 한눈에 보기</a><a href="#s2">2 전체 구조도</a><a href="#s3">3 전체 흐름</a><a href="#s4">4 핵심 개념</a><a href="#s5">5 장점</a><a href="#s6">6 단점·위험</a><a href="#s7">7 남은 작업</a><a href="#s8">8 5줄 요약</a>
+</nav>
+<main>
+<header>
+<h1>프로젝트 전체 지도</h1>
+<p class="lede">STOCK-ANALYZER-KR, 한국 주식 조건 스크리닝 정보 서비스를 구조·흐름·개념·장단점으로 풀어 쓴 안내서입니다.</p>
+<p class="stamp">기준: 2026-10-06 저장소 파일(HANDOFF.md, decisions.md DEC-001~092, 코드, QA 결과서)을 직접 읽고 작성. 파일에서 확인하지 못한 내용은 <span class="unv">미확인</span> 표시.</p>
+</header>
+
+<h2 id="s1">1. 한눈에 보기</h2>
+<p><b>이 서비스는 무엇인가.</b> 공공 일봉 데이터로 등락률, 이동평균 이격도, 거래량 이상치, 패턴 지표 같은 값을 미리 계산해 두고, 사용자가 건 조건에 맞는 종목을 걸러 보여 주는 <b>정보 도구</b>입니다. "이 종목을 사세요"라는 투자 권유는 하지 않습니다(화면 문구는 <code>lint:copy</code> 검사가 막습니다). 사용자는 정보를 보고 투자 방향을 스스로 정합니다.</p>
+<div class="grid2">
+<div class="card"><h3 style="margin-top:0">누가 쓰나 (1) 내 PC 로컬 모드</h3><p>관리자 한 명(본인)이 자기 노트북에서 씁니다. Docker DB, API(4001), 웹(4000), 스케줄러가 전부 내 PC에서 돕니다. 증권사 앱키로 장중 시세, 실시간, 장중 재계산까지 쓸 수 있습니다.</p></div>
+<div class="card"><h3 style="margin-top:0">누가 쓰나 (2) 운영 사이트</h3><p>가입 후 관리자 승인을 받은 회원이 쓰는 사이트(Render + Neon). 일봉 기반 화면만 있고 증권사 시세 기능은 화면에도 요청에도 없습니다. <b>지금은 사용자 지시로 Render 배포를 하지 않습니다.</b></p></div>
+</div>
+<h3>현재 상태 5가지</h3>
+<ol>
+<li>일봉 수집 → 가공 → 발행 파이프라인과 조건·패턴 스크리닝, 종목 상세, 시장 요약, 관심종목, 로그인·관리자 승인이 구현돼 있습니다.</li>
+<li>로컬 모드에 증권사 시세 기능이 붙었습니다: 장중 분·틱 차트, 실시간(웹소켓), 전 종목 준실시간 시세, HTS 조건검색 화면, <b>장중 재계산</b>(DEC-089~091).</li>
+<li>2026-10-06 최상위 목표는 "실시간 데이터를 보고 투자 방향은 본인이 정한다"입니다(HANDOFF).</li>
+<li>DEC-092로 "공개 전 날짜를 영구히 건너뛰던" 따라잡기 결함을 고쳤습니다. 사용자 PC에서 <code>fix_local_data.ps1</code>을 다시 돌려 확인하는 일이 남아 있습니다.</li>
+<li>실제 증권사 응답은 개발 환경에서 한 번도 확인하지 못했습니다(앱키 없는 모의 서버 시험). 사용자가 장중에 확인 도구를 돌려야 합니다.</li>
+</ol>
+<div class="kpi">
+<div><b>18</b><span>DB 마이그레이션(0001~0018)</span></div>
+<div><b>13</b><span>웹 화면(page.tsx 파일 수)</span></div>
+<div><b>95</b><span>의사결정 로그 DEC 건수</span></div>
+<div><b>74</b><span>파이썬 시험 파일</span></div>
+</div>
+<p class="stamp">요청서에는 "페이지 12개"로 적혀 있었으나 <code>frontend/src/app</code> 아래 <code>page.tsx</code>를 세면 13개입니다(홈, 스크리닝 3종, 종목 목록·상세, 관심종목, 소개, 로그인, 가입, 회원, 관리자 회원, 인증 갱신).</p>
+
+<h2 id="s2">2. 전체 구조도</h2>
+<p>데이터는 위에서 아래로 흐릅니다. 핵심은 <b>원본 시세는 안쪽(raw_internal)에만 두고, 사용자에게는 가공한 값만 내보낸다</b>는 경계입니다.</p>
+<figure>
+<div class="svgbox">
+<svg viewBox="0 0 420 880" role="img" aria-label="데이터 원천에서 배치, PostgreSQL, API, 웹, 브라우저로 이어지는 층 구조도. 로컬 전용 API는 내 PC에서만 열린다.">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<g font-size="12.5" fill="currentColor" stroke="none">
+<text x="10" y="18" font-weight="700" font-size="13">1 데이터 원천</text>
+</g>
+<g stroke="currentColor" stroke-width="1.4" fill="var(--svg-fill)">
+<rect x="10" y="26" width="130" height="64" rx="8"/><rect x="145" y="26" width="130" height="64" rx="8"/><rect x="280" y="26" width="130" height="64" rx="8" fill="var(--svg-local)"/>
+</g>
+<g font-size="12.5" fill="currentColor" text-anchor="middle">
+<text x="75" y="48" font-weight="700">공공데이터포털</text><text x="75" y="64">일봉(시세)</text><text x="75" y="80">+1영업일 뒤 공개</text>
+<text x="210" y="48" font-weight="700">DART</text><text x="210" y="64">재무·실적</text><text x="210" y="80">(수동 수집)</text>
+<text x="345" y="48" font-weight="700">증권사 KIS</text><text x="345" y="64">REST·WebSocket</text><text x="345" y="80">내 PC 전용</text>
+</g>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)"><line x1="75" y1="90" x2="75" y2="122"/><line x1="210" y1="90" x2="210" y2="122"/></g>
+<text x="82" y="112" font-size="11.5" fill="currentColor">배치 호출</text>
+<text x="10" y="116" font-size="13" font-weight="700" fill="currentColor">2 배치</text>
+<g stroke="currentColor" stroke-width="1.4" fill="var(--svg-fill)">
+<rect x="10" y="126" width="120" height="60" rx="8"/><rect x="150" y="126" width="120" height="60" rx="8"/><rect x="290" y="126" width="120" height="60" rx="8"/>
+</g>
+<g font-size="12.5" fill="currentColor" text-anchor="middle">
+<text x="70" y="150" font-weight="700">수집</text><text x="70" y="168">ingestion</text>
+<text x="210" y="150" font-weight="700">가공</text><text x="210" y="168">derivation</text>
+<text x="350" y="150" font-weight="700">발행</text><text x="350" y="168">publish</text>
+</g>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)"><line x1="130" y1="156" x2="148" y2="156"/><line x1="270" y1="156" x2="288" y2="156"/></g>
+<rect x="10" y="194" width="400" height="38" rx="8" fill="var(--svg-soft)" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text x="210" y="217" font-size="12.5" text-anchor="middle" fill="currentColor">따라잡기(빠진 날 채움) · 신선도 점검 · 14:30/18:30</text>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)"><line x1="210" y1="232" x2="210" y2="262"/></g>
+<text x="218" y="252" font-size="11.5" fill="currentColor">DB에 직접 기록</text>
+<text x="10" y="258" font-size="13" font-weight="700" fill="currentColor">3 PostgreSQL</text>
+<rect x="10" y="268" width="400" height="168" rx="10" fill="none" stroke="currentColor" stroke-width="1.4"/>
+<g stroke="currentColor" stroke-width="1.3">
+<rect x="20" y="280" width="185" height="58" rx="6" fill="var(--svg-warn)"/><rect x="215" y="280" width="185" height="58" rx="6" fill="var(--svg-local)"/>
+<rect x="20" y="346" width="185" height="42" rx="6" fill="var(--svg-fill)"/><rect x="215" y="346" width="185" height="42" rx="6" fill="var(--svg-fill)"/>
+</g>
+<g font-size="12.5" fill="currentColor" text-anchor="middle">
+<text x="112" y="302" font-weight="700">raw_internal</text><text x="112" y="320">원본 OHLCV (비공개)</text>
+<text x="307" y="302" font-weight="700">public_serving</text><text x="307" y="320">가공값·발행 포인터</text>
+<text x="112" y="372" font-weight="700">reference (달력)</text>
+<text x="307" y="372" font-weight="700">auth (회원)</text>
+</g>
+<text x="20" y="410" font-size="12" fill="currentColor">DB 계정: migrator(구조) · batch_worker(배치)</text>
+<text x="20" y="427" font-size="12" fill="currentColor">api_service(읽기 전용, raw 권한 없음) · auth_service</text>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)"><line x1="210" y1="436" x2="210" y2="470"/></g>
+<text x="218" y="458" font-size="11.5" fill="currentColor">읽기</text>
+<text x="10" y="466" font-size="13" font-weight="700" fill="currentColor">4 API (FastAPI)</text>
+<g stroke="currentColor" stroke-width="1.4">
+<rect x="10" y="476" width="195" height="128" rx="8" fill="var(--svg-fill)"/><rect x="215" y="476" width="195" height="128" rx="8" fill="var(--svg-local)"/>
+</g>
+<g font-size="12.5" fill="currentColor">
+<text x="20" y="497" font-weight="700">공개 API (/api/v1)</text>
+<text x="20" y="516">screen · pattern</text><text x="20" y="533">stocks · prices</text><text x="20" y="550">earnings · metrics</text><text x="20" y="567">market-summary</text><text x="20" y="584">calendar · health</text>
+<text x="225" y="497" font-weight="700">로컬 전용 (/local/*)</text>
+<text x="225" y="516">intraday 분·틱</text><text x="225" y="533">realtime SSE</text><text x="225" y="550">market 준실시간</text><text x="225" y="567">psearch 조건검색</text><text x="225" y="584">screen 장중 재계산</text>
+</g>
+<text x="307" y="618" font-size="11.5" text-anchor="middle" fill="currentColor">KIS 시세 ← 내 PC에서만 호출</text>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)"><line x1="210" y1="624" x2="210" y2="660"/></g>
+<text x="218" y="646" font-size="11.5" fill="currentColor">JSON 요청</text>
+<text x="10" y="656" font-size="13" font-weight="700" fill="currentColor">5 웹 (Next.js)</text>
+<rect x="10" y="666" width="400" height="84" rx="8" fill="var(--svg-fill)" stroke="currentColor" stroke-width="1.4"/>
+<g font-size="12.5" fill="currentColor"><text x="20" y="688" font-weight="700">화면 13개 + 서버 대행(BFF)</text><text x="20" y="707">로그인 확인 후 API를 대신 호출</text><text x="20" y="726">브라우저는 API를 직접 부르지 않음</text><text x="20" y="743" font-size="11.5">(로컬 전용 경로는 관리자·사설 주소만 통과)</text></g>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)"><line x1="210" y1="750" x2="210" y2="786"/></g>
+<text x="10" y="778" font-size="13" font-weight="700" fill="currentColor">6 브라우저</text>
+<rect x="110" y="792" width="200" height="40" rx="20" fill="var(--svg-soft)" stroke="currentColor" stroke-width="1.4"/>
+<text x="210" y="817" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">사용자 (PC·휴대폰)</text>
+<text x="210" y="858" font-size="11.5" text-anchor="middle" fill="currentColor">녹색 = 내 PC 전용 영역 · 주황 = 비공개 원본 · 점선 = 보조 장치</text>
+</svg>
+</div>
+<figcaption>한 방향 흐름입니다. 공개 API 계정(<code>api_service</code>)에는 <code>raw_internal</code> 권한이 없어 원본 시세에 닿을 수 없습니다. 근거: <code>03-system-design.md</code> §1-1, <code>deploy/db/init/01-roles.sh</code>.</figcaption>
+</figure>
+
+<h3>두 개의 레인: 내 PC 로컬 모드 vs 운영</h3>
+<figure>
+<div class="svgbox">
+<svg viewBox="0 0 420 400" role="img" aria-label="왼쪽은 내 PC 로컬 모드 레인, 오른쪽은 운영 레인. 로컬에만 증권사 연결과 스케줄러가 있다.">
+<g stroke="currentColor" stroke-width="1.4">
+<rect x="6" y="8" width="200" height="380" rx="10" fill="var(--svg-local)"/><rect x="214" y="8" width="200" height="380" rx="10" fill="var(--svg-fill)" stroke-dasharray="6 4"/>
+</g>
+<g font-size="14" font-weight="700" fill="currentColor" text-anchor="middle"><text x="106" y="34">내 PC (로컬 모드)</text><text x="314" y="34">운영 (Render + Neon)</text></g>
+<g stroke="currentColor" stroke-width="1.2" fill="var(--svg-fill)">
+<rect x="18" y="46" width="176" height="44" rx="6"/><rect x="18" y="98" width="176" height="44" rx="6"/><rect x="18" y="150" width="176" height="44" rx="6"/><rect x="18" y="202" width="176" height="44" rx="6"/><rect x="18" y="254" width="176" height="44" rx="6"/><rect x="18" y="306" width="176" height="44" rx="6"/>
+<rect x="226" y="46" width="176" height="44" rx="6"/><rect x="226" y="98" width="176" height="44" rx="6"/><rect x="226" y="150" width="176" height="44" rx="6"/><rect x="226" y="202" width="176" height="44" rx="6"/>
+</g>
+<g font-size="12.5" fill="currentColor" text-anchor="middle">
+<text x="106" y="73">웹 :4000 (next dev)</text><text x="106" y="125">API :4001 (FastAPI)</text><text x="106" y="177">Docker PostgreSQL</text><text x="106" y="229">작업 스케줄러(배치)</text><text x="106" y="281">증권사 KIS 연결(앱키)</text><text x="106" y="333">장중·실시간·재계산 화면</text>
+<text x="314" y="66">컨테이너 1개</text><text x="314" y="82" font-size="11.5">웹(공개) + API(내부 127.0.0.1)</text><text x="314" y="125">Neon PostgreSQL</text><text x="314" y="177">일봉 기반 화면만</text><text x="314" y="219" font-size="11.5">배치는 DB에 직접 기록</text>
+</g>
+<g font-size="12" fill="currentColor" text-anchor="middle"><text x="106" y="372">앱키는 이 PC에만 있음</text><text x="314" y="290">현재 Render 배포는</text><text x="314" y="310" font-weight="700">하지 않기로 함</text><text x="314" y="330">(사용자 지시 2026-10-06)</text></g>
+</svg>
+</div>
+<figcaption>같은 코드가 두 모드로 동작합니다. 운영에는 증권사 앱키도, 시세 화면도 없습니다(운영 빌드 비노출 시험 확인: DEC-088 결과서). 근거: HANDOFF.md, <code>render.yaml</code>, <code>docs/ops/unified-service-guide.md</code>.</figcaption>
+</figure>
+
+<h3>폴더 지도</h3>
+<div class="tbl"><table>
+<tr><th>위치</th><th>하는 일</th></tr>
+<tr><td><code>services/ingestion_batch</code></td><td>공공데이터·DART를 불러 원본을 적재(서킷브레이커, 달력 조회 포함)</td></tr>
+<tr><td><code>services/derivation_batch</code></td><td>원본에서 가공 지표를 계산해 공개 스키마에 기록</td></tr>
+<tr><td><code>services/public_api</code></td><td>FastAPI. <code>api/</code> 라우터 파일 약 18개, <code>live_screen/</code> 장중 재계산, <code>realtime/</code> 웹소켓, <code>intraday/</code> 분·틱, <code>auth/</code> 로그인</td></tr>
+<tr><td><code>shared/</code></td><td>배치 따라잡기(<code>batch_catchup.py</code>), 배치 잠금, 달력 서비스, 패턴 파라미터, 인증 공용</td></tr>
+<tr><td><code>db/alembic/versions</code></td><td>DB 구조 변경 이력 18개(0001 달력 ~ 0018 회원 승인)</td></tr>
+<tr><td><code>frontend/src</code></td><td>Next.js 화면(<code>app/</code>), 도우미(<code>lib/</code>: 장중 <code>liveScreen</code>, <code>liveStream</code>, <code>liveMarket</code>, <code>psearch</code> 포함)</td></tr>
+<tr><td><code>scripts/</code></td><td>파이썬 22개 + PowerShell 7개: 일일 배치, 진단, 증권사 연결 확인(kis_*), 모의 서버 등</td></tr>
+<tr><td><code>deploy/</code>, <code>render.yaml</code></td><td>Docker 이미지, Render 설정, Oracle/Caddy 예비 경로</td></tr>
+<tr><td><code>docs/</code></td><td>하네스 단계 문서, 의사결정 로그, 운영 절차서, QA 결과서, 법률 확인 자료</td></tr>
+</table></div>
+
+<h2 id="s3">3. 전체 흐름</h2>
+<h3>A. 하루 데이터 흐름</h3>
+<figure>
+<div class="svgbox">
+<svg viewBox="0 0 420 640" role="img" aria-label="하루 데이터 흐름 타임라인. 9시10분 신선도 점검, 14시30분과 18시30분 배치, 공개 전이면 재시도, 따라잡기, 발행 포인터 갱신, 화면 반영.">
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<line x1="60" y1="20" x2="60" y2="610" stroke="currentColor" stroke-width="2" stroke-dasharray="3 5"/>
+<g font-size="13" font-weight="700" fill="currentColor" text-anchor="end">
+<text x="48" y="48">09:10</text><text x="48" y="190">14:30</text><text x="48" y="330">18:30</text><text x="48" y="478">다음 실행</text>
+</g>
+<g stroke="currentColor" stroke-width="1.4" fill="var(--svg-fill)">
+<circle cx="60" cy="44" r="7"/><circle cx="60" cy="186" r="7" fill="var(--accent)"/><circle cx="60" cy="326" r="7" fill="var(--accent)"/><circle cx="60" cy="474" r="7"/>
+<rect x="84" y="20" width="326" height="62" rx="8"/><rect x="84" y="108" width="326" height="150" rx="8" fill="var(--svg-soft)"/><rect x="84" y="288" width="326" height="70" rx="8"/><rect x="84" y="384" width="326" height="86" rx="8" fill="var(--svg-warn)"/><rect x="84" y="496" width="326" height="116" rx="8" fill="var(--svg-local)"/>
+</g>
+<g font-size="12.5" fill="currentColor">
+<text x="96" y="42" font-weight="700">신선도 점검(읽기 전용)</text><text x="96" y="62">발행일이 1거래일 넘게 늦으면</text><text x="96" y="78">종료코드 1 + 웹훅 알림(설정 시)</text>
+<text x="96" y="130" font-weight="700">일일 배치 (1회차)</text><text x="96" y="150">① 종목 마스터 갱신</text><text x="96" y="168">② 수집: 공공데이터 일봉 호출</text><text x="96" y="186">③ 가공: 등락률·이격도·이상치·패턴</text><text x="96" y="204">④ 발행: 포인터를 새 거래일로 이동</text><text x="96" y="226" font-size="11.5">이미 최신이면 API 호출 없이 종료</text><text x="96" y="244" font-size="11.5">(하루 두 번 돌려도 안전 = 멱등)</text>
+<text x="96" y="310" font-weight="700">일일 배치 (2회차, 재시도)</text><text x="96" y="330">늦게 올라온 날 데이터를 다시 시도</text><text x="96" y="347" font-size="11.5">공개 전이면 NOT_PUBLISHED로 기록</text>
+<text x="96" y="406" font-weight="700">공개 전이면 (+1영업일 지연)</text><text x="96" y="426">0건 → NOT_PUBLISHED, 종료코드 2</text><text x="96" y="444">시도 횟수에 세지 않음(DEC-092)</text><text x="96" y="461" font-size="11.5">휴일이 끼면 더 늦게 공개됨</text>
+<text x="96" y="518" font-weight="700">따라잡기 (catch-up)</text><text x="96" y="538">최근 10거래일 중 빠진 날을</text><text x="96" y="556">오래된 순으로 채움</text><text x="96" y="576">PC가 꺼졌던 날도 다음 실행이 복구</text><text x="96" y="596" font-size="11.5">실패 3회 쌓이면 경고만 남기고 중단</text>
+</g>
+<g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#a2)"><line x1="247" y1="258" x2="247" y2="286"/><line x1="247" y1="358" x2="247" y2="382"/><line x1="247" y1="470" x2="247" y2="494"/></g>
+</svg>
+</div>
+<figcaption>14:30은 "+1영업일 공개가 올라온 뒤"를 노린 시각, 18:30은 재시도입니다. 정확한 공개 시각은 아직 실측하지 못했습니다(<code>daily-batch-runbook.md</code>). 근거: 같은 문서 §1, <code>check_data_freshness.py</code>, DEC-047, DEC-092.</figcaption>
+</figure>
+
+<h3>B. 화면 요청 흐름</h3>
+<ol class="steps">
+<li>브라우저가 웹 서버(Next.js)에 페이지를 요청합니다. 로그인이 켜진 환경이면 세션을 확인하고, 없으면 로그인 화면으로 보냅니다.</li>
+<li>웹 서버가 <b>대신(BFF)</b> API를 호출합니다. 운영에서는 내부 토큰이 없는 API 호출을 거부하도록 설정돼 있어(<code>PUBLIC_API_REQUIRE_INTERNAL_TOKEN</code>) 웹 서버만 API를 부를 수 있습니다.</li>
+<li>API(<code>api_service</code> 계정)가 <code>public_serving</code>의 <b>현재 발행된 거래일</b> 기준으로 읽기 전용 조회를 합니다. 입력값 검증, 요청 속도 제한이 걸립니다.</li>
+<li>JSON 봉투(<code>{data, meta, error}</code>)로 돌려주고, 화면은 "데이터 기준일"을 함께 보여 줍니다.</li>
+</ol>
+
+<h3>C. 장중 기준 흐름 (내 PC, 관리자 전용)</h3>
+<ol class="steps">
+<li><b>시세 폴러</b>가 증권사 REST로 전 종목 시세를 돌아가며 받아 메모리에 쌓습니다(한 바퀴 수십 초 추정). 화면에 보이는 상위 최대 200종목은 <b>우선 순환</b>으로 약 3초 간격입니다.</li>
+<li>발행 일봉이 직전 거래일보다 뒤처졌으면(최대 5거래일) 증권사 일봉으로 <b>빠진 날만 보충</b>합니다. 발행 일봉과 종가가 다른 종목은 교차검증에서 결과에서 뺍니다(DEC-090).</li>
+<li>일봉 이력 + 오늘 행(현재가·누적 거래량)으로 지표를 배치와 <b>같은 순수 함수</b>로 재계산합니다.</li>
+<li>재계산한 행을 JSON으로 DB에 넘겨 <code>jsonb_to_recordset</code> <b>가상 테이블</b>로 기존 판정 SQL을 그대로 돌립니다(Python 재판정 없음).</li>
+<li>결과를 <b>스냅샷</b>(snapshot_id)으로 고정합니다. 화면은 기본 10초마다 자동 갱신하고, 새로 들어온 종목은 "신규", 빠진 종목은 "최근 변화"에 보여 줍니다. "일시정지"하면 그 순간 결과에 고정됩니다.</li>
+</ol>
+<p class="stamp">근거: <code>docs/stock-detail/10-intraday-rescreen-contract.md</code>, <code>docs/ops/local-live-screen-guide.md</code>.</p>
+
+<h3>D. 로그인·권한 흐름</h3>
+<ol class="steps">
+<li>가입하면 <b>대기</b> 상태가 되고, 관리자가 승인해야 쓸 수 있습니다(DEC-074). 계정은 <code>auth</code> 스키마에만 있고 <code>auth_service</code> 계정만 접근합니다.</li>
+<li>로그인 실패가 쌓이면 잠금 단계가 올라갑니다(회원 테이블 <code>app_users</code>의 <code>failed_attempts</code>, <code>lockout_level</code>, <code>locked_until</code>).</li>
+<li>권한은 일반(user)과 관리자(admin). 투자자별 수급 탭과 회원 관리는 관리자 전용입니다.</li>
+<li>로컬 전용 API는 거기에 <b>로컬 모드 4중 통제</b>가 더해집니다(다음 장 참고).</li>
+</ol>
+
+<h2 id="s4">4. 핵심 개념 사전</h2>
+<dl class="gl">
+<dt>발행 거래일</dt><dd>화면에 "지금 쓰이는" 데이터가 어느 날 것인지 가리키는 날짜. 가공이 끝나 검증된 거래일로 <b>발행 포인터</b>(<code>current_published_batch</code>)가 옮겨질 때만 바뀝니다. 포인터가 안 움직이면 화면은 예전 날짜에 머뭅니다.</dd>
+<dt>+1영업일 지연</dt><dd>공공데이터포털 일봉은 장이 끝난 그날이 아니라 <b>다음 영업일 이후</b>에 올라옵니다. 그래서 일봉 기반 화면은 구조적으로 하루 늦습니다. 휴일이 끼면 더 늦습니다.</dd>
+<dt>따라잡기 (catch-up)</dt><dd>빠진 날을 스스로 채우는 기능. 최근 10거래일 중 가공이 안 끝난 날을 오래된 순으로 채워, 며칠 실패하거나 PC가 꺼져 있어도 다음 실행이 복구합니다.</dd>
+<dt>NOT_PUBLISHED</dt><dd>"아직 공공데이터가 안 올라왔다"는 뜻의 배치 결과. 오류가 아니라 기다림이며, 재시도 횟수에 세지 않습니다(DEC-092).</dd>
+<dt>가공 지표</dt><dd>원본 시세 대신 보여 주는 계산값: 등락률, 이동평균 이격도(5·20일), 거래량 이상치 점수, 패턴 지표(조건 c1~c9, 압축 정도를 보는 10개 선발 기준 중 데이터가 있는 것).</dd>
+<dt>백분위</dt><dd>PER·PBR·시가총액은 원값 대신 "전체 중 어느 위치인가"로 노출합니다(<code>*_percentile</code>). 원시값(<code>*_raw</code>)은 응답에서 제외됩니다.</dd>
+<dt>basis (live / daily)</dt><dd>장중 기준 결과의 각 종목이 <b>오늘 시세로 계산됐는지(live) 어제 일봉 값 그대로인지(daily)</b> 표시. 숨기지 않고 "일봉" 표지로 보여 줍니다.</dd>
+<dt>스냅샷</dt><dd>어느 시점의 계산 결과를 통째로 고정한 것. 페이지를 넘겨도 같은 결과를 보려고 씁니다(최근 5개 보관).</dd>
+<dt>우선 순환</dt><dd>전 종목 시세는 느리게 돌되, 화면에 보이는 종목만 3초 안팎으로 더 자주 받는 방식.</dd>
+<dt>일봉 보충과 교차검증</dt><dd>장중에는 발행 일봉이 어제도 못 따라온 날이 많아, 증권사 일봉으로 빠진 날만 임시로 채웁니다. 겹치는 날의 종가가 발행 일봉과 다르면(액면분할 등) 그 종목은 계산에서 뺍니다.</dd>
+<dt>로컬 모드 4중 통제</dt><dd>코드(<code>require_local_mode</code>)에서 확인한 조건: ① <code>LOCAL_INTRADAY_ENABLED</code> 켜짐 ② 프록시 헤더 없음 ③ 접속 IP가 허용 목록(기본 127.0.0.1, ::1) ④ Host 헤더가 사설 주소. 하나라도 어긋나면 "존재하지 않는 기능"처럼 404로 응답합니다. 로그인을 켠 환경에서는 관리자만 통과합니다.</dd>
+<dt>개인 로컬 vs 운영</dt><dd>증권사 시세는 개인 이용 전제의 앱키로 받아 내 PC에서 나만 봅니다. 운영 사이트로 재배포하면 약관 문제가 될 수 있어 서버 경유는 약관 확인 전까지 쓰지 않습니다(HANDOFF).</dd>
+</dl>
+
+<h2 id="s5">5. 장점</h2>
+<div class="tbl"><table>
+<tr><th>장점</th><th>구체적 근거</th></tr>
+<tr><td><b>원본 시세 비노출을 구조로 강제</b></td><td>3중 방어: <code>raw_internal</code> 스키마 분리, <code>api_service</code>에 권한 없음, 배치와 API 프로세스 분리(<code>03-system-design.md</code> §1-1). 개발자 실수로는 새기 어렵습니다.</td></tr>
+<tr><td><b>판정 SQL 단일 출처</b></td><td>조건 판정은 <code>screen_repository.py</code>/<code>pattern_repository.py</code> 한 곳. 장중 재계산도 판정을 복제하지 않고 입력 행만 가상 테이블로 바꿉니다(계약서 §1). 가상 행=발행 행이면 결과가 기존과 같아야 한다는 동치 시험이 있습니다.</td></tr>
+<tr><td><b>역할별 DB 권한 분리</b></td><td><code>migrator</code>, <code>batch_worker</code>, <code>api_service</code> 역할(<code>deploy/db/init/01-roles.sh</code>)과 <code>auth</code> 전용 <code>auth_service</code>(마이그레이션 0015).</td></tr>
+<tr><td><b>멱등 배치와 따라잡기</b></td><td>하루 두 번 돌려도 안전, 빠진 날 자동 복구, PostgreSQL 잠금으로 동시 실행 방지(<code>shared/batch_lock.py</code>), 서킷브레이커.</td></tr>
+<tr><td><b>정직한 표시</b></td><td>지연·부분값·일봉 고정을 숨기지 않고 표지로 보여 줍니다(거래량 부분값 경고, "일봉" 표지, 제외 종목 수).</td></tr>
+<tr><td><b>운영 빌드 비노출</b></td><td>로컬 전용 기능은 운영 빌드에서 화면도 요청도 없음이 시험으로 확인됐습니다(<code>docs/qa/2026-10-06-psearch-integration-test-result.md</code> 외).</td></tr>
+<tr><td><b>시험 규모</b></td><td>파이썬 시험 파일 74개(unit 53, integration 21), <code>def test_</code> 함수 약 940개, <b>전체 회귀 1,469개 통과·0 실패</b>(파라미터 확장 포함). 프런트 점검 스크립트 16개 + 금지 문구 검사 + 브라우저 시험(장중 기준 화면 160·17·26, 종단 29·6, 로그인 켠 로컬 61). PowerShell 실행 시험 22개. 에이전트가 직접 시험한다는 규칙을 <code>CLAUDE.MD</code> 상시 규칙으로 명문화.</td></tr>
+<tr><td><b>결과서·결정 로그 문화</b></td><td><code>docs/qa/</code>에 결과서·화면 캡처 폴더 등 38개 항목, DEC 92건이 append-only로 쌓여 "왜 이렇게 했는가"가 남습니다. 새 담당자가 HANDOFF와 decisions만 읽고 이어받는 구조입니다.</td></tr>
+<tr><td><b>되돌릴 길</b></td><td>2개 서비스 구성 파일을 롤백용으로 보관(<code>deploy/render/render.two-services.yaml</code>), 알려진 한계를 문서에 적어 둠.</td></tr>
+</table></div>
+
+<h2 id="s6">6. 단점·위험</h2>
+<div class="tbl"><table>
+<tr><th>위험</th><th>내용과 근거</th><th>위험도</th></tr>
+<tr><td>일봉이 +1영업일 늦음</td><td>공공데이터가 다음 영업일 이후 공개라 일봉 화면은 구조적으로 하루 늦습니다. 정확한 공개 시각도 미실측. 장중 재계산이 이를 보완하지만 내 PC 전용입니다.</td><td><span class="b hi">높음</span></td></tr>
+<tr><td>단일 PC 스케줄러 의존</td><td>주 실행이 내 노트북의 Windows 작업 스케줄러입니다. 꺼져 있으면 수집이 안 되고, 켜진 뒤 따라잡기로만 복구합니다. 보조로 만든 <code>scheduled-batch.yml</code>은 <b>GitHub에 등록돼 있지 않습니다</b>(GitHub는 기본 브랜치 main에 있는 워크플로만 인식하는데 main에는 이 파일이 없음 — Actions API로 확인: 등록된 워크플로는 render-deploy 하나뿐). 사용자 결정 대기</td><td><span class="b hi">높음</span></td></tr>
+<tr><td>실제 증권사 응답 미확인</td><td>개발 환경에서 증권사 서버로 나갈 수 없어 앱키 없는 모의 서버로만 시험했습니다. 응답 필드·수정주가 기준·조건검색 갱신 여부는 사용자 장중 확인 대기(<code>kis_*_smoke_test.py</code>).</td><td><span class="b hi">높음</span></td></tr>
+<tr><td>약관 미확인 → 제3자 제공 불가</td><td>공공데이터·KRX·KIS의 재배포 약관 원문을 확인하지 못했습니다(<code>docs/legal/</code>는 법률 자문이 아닌 조사 자료, 문의문은 미발송). 그래서 서버 경유 시세는 쓰지 않습니다.</td><td><span class="b hi">높음</span></td></tr>
+<tr><td>재무 수동 수집, 수급은 PC 실행 필요</td><td>투자자별 수급은 이번에 스케줄러 작업 <code>StockScreenerKR-InvestorFlow</code>(매일 20:10)로 자동화했지만, <b>사용자 PC에서 <code>fix_local_data.ps1</code>을 실행해야 등록</b>됩니다(PowerShell이라 실제 등록은 <span class="unv">미확인</span>). 실제 증권사 응답 필드·단위도 미확인. 실적(재무)은 연 1회 <code>enrich_earnings.py</code>(약 30분) 수동입니다.</td><td><span class="b lo">낮음~중간</span></td></tr>
+<tr><td>2027 달력은 추정 초안</td><td><code>data/calendar/2027.yaml</code>을 공휴일 규정·음력으로 계산해 만들었습니다(평일 휴장 14일, 거래일 247일). <b>KRX 공식 공고가 아직 없어 대조 못함</b>(임시공휴일·선거일은 발표 시 추가 필요). 달력이 끝나면 직전 거래일을 계산할 수 없어 화면·배치가 멈추는 것을 시험으로 재현했고, <code>fix_local_data.ps1</code>이 달력을 자동 적재하며 <code>diagnose_local_data.py</code>가 종료 45일 전부터 경고합니다. 2028 달력은 아직 없음.</td><td><span class="b mid">중간</span></td></tr>
+<tr><td>Windows PowerShell 스크립트</td><td><code>.ps1</code> 7개를 PowerShell 7(Linux)에서 <b>원본 그대로 실제 실행해 22/22 통과</b>했습니다(Windows 전용 명령은 기록 대역). 남은 한계: <b>Windows PowerShell 5.1과 실제 작업 스케줄러</b>에서의 실행은 이 환경에서 확인할 수 없음.</td><td><span class="b lo">낮음~중간</span></td></tr>
+<tr><td>장중 재계산의 한계</td><td>재계산 약 2초(2,800종목, CPU, 파이썬). 거래량은 하루 누적 부분값(시간대 보정 없음). PER·PBR·시총은 일봉 고정. 보충 첫 실행은 수 분. 틱 실시간은 동시 20종목(구독 40건 한도).</td><td><span class="b mid">중간</span></td></tr>
+<tr><td>문서·결정 로그가 매우 큼</td><td><code>decisions.md</code> 약 152KB, <code>traceability.md</code> 약 154KB, <code>03-system-design.md</code> 약 86KB. 지켜야 할 것을 찾기 어렵고 유지 비용이 큽니다.</td><td><span class="b mid">중간</span></td></tr>
+<tr><td>하네스 규칙 복잡도</td><td>13단계 파이프라인, 규칙 A~K, 서브에이전트 정의, 단계 게이트. 초보자나 새 협업자에게 진입 장벽이 높습니다.</td><td><span class="b mid">중간</span></td></tr>
+<tr><td>Render·속도제한 한계</td><td>방문자 IP 속도제한이 전 사용자 1버킷(<code>FRONTEND_TRUSTED_PROXY_HOPS=0</code>). 통합 서비스 메모리 로컬 실측 약 245MB(512MB 안), 운영 실측은 열린 항목. DB 구조 변경은 자동 적용 안 됨.</td><td><span class="b mid">중간</span></td></tr>
+<tr><td>다크 테마 없음</td><td>DEC-056에서 라이트만 유지하기로 했고 <code>globals.css</code>에 다크 설정이 없습니다.</td><td><span class="b lo">낮음</span></td></tr>
+<tr><td>화면 문구 불일치</td><td>사이트 하단 고지 "실시간 시세가 아닙니다"와 로컬 관리자 화면의 "(실시간)" 표시가 어긋납니다(HANDOFF 열린 항목).</td><td><span class="b lo">낮음</span></td></tr>
+<tr><td>실기기 검증 부족</td><td>iOS Safari·Android Chrome 실기기, 실제 시세로 본 캔들 모양은 미검증(<code>2026-10-02-visual-qa-report.md</code>).</td><td><span class="b lo">낮음</span></td></tr>
+</table></div>
+
+<h2 id="s7">7. 남은 작업과 개선 로드맵</h2>
+<h3>(a) 이번에 완료한 것 (DEC-092·093, 내부 테스트 결과서 작성)</h3><ul><li><b>따라잡기 영구 포기 결함 수정</b>: "공개 전" 실패가 3회 쌓이면 그 날짜(10/2)를 영구히 건너뛰던 결함. 옛 코드에서 실패하는 재현 시험으로 확인.</li><li><b>빠진 날 방어</b>: 직전 거래일 원본 시세가 이력 한가운데 비어 있으면 그날 가공을 보류(<code>GAP_BLOCKED</code>), 배치는 건너뛰고 계속.</li><li><b>투자자 수급 자동 수집</b>: 작업 스케줄러에 매일 20:10 추가(<code>fix_local_data.ps1</code> 실행 시 등록).</li><li><b>2027 달력 + 적재 시험</b>: 추정 초안, 적재·연말 경계 시험, 달력 종료 임박 경고.</li><li>결과서: <code>docs/qa/2026-10-06-data-pipeline-hardening-test-result.md</code></li></ul>
+<h3>(a-2) 이어서 마무리한 것 (DEC-094·095)</h3><ul><li><b>부분 구멍 검사</b>: 직전 거래일에 종목이 절반 미만만 있어도 그다음 날 가공 보류.</li><li><b>배너 문구 정리</b>: 제외와 불일치를 한 문장으로.</li><li><b>보안</b>: <code>next</code> 16.3.5 → 16.3.8(치명 1·높음 1 해소, <code>npm audit</code> 0건), <code>pip-audit</code>·<code>bandit</code> 지적 없음.</li><li><b>PowerShell 실제 실행 시험 22/22</b>, 달력 적재 시험, 최종 회귀 1,469개 통과.</li><li>결과서: <code>docs/qa/2026-10-06-powershell-scripts-test-result.md</code>, <code>2026-10-06-final-regression-security-test-result.md</code></li></ul>
+<h3>(b) 사용자 PC에서 확인이 필요한 것</h3>
+<ul>
+<li><code>py -3.12 scripts\kis_daily_price_smoke_test.py</code>: 증권사 일봉과 발행 일봉 종가 일치(출력이 <code>[정상]</code>/<code>[확인필요]</code>)</li>
+<li><code>kis_ws_smoke_test.py</code>(실시간), <code>kis_psearch_smoke_test.py</code>(HTS 조건검색, <code>.env</code>에 <code>KIS_HTS_ID</code> 필요), <code>kis_smoke_test.py</code>(분·호가·체결·수급): 모두 <b>장중</b> 실행. 요청서의 "4종"은 이 4개로 보이나 문서에서 "4종"이라는 표현은 확인 못함.</li>
+<li><code>scripts\fix_local_data.ps1</code> 재실행(DEC-092 수정 후 10/2가 다시 시도되는지)</li>
+<li>로컬 로그인 설정: <code>git pull</code> → <code>setup_local_auth.py</code> → API·웹 재기동(DEC-075, 확인 못 받음)</li>
+</ul>
+<h3>(c) 사용자 결정 대기</h3>
+<ul>
+<li>Render 자동 배포 끄기 확인(<code>render.yaml</code>은 <code>autoDeployTrigger: commit</code>이라 끄기 전엔 푸시가 배포를 일으킬 수 있음)</li>
+<li>사이트 하단 고지 문구("실시간 시세가 아닙니다")와 로컬 관리자 화면의 "(실시간)" 표시 정리(HANDOFF)</li>
+<li>웹훅 알림 설정(<code>DATA_FRESHNESS_WEBHOOK_URL</code>), GitHub 보조 스케줄 등록, 다크 테마: <span class="unv">요청서 전달 항목, 문서상 결정 대기 여부는 미확인(다크 테마는 DEC-056에서 "이번엔 안 함")</span></li>
+<li>약관 문의 발송과 변호사 상담(<code>docs/legal/README.md</code>), 이후 시세 서버 경유 여부</li>
+<li>다음 후보(HANDOFF): 종목 상세 장중 값 정합, 거래량 시간대 보정, 일봉 보충 결과 디스크 캐시</li>
+</ul>
+
+<h2 id="s8">8. 가장 짧은 설명</h2>
+<div class="five"><ol>
+<li>정부가 공개하는 주식 일봉 데이터를 매일 내려받아 내 서버 DB에 쌓습니다.</li>
+<li>쌓은 데이터로 "얼마나 올랐나, 평균보다 얼마나 떨어져 있나" 같은 값을 미리 계산해 둡니다.</li>
+<li>사용자가 조건을 걸면 그 계산값으로 해당 종목만 골라 웹 화면에 보여 줍니다.</li>
+<li>정부 데이터는 하루 늦기 때문에, 내 PC에서만 증권사 시세를 붙여 장중에 다시 계산합니다.</li>
+<li>투자 추천은 하지 않고, 원본 시세는 밖으로 안 새도록 DB 구조로 막아 둡니다.</li>
+</ol></div>
+<h3>왕초보용 용어 한 줄</h3>
+<ul>
+<li><b>일봉</b>: 하루 한 번 찍는 주가 기록(시가·고가·저가·종가·거래량).</li>
+<li><b>배치</b>: 사람이 누르지 않아도 정해진 시각에 한꺼번에 돌아가는 자동 작업.</li>
+<li><b>DB 스키마</b>: DB 안의 서랍장 칸. 칸마다 열쇠(권한)를 다르게 줍니다.</li>
+<li><b>API</b>: 화면이 데이터를 달라고 부르는 창구.</li>
+<li><b>BFF</b>: 브라우저 대신 서버가 창구를 부르는 중간 심부름꾼.</li>
+<li><b>멱등</b>: 같은 작업을 여러 번 해도 결과가 같다는 뜻.</li>
+</ul>
+<p class="stamp">작성 기준 시점: HANDOFF.md 2026-10-06 12:57 수정본, decisions.md DEC-092까지. 담당 엔지니어가 계속 수정 중이라 이후 변경은 반영되지 않았습니다.</p>
+</main>
+</div>
+
+</body></html>

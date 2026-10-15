@@ -1,0 +1,25 @@
+# Gemini(AI 제목 제안) 연결용 덧씌우기 파일. web/secrets/gemini_api_key 파일이 있을 때만 start.ps1 이 함께 쓴다.
+# api·worker 에만 외부 통신(egress)을 열고 키는 Docker secret(파일)로만 전달한다. db·web 은 붙지 않는다.
+services:
+  api:
+    networks:
+      egress: {}
+    environment:
+      YTWEB_GEMINI_KEY_FILE: /run/secrets/gemini_api_key
+    secrets:
+      - gemini_api_key
+  worker:
+    networks:
+      egress: {}
+    environment:
+      YTWEB_GEMINI_KEY_FILE: /run/secrets/gemini_api_key
+    secrets:
+      - gemini_api_key
+
+secrets:
+  gemini_api_key:
+    file: ./secrets/gemini_api_key
+
+networks:
+  egress:
+    driver: bridge

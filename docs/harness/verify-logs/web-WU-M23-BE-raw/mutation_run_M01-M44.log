@@ -1,0 +1,45 @@
+M01 허용목록 검사 제거(update_snippet) KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_400_video_outside_allowed_list_makes_zero_network_calls_and_no_token_read[allow
+M02 허용목록 검사 반전 KILLED 1s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_400_video_outside_allowed_list_makes_zero_network_calls_and_no_token_read[allow
+M03 응답 제목 확인 제거 KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_420_response_without_exact_new_title_is_indefinite_unconfirmed[resp0]
+M04 unconfirmed definite True KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_420_response_without_exact_new_title_is_indefinite_unconfirmed[resp0]
+M05 5xx definite True KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_430_status_code_to_definite_mapping[500-None-http_500-False]
+M06 네트워크 단절 definite True KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_431_timeout_and_connection_errors_are_indefinite_and_hide_details[exc0]
+M07 categoryId 검사 제거 KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_410_invalid_body_never_sends[b8]
+M08 본문 id 일치 검사 제거 KILLED 2s FAILED tests/verify_m23/test_vm_05_live_write.py::test_tc_vm_410_invalid_body_never_sends[b0]
+M09 허용목록 공백/빈칸 처리 제거 KILLED 2s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_500_selection_truth_table_live_only_when_all_conditions_hold[True-True-1-]
+M10 LIVE_WRITE 판정 완화 KILLED 4s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_501_only_exact_string_1_enables_live[true]
+M11 허용목록 비어도 준비됨 KILLED 2s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_500_selection_truth_table_live_only_when_all_conditions_hold[True-True-1-]
+M12 not_allowed_reason 무력화 KILLED 5s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_520_not_allowed_reason_only_in_live_mode_and_only_for_other_ids
+M13 확인 문구 분기 반전 KILLED 5s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_510_confirm_text_demo_vs_live[0]
+M14 쓰기 게이트웨이가 읽기 토큰 파일 사용 KILLED 1s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_500_selection_truth_table_live_only_when_all_conditions_hold[True-True-1-abcd
+M15 DB 제목 동기화 제거 KILLED 6s FAILED tests/verify_m23/test_vm_06_live_gateway.py::test_tc_vm_530_confirmed_update_mirrors_all_fields_into_videos_row
+M16 state 1회용 해제(pop→get) KILLED 2s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_012_state_single_use
+M17 state 만료 경계(>=→>) KILLED 2s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_014_state_ttl_boundary_600s[600-False]
+M18 대기 한도 20→21 KILLED 1s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_015_pending_capped_at_20_oldest_evicted_not_newest
+M19 PKCE S256→sha1 KILLED 1s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_010_pkce_challenge_is_s256_of_verifier_and_verifier_long_enough
+M20 토큰 파일 권한 0600→0644 SURVIVED 16s 93 passed, 1 skipped, 7 xfailed in 14.08s
+M21 기본 scope=쓰기 KILLED 1s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_020_auth_url_read_scope_only_and_no_secret
+M22 갱신 시 refresh 토큰 유실 KILLED 1s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_042_refresh_keeps_old_refresh_token_when_google_omits_it
+M23 만료 여유 60초 제거 KILLED 1s FAILED tests/verify_m23/test_vm_01_oauth_core.py::test_tc_vm_065_is_fresh_margin_60s_boundary[60-False]
+M24 쓰기 콜백이 읽기 저장소로 KILLED 4s FAILED tests/verify_m23/test_vm_02_google_router.py::test_tc_vm_111_write_login_saves_only_to_write_file_with_force_ssl_scope
+M25 connect-write 가 읽기 scope KILLED 4s FAILED tests/verify_m23/test_vm_02_google_router.py::test_tc_vm_111_write_login_saves_only_to_write_file_with_force_ssl_scope
+M26 쓰기 state 소진 제거 KILLED 14s FAILED tests/verify_m23/test_vm_02_google_router.py::test_tc_vm_129_write_state_set_is_bounded_and_cleared_after_callback
+M27 해제 시 쓰기 토큰 유지 KILLED 14s FAILED tests/verify_m23/test_vm_02_google_router.py::test_tc_vm_125_disconnect_clears_both_tokens_and_audits
+M28 감사 기록에 접근 토큰 포함 KILLED 13s         for a in ("google.connect.start", "google.connect_write.start", "google.connected", "google.write_connected", "google.connect.failed
+M29 확인 문구 실제 모드 무시 KILLED 4s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_610_wrong_confirm_text_is_422_with_expected_text_and_hint_and_no_side_effect[\uc2
+M30 초안 단계 허용목록 차단 제거 KILLED 2s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_600_precheck_live_blocks_non_allowed_and_uses_live_confirm_text_without_any_googl
+M31 반영 직전 허용목록 차단 제거 KILLED 10s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_623_live_not_allowed_at_apply_time_skips_with_zero_calls_no_change_row_no_quota
+M32 롤백 허용목록 차단 제거 KILLED 17s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_642_rollback_applies_allowed_list_zero_calls_when_video_no_longer_allowed
+M33 반영 변경 기록 mode 항상 demo KILLED 7s         assert (res.processed, res.success, res.failed, res.skipped) == (1, 1, 0, 0)
+M34 데모 기록 있어도 삭제 진행 KILLED 2s FAILED tests/verify_m23/test_vm_04_live_sync.py::test_tc_vm_311_demo_with_any_history_blocks_import_keeps_everything_with_korean_hint[sugges
+M35 변경 이력 영상 보존 해제 KILLED 2s FAILED tests/verify_m23/test_vm_04_live_sync.py::test_tc_vm_305_video_with_change_history_keeps_stored_title_and_snippet_but_views_refresh
+M36 Shorts 경계(<=→<) KILLED 2s FAILED tests/verify_m23/test_vm_04_live_sync.py::test_tc_vm_301_shorts_boundary_uses_policy_seconds_inclusive
+M37 videos.list 묶음 50→51 KILLED 1s FAILED tests/verify_m23/test_vm_03_live_read.py::test_tc_vm_212_videos_requested_in_chunks_of_50[51-2]
+M38 목록 쪽 상한 40→41 KILLED 1s FAILED tests/verify_m23/test_vm_03_live_read.py::test_tc_vm_213_page_cap_40_stops_without_infinite_loop
+M39 영상 ID 중복 제거 해제 KILLED 1s FAILED tests/verify_m23/test_vm_03_live_read.py::test_tc_vm_211_pagination_and_dedupe_preserve_order
+M40 401 오류 번역 제거 KILLED 1s FAILED tests/verify_m23/test_vm_03_live_read.py::test_tc_vm_221_default_get_unauthorized_token_maps_to_korean_unauthorized
+M41 실제 모드 경고 맨 앞 삽입 해제 KILLED 2s FAILED tests/verify_m23/test_vm_07_live_e2e.py::test_tc_vm_600_precheck_live_blocks_non_allowed_and_uses_live_confirm_text_without_any_googl
+M42 초안 취소 was_draft 기록 오류 KILLED 2s FAILED tests/verify_m23/test_vm_10_wfixbe_and_hints.py::test_tc_vm_910_cancel_draft_cancels_items_frees_suggestions_audits_was_draft
+M43 모호 응답 후 재조회 확인 생략 KILLED 11s _ test_tc_vm_631_ambiguous_and_not_applied_stays_planned_item_failed_no_retry_no_db_mirror[http_5xx_not_applied] _
+M44 복구 시 이중 반영 방지(planned 유지) 해제 KILLED 13s _ test_tc_vm_631_ambiguous_and_not_applied_stays_planned_item_failed_no_retry_no_db_mirror[http_5xx_not_applied] _
+DONE 43 / 44

@@ -1,0 +1,2 @@
+SKIPPED [1] tests/verify_m23/test_vm_02_google_router.py:306: openapi 비활성
+369 passed, 1 skipped, 18 xfailed, 1 warning in 40.68s

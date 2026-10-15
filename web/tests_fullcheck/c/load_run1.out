@@ -1,0 +1,37 @@
+videos 200
+RESULT GET /api/v1/videos?page_size=200 conc=20 n=300 rps=82 p50=237ms p95=335ms p99=392ms max=469ms err=0 codes={200: 300} rss=115MB
+RESULT GET /api/v1/dashboard conc=20 n=300 rps=84 p50=228ms p95=330ms p99=395ms max=413ms err=0 codes={200: 300} rss=115MB
+RESULT GET /api/v1/suggestions conc=20 n=300 rps=156 p50=122ms p95=180ms p99=213ms max=224ms err=0 codes={200: 300} rss=115MB
+RESULT GET /api/v1/batches conc=20 n=300 rps=188 p50=100ms p95=166ms p99=226ms max=240ms err=0 codes={200: 300} rss=115MB
+RESULT GET /api/v1/changes conc=20 n=300 rps=178 p50=105ms p95=179ms p99=218ms max=222ms err=0 codes={200: 300} rss=106MB
+RESULT GET /api/v1/audit conc=20 n=300 rps=173 p50=102ms p95=192ms p99=222ms max=353ms err=0 codes={200: 300} rss=106MB
+RESULT GET /api/v1/settings conc=20 n=300 rps=155 p50=119ms p95=196ms p99=240ms max=260ms err=0 codes={200: 300} rss=106MB
+RESULT GET /api/readyz conc=20 n=300 rps=415 p50=45ms p95=76ms p99=94ms max=101ms err=0 codes={200: 300} rss=106MB
+RESULT GET /api/v1/videos?page_size=200 conc=50 n=300 rps=9 p50=633ms p95=30195ms p99=30265ms max=30291ms err=40 codes={500: 40, 200: 260} rss=121MB
+RESULT GET /api/v1/dashboard conc=50 n=300 rps=9 p50=796ms p95=30211ms p99=30304ms max=30319ms err=40 codes={500: 40, 200: 260} rss=121MB
+RESULT GET /api/v1/suggestions conc=50 n=300 rps=9 p50=427ms p95=30145ms p99=30226ms max=30230ms err=40 codes={500: 40, 200: 260} rss=122MB
+RESULT GET /api/v1/batches conc=50 n=300 rps=5 p50=374ms p95=30259ms p99=30294ms max=30302ms err=77 codes={500: 77, 200: 223} rss=118MB
+RESULT GET /api/v1/changes conc=50 n=300 rps=9 p50=424ms p95=30132ms p99=30203ms max=30230ms err=40 codes={500: 40, 200: 260} rss=118MB
+RESULT GET /api/v1/audit conc=50 n=300 rps=9 p50=478ms p95=30138ms p99=30192ms max=30235ms err=39 codes={500: 39, 200: 261} rss=118MB
+RESULT GET /api/v1/settings conc=50 n=300 rps=5 p50=454ms p95=30204ms p99=30251ms max=30274ms err=70 codes={500: 70, 200: 230} rss=118MB
+RESULT GET /api/readyz conc=50 n=300 rps=384 p50=126ms p95=208ms p99=273ms max=383ms err=0 codes={200: 300} rss=118MB
+RESULT POST /videos/{id}/suggestions conc=20 n=100 rps=54 p50=310ms p95=662ms p99=1170ms max=1170ms err=17 codes={409: 17, 201: 83} rss=118MB
+Traceback (most recent call last):
+  File "/home/user/youtube-subject-modify-auto/web/tests_fullcheck/c/load_test.py", line 82, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "/usr/lib/python3.13/asyncio/runners.py", line 196, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/lib/python3.13/asyncio/runners.py", line 119, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib/python3.13/asyncio/base_events.py", line 726, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/user/youtube-subject-modify-auto/web/tests_fullcheck/c/load_test.py", line 62, in main
+    await run("POST /suggestions/{id}/approve", conc, len(ids), ap)
+  File "/home/user/youtube-subject-modify-auto/web/tests_fullcheck/c/load_test.py", line 46, in run
+    print(f"RESULT {name} conc={conc} n={total} rps={total/dt:.0f} p50={pct(lat,50):.0f}ms p95={pct(lat,95):.0f}ms p99={pct(lat,99):.0f}ms max={max(lat)*1000:.0f}ms err={errs} codes={codes} rss={rss():.0f}MB", flush=True)
+                                                                                                                                                ~~~^^^^^
+ValueError: max() iterable argument is empty

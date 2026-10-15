@@ -1,0 +1,14 @@
+{
+ "description": "추적 매트릭스에 등록된 ID를 유형별로 센 값.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "scope.json",
+  "url": "/_blob/d67f032c7e8a3f771534fe67f18c4d38"
+ },
+ "title": "요구사항 규모",
+ "updated": {
+  "at": "2026-10-10T09:06:11Z",
+  "by": "Claude"
+ }
+}

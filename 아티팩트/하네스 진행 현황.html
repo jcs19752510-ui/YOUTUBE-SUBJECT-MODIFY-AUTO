@@ -1,0 +1,443 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>하네스 진행 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F5F7;
+    --surface: #FFFFFF;
+    --ink: #15202B;
+    --ink-2: #4B5967;
+    --line: #D3DAE0;
+    --line-strong: #9AA7B3;
+    --accent: #0D6B7C;
+
+    --done: #1B8455;
+    --done-bg: #E1F3E9;
+    --run: #2A5FD0;
+    --run-bg: #E2EBFB;
+    --wait: #66727F;
+    --wait-bg: #EBEFF2;
+    --warn: #A86300;
+    --warn-bg: #FBEED6;
+    --new: #7346C0;
+    --new-bg: #EEE7FA;
+
+    --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E151B;
+      --surface: #16202A;
+      --ink: #E7EDF2;
+      --ink-2: #A1B0BE;
+      --line: #2B3844;
+      --line-strong: #5A6B7A;
+      --accent: #56B6C7;
+
+      --done: #4CC38A;
+      --done-bg: #143526;
+      --run: #7EA4FF;
+      --run-bg: #1A2B4F;
+      --wait: #8D9AA7;
+      --wait-bg: #202B34;
+      --warn: #F0B14C;
+      --warn-bg: #392C12;
+      --new: #B99DF2;
+      --new-bg: #2B2247;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E151B;
+    --surface: #16202A;
+    --ink: #E7EDF2;
+    --ink-2: #A1B0BE;
+    --line: #2B3844;
+    --line-strong: #5A6B7A;
+    --accent: #56B6C7;
+
+    --done: #4CC38A;
+    --done-bg: #143526;
+    --run: #7EA4FF;
+    --run-bg: #1A2B4F;
+    --wait: #8D9AA7;
+    --wait-bg: #202B34;
+    --warn: #F0B14C;
+    --warn-bg: #392C12;
+    --new: #B99DF2;
+    --new-bg: #2B2247;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.6;
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+  h1 { margin: 0; font-size: 26px; line-height: 1.25; font-weight: 700; text-wrap: balance; }
+  h2 { margin: 0 0 6px; font-size: 16px; font-weight: 700; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .top { display: flex; flex-direction: column; gap: 8px; }
+  .stamp { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; font-size: 13px; color: var(--ink-2); }
+  .stamp b { color: var(--ink); font-weight: 500; }
+  .kicker { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+  .sub { color: var(--ink-2); font-size: 13px; margin-bottom: 14px; max-width: 74ch; }
+
+  /* progress */
+  .bars { display: grid; gap: 24px; }
+  .bar-row { display: grid; gap: 8px; }
+  .bar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .bar-head .name { font-weight: 700; }
+  .bar-head .pct { font-family: var(--font-mono); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .bar { display: flex; gap: 2px; height: 14px; }
+  .bar > span { display: block; border-radius: 3px; }
+  .seg-done { background: var(--done); }
+  .seg-run { background: var(--run); }
+  .seg-wait { background: var(--wait-bg); border: 1px solid var(--line); }
+  .bar-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink-2); }
+  .bar-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .formula { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); overflow-wrap: anywhere; }
+
+  /* figures */
+  figure { margin: 0; }
+  .scroll { overflow-x: auto; }
+  .scroll svg { display: block; min-width: 780px; width: 100%; height: auto; color: var(--ink-2); }
+  figcaption { margin-top: 10px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+  svg text { font-family: var(--font-body); }
+  .t-title { font-size: 13px; font-weight: 700; fill: var(--ink); }
+  .t-sub { font-size: 11.5px; fill: var(--ink-2); }
+  .t-lab { font-size: 11px; fill: var(--ink-2); }
+  .t-head { font-size: 12px; font-weight: 700; fill: var(--accent); }
+  .t-num { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-2); }
+  .t-state { font-size: 11px; font-weight: 700; }
+  .nd-done { fill: var(--done-bg); stroke: var(--done); stroke-width: 1.5; }
+  .nd-run  { fill: var(--run-bg); stroke: var(--run); stroke-width: 1.5; }
+  .nd-wait { fill: var(--wait-bg); stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 5 3; }
+  .nd-warn { fill: var(--warn-bg); stroke: var(--warn); stroke-width: 1.2; }
+  .tx-done { fill: var(--done); }
+  .tx-run { fill: var(--run); }
+  .tx-wait { fill: var(--wait); }
+  .tx-warn { fill: var(--warn); font-size: 11px; font-weight: 700; }
+  .ln { stroke: currentColor; stroke-width: 1.4; fill: none; }
+  .ln-dash { stroke: currentColor; stroke-width: 1.4; fill: none; stroke-dasharray: 4 3; }
+  .trk { fill: var(--wait-bg); stroke: var(--line); stroke-width: 1; }
+  .trk-done { fill: var(--done); }
+  .trk-run { fill: var(--run); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+
+  /* board */
+  .board { display: grid; }
+  .frow { display: grid; grid-template-columns: 200px 1fr; gap: 12px 16px; padding-block: 12px; border-top: 1px solid var(--line); }
+  .frow:first-child { border-top: 0; padding-top: 0; }
+  .fname { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .fname .fk { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .fname .fn { font-weight: 700; line-height: 1.35; }
+  .units { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+  .u { min-width: 152px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); }
+  .u.planned { border-style: dashed; border-color: var(--new); background: var(--new-bg); }
+  .u.live { border-color: var(--run); }
+  .u .uid { font-family: var(--font-mono); font-weight: 500; font-size: 13px; }
+  .u .req { font-size: 11.5px; color: var(--ink-2); }
+  .pills { display: flex; gap: 4px; flex-wrap: wrap; }
+  .p { display: inline-block; font-size: 11.5px; line-height: 1.5; padding: 0 7px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; white-space: nowrap; }
+  .p.done { background: var(--done-bg); color: var(--done); border-color: var(--done); }
+  .p.run { background: var(--run-bg); color: var(--run); border-color: var(--run); }
+  .p.wait { background: var(--wait-bg); color: var(--wait); border-color: var(--line-strong); border-style: dashed; }
+  .p.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+  .p.new { background: var(--new-bg); color: var(--new); border-color: var(--new); }
+
+  /* tables and lists */
+  .tbl { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--ink-2); font-weight: 500; border-top: 0; padding-top: 0; white-space: nowrap; }
+  td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  ul.notes { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+  ul.notes li { max-width: 82ch; }
+  .foot { font-size: 12.5px; color: var(--ink-2); max-width: 82ch; }
+  .fine { font-size: 12px; color: var(--ink-2); margin-top: 10px; }
+
+  .scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 22px; }
+    .frow { grid-template-columns: 1fr; }
+    .panel { padding: 14px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="kicker">13단계 개발 하네스</span>
+    <h1>하네스 진행 현황</h1>
+    <div class="stamp">
+      <span>기준 시각 <b class="mono">2026-09-20 07:29:04</b> KST</span>
+      <span>갱신 주기 <b>약 5분</b></span>
+      <span>위험도 등급 <b>High</b></span>
+      <span>기본 속도 트랙 L1 · 남은 유닛과 신규 유닛 L3</span>
+    </div>
+  </header>
+
+  <section class="panel" aria-labelledby="h-progress">
+    <h2 id="h-progress">전체 진행률</h2>
+    <p class="sub">완료로 세는 것은 05·06 단계가 모두 통과한 칸뿐입니다. 진행 중이거나 조건부 통과인 칸은 완료로 세지 않았습니다.</p>
+    <div class="bars">
+      <div class="bar-row">
+        <div class="bar-head">
+          <span class="name">개발 구간 (05·06 단계, 유닛 22개)</span>
+          <span class="pct">72.7%</span>
+        </div>
+        <div class="bar" role="img" aria-label="개발 구간 44칸 중 완료 32칸, 진행 중 2칸, 대기 10칸">
+          <span class="seg-done" style="flex: 32"></span>
+          <span class="seg-run" style="flex: 2"></span>
+          <span class="seg-wait" style="flex: 10"></span>
+        </div>
+        <div class="bar-legend">
+          <span><i class="seg-done"></i>완료 <span class="mono">32</span>칸</span>
+          <span><i class="seg-run"></i>진행 중 <span class="mono">2</span>칸</span>
+          <span><i class="seg-wait"></i>대기 <span class="mono">10</span>칸</span>
+        </div>
+        <div class="formula">22유닛 × 2단계 = 44칸 · 완료 32 ÷ 44 = 72.7%</div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-head">
+          <span class="name">13단계 파이프라인 전체 (참고용)</span>
+          <span class="pct">42.0%</span>
+        </div>
+        <div class="bar" role="img" aria-label="13단계 중 약 5.45단계 완료 환산">
+          <span class="seg-done" style="flex: 5.455"></span>
+          <span class="seg-wait" style="flex: 7.545"></span>
+        </div>
+        <div class="bar-legend">
+          <span><i class="seg-done"></i>완료 환산 <span class="mono">5.45</span>단계</span>
+          <span><i class="seg-wait"></i>남은 <span class="mono">7.55</span>단계</span>
+        </div>
+        <div class="formula">(4개 단계 완료 + 5·6단계 2 × 72.7%) ÷ 13 = 5.455 ÷ 13 = 42.0%</div>
+        <p class="fine">단계마다 같은 무게로 둔 단순 계산입니다. 7단계 이후의 실제 소요 시간과는 다를 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-pipe">
+    <h2 id="h-pipe">13단계 파이프라인 위치</h2>
+    <figure>
+      <div class="scroll" tabindex="0" role="region" aria-label="13단계 파이프라인 그림, 좁은 화면에서는 가로로 스크롤할 수 있습니다">
+        <svg viewBox="0 0 1000 284" role="img" aria-label="13단계 진행 상태. 완료 01·02·03·04단계, 진행 중 05·06단계, 대기 07·08·09·10·11·12·13단계. 12단계 배포는 사용자 승인이 필요하다.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+          <rect class="nd-done" x="14" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="24" y="52">01</text>
+          <text class="t-state tx-done" x="124" y="52" text-anchor="end">완료</text>
+          <text class="t-title" x="74" y="80" text-anchor="middle">트렌드 분석</text>
+          <rect class="nd-done" x="156" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="166" y="52">02</text>
+          <text class="t-state tx-done" x="266" y="52" text-anchor="end">완료</text>
+          <text class="t-title" x="216" y="80" text-anchor="middle">기획서</text>
+          <rect class="nd-done" x="298" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="308" y="52">03</text>
+          <text class="t-state tx-done" x="408" y="52" text-anchor="end">완료</text>
+          <text class="t-title" x="358" y="80" text-anchor="middle">설계서</text>
+          <rect class="nd-done" x="440" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="450" y="52">04</text>
+          <text class="t-state tx-done" x="550" y="52" text-anchor="end">완료</text>
+          <text class="t-title" x="500" y="80" text-anchor="middle">디자인서</text>
+          <rect class="nd-run" x="582" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="592" y="52">05</text>
+          <text class="t-state tx-run" x="692" y="52" text-anchor="end">진행 중</text>
+          <text class="t-title" x="642" y="80" text-anchor="middle">단위 개발</text>
+          <rect class="nd-run" x="724" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="734" y="52">06</text>
+          <text class="t-state tx-run" x="834" y="52" text-anchor="end">진행 중</text>
+          <text class="t-title" x="784" y="80" text-anchor="middle">단위 테스트</text>
+          <rect class="nd-wait" x="866" y="34" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="876" y="52">07</text>
+          <text class="t-state tx-wait" x="976" y="52" text-anchor="end">대기</text>
+          <text class="t-title" x="926" y="80" text-anchor="middle">통합 테스트</text>
+          <rect class="nd-warn" x="866" y="8" width="120" height="20" rx="10"></rect>
+          <text class="tx-warn" x="926" y="22" text-anchor="middle">L1 부채 정산 포함</text>
+          <rect class="nd-wait" x="14" y="208" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="24" y="226">08</text>
+          <text class="t-state tx-wait" x="124" y="226" text-anchor="end">대기</text>
+          <text class="t-title" x="74" y="254" text-anchor="middle">전체시스템테스트</text>
+          <rect class="nd-wait" x="156" y="208" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="166" y="226">09</text>
+          <text class="t-state tx-wait" x="266" y="226" text-anchor="end">대기</text>
+          <text class="t-title" x="216" y="254" text-anchor="middle">보안 검증</text>
+          <rect class="nd-wait" x="298" y="208" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="308" y="226">10</text>
+          <text class="t-state tx-wait" x="408" y="226" text-anchor="end">대기</text>
+          <text class="t-title" x="358" y="254" text-anchor="middle">배포 테스트</text>
+          <rect class="nd-wait" x="440" y="208" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="450" y="226">11</text>
+          <text class="t-state tx-wait" x="550" y="226" text-anchor="end">대기</text>
+          <text class="t-title" x="500" y="254" text-anchor="middle">문서화·인수인계</text>
+          <rect class="nd-wait" x="582" y="208" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="592" y="226">12</text>
+          <text class="t-state tx-wait" x="692" y="226" text-anchor="end">대기</text>
+          <text class="t-title" x="642" y="254" text-anchor="middle">배포</text>
+          <rect class="nd-warn" x="582" y="182" width="120" height="20" rx="10"></rect>
+          <text class="tx-warn" x="642" y="196" text-anchor="middle">사용자 승인 필수</text>
+          <rect class="nd-wait" x="724" y="208" width="120" height="60" rx="6"></rect>
+          <text class="t-num" x="734" y="226">13</text>
+          <text class="t-state tx-wait" x="834" y="226" text-anchor="end">대기</text>
+          <text class="t-title" x="784" y="254" text-anchor="middle">배포 후 검증</text>
+          <line class="ln" x1="136" y1="64" x2="154" y2="64" marker-end="url(#ah)"></line>
+          <line class="ln" x1="278" y1="64" x2="296" y2="64" marker-end="url(#ah)"></line>
+          <line class="ln" x1="420" y1="64" x2="438" y2="64" marker-end="url(#ah)"></line>
+          <line class="ln" x1="562" y1="64" x2="580" y2="64" marker-end="url(#ah)"></line>
+          <line class="ln" x1="704" y1="64" x2="722" y2="64" marker-end="url(#ah)"></line>
+          <line class="ln-dash" x1="846" y1="64" x2="864" y2="64" marker-end="url(#ah)"></line>
+          <line class="ln-dash" x1="136" y1="238" x2="154" y2="238" marker-end="url(#ah)"></line>
+          <line class="ln-dash" x1="278" y1="238" x2="296" y2="238" marker-end="url(#ah)"></line>
+          <line class="ln-dash" x1="420" y1="238" x2="438" y2="238" marker-end="url(#ah)"></line>
+          <line class="ln-dash" x1="562" y1="238" x2="580" y2="238" marker-end="url(#ah)"></line>
+          <line class="ln-dash" x1="704" y1="238" x2="722" y2="238" marker-end="url(#ah)"></line>
+          <path class="ln-dash" d="M926 96 V154 H74 V204" marker-end="url(#ah)"></path>
+          <rect class="trk" x="582" y="106" width="262" height="8" rx="4"></rect>
+          <rect class="trk-done" x="582" y="106" width="190.5" height="8" rx="4"></rect>
+          <rect class="trk-run" x="772.5" y="106" width="11.9" height="8"></rect>
+          <text class="t-lab" x="582" y="134">개발 구간 32/44칸 · 72.7%</text>
+        </svg>
+      </div>
+      <figcaption>1~4단계(트렌드 분석, 기획서, 설계서, 디자인서)는 검증을 마쳤습니다. 지금은 5·6단계(구현과 단위 테스트)를 유닛 22개에 대해 진행하는 중입니다. 점선 테두리와 점선 화살표는 아직 시작하지 않은 구간입니다.</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" aria-labelledby="h-flow">
+    <h2 id="h-flow">지금부터의 실행 순서</h2>
+    <p class="sub">화살표 위의 글자는 다음 칸이 시작되기 위한 조건입니다. 점선 테두리는 아직 시작하지 않은 작업입니다.</p>
+    <figure>
+      <div class="scroll" tabindex="0" role="region" aria-label="실행 순서 그림, 좁은 화면에서는 가로로 스크롤할 수 있습니다">
+        <svg viewBox="0 0 1020 412" role="img" aria-label="실행 순서 그림. 왼쪽은 지금 진행 중이거나 최근 판정된 작업, 가운데는 선행 작업이 끝나면 시작할 작업, 오른쪽은 이후 순차 조건이 충족되면 진행할 작업이며 마지막은 08~13단계로 이어진다.">
+          <text class="t-head" x="10" y="22">지금 · 진행 중과 최근 판정</text>
+          <text class="t-head" x="370" y="22">다음 · 선행 작업이 끝나면 시작</text>
+          <text class="t-head" x="730" y="22">이후 · 순차 조건이 충족되면</text>
+          <rect class="nd-warn" x="10" y="40" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="22" y="68">06 조건부 통과 · unit-7</text>
+          <text class="t-sub" x="22" y="90">결함 11건 · 재작업 필요</text>
+          <rect class="nd-run" x="10" y="136" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="22" y="164">06 재검증 · unit-22</text>
+          <text class="t-sub" x="22" y="186">재작업 후 · 07:21경 재개</text>
+          <rect class="nd-run" x="10" y="232" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="22" y="260">06 · unit-20 단위 테스트</text>
+          <text class="t-sub" x="22" y="282">브라우저 UI · 07:21경 재개</text>
+          <rect class="nd-done" x="10" y="328" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="22" y="356">02 완료 · 기획서 갱신</text>
+          <text class="t-sub" x="22" y="378">unit-19~22 등록 · 검증 3회 PASS</text>
+          <rect class="nd-wait" x="370" y="40" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="382" y="68">05→06 · unit-8 ‖ unit-21</text>
+          <text class="t-sub" x="382" y="90">unit-7 재작업·재검증 후</text>
+          <rect class="nd-run" x="370" y="184" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="382" y="212">06 · unit-19 단위 테스트</text>
+          <text class="t-sub" x="382" y="234">API + 지원자 홈 · 07:21경 재개</text>
+          <rect class="nd-done" x="370" y="328" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="382" y="356">traceability 반영 완료</text>
+          <text class="t-sub" x="382" y="378">unit-19~22 매핑 · 02:46:33</text>
+          <rect class="nd-wait" x="730" y="40" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="742" y="68">05→06 · unit-10 → 11</text>
+          <text class="t-sub" x="742" y="90">STAR 리포트 → 스코어링</text>
+          <rect class="nd-done" x="730" y="136" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="742" y="164">05 완료 · unit-19</text>
+          <text class="t-sub" x="742" y="186">브라우저 33항목 · 06 진행 중</text>
+          <rect class="nd-wait" x="730" y="232" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="742" y="260">07 · feature별 통합테스트</text>
+          <text class="t-sub" x="742" y="282">L1 부채 정산 · feature 병렬</text>
+          <rect class="nd-warn" x="730" y="328" width="270" height="70" rx="6"></rect>
+          <text class="t-title" x="742" y="356">08→09→10→11→12→13</text>
+          <text class="t-sub" x="742" y="378">12 배포는 사용자 승인 필수</text>
+          <line class="ln" x1="282" y1="75" x2="368" y2="75" marker-end="url(#ah)"></line>
+          <line class="ln" x1="282" y1="363" x2="368" y2="363" marker-end="url(#ah)"></line>
+          <text class="t-lab" x="325" y="51" text-anchor="middle">unit-7 재작업</text><text class="t-lab" x="325" y="63" text-anchor="middle">·재검증 후</text>
+          <text class="t-lab" x="325" y="355" text-anchor="middle">02 완료 후</text>
+          <line class="ln" x1="642" y1="75" x2="728" y2="75" marker-end="url(#ah)"></line>
+          <line class="ln" x1="642" y1="219" x2="728" y2="267" marker-end="url(#ah)"></line>
+          <text class="t-lab" x="685" y="51" text-anchor="middle">산출물이</text><text class="t-lab" x="685" y="63" text-anchor="middle">입력 계약</text>
+          <text class="t-lab" x="672" y="270" text-anchor="middle">Feature B·I</text><text class="t-lab" x="672" y="282" text-anchor="middle">06 통과 후</text>
+          <path class="ln" d="M1000 75 H1010 V267 H1002" marker-end="url(#ah)"></path>
+          <path class="ln" d="M1000 171 H1010"></path>
+          <line class="ln" x1="865" y1="304" x2="865" y2="326" marker-end="url(#ah)"></line>
+          <text class="t-lab" x="873" y="319" text-anchor="start">07 전건 통과 후</text>
+        </svg>
+      </div>
+      <figcaption>unit-7은 06 결과가 조건부 통과(결함 11건)라 재작업 방향 결정 뒤 재검증을 거쳐야 하고, unit-8은 같은 파일을 수정하므로 그 뒤에 시작합니다. unit-22는 결함 3건(Low)을 5단계 재작업으로 고치는 중이며, unit-19와 unit-20의 06은 병렬로 진행하되 Next 서버는 잠금 규칙으로 한 번에 하나만 실행합니다.</figcaption>
+    </figure>
+  </section>
+
+  <section class="panel" aria-labelledby="h-units">
+    <h2 id="h-units">작업 단위 22개 현황</h2>
+    <p class="sub">한 칸이 유닛 하나입니다. 05는 구현, 06은 단위 테스트입니다. 보라색 점선 칸은 이번에 새로 등록한 유닛입니다.</p>
+    <div class="board" id="board">
+      <div class="frow"><div class="fname"><span class="fk">Feature A</span><span class="fn">인증·사용자</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-1</span><span class="req">REQ-001</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature B</span><span class="fn">면접 세션 관리</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-2</span><span class="req">REQ-002</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-3</span><span class="req">REQ-013</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u planned live"><span class="uid">unit-19</span><span class="req">REQ-002 · 내 면접 목록</span><span class="pills"><span class="p done">05 완료</span><span class="p run">06 진행 중</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature C</span><span class="fn">대화형 인터뷰 엔진</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-4</span><span class="req">REQ-003</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-5</span><span class="req">REQ-004·005</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-6</span><span class="req">REQ-006</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-7</span><span class="req">REQ-007 · 결함 11건</span><span class="pills"><span class="p done">05 완료</span><span class="p warn">06 조건부 통과</span></span></div><div class="u"><span class="uid">unit-8</span><span class="req">REQ-035~039</span><span class="pills"><span class="p wait">05 대기</span><span class="p wait">06 대기</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature D</span><span class="fn">라이브 코딩</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-9</span><span class="req">REQ-008</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature E</span><span class="fn">리포트·평가</span></div><div class="units"><div class="u"><span class="uid">unit-10</span><span class="req">REQ-009</span><span class="pills"><span class="p wait">05 대기</span><span class="p wait">06 대기</span></span></div><div class="u"><span class="uid">unit-11</span><span class="req">REQ-010·012</span><span class="pills"><span class="p wait">05 대기</span><span class="p wait">06 대기</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature F</span><span class="fn">채용담당자 대시보드</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-12</span><span class="req">REQ-011</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-13</span><span class="req">REQ-014</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature G</span><span class="fn">규제 컴플라이언스</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-14</span><span class="req">REQ-029·030</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-15</span><span class="req">REQ-031~034</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u planned"><span class="uid">unit-21</span><span class="req">REQ-030·033 · 파기 배치</span><span class="pills"><span class="p wait">05 대기</span><span class="p wait">06 대기</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature H</span><span class="fn">부가 UX</span><span class="p warn">L1 부채</span></div><div class="units"><div class="u"><span class="uid">unit-16</span><span class="req">REQ-015</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-17</span><span class="req">REQ-017</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div><div class="u"><span class="uid">unit-18</span><span class="req">REQ-016</span><span class="pills"><span class="p done">05 완료</span><span class="p done">06 완료</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature I</span><span class="fn">면접장 통합 UI</span><span class="p new">신규 등록</span></div><div class="units"><div class="u planned live"><span class="uid">unit-20</span><span class="req">REQ-008·015·017</span><span class="pills"><span class="p done">05 완료</span><span class="p run">06 진행 중</span></span></div></div></div>
+      <div class="frow"><div class="fname"><span class="fk">Feature 공통</span><span class="fn">테스트 인프라</span><span class="p new">신규 등록</span></div><div class="units"><div class="u planned"><span class="uid">unit-22</span><span class="req">REQ 없음 · 공통 · 결함 3건</span><span class="pills"><span class="p done">05 완료</span><span class="p warn">06 조건부 통과</span></span></div></div></div>
+    </div>
+    <div class="legend">
+      <span class="p done">완료</span>
+      <span class="p run">진행 중</span>
+      <span class="p wait">대기</span>
+      <span class="p warn">조건부 통과 · L1 부채</span>
+      <span class="p new">신규 등록</span>
+      <span>L1 부채: 07 통합 테스트와 06 정식화를 08 착수 전에 정산해야 하는 feature</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-agents">
+    <h2 id="h-agents">작업 현황</h2>
+    <div class="tbl">
+      <table>
+        <thead>
+          <tr><th>작업</th><th>단계</th><th>최초 시작 (KST)</th><th>재개 (KST)</th><th>상태</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>unit-7 단위 테스트 (LLM·RAG·큐 파이프라인)</td><td>06</td><td class="num">2026-09-20 01:18:05</td><td class="num">2026-09-20 02:21경</td><td>종료 — 조건부 통과(인수조건 6/6, 결함 11건, High 2건). 재작업 방향 결정 대기</td></tr>
+          <tr><td>unit-22 테스트 인프라 (재작업 후 재검증)</td><td>06</td><td class="num">2026-09-20 02:26경</td><td class="num">2026-09-20 07:21경</td><td>실행 중 — 05 재작업(결함 3건 수정)은 완료, 06 재검증 재개</td></tr>
+          <tr><td>unit-20 면접장 화면 배선 (브라우저 UI 테스트)</td><td>06</td><td class="num">2026-09-20 03:06경</td><td class="num">2026-09-20 07:21경</td><td>실행 중 — 03:1x 한도로 중단, 재개</td></tr>
+          <tr><td>unit-19 내 면접 목록 + 지원자 홈</td><td>06</td><td class="num">2026-09-20 03:06경</td><td class="num">2026-09-20 07:21경</td><td>실행 중 — 03:1x 한도로 중단, 재개 (05는 완료)</td></tr>
+          <tr><td>기획서 갱신 (unit-19~22 등록)</td><td>02</td><td class="num">2026-09-20 01:34경</td><td class="num">2026-09-20 02:21경</td><td>완료 (검증 3회 PASS)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fine">사용량 한도로 2026-09-20 01:42경과 03:1x경 두 번 중단되었고 각각 02:21경, 07:21경 재개했습니다. "경"이 붙은 시각은 초 단위를 측정하지 못한 근삿값입니다. 에이전트 내부 진행률은 볼 수 없어 표시하지 않았습니다.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-notes">
+    <h2 id="h-notes">확인 대기와 주의 사항</h2>
+    <ul class="notes">
+      <li><b>판단이 필요한 미해결 항목 (사용자 답변 대기)</b> — 계획 관련: ① 보관기간 만료 일괄 파기(<span class="mono">purge_expired_data</span>) 담당 유닛 부재, ② REQ-033 설계 매핑 인용 §7.4→§6.2 정정, ③ 04 디자인서 "Feature A~H" 문언, ④ [C-05] 장치점검 화면 분리 등 unit-20 질문 4건. unit-7 재작업 관련: A LLM 품질 대응 방식(오프닝을 질문은행 원문으로 vs 7B 승격), B Redis·PostgreSQL 외부 노출 차단, C 워커 크래시 시 job 재처리, D 긴 답변 처리, E 턴 번호 유니크 제약. 그 밖에 접근성 자동 검사 도구(axe) 추가 여부.</li>
+      <li><b>이전 검증 산출물 정리 대기</b> — <span class="mono">.harness-tmp/</span>에 남은 venv와 로그는 삭제 여부에 대한 답을 받지 못해 그대로 두었습니다(규칙 K).</li>
+      <li><b>미커밋 변경</b> — unit-7 작업물과 이후 유닛 변경은 아직 커밋하지 않았습니다. 요청하시기 전에는 커밋하지 않습니다.</li>
+      <li><b>L1 부채</b> — Feature A, B, C, D, F, G, H의 07 통합 테스트와 06 정식화는 08 착수 전에 반드시 정산합니다.</li>
+      <li><b>배포 승인</b> — 12단계 배포는 이 대화에서 사용자가 직접 승인하기 전에는 실행하지 않습니다(규칙 E).</li>
+      <li><b>법률·라이선스 확인 필요</b> — Piper TTS의 GPL-3.0 라이선스, 개인정보 보관기간 180일 임시값은 실제 법무 검토가 필요합니다.</li>
+    </ul>
+  </section>
+
+  <p class="foot">이 페이지는 기준 시각의 스냅샷이며, 세션이 열려 있는 동안 약 5분 간격으로 다시 게시됩니다. 게시가 늦어지면 기준 시각이 그만큼 오래된 값으로 보입니다.</p>
+</div>
+
+</body></html>

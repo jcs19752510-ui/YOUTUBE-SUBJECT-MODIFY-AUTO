@@ -1,0 +1,14 @@
+{
+ "description": "위험도 평가서의 리스크와 완화 방법.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "risks.json",
+  "url": "/_blob/9cfdf55d233ac78ed67420bf217f3032"
+ },
+ "title": "리스크 목록",
+ "updated": {
+  "at": "2026-10-10T09:06:11Z",
+  "by": "Claude"
+ }
+}

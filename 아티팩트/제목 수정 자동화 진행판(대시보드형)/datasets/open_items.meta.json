@@ -1,0 +1,14 @@
+{
+ "description": "사용자 결정, 미수행, 가정, 외부 의존, 한계 목록.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "open_items.json",
+  "url": "/_blob/c28e7fbd913f7353173321cbaf3edffd"
+ },
+ "title": "열린 항목",
+ "updated": {
+  "at": "2026-10-10T10:10:00Z",
+  "by": "Claude"
+ }
+}

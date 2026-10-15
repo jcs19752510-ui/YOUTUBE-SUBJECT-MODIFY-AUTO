@@ -1,0 +1,72 @@
+Name                            Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------
+ytweb/__init__.py                   1      0      0      0   100%
+ytweb/ai/__init__.py                0      0      0      0   100%
+ytweb/ai/base.py                   17      0      0      0   100%
+ytweb/ai/factory.py                14      0      2      0   100%
+ytweb/ai/gemini.py                 68      0     14      1    99%   74->76
+ytweb/ai/guard.py                  76      0     26      0   100%
+ytweb/ai/mock.py                   45      0     12      1    98%   41->45
+ytweb/ai/rule.py                   52      2     18      2    94%   27, 29
+ytweb/app.py                       88      0     18      0   100%
+ytweb/change_report.py             32     32     10      0     0%   3-41
+ytweb/config.py                    50      7     10      3    83%   15, 49, 57-61
+ytweb/core/__init__.py              0      0      0      0   100%
+ytweb/core/audit.py                48      0     20      0   100%
+ytweb/core/canonical.py             8      0      0      0   100%
+ytweb/core/clock.py                15      0      2      0   100%
+ytweb/core/deps.py                 44      0     10      0   100%
+ytweb/core/errors.py               14      0      0      0   100%
+ytweb/core/guard.py               128      1     44      2    98%   158->163, 176
+ytweb/core/idempotency.py          46      0     14      0   100%
+ytweb/core/jobs.py                 95      0     22      0   100%
+ytweb/core/logsetup.py             57      0     18      0   100%
+ytweb/core/pin.py                  80      0     22      0   100%
+ytweb/core/ratelimit.py            47      0     14      0   100%
+ytweb/core/sessions.py             53      0     10      0   100%
+ytweb/core/settings_store.py       28      0      6      0   100%
+ytweb/db/__init__.py                0      0      0      0   100%
+ytweb/db/models.py                218      1      8      1    99%   49
+ytweb/db/session.py                26      3      4      1    87%   13, 20->22, 36-37
+ytweb/domain/__init__.py            1      0      0      0   100%
+ytweb/domain/batches.py           557     13    198     16    96%   70, 79, 110->112, 121, 308->310, 344, 435-436, 450, 470-471, 473, 526-527, 589->591, 591->593, 609->614, 621, 637->639, 647->651, 65
+ytweb/domain/changes.py           135      5     36      2    96%   86, 135-138, 163->165
+ytweb/domain/common.py             76      0     10      0   100%
+ytweb/domain/dashboard.py          36      0      4      0   100%
+ytweb/domain/deps.py               40      0      2      0   100%
+ytweb/domain/exclusions.py          7      0      0      0   100%
+ytweb/domain/handlers.py           68      0      4      0   100%
+ytweb/domain/limits_quota.py       72      0     10      0   100%
+ytweb/domain/live_gateway.py       56      0      6      0   100%
+ytweb/domain/live_sync.py          56      0     14      0   100%
+ytweb/domain/notices.py             2      0      0      0   100%
+ytweb/domain/reports.py            60      0     10      0   100%
+ytweb/domain/schemas.py           229      0      0      0   100%
+ytweb/domain/seed.py               99      1     32      1    98%   135
+ytweb/domain/serialize.py          35      1     10      1    96%   67
+ytweb/domain/suggestions.py       269      3     82      1    99%   64-65, 102
+ytweb/domain/videos.py             80      1     26      2    97%   32->30, 48
+ytweb/live_check.py                22      8      4      1    58%   33-40, 44
+ytweb/migrate.py                   41      1      8      1    96%   55
+ytweb/routers/__init__.py           0      0      0      0   100%
+ytweb/routers/audit.py             13      0      0      0   100%
+ytweb/routers/auth.py              43      0      0      0   100%
+ytweb/routers/batches.py           40      0      0      0   100%
+ytweb/routers/changes.py           29      0      0      0   100%
+ytweb/routers/dashboard.py         14      0      0      0   100%
+ytweb/routers/google.py            97      0     12      0   100%
+ytweb/routers/health.py            21      0      0      0   100%
+ytweb/routers/jobs.py              15      0      2      0   100%
+ytweb/routers/reports.py           15      0      0      0   100%
+ytweb/routers/settings.py          79      0     36      0   100%
+ytweb/routers/suggestions.py       41      0      2      0   100%
+ytweb/routers/videos.py            44      0      2      0   100%
+ytweb/worker.py                   122      6     22      1    95%   38-40, 44-45, 163
+ytweb/youtube/__init__.py           0      0      0      0   100%
+ytweb/youtube/base.py              15      0      0      0   100%
+ytweb/youtube/google_oauth.py     140      4     14      0    97%   125-126, 172-173
+ytweb/youtube/live_read.py        109      0     30      0   100%
+ytweb/youtube/live_write.py        59      0     22      0   100%
+ytweb/youtube/mock.py              36      0     10      0   100%
+---------------------------------------------------------------------------
+TOTAL                            4223     89    912     37    97%

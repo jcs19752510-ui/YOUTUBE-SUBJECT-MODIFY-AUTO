@@ -1,0 +1,179 @@
+<title>유튜브제목변경-전체진행상황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<style>
+/* 레이아웃: 맨 위에 한 줄 결론과 전체 진행률, 이어서 13단계 표, 이번 작업 결과, 시험 숫자, 열린 결함, 선생님 할 일 순서. 읽는 사람은 비개발자 채널 소유자. */
+:root {
+  --bg: #f2f4f3; --panel: #ffffff; --fg: #16201c; --muted: #55645e; --line: #d6dcd9;
+  --accent: #0a6b57; --accent-soft: #dcefe9; --ok: #12703f; --warn: #8a5a00; --warn-soft: #f6ead0; --bad: #b3261e; --bad-soft: #f7dcda; --code-bg: #eaeeec;
+  --font-ui: "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Nanum Gothic Coding", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0d1311; --panel: #161e1b; --fg: #e3ebe7; --muted: #94a59e; --line: #2a3631; --accent: #4fc9a6; --accent-soft: #17332b; --ok: #5fd39a; --warn: #f0b84a; --warn-soft: #33290f; --bad: #ff7b72; --bad-soft: #3a1a18; --code-bg: #1f2a26; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0d1311; --panel: #161e1b; --fg: #e3ebe7; --muted: #94a59e; --line: #2a3631; --accent: #4fc9a6; --accent-soft: #17332b; --ok: #5fd39a; --warn: #f0b84a; --warn-soft: #33290f; --bad: #ff7b72; --bad-soft: #3a1a18; --code-bg: #1f2a26; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; padding-inline: 16px; padding-block: 20px 56px; }
+.wrap { max-width: 940px; margin-inline: auto; display: flex; flex-direction: column; gap: 22px; }
+h1 { font-size: 1.6rem; line-height: 1.3; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.15rem; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 72ch; }
+.stamp { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); }
+.box { border-radius: 8px; padding: 12px 16px; max-width: 78ch; }
+.box.info { background: var(--accent-soft); } .box.warn { background: var(--warn-soft); } .box.bad { background: var(--bad-soft); }
+.box ul { margin: 6px 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 2px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+.tile .k { font-size: .8rem; color: var(--muted); }
+.tile .v { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .s { font-size: .8rem; color: var(--muted); }
+.meter { height: 9px; background: var(--code-bg); border-radius: 99px; overflow: hidden; min-width: 90px; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.meter.warn i { background: var(--warn); } .meter.bad i { background: var(--bad); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; letter-spacing: .03em; color: var(--muted); font-weight: 500; white-space: nowrap; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font-size: .76rem; padding: 0 9px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); } .pill.mute { color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .86em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+ol.steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>유튜브제목변경-전체진행상황</h1>
+    <p class="stamp">갱신 2026-10-13 02:33 UTC · 최종 커밋 <code>b7b1cd6</code> (원격 PROD_SCH에 푸시 완료)</p>
+    <p class="lead">영상 제목을 AI가 제안하고, 사람이 승인한 것만 하루 한도 안에서 바꾸는 로컬 웹 도구입니다. 아래는 지금까지 직접 실행해 확인한 사실만 적었습니다. 확인하지 못한 것은 "미확인"으로 구분했습니다.</p>
+  </header>
+
+  <div class="box info"><b>한 줄 결론</b><br>7·8·9단계도 아직 100%는 아닙니다. 클라우드에서 할 수 있는 것은 대부분 끝났고 자동 시험은 실패 0입니다. 남은 것: 쓰기(제안 생성) 부하와 8분 가동 측정, 원본 E2E 시험 코드 수리, trivy·이미지 스캔, Gemini 외부 전송 고지 문구, 그리고 선생님 PC에서만 되는 시험(Windows 확인, 새 열쇠 파일 로그인, 실제 제목 변경, 실제 구글 폐기 요청 확인)입니다.</div>
+
+  <section class="tiles" aria-label="핵심 숫자">
+    <div class="tile"><span class="k">프로젝트 전체</span><span class="v">약 97%</span><div class="meter"><i style="width:97%"></i></div><span class="s">추정 · 코드·시험·문서 비중</span></div>
+    <div class="tile"><span class="k">마일스톤 M1</span><span class="v">약 98%</span><div class="meter"><i style="width:98%"></i></div><span class="s">데모 모드 웹 프로그램</span></div>
+    <div class="tile"><span class="k">백엔드 시험</span><span class="v">2076</span><span class="s">통과 · 실패 0 · 건너뜀 1 · 예상 실패 5 (PG 포함)</span></div>
+    <div class="tile"><span class="k">프런트 시험</span><span class="v">755</span><span class="s">통과 · 실패 0 · 예상 실패 1</span></div>
+    <div class="tile"><span class="k">백엔드 커버리지</span><span class="v">97%</span><span class="s">줄+분기 · 프런트 줄 98.3%</span></div>
+    <div class="tile"><span class="k">요구사항 추적성</span><span class="v">95.0%</span><span class="s">요구 159개 중 시험이 소스에 있는 것 151개</span></div>
+    <div class="tile"><span class="k">변이 점검</span><span class="v">35/35</span><span class="s">반영 후 검증 로직, 새 시험 15개 추가 후</span></div>
+    <div class="tile"><span class="k">실제 제목 변경</span><span class="v">2건</span><span class="s">이전 PC에서 수행, 검증 실패 표시 원인 미확정</span></div>
+  </section>
+
+  <section class="card" aria-label="13단계 진행률">
+    <h2>13단계 진행률</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>단계</th><th class="n">진행률</th><th></th><th>근거와 남은 것</th></tr></thead>
+      <tbody>
+        <tr><td>1~4 조사·기획·설계·디자인</td><td class="n">100%</td><td><div class="meter"><i style="width:100%"></i></div></td><td>문서 완료</td></tr>
+        <tr><td>5 구현</td><td class="n">약 97%</td><td><div class="meter"><i style="width:97%"></i></div></td><td>M1 데모, M2 구글 읽기, M3 제목 수정 완료. 남은 것: DEF-LIVE-004 원인 확정</td></tr>
+        <tr><td>6 단위 시험</td><td class="n">약 99%</td><td><div class="meter"><i style="width:99%"></i></div></td><td>PG 전용·변이 35/35·커버리지 97% 완료. 남은 것: 커버리지 미실행 분기(반영 오류 경로 등)</td></tr>
+        <tr><td>7 통합 시험</td><td class="n">약 85%</td><td><div class="meter warn"><i style="width:85%"></i></div></td><td>합격선 4개 중 읽기 부하 2개 충족(동시 50까지 오류 0). <b>쓰기 부하·8분 가동 미측정</b>, 제안 생성 시간 초과 원인 미확정. 동시 100부터 연결 풀 소진(원인 확정), 수정은 효과 미검증이라 되돌림</td></tr>
+        <tr><td>8 전체 시스템 시험</td><td class="n">약 92%</td><td><div class="meter warn"><i style="width:92%"></i></div></td><td>E2E 원본 19/21(불합격 2건은 시험 코드 오류로 확인, 원본 수리 필요), UAT 13단계 합격 8·부분 4·불합격 1(시나리오 가정 오류), 접근성(모달 포함)·키보드·계약·호환성(Chrome·Edge 결정) 완료, 추적성 95.0%</td></tr>
+        <tr><td>9 보안 점검</td><td class="n">약 94%</td><td><div class="meter"><i style="width:94%"></i></div></td><td>의존성·비밀·정적 분석·침투형(PIN·XSS·3조건·감사 로그)·compose 완료, 보안 결정 5건 확정, Critical·High·Medium 0건. 남은 것: trivy·이미지 스캔·서명, 외부 침투 시험(별도 승인), 고지 문구 구현</td></tr>
+        <tr><td>10 배포 시험</td><td class="n">미확인</td><td></td><td>이 단계 결과서를 확인하지 못했습니다</td></tr>
+        <tr><td>11 문서화</td><td class="n">100%</td><td><div class="meter"><i style="width:100%"></i></div></td><td>최종 대조 완료</td></tr>
+        <tr><td>12 실제 배포</td><td class="n">0%</td><td><div class="meter bad"><i style="width:0%"></i></div></td><td>선생님이 "실행"이라고 승인하기 전에는 하지 않습니다</td></tr>
+        <tr><td>13 배포 후 검증</td><td class="n">0%</td><td><div class="meter bad"><i style="width:0%"></i></div></td><td>12단계 이후</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section class="card" aria-label="이번 작업 결과">
+    <h2>이번 작업(2026-10-13)에서 한 것</h2>
+    <p class="lead">단계별로 시험하지 못한 부분을 찾아 에이전트 6명이 병렬로 처리했습니다. 시작 01:21 UTC, 전체 시험 재실행 2분 26초, 마무리 약 01:45 UTC.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>작업</th><th>결과</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>PostgreSQL 전용 시험 실제 실행</td><td>156개 모두 통과. 첫 실행은 통과 67·실패 4·오류 85였고, 원인은 시험 DB 인코딩(환경 문제)이라 UTF8로 다시 만들어 재실행</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>반영 후 검증 변이 점검</td><td>35곳 중 1차 26곳을 잡고 7곳이 살아남아 시험 공백으로 확인, 새 시험 15개로 모두 잡음</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>커버리지</td><td>대상 10개 모듈 줄+분기 합계 95%. Gemini 어댑터가 72%로 가장 낮음</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>AI 제안 종류 표시 (DEF-LIVE-006)</td><td>모의 / 규칙 기반 / Gemini를 카드에 구분 표시. 구글 연결 상태에서는 홈·영상 목록의 "데모 영상" 문구를 내 채널 불러오기 안내로 교체</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>실행 버튼 비활성 이유 표시</td><td>[실행] 버튼 아래에 아직 필요한 조건(A/B 확인 체크, 확인 문구)을 표시</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>입력칸 id/name</td><td>영상·배치·쪽 번호·제안 카드의 입력칸 보강, 누락·중복 0건을 시험으로 확인</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>백업 폴더 권한</td><td><code>icacls</code> 방식으로 교체. 실패해도 백업은 계속되도록 함</td><td><span class="pill warn">Windows 미확인</span></td></tr>
+        <tr><td>면책·AI 고지 (DEF-9-007·008)</td><td>문구가 이미 소스에 대부분 있음을 확인. 중복되는 새 컴포넌트는 제거. 화면 캡처 확인과 최종 문구 승인은 남음</td><td><span class="pill warn">확인 대기</span></td></tr>
+        <tr><td>인프라·보안 시험 5건 실패(추가 발견)</td><td>이전 기능 추가 후 갱신되지 않은 시험. 외부 통신 허용 모듈은 <code>ai/gemini.py</code> 하나만 허용하도록 좁게 갱신(코드로 근거 확인)</td><td><span class="pill ok">완료</span></td></tr>
+      </tbody></table></div>
+    <p class="lead">내부 테스트 결과서: <code>docs/harness/units/web-hardening-test.md</code>. 첫 실행 실패는 결과서에 그대로 남겼습니다.</p>
+  </section>
+
+  <section class="card" aria-label="전체 시험 보강">
+    <h2>전체 시험 보강 (2026-10-13 오후)</h2>
+    <p class="lead">클라우드에서 할 수 있는 시험을 에이전트 6개로 병렬 실행했습니다. 시작 01:43 UTC, 최종 재검증 02:03 UTC. 결과서: <code>docs/harness/units/web-fullcheck-test.md</code></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>시험</th><th>결과</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>실제 Docker 스택 E2E·화면·접근성</td><td>E2E 19/21, 바뀐 화면 합격, F12 이슈 0건, axe 위반 0건, 키보드 흐름 통과. 불합격 2건은 Docker Hub 429로 재실행 못 함(TC-E20은 서버가 잘못된 주소를 일부러 끊는 설계라 시험 코드 결함으로 잠정, TC-E08은 판정 못 함)</td><td><span class="pill warn">부분</span></td></tr>
+        <tr><td>PowerShell 구문·동작</td><td>13개 스크립트 파서 오류 0건, 5.1 비호환 구문 0건, <code>live-*</code> 시험 통과. status.ps1 이상은 재현 안 됨(Windows 미확인), 포트 점검이 빈 결과일 때 "문제 없음"으로 끝나는 약점 발견</td><td><span class="pill warn">Windows 미확인</span></td></tr>
+        <tr><td>API 계약·커버리지·부하</td><td>5208회 호출 5xx 0건, 백엔드 97%, 프런트 98.3%. <b>동시 50에서 읽기 13~26%가 500</b>(연결 풀 추정)</td><td><span class="pill warn">부하 일부 미수행</span></td></tr>
+        <tr><td>보안 도구·코드 리뷰</td><td>의존성 취약점 0건, 비밀 노출 0건, 실제 수정 3조건 우회 경로 없음. 결함 후보 2건(Low) 중 1건 조치</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>Gemini 실서버</td><td>수정 전 호출 16회 중 5회(31%)만 성공. 원인: 출력 한도 4000에 생각 토큰이 닿아 응답이 잘림(3건), 502/503 재시도 없음(8건). 수정 적용. <b>수정 후 확인은 10회 모두 사용량 한도(429)라 못 함</b></td><td><span class="pill warn">수정 효과 미확인</span></td></tr>
+        <tr><td>요구사항 추적성</td><td>요구 148개 중 시험 연결 137개(92.6%), 소스에서 시험 ID 확인 103개(69.6%). 시험이 없는 요구 11개, 이번 세션 기능 10개가 추적표에 없음</td><td><span class="pill warn">문서 보강 필요</span></td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section class="card" aria-label="3차 시험 결과">
+    <h2>7·8·9단계 100% 추진 (2026-10-13 저녁)</h2>
+    <p class="lead">선생님이 정하신 기준(보안 5건 추천안, Chrome·Edge만 지원, 혼자 사용 성능 기준, 추적표 번호 승인)으로 에이전트 7개를 병렬 실행했습니다. 시작 02:09, 최종 재검증 02:25~02:29 UTC. 결과서: <code>docs/harness/units/web-fullcheck2-test.md</code></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>항목</th><th>결과</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>실제 스택 E2E·UAT·모달 접근성</td><td>E2E 19/21(불합격 2건 시험 코드 오류), UAT 합격 8·부분 4·불합격 1, 모달 axe 위반 0건, 잘못된 Host는 설계대로 연결 종료</td><td><span class="pill warn">원본 시험 수리 남음</span></td></tr>
+        <tr><td>부하·연결 풀</td><td>실제 서버 기준 동시 50까지 오류 0%, 동시 100부터 연결 풀 소진 확인. 앞서 보고한 "동시 50 오류"는 실제 서버에서 재현되지 않아 정정. 수정안은 효과를 검증하지 못해 되돌림</td><td><span class="pill warn">쓰기·가동 미측정</span></td></tr>
+        <tr><td>침투형 시험(PIN·XSS·3조건·감사 로그)</td><td>서버 52건·프런트 25건 통과. PIN 5회 실패 잠금, 악성 문자열 8종 렌더 안전, 허용 밖 영상·확인 문구 변조 등 쓰기 호출 0건, 감사 로그 변조 거부·탐지</td><td><span class="pill ok">완료</span></td></tr>
+        <tr><td>보안 도구</td><td>hadolint·checkov·semgrep 확보(Dockerfile 경고는 다이제스트 고정이라 오탐), SQL 문자열 5건 오탐, trivy는 받지 못함</td><td><span class="pill warn">trivy 미확보</span></td></tr>
+        <tr><td>보안 결정 구현</td><td>연결 해제 시 구글에 토큰 폐기 요청 추가. 가짜 서버로만 시험, 실제 구글 확인은 선생님 PC에서</td><td><span class="pill warn">실제 확인 대기</span></td></tr>
+        <tr><td>status.ps1·API 명세</td><td>포트 정보를 못 읽으면 "확인 불가"로 판정(거짓 안심 제거), OpenAPI에 공통 오류 응답 추가</td><td><span class="pill warn">Windows 미확인</span></td></tr>
+        <tr><td>요구사항 추적성</td><td>요구 159개 중 시험이 소스에 있는 것 151개(95.0%). Gemini 외부 전송 고지 문구 누락(POL-007)과 AI 호출 상한 미구현 발견</td><td><span class="pill warn">결함 2건 열림</span></td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section class="card" aria-label="열린 결함">
+    <h2>아직 열려 있는 것</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>번호</th><th>내용</th><th>다음 조치</th></tr></thead>
+      <tbody>
+        <tr><td>DEF-LIVE-004 <span class="pill bad">High</span></td><td>제목은 실제로 바뀌었는데 프로그램은 "반영 후 검증 실패"로 표시. 원인 항목은 미확정</td><td>실제 변경 1건 후 <code>#/batches/번호</code>의 "달라진 항목" 문구를 확인</td></tr>
+        <tr><td>POL-007 <span class="pill warn">Medium</span></td><td>Gemini에 제목·설명 요약이 외부로 전송되는데 전송 고지 문구가 화면에 없음</td><td>고지 문구 추가(구현 대기)</td></tr>
+        <tr><td>LOAD-2 <span class="pill warn">미확정</span></td><td>제안 생성 부하에서 시간 초과, 원인 미확정</td><td>수정 없는 코드로 서버를 단계마다 재시작하며 재측정</td></tr>
+        <tr><td>S-W10·SEC-027</td><td>AI 호출·비용 상한 미구현</td><td>선생님이 하루 몇 회로 할지 결정</td></tr>
+        <tr><td>GEM-3 <span class="pill warn">Medium</span></td><td>Gemini 사용량 한도(429)가 자주 날 수 있음</td><td>선생님 키의 한도·결제 설정을 구글 AI Studio에서 확인</td></tr>
+        <tr><td>LOAD-1 <span class="pill warn">Medium</span></td><td>동시 100부터 읽기 오류(연결 풀 소진 확정). 동시 50은 정상(정정)</td><td>수정 보류, 합격선 밖</td></tr>
+        <tr><td>STATUS-1 <span class="pill ok">조치</span></td><td><code>status.ps1</code> 거짓 안심 수정(Windows 미확인)</td><td>선생님 PC에서 확인</td></tr>
+        <tr><td>DEF-D-002 <span class="pill mute">Low</span></td><td>쓰기 토큰 권한 범위 미검사. 구글이 403으로 막아 실제 변경은 안 되고 표시만 틀림</td><td>실제 쓰기 로그인 확인과 함께 수정</td></tr>
+        <tr><td>E2E TC-E08·E20</td><td>시험 코드 오류로 확인(고친 사본으로 합격). 원본 시험 코드는 아직 수정하지 않아 19/21</td><td>원본 시험 코드 수리</td></tr>
+        <tr><td>DEF-LIVE-007 <span class="pill warn">Medium</span></td><td>제목 일치율이 설명 앞부분 기준이라 정상 제목도 차단될 수 있음</td><td>선생님 결정 필요(현재 25% 미만 차단, 50% 미만 경고)</td></tr>
+        <tr><td>DEF-8-001 <span class="pill warn">Medium</span></td><td>DB를 반영 도중 재시작하면 배치 1건이 실패(타이밍 의존)</td><td>이번 범위 밖</td></tr>
+        <tr><td>DEF-LIVE-008 <span class="pill mute">Low</span></td><td><code>status.ps1 -Detail</code> 출력 겹침. 코드로 원인을 못 찾아 수정하지 않음</td><td>PC에서 <code>| Out-File status.txt</code>로 판별</td></tr>
+        <tr><td>시험 건너뜀 3건</td><td>알려진 결함을 기록한 시험(openapi 비활성, 개행 허용, 배치 조회). 합격으로 세지 않음</td><td>결과서 6절 참조</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section class="card" aria-label="시험하지 못한 것">
+    <h2>시험하지 못한 것 (정확히)</h2>
+    <ul style="margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px">
+      <li><b>Windows PC에서의 실행</b>: <code>live-on/off/check</code>, 백업 권한 수정, 새 노트북에서 구글 로그인 이후 흐름</li>
+      <li><b>화면 육안 확인</b>: 새 문구·버튼 안내·입력칸은 jsdom 시험까지만 확인(실제 브라우저·F12 이슈 탭 미확인)</li>
+      <li><b>실제 호출</b>: 수정본으로 한 유튜브 제목 변경, 수정한 Gemini의 실서버 재확인(429로 막힘)</li>
+      <li><b>환경 제한으로 못 한 시험</b>: E2E 불합격 2건 재실행(Docker Hub 429), trivy·semgrep(차단), 8분 연속 가동·승인 부하, 다른 브라우저(Firefox·Safari 미설치), 침투 시험, 이미지 서명 검증</li>
+      <li><b>PostgreSQL 전용 줄 2곳</b>(<code>batches.py</code> 462·684줄)은 임시 DB 구성에서 실행되지 않음</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-label="다음 순서">
+    <h2>다음 순서</h2>
+    <ol class="steps">
+      <li><b>선생님</b>: 구글 클라우드에서 <code>유튜브 제목 웹</code> 클라이언트의 <b>+ Add secret</b>으로 JSON을 받아 <code>web\secrets\google_client.json</code>으로 저장하고 <code>start.ps1</code> 실행</li>
+      <li><b>선생님</b>: 홈에서 구글 연결(읽기) → 내 영상 불러오기 → 3개 브랜드 채널 중 대상 채널 선택</li>
+      <li><b>선생님</b>: <code>live-on.bat</code>으로 테스트 영상 1개만 허용 → [제목 수정 권한 연결]</li>
+      <li><b>선생님이 "실행"이라고 말씀하신 뒤</b>: AI 제안 → 승인 → 배치 → 실제 반영 1건, "달라진 항목" 문구 확인(DEF-LIVE-004 확정)</li>
+      <li><b>선생님</b>: 면책·AI 고지 최종 문구 승인(초안은 결과서에 있음), 일치율 기준 결정</li>
+      <li><b>그 뒤 개발 쪽</b>: DEF-LIVE-004 최종 수정, 12·13단계 준비</li>
+    </ol>
+    <p class="lead">자세한 클릭 순서는 아티팩트 "유튜브변경작업(내할일)"에 있습니다.</p>
+  </section>
+</div>

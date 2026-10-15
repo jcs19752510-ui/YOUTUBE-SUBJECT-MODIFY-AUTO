@@ -1,0 +1,14 @@
+{
+ "description": "하네스 단계별 가중치, 상태, 인정 점수. 합격은 가중치 전부, 조건부 합격은 일부만 인정.",
+ "source": {
+  "format": "json",
+  "kind": "file",
+  "name": "stages.json",
+  "url": "/_blob/9f3a99c28910b651ac644b38d725a16b"
+ },
+ "title": "단계별 진행 상태",
+ "updated": {
+  "at": "2026-10-10T10:10:00Z",
+  "by": "Claude"
+ }
+}
