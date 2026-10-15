@@ -164,6 +164,8 @@ def test_tc_vi_008_secrets_only_by_file_never_in_env_command_or_build_args(cfg, 
         for k, v in env_of(s).items():
             if k == "YTWEB_SECRETS_DIR":
                 assert v == "/var/lib/ytweb/secrets"  # 서명 키 폴더 경로(값 아님)
+            elif n == "api" and k == "YTWEB_ADMIN_PASSWORD":  # DEC-057 예외: web/.env 값(빈 값 가능). 저장소에는 값이 없다
+                continue
             elif pat.search(k):
                 assert k.endswith("_FILE") and v.startswith("/run/secrets/"), (n, k)
         blob = json.dumps({"command": s.get("command"), "build": s.get("build"), "labels": s.get("labels")})
@@ -171,7 +173,7 @@ def test_tc_vi_008_secrets_only_by_file_never_in_env_command_or_build_args(cfg, 
         assert "args" not in (s.get("build") or {}), n
     assert all(set(v) == {"file"} and v["file"].startswith("./secrets/") for v in cfg["secrets"].values())
     # 최소 권한: 각 서비스는 자기가 쓰는 비밀만 받는다
-    assert set(svc["db"]["secrets"]) == set(cfg["secrets"])  # 관리자 비밀 파일 없음(웹 화면에서 계정 생성)
+    assert set(svc["db"]["secrets"]) == set(cfg["secrets"])  # 관리자 비밀 파일 없음(DEC-057: web/.env 환경 변수)
     assert svc["api"]["secrets"] == ["db_app_password"]
     assert svc["worker"]["secrets"] == ["db_app_password"]
     assert svc["migrate"]["secrets"] == ["db_owner_password"]

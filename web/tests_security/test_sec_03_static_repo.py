@@ -200,12 +200,19 @@ def test_compose_secrets_are_files_and_env_has_no_plain_credentials():
         env = s.get("environment") or {}
         env = env if isinstance(env, dict) else dict(e.split("=", 1) for e in env)
         for k, v in env.items():
+            if n == "api" and k == "YTWEB_ADMIN_PASSWORD":  # DEC-057 예외: 값은 web/.env 에서만 오고 저장소엔 자리표시자뿐
+                assert str(v) == "${YTWEB_ADMIN_PASSWORD:-}", v
+                continue
             if blob_re.search(k) and not k.endswith("_DIR"):
                 assert k.endswith("_FILE"), (n, k)
                 assert str(v).startswith("/run/secrets/"), (n, k, v)
     api = c["services"]["api"]
     assert api["environment"]["YTWEB_ENABLE_DOCS"] == "0"
-    # DEC-055: 관리자 로그인 비밀 2개는 api 에만(worker 는 DB 비밀 하나뿐)
+    # DEC-057: 관리자 아이디·비밀번호는 api 환경 변수(web/.env 값)로만, 비밀 파일 없음. worker/migrate/db/web 에는 전달하지 않는다
+    for other in ("worker", "migrate", "db", "web"):
+        oenv = c["services"][other].get("environment") or {}
+        assert not [k for k in oenv if k.startswith("YTWEB_ADMIN_")], other
+    assert c["services"]["api"]["environment"]["YTWEB_ADMIN_ID"] == "${YTWEB_ADMIN_ID:-}"
     assert c["services"]["api"]["secrets"] == ["db_app_password"] and c["services"]["worker"]["secrets"] == ["db_app_password"]
     assert c["services"]["migrate"]["secrets"] == ["db_owner_password"]
     assert "secrets" not in c["services"]["web"]

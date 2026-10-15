@@ -112,6 +112,9 @@ def test_tc_wi_008_no_new_privileges(svc):
 def test_tc_wi_009_no_plaintext_secrets_in_environment(compose, svc):
     for name, s in svc.items():
         for key, value in _env(s).items():
+            if name == "api" and key == "YTWEB_ADMIN_PASSWORD":  # DEC-057 유일한 예외: 값은 web/.env 에서 오는 자리표시자만 허용(실제 값 금지)
+                assert value == "${YTWEB_ADMIN_PASSWORD:-}"
+                continue
             if SENSITIVE_KEY.search(key) and not key.endswith("_DIR"):
                 assert key.endswith("_FILE"), f"{name}: {key} 는 *_FILE 이어야 함"
                 assert value.startswith("/run/secrets/"), (name, key)

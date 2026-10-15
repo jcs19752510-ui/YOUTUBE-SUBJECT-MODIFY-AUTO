@@ -168,6 +168,9 @@ def test_vif_008_no_plaintext_secret_in_env(base):
     """TC-VIF-008 환경변수의 비밀 항목은 *_FILE 이고 /run/secrets 를 가리킨다. 비밀값 자체가 파일에 없다."""
     for name, s in base["services"].items():
         for k, v in _env(s).items():
+            if name == "api" and k == "YTWEB_ADMIN_PASSWORD":   # DEC-057 예외: 자리표시자 ${...:-} 만 허용
+                assert v == "${YTWEB_ADMIN_PASSWORD:-}", v
+                continue
             if re.search(r"(PASS|SECRET|TOKEN|KEY|CREDENTIAL)", k, re.I) and not k.endswith("_DIR"):   # _DIR 은 경로(값이 아님)
                 assert k.endswith("_FILE"), (name, k)
                 assert v.startswith("/run/secrets/"), (name, k, v)

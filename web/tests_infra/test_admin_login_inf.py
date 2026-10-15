@@ -75,8 +75,8 @@ def test_tc_adm_005_hardening_and_networks_unchanged(compose):
 
 
 def test_tc_adm_006_no_literal_credentials_in_compose_or_env_example():
-    c = _t(WEB / "compose.yaml")
-    assert not re.search(r"YTWEB_ADMIN_(ID|PASSWORD):\s*(?!\$\{YTWEB_ADMIN_(ID|PASSWORD):-\}\s*$)\S", c, re.M)
+    env = yaml.safe_load(_t(WEB / "compose.yaml"))["services"]["api"]["environment"]
+    assert env["YTWEB_ADMIN_ID"] == "${YTWEB_ADMIN_ID:-}" and env["YTWEB_ADMIN_PASSWORD"] == "${YTWEB_ADMIN_PASSWORD:-}"
     for line in _t(WEB / ".env.example").splitlines():  # 예시 파일의 값 줄은 비어 있어야 한다(실제 값 없음)
         m = re.match(r"\s*YTWEB_ADMIN_(ID|PASSWORD)\s*=(.*)$", line)
         if m:
