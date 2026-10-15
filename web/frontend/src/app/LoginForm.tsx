@@ -35,6 +35,10 @@ export function LoginForm({ onDone, expired }: { onDone?: () => void; expired?: 
   const pwRef = useRef<HTMLInputElement>(null);
   const typed = useRef(false); // 사람이 키보드로 입력했는지(자동 채움은 키 입력 이벤트가 없다)
 
+  const human = useCallback(() => {
+    typed.current = true;
+  }, []);
+
   const wipeDom = useCallback(() => {
     if (idRef.current) idRef.current.value = '';
     if (pwRef.current) pwRef.current.value = '';
@@ -47,12 +51,18 @@ export function LoginForm({ onDone, expired }: { onDone?: () => void; expired?: 
 
   useEffect(() => {
     wipeDom(); // 처음 그릴 때 상태는 이미 비어 있다. 화면 값만 비운다.
-    // 브라우저는 화면이 뜬 뒤 조금 늦게 채우기도 한다. 사람이 입력하기 전이면 그때마다 다시 비운다.
-    const timers = [60, 250, 700, 1500].map((ms) =>
-      window.setTimeout(() => {
-        if (!typed.current) wipe();
-      }, ms),
-    );
+    // 브라우저는 화면이 뜬 뒤 늦게 채우기도 한다. 사람이 입력하기 전이면 처음 30초 동안 0.4초마다 다시 비운다.
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      if (typed.current || Date.now() - started > 30000) window.clearInterval(timer);
+      else wipe();
+    }, 400);
+    // 사람의 입력(키보드·붙여넣기·음성·가상 키보드·한글 조합)은 beforeinput/compositionstart 가 먼저 발생한다. 브라우저 자동 채움은 이 이벤트가 없다.
+    const ids = [idRef.current, pwRef.current];
+    for (const el of ids) {
+      el?.addEventListener('beforeinput', human);
+      el?.addEventListener('compositionstart', human);
+    }
     // 뒤로 가기·앞으로 가기로 이전 화면이 그대로 복원될 때도 비운다.
     const onShow = (ev: PageTransitionEvent) => {
       if (ev.persisted) {
@@ -63,14 +73,14 @@ export function LoginForm({ onDone, expired }: { onDone?: () => void; expired?: 
     };
     window.addEventListener('pageshow', onShow);
     return () => {
-      timers.forEach((t) => window.clearTimeout(t));
+      window.clearInterval(timer);
+      for (const el of ids) {
+        el?.removeEventListener('beforeinput', human);
+        el?.removeEventListener('compositionstart', human);
+      }
       window.removeEventListener('pageshow', onShow);
     };
-  }, [wipe, wipeDom]);
-
-  const human = () => {
-    typed.current = true;
-  };
+  }, [wipe, wipeDom, human]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

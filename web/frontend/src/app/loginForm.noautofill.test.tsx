@@ -109,4 +109,36 @@ describe('로그인 화면: 저장된 아이디·비밀번호 자동 채움 차�
     expect(all).not.toContain('person-id');
     expect(all).not.toContain('person-secret');
   });
+  it('음성·가상 키보드·한글 조합처럼 키 입력 이벤트 없이 사람이 입력해도(beforeinput/compositionstart) 값을 지우지 않는다', () => {
+    const { client } = makeClient([]);
+    renderWithApp(<LoginForm />, client);
+    const id = screen.getByLabelText('아이디') as HTMLInputElement;
+    act(() => {
+      id.dispatchEvent(new Event('beforeinput', { bubbles: true, cancelable: true }));
+      setNative(id, 'voice-typed');
+      vi.advanceTimersByTime(3000);
+    });
+    expect(id.value).toBe('voice-typed');
+    const pw = screen.getByLabelText('비밀번호') as HTMLInputElement;
+    act(() => {
+      pw.dispatchEvent(new Event('compositionstart', { bubbles: true }));
+      setNative(pw, 'ime-typed');
+      vi.advanceTimersByTime(3000);
+    });
+    expect(pw.value).toBe('ime-typed');
+  });
+
+  it('화면이 뜬 지 5초·20초 뒤에 브라우저가 늦게 채워도 사람이 입력하기 전이면 비운다(처음 30초)', () => {
+    const { client } = makeClient([]);
+    renderWithApp(<LoginForm />, client);
+    const id = screen.getByLabelText('아이디') as HTMLInputElement;
+    for (const wait of [5000, 15000]) {
+      act(() => {
+        vi.advanceTimersByTime(wait);
+        setNative(id, 'late-saved-id');
+        vi.advanceTimersByTime(900);
+      });
+      expect(id.value).toBe('');
+    }
+  });
 });
