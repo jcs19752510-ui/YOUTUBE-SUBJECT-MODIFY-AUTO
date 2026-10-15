@@ -66,14 +66,19 @@ function Invoke-Native {
     return [pscustomobject]@{ ExitCode = $code; Output = $lines.ToArray() }
 }
 
-function Invoke-Compose {
-    param([string[]]$ArgList, [switch]$Capture, [switch]$StdoutOnly, [switch]$Quiet)
+# compose 공통 인자(프로젝트 이름과 -f 파일 목록). 대화형 실행처럼 출력 가로채기 없이 직접 docker 를 부를 때도 같은 인자를 쓴다.
+function Get-ComposeBaseArgs {
     # 구글 연결 파일(web\secrets\google_client.json)이 있으면 구글 통신 경로(덧씌우기 파일)를 함께 쓴다(M2). 없으면 데모 모드 그대로.
     $files = @('-f', $YtwebComposeFile)
     if (Test-Path $YtwebGoogleClient) { $files += @('-f', $YtwebOnlineFile) }
     # Gemini 키 파일(web\secrets\gemini_api_key, 내용이 있을 때만)이 있으면 AI 통신 경로도 함께 쓴다.
     if ((Test-Path $YtwebGeminiKey) -and ((Get-Item $YtwebGeminiKey).Length -gt 0)) { $files += @('-f', $YtwebGeminiFile) }
-    $all = @('compose', '-p', $YtwebProject) + $files + $ArgList
+    return (@('compose', '-p', $YtwebProject) + $files)
+}
+
+function Invoke-Compose {
+    param([string[]]$ArgList, [switch]$Capture, [switch]$StdoutOnly, [switch]$Quiet)
+    $all = @(Get-ComposeBaseArgs) + $ArgList
     return Invoke-Native -FilePath 'docker' -ArgList $all -Capture:$Capture -StdoutOnly:$StdoutOnly -Quiet:$Quiet
 }
 

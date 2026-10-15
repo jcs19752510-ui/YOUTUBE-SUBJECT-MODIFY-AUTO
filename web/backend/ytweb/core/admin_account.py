@@ -1,4 +1,4 @@
-"""관리자 계정(1명) 로그인: 계정은 시작 때 web\\.env 값으로 준비(DEC-057, 웹 생성 없음), 아이디·비밀번호 검증, 연속 실패 잠금(DEC-055).
+"""관리자 계정(1명) 로그인: 계정은 로컬 등록 명령으로 DB 에 해시만 저장(DEC-058, 웹 생성 없음·평문 파일 없음), 아이디·비밀번호 검증, 연속 실패 잠금(DEC-055).
 
 비밀번호는 scrypt 해시만 DB 에 둔다. 실패 횟수·잠금은 소유자 1명 전역 카운터(PIN 과 같은 방식)이며,
 아이디가 없든 비밀번호가 틀리든 같은 오류 문구·같은 처리 시간(더미 해시 검증)으로 계정 존재 여부를 숨긴다.
@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
-from ytweb.config import WebSettings
 from ytweb.core.errors import ProblemError
 from ytweb.core.pin import hash_pin, verify_pin_hash
 from ytweb.core.settings_store import get_web_setting, set_web_setting
@@ -53,23 +52,14 @@ def has_admin(db: Session) -> bool:
     return db.scalars(select(AdminAccount.login_id).limit(1)).first() is not None
 
 
-def sync_admin_from_env(db: Session, settings: WebSettings, *, now: datetime) -> str:
-    """web\\.env 의 YTWEB_ADMIN_ID / YTWEB_ADMIN_PASSWORD 를 admin_accounts 에 해시로 반영한다(DEC-057).
-    결과: created|updated|unchanged|missing|invalid. 값이 바뀌면(아이디·비밀번호 변경) 기존 세션을 모두 지우고 실패 잠금을 초기화한다.
-    웹·API 로 계정을 만드는 경로는 없다. 값은 로그에 남기지 않는다."""
-    login_id, password = settings.admin_id, settings.admin_password
-    if not login_id or not password:
-        return "missing"
+def register_admin(db: Session, login_id: str, password: str, *, now: datetime) -> str:
+    """로컬 등록 명령(admin_cli register)이 부른다(DEC-058). 비밀번호는 해시로만 저장하고 원문은 어디에도 남기지 않는다.
+    관리자는 1명: 기존 계정은 교체하고, 기존 세션을 모두 지우고 실패 잠금을 초기화한다. 결과: created|replaced."""
     reason = validate_credentials_format(login_id, password)
     if reason:
-        log.error("관리자 계정 설정 형식 오류: %s", reason)
-        return "invalid"
-    current = db.scalars(select(AdminAccount)).all()
-    same = next((a for a in current if a.login_id == login_id), None)
-    if same is not None and len(current) == 1 and verify_pin_hash(password, same.password_hash):
-        return "unchanged"
-    status = "updated" if current else "created"
-    db.execute(delete(AdminAccount))  # 관리자는 1명: 설정이 가리키는 계정만 남긴다
+        raise ValueError(reason)
+    status = "replaced" if has_admin(db) else "created"
+    db.execute(delete(AdminAccount))
     db.add(AdminAccount(login_id=login_id, password_hash=hash_pin(password), created_at=now, updated_at=now))
     db.execute(delete(SessionRow))
     obj = db.get(SettingKV, FAIL_KEY)
@@ -105,7 +95,7 @@ def authenticate(db: Session, login_id: str, password: str, *, now: datetime) ->
     account = db.scalars(select(AdminAccount)).first()
     if account is None:
         raise ProblemError(409, "login_not_configured", "관리자 계정이 아직 설정되지 않았습니다.",
-                           hint="web\\.env 에 YTWEB_ADMIN_ID 와 YTWEB_ADMIN_PASSWORD 를 넣고 .\\web\\scripts\\start.ps1 을 다시 실행하세요.")
+                           hint="PC 에서 .\\web\\scripts\\register-admin.bat 을 한 번 실행해 아이디와 비밀번호를 등록하세요.")
     st = _state(db)
     if st["locked_until"]:
         until = datetime.fromisoformat(st["locked_until"])

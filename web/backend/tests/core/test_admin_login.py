@@ -1,4 +1,4 @@
-"""관리자 로그인(DEC-055, 개정 DEC-057): 로그인·실패 잠금·60분 무활동 만료·.env 값으로 계정 준비·웹 계정 생성 경로 없음·감사 기록. 값은 모두 시험용 가짜다."""
+"""관리자 로그인(DEC-055, 개정 DEC-058): 로그인·실패 잠금·60분 무활동 만료·로컬 등록 명령(해시만 DB 저장)·웹 계정 생성 경로 없음·감사 기록. 값은 모두 시험용 가짜다."""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -22,7 +22,7 @@ H = {"Origin": ORIGIN}
 
 @pytest.fixture
 def login_settings(web_settings: WebSettings) -> WebSettings:
-    return replace(web_settings, admin_login=True, session_idle_minutes=60, admin_id=ID, admin_password=PW)
+    return replace(web_settings, admin_login=True, session_idle_minutes=60)
 
 
 def _make(settings, clock, fake_time, monkeypatch, **limits):
@@ -39,8 +39,11 @@ def lapp(login_settings, engine, clock, fake_time, monkeypatch):
 
 @pytest.fixture
 def lc(lapp):
-    """서버를 시작한 상태: 시작할 때 .env 값(관리자 아이디·비밀번호)이 계정으로 준비된다. 로그인 쿠키는 없다."""
+    """등록 명령으로 관리자 계정이 이미 등록된 상태의 서버. 로그인 쿠키는 없다."""
     with TestClient(lapp, base_url=ORIGIN) as c:
+        with lapp.state.session_factory() as db:
+            admin_account.register_admin(db, ID, PW, now=lapp.state.clock())
+            db.commit()
         yield c
 
 
@@ -189,6 +192,9 @@ def test_login_rate_limit_applies(login_settings, engine, clock, fake_time, monk
     """TC-AL-015 로그인 요청에도 분당 속도 제한(auth_per_min)이 걸린다."""
     app = _make(login_settings, clock, fake_time, monkeypatch, auth=3)
     with TestClient(app, base_url=ORIGIN) as c:
+        with app.state.session_factory() as db:
+            admin_account.register_admin(db, ID, PW, now=clock())
+            db.commit()
         codes = [_login(c, password="bad-password-1").status_code for _ in range(4)]
     assert codes == [401, 401, 401, 429]
 
@@ -210,20 +216,21 @@ def test_format_validation():
 
 
 def test_config_login_defaults():
-    """TC-AL-021 YTWEB_ADMIN_LOGIN=1 이면 무활동 만료 기본 60분. 꺼져 있으면 30분(기존). 비밀 파일 설정은 더 이상 없다(DEC-056)."""
-    base = {"YTWEB_DATABASE_URL": "sqlite://", "YTWEB_ADMIN_LOGIN": "1"}
+    """TC-AL-021 YTWEB_ADMIN_LOGIN=1 이면 무활동 만료 기본 60분. 꺼져 있으면 30분(기존). 계정 값(아이디·비밀번호)을 설정으로 받지 않는다(DEC-058)."""
+    base = {"YTWEB_DATABASE_URL": "sqlite://", "YTWEB_ADMIN_LOGIN": "1", "YTWEB_ADMIN_ID": "leak1234", "YTWEB_ADMIN_PASSWORD": "Leak-Passw0rd!"}
     s = load_web_settings(base)
     assert s.admin_login and s.session_idle_minutes == 60
+    assert not any(hasattr(s, a) for a in ("admin_id", "admin_password", "admin_id_file", "admin_password_file"))
+    assert "Leak-Passw0rd!" not in repr(s)
     assert load_web_settings({**base, "YTWEB_SESSION_IDLE_MINUTES": "15"}).session_idle_minutes == 15
     off = load_web_settings({"YTWEB_DATABASE_URL": "sqlite://"})
     assert off.admin_login is False and off.session_idle_minutes == 30
-    assert not hasattr(s, "admin_id_file") and not hasattr(s, "admin_password_file")
 
 
-# ───────────── DEC-057: 웹에서 계정을 만들 수 없다 · .env 값으로만 준비 ─────────────
+# ───────────── DEC-058: 계정은 로컬 등록 명령으로만, 평문은 어디에도 없다 ─────────────
 
 def test_no_account_creation_route_exists(lc):
-    """TC-AL-301 계정을 만드는 API(/auth/setup 등)가 없다(404/405). 다른 사람이 계정을 만들 방법이 없다."""
+    """TC-AL-401 계정을 만드는 API 가 없다(404/405). 임의 계정으로 로그인 불가."""
     for path in ("/api/v1/auth/setup", "/api/v1/auth/register", "/api/v1/auth/signup", "/api/v1/auth/admin"):
         for m in ("post", "put"):
             r = getattr(lc, m)(path, json={"login_id": "other123", "password": "Another-Passw0rd!"}, headers=H)
@@ -233,75 +240,89 @@ def test_no_account_creation_route_exists(lc):
 
 
 def test_openapi_has_no_account_creation_operation(lapp):
-    """TC-AL-302 OpenAPI 에 계정 생성·초기화 경로가 없다."""
+    """TC-AL-402 OpenAPI 에 계정 생성·초기화 경로가 없다."""
     paths = lapp.openapi()["paths"]
     assert not [p for p in paths if any(k in p for k in ("setup", "register", "signup", "reset"))]
     assert "/api/v1/auth/login" in paths
 
 
-def test_account_comes_only_from_env_values(lc, lapp):
-    """TC-AL-303 DB 의 관리자는 .env 값 1개뿐이고 비밀번호는 해시로만 있다."""
+def test_register_stores_hash_only_and_login_works(lc, lapp):
+    """TC-AL-403 등록한 계정은 해시만 DB 에 있고 로그인할 수 있다."""
     with lapp.state.session_factory() as db:
         acc = db.scalars(select(AdminAccount)).one()
     assert acc.login_id == ID and acc.password_hash.startswith("scrypt$") and PW not in acc.password_hash
+    assert _login(lc).status_code == 200
 
 
-def test_missing_env_means_nobody_can_log_in(web_settings, engine, clock, fake_time, monkeypatch):
-    """TC-AL-304 .env 값이 없으면 아무도 로그인할 수 없다(닫힘): 409 login_not_configured + 설정 방법 안내, 보호 API 401."""
-    s = replace(web_settings, admin_login=True, session_idle_minutes=60)
-    with TestClient(_make(s, clock, fake_time, monkeypatch), base_url=ORIGIN) as c:
+def test_no_account_means_nobody_can_log_in_and_message_tells_how(lapp):
+    """TC-AL-404 계정이 등록되지 않았으면 아무도 로그인할 수 없고(409), 안내가 등록 명령을 알려 준다(값 없음)."""
+    with TestClient(lapp, base_url=ORIGIN) as c:
         r = _login(c)
         assert r.status_code == 409 and r.json()["code"] == "login_not_configured"
-        assert ".env" in r.json()["hint"] and "YTWEB_ADMIN_PASSWORD" in r.json()["hint"]
-        assert PW not in r.text
+        assert "register-admin.bat" in r.json()["hint"] and PW not in r.text
         assert c.get("/api/v1/settings").status_code == 401
         assert c.get("/api/v1/auth/me").json()["login_required"] is True
 
 
-def test_sync_created_unchanged_updated_missing_invalid(login_settings, factory, clock):
-    """TC-AL-305 .env → 계정 반영: 생성·변경 없음·비밀번호 변경(세션 종료·잠금 초기화)·값 없음·형식 오류."""
-    now = clock()
-    with factory() as db:
-        assert admin_account.sync_admin_from_env(db, login_settings, now=now) == "created"
-        db.commit()
-        assert admin_account.sync_admin_from_env(db, login_settings, now=now) == "unchanged"
-        db.add(SessionRow(id="x" * 64, csrf_token="c", created_at=now, expires_at=now, last_seen=now))
-        db.commit()
-        changed = replace(login_settings, admin_password="Another-Passw0rd!")
-        assert admin_account.sync_admin_from_env(db, changed, now=now) == "updated"
-        db.commit()
-        assert db.scalars(select(SessionRow)).all() == []
-        assert admin_account.authenticate(db, ID, "Another-Passw0rd!", now=now).login_id == ID
-        assert admin_account.sync_admin_from_env(db, replace(login_settings, admin_password="short"), now=now) == "invalid"
-        assert admin_account.sync_admin_from_env(db, replace(login_settings, admin_id="ab"), now=now) == "invalid"
-        assert admin_account.sync_admin_from_env(db, replace(login_settings, admin_id=None), now=now) == "missing"
-        assert admin_account.sync_admin_from_env(db, replace(login_settings, admin_password=None), now=now) == "missing"
-
-
-def test_changed_id_replaces_account(login_settings, factory, clock):
-    """TC-AL-306 아이디를 바꿔도 관리자는 1명(이전 계정은 사라진다)."""
-    now = clock()
-    with factory() as db:
-        admin_account.sync_admin_from_env(db, login_settings, now=now)
-        db.commit()
-        assert admin_account.sync_admin_from_env(db, replace(login_settings, admin_id="newadmin1"), now=now) == "updated"
+def test_register_replaces_account_and_ends_sessions_and_lock(lc, lapp):
+    """TC-AL-405 다시 등록하면 계정이 교체되고(1명 유지) 세션이 모두 끝나며 실패 잠금이 초기화된다."""
+    assert _login(lc).status_code == 200
+    for _ in range(5):
+        _login(TestClient(lapp, base_url=ORIGIN), password="bad-password-1")
+    now = lapp.state.clock()
+    with lapp.state.session_factory() as db:
+        assert admin_account.register_admin(db, "newadmin1", "Another-Passw0rd!", now=now) == "replaced"
         db.commit()
         assert [a.login_id for a in db.scalars(select(AdminAccount)).all()] == ["newadmin1"]
+        assert db.scalars(select(SessionRow)).all() == []
+    assert lc.get("/api/v1/settings").status_code == 401  # 이전 로그인 끝남
+    assert _login(TestClient(lapp, base_url=ORIGIN), "newadmin1", "Another-Passw0rd!").status_code == 200  # 잠금 초기화
 
 
-def test_special_chars_password_and_secret_not_in_repr(login_settings, factory, clock):
-    """TC-AL-307 특수문자(예: **) 비밀번호가 그대로 쓰이고, 설정 객체의 repr 에 비밀번호가 나오지 않는다."""
-    s = replace(login_settings, admin_password="Star**Passw0rd")
-    assert "Star**Passw0rd" not in repr(s)
-    now = clock()
+def test_register_validates_format(factory, clock):
+    """TC-AL-406 형식 위반(아이디 4~20 영숫자, 비밀번호 8~64)은 거부되고 계정이 바뀌지 않는다."""
     with factory() as db:
-        assert admin_account.sync_admin_from_env(db, s, now=now) == "created"
-        assert admin_account.authenticate(db, ID, "Star**Passw0rd", now=now).login_id == ID
+        for lid, pw in (("abc", PW), ("ab-cd", PW), ("a" * 21, PW), (ID, "short"), (ID, "p" * 65)):
+            with pytest.raises(ValueError):
+                admin_account.register_admin(db, lid, pw, now=clock())
+        assert not admin_account.has_admin(db)
 
 
-def test_config_reads_admin_env_but_never_files():
-    """TC-AL-308 YTWEB_ADMIN_ID/PASSWORD 만 읽고 파일 설정은 더 이상 없다."""
-    s = load_web_settings({"YTWEB_DATABASE_URL": "sqlite://", "YTWEB_ADMIN_LOGIN": "1", "YTWEB_ADMIN_ID": " testadmin ", "YTWEB_ADMIN_PASSWORD": "Test-Passw0rd!"})
-    assert s.admin_id == "testadmin" and s.admin_password == "Test-Passw0rd!"
-    assert not hasattr(s, "admin_id_file") and not hasattr(s, "admin_password_file")
-    assert load_web_settings({"YTWEB_DATABASE_URL": "sqlite://"}).admin_id is None
+def test_admin_cli_register_prompts_hidden_and_saves_hash(login_settings, engine, monkeypatch, capsys, factory):
+    """TC-AL-407 register: TTY 에서만, 비밀번호는 getpass(숨김)로 두 번, DB 에 해시만, 출력·감사 기록에 값 없음."""
+    from ytweb import admin_cli
+    monkeypatch.setenv("YTWEB_DATABASE_URL", login_settings.database_url)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True, raising=False)
+    monkeypatch.setattr("builtins.input", lambda prompt="": ID)
+    pws = iter([PW, PW])
+    monkeypatch.setattr("getpass.getpass", lambda prompt="": next(pws))
+    assert admin_cli.main(["status"]) == 0 and capsys.readouterr().out.strip() == "NONE"
+    assert admin_cli.main(["register"]) == 0
+    out = capsys.readouterr()
+    assert PW not in out.out + out.err and ID not in out.out.replace("관리자 아이디", "")
+    assert admin_cli.main(["status"]) == 0 and capsys.readouterr().out.strip() == "REGISTERED"
+    with factory() as db:
+        acc = db.scalars(select(AdminAccount)).one()
+        assert acc.login_id == ID and acc.password_hash.startswith("scrypt$") and PW not in acc.password_hash
+        rows = db.scalars(select(AuditLog).where(AuditLog.action == "admin.register")).all()
+        assert len(rows) == 1 and PW not in str(rows[0].detail) and ID not in str(rows[0].detail)
+
+
+def test_admin_cli_register_rejects_non_tty_mismatch_and_bad_format(login_settings, engine, monkeypatch, capsys, factory):
+    """TC-AL-408 파이프 입력(비 TTY)·비밀번호 불일치·형식 오류는 거부되고 계정이 생기지 않는다. 잘못된 인자는 종료코드 2."""
+    from ytweb import admin_cli
+    monkeypatch.setenv("YTWEB_DATABASE_URL", login_settings.database_url)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False, raising=False)
+    assert admin_cli.main(["register"]) == 2
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True, raising=False)
+    monkeypatch.setattr("builtins.input", lambda prompt="": ID)
+    pws = iter([PW, "Different-Passw0rd!"])
+    monkeypatch.setattr("getpass.getpass", lambda prompt="": next(pws))
+    assert admin_cli.main(["register"]) == 1
+    monkeypatch.setattr("builtins.input", lambda prompt="": "ab")
+    pws2 = iter([PW, PW])
+    monkeypatch.setattr("getpass.getpass", lambda prompt="": next(pws2))
+    assert admin_cli.main(["register"]) == 1
+    with factory() as db:
+        assert db.scalars(select(AdminAccount)).all() == []
+    assert admin_cli.main([]) == 2 and admin_cli.main(["x"]) == 2

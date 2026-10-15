@@ -33,9 +33,7 @@ class WebSettings:
     port: int = 8080
     session_ttl_hours: int = 12
     session_idle_minutes: int = 30      # 마지막 사용 뒤 이 시간이 지나면 세션 만료(0 이면 유휴 만료 끔, 절대 만료 session_ttl_hours 만 적용)
-    admin_login: bool = False           # True 면 아이디·비밀번호 로그인이 필수(익명 세션 발급 금지, DEC-055). compose 기본은 켬
-    admin_id: str | None = field(default=None, repr=False)        # DEC-057: 선생님 PC web\.env 의 YTWEB_ADMIN_ID. 웹에서 계정을 만드는 경로는 없다
-    admin_password: str | None = field(default=None, repr=False)  # YTWEB_ADMIN_PASSWORD(원문은 시작 때 해시로만 DB 에 반영, repr 에 나오지 않음)
+    admin_login: bool = False           # True 면 아이디·비밀번호 로그인이 필수(익명 세션 발급 금지, DEC-055). compose 기본은 켬. 계정은 DB 의 admin_accounts(해시만, DEC-058)
     enable_docs: bool = False           # /docs 는 개발 프로필에서만
     log_json: bool = True
     extra: dict = field(default_factory=dict)
@@ -73,8 +71,6 @@ def load_web_settings(env: dict[str, str] | None = None) -> WebSettings:
         session_ttl_hours=int(e.get("YTWEB_SESSION_TTL_HOURS", "12")),
         session_idle_minutes=_non_negative_int(e, "YTWEB_SESSION_IDLE_MINUTES", 60 if admin_login else 30),
         admin_login=admin_login,
-        admin_id=(e.get("YTWEB_ADMIN_ID") or "").strip() or None,
-        admin_password=e.get("YTWEB_ADMIN_PASSWORD") or None,
         enable_docs=e.get("YTWEB_ENABLE_DOCS", "0") == "1",
         log_json=e.get("YTWEB_LOG_JSON", "1") == "1",
     )

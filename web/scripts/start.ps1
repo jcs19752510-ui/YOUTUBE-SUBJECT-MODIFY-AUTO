@@ -2,7 +2,7 @@
 .SYNOPSIS
   유튜브 제목 웹(데모 모드)을 시작합니다. 처음 한 번 실행하면 필요한 준비를 모두 합니다.
 .DESCRIPTION
-  1) Docker 설치·실행 확인  2) 비밀번호 파일 생성(없을 때만)  3) 포트 8080 점검
+  1) Docker 설치·실행 확인  2) 비밀 파일 생성(없을 때만)  3) 포트 8080 점검
   4) 이미지 빌드와 컨테이너 시작  5) 준비될 때까지 대기  6) 접속 주소 안내
 .PARAMETER OpenBrowser
   준비가 끝나면 기본 브라우저로 접속 주소를 엽니다.
@@ -29,28 +29,6 @@ Test-DockerReady
 
 Write-Info '2/5 비밀 파일 확인'
 Initialize-Secrets
-
-# 관리자 로그인 설정 확인(값은 화면·로그에 출력하지 않고 있다/없다만 안내한다. 입력을 받지 않는다. 없어도 계속 진행한다 = 로그인 불가로 닫힘)
-$adminEnvFile = Join-Path $YtwebWebDir '.env'
-$adminIdSet = $false
-$adminPwSet = $false
-if (Test-Path $adminEnvFile) {
-    foreach ($envLine in [System.IO.File]::ReadAllLines($adminEnvFile)) {
-        if ($envLine -match '^\s*YTWEB_ADMIN_ID\s*=\s*\S') { $adminIdSet = $true }
-        if ($envLine -match '^\s*YTWEB_ADMIN_PASSWORD\s*=\s*\S') { $adminPwSet = $true }
-    }
-}
-if ($adminIdSet -and $adminPwSet) {
-    Write-Ok '관리자 로그인 설정이 있습니다(web\.env 의 아이디·비밀번호; 값은 표시하지 않음)'
-} else {
-    Write-Warn '관리자 로그인 설정이 없습니다. 이대로 시작하면 서버는 뜨지만 로그인할 수 없습니다.'
-    Write-Host '  해결 방법:' -ForegroundColor Yellow
-    Write-Host '   1) 메모장으로 web\.env 파일을 엽니다(없으면 새로 만듭니다; 저장소 맨 위 폴더 아래 web 폴더).' -ForegroundColor Yellow
-    Write-Host '   2) 아래 두 줄을 추가합니다(아이디 영문·숫자 4~20자, 비밀번호 8~64자; # 과 따옴표는 쓰지 마세요).' -ForegroundColor Yellow
-    Write-Host '        YTWEB_ADMIN_ID=원하는아이디' -ForegroundColor Yellow
-    Write-Host '        YTWEB_ADMIN_PASSWORD=원하는비밀번호' -ForegroundColor Yellow
-    Write-Host '   3) 저장한 뒤 .\web\scripts\start.ps1 을 다시 실행합니다.' -ForegroundColor Yellow
-}
 
 Write-Info '3/5 포트 확인'
 $own = @(Get-ComposeServices | Where-Object { (Get-Prop $_ 'Service') -eq 'web' -and (Get-Prop $_ 'State') -eq 'running' })
@@ -88,7 +66,17 @@ Write-Host ''
 Write-Host '=============================================' -ForegroundColor Green
 Write-Host " 준비 완료!  브라우저에서 열기:  $YtwebUrl" -ForegroundColor Green
 Write-Host '=============================================' -ForegroundColor Green
-Write-Host '브라우저에서 로그인하세요(아이디·비밀번호는 web\.env 에 적은 값입니다. 웹에서 계정을 만들 수 없습니다).'
+# 관리자 계정 존재 확인(입력은 받지 않는다. 확인에 실패해도 시작은 성공으로 두고 안내만 한다)
+$adminState = ''
+$st = Invoke-Compose -ArgList @('exec', '-T', 'api', 'python', '-m', 'ytweb.admin_cli', 'status') -Capture
+if ($st.ExitCode -eq 0) { $adminState = ((@($st.Output) | Where-Object { "$_".Trim() -ne '' } | Select-Object -Last 1) -as [string]).Trim() }
+if ($adminState -eq 'NONE') {
+    Write-Warn '관리자 계정이 아직 없습니다. 한 번만 .\web\scripts\register-admin.bat 을 실행해 아이디·비밀번호를 등록하세요.'
+} elseif ($adminState -eq 'REGISTERED') {
+    Write-Host '브라우저에서 로그인 화면으로 로그인하세요.'
+} else {
+    Write-Warn '관리자 계정 상태를 확인하지 못했습니다(시작은 성공). 로그인이 안 되면 .\web\scripts\register-admin.bat 을 실행하세요.'
+}
 Write-Host '상태 확인  .\web\scripts\status.ps1'
 Write-Host '로그 보기  .\web\scripts\logs.ps1'
 Write-Host '종료       .\web\scripts\stop.ps1   (데이터는 보존됩니다)'

@@ -28,13 +28,9 @@ def test_migration_0003_creates_admin_accounts_and_is_head(pg):  # noqa: F811
 
 def test_concurrent_wrong_guesses_cannot_bypass_lockout(pg, tmp_path):  # noqa: F811
     """TC-AL-102 동시에 20개 틀린 추측을 보내도 실제 비밀번호 검증은 4번(401)뿐이고 나머지는 잠금(429)."""
-    from dataclasses import replace as _r
-    from ytweb.config import WebSettings
-    settings = WebSettings(mode="demo", database_url="x", base_dir=tmp_path, secrets_dir=tmp_path, allowed_hosts=("127.0.0.1:8080",),
-                           admin_login=True, admin_id=ID, admin_password=PW)
     factory = sessionmaker(pg)
     with factory() as db:
-        assert admin_account.sync_admin_from_env(db, settings, now=T0) == "created"
+        admin_account.register_admin(db, ID, PW, now=T0)
         db.commit()
     codes: list[str] = []
     lock = threading.Lock()

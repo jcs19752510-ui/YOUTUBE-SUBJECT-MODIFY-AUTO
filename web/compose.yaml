@@ -143,11 +143,9 @@ services:
       <<: *app-env
       YTWEB_DB_USER: ytweb_app
       YTWEB_DB_PASSWORD_FILE: /run/secrets/db_app_password
-      # 관리자 로그인: 로그인 필수. 아이디·비밀번호는 선생님 PC 의 web/.env 에서 읽고(저장소 제외), 서버가 시작할 때 계정을 준비한다(DEC-057).
-      # 값이 비어 있으면 로그인할 수 없다(닫힘). 웹 화면에서는 계정을 만들 수 없다. api 에만 전달한다.
+      # 관리자 로그인: 로그인 필수(DEC-058). 계정은 DB(admin_accounts)에 해시로만 저장하며, 환경 변수·파일에는 아이디·비밀번호가 없다.
+      # 계정 등록은 register-admin.bat 가 api 컨테이너 안에서 한 번 실행한다(웹 화면에서는 계정을 만들 수 없다).
       YTWEB_ADMIN_LOGIN: "1"
-      YTWEB_ADMIN_ID: ${YTWEB_ADMIN_ID:-}
-      YTWEB_ADMIN_PASSWORD: ${YTWEB_ADMIN_PASSWORD:-}
       YTWEB_SESSION_IDLE_MINUTES: "60"
     secrets:
       - db_app_password

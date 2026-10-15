@@ -92,9 +92,6 @@ def login(
         raise ProblemError(409, "login_disabled", "이 서버는 로그인 기능이 꺼져 있습니다.",
                            hint="로그인 없이 바로 사용할 수 있습니다.")
     now = clock()
-    if not admin_account.has_admin(db):  # 시작 때 DB 가 준비되지 않았을 수 있어 한 번 더 반영을 시도한다
-        admin_account.sync_admin_from_env(db, settings, now=now)
-        db.flush()
     try:
         account = admin_account.authenticate(db, body.login_id, body.password, now=now)
     except ProblemError as exc:
