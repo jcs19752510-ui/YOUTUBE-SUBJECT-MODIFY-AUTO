@@ -122,7 +122,7 @@ curl -b jar.txt -X POST -H 'Origin: http://127.0.0.1:8080' -H 'X-CSRF-Token: uQo
 | 429 `rate_limited` | 분당 10회 초과 |
 | 409 `setup_closed` | 계정이 이미 있음. **영구히 닫힘**(초기화 `reset-admin.bat` 전까지). 동시에 두 요청이 와도 한 건만 성공(DB 잠금) |
 | 409 `login_disabled` | 서버가 로그인 모드가 아님(`YTWEB_ADMIN_LOGIN` 꺼짐) |
-감사 로그: 성공 `admin.setup`(아이디만, 비밀번호 값 없음). 계정을 지우는 `reset-admin` 은 API 가 아니라 컨테이너 CLI(`python -m ytweb.admin_cli reset`)이며 감사 기록은 CLI 출력으로만 남는다(DB 계정·세션이 지워지므로, `threat_model.md` TW-59).
+감사 로그: 성공 `admin.setup`(아이디만, 비밀번호 값 없음). 실패(규칙 위반·이미 있음) `admin.setup_denied`(코드만). 계정을 지우는 `reset-admin` 은 API 가 아니라 컨테이너 CLI(`python -m ytweb.admin_cli reset`)이며 감사 로그(해시 체인)에 `admin.reset`(삭제된 계정 수만, 값 없음)을 남긴다(`threat_model.md` TW-59).
 
 ### EVT-W06 `POST /api/v1/auth/session`
 세션 발급. **로그인 모드에서는 403 `login_required`(익명 발급 금지).** 본문 `{"pin": "<숫자 4~12자리>"}`(PIN이 설정된 경우만 필요, 그 외 `{}` 또는 본문 없음, 알 수 없는 필드는 422). 응답 200 `{"csrf_token": "..."}` + `Set-Cookie`.
