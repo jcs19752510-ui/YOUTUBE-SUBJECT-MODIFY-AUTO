@@ -1,4 +1,4 @@
-"""관리자 계정(1명) 로그인: 비밀 파일 → 해시 반영, 아이디·비밀번호 검증, 연속 실패 잠금(DEC-055).
+"""관리자 계정(1명) 로그인: 웹 최초 설정으로 계정 생성(DEC-056), 아이디·비밀번호 검증, 연속 실패 잠금(DEC-055).
 
 비밀번호는 scrypt 해시만 DB 에 둔다. 실패 횟수·잠금은 소유자 1명 전역 카운터(PIN 과 같은 방식)이며,
 아이디가 없든 비밀번호가 틀리든 같은 오류 문구·같은 처리 시간(더미 해시 검증)으로 계정 존재 여부를 숨긴다.
@@ -9,12 +9,10 @@ import hmac
 import logging
 import re
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
-from ytweb.config import WebSettings
 from ytweb.core.errors import ProblemError
 from ytweb.core.pin import hash_pin, verify_pin_hash
 from ytweb.core.settings_store import get_web_setting, set_web_setting
@@ -50,39 +48,35 @@ def validate_credentials_format(login_id: str, password: str) -> str | None:
     return None
 
 
-def _read(path: Path | None) -> str | None:
-    if path is None:
-        return None
-    try:
-        # 끝의 줄바꿈·공백만 제거한다(set-admin 은 줄바꿈 없이 쓰지만 손으로 만든 파일 대비). 비밀번호 내부 공백은 보존.
-        return path.read_text(encoding="utf-8-sig").strip("\r\n")
-    except OSError:
-        return None
+def has_admin(db: Session) -> bool:
+    return db.scalars(select(AdminAccount.login_id).limit(1)).first() is not None
 
 
-def sync_admin_from_files(db: Session, settings: WebSettings, *, now: datetime) -> str:
-    """비밀 파일의 아이디·비밀번호를 admin_accounts 에 반영한다. 결과: created|updated|unchanged|missing|invalid.
-    값이 바뀌면(아이디 변경·비밀번호 변경) 기존 세션을 모두 지우고 실패 잠금을 초기화한다. 파일 값은 로그에 남기지 않는다."""
-    login_id, password = _read(settings.admin_id_file), _read(settings.admin_password_file)
-    if not login_id or not password:
-        return "missing"
+def create_admin(db: Session, login_id: str, password: str, *, now: datetime) -> AdminAccount:
+    """웹 최초 설정(DEC-056): 계정이 하나도 없을 때만 만든다. 이미 있으면 409 setup_closed(영구히 닫힘).
+    PostgreSQL 에서는 advisory lock 으로 동시 최초 설정 요청 중 하나만 성공하게 한다."""
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _ADVISORY_LOCK_KEY + 1})
+    if has_admin(db):
+        raise ProblemError(409, "setup_closed", "이미 관리자 계정이 있습니다.", hint="로그인 화면에서 아이디와 비밀번호로 로그인하세요.")
     reason = validate_credentials_format(login_id, password)
     if reason:
-        log.error("관리자 계정 파일 형식 오류: %s", reason)
-        return "invalid"
-    current = db.scalars(select(AdminAccount)).all()
-    same = next((a for a in current if a.login_id == login_id), None)
-    if same is not None and len(current) == 1 and verify_pin_hash(password, same.password_hash):
-        return "unchanged"
-    status = "updated" if current else "created"
-    db.execute(delete(AdminAccount))  # 관리자는 1명: 파일이 가리키는 계정만 남긴다
-    db.add(AdminAccount(login_id=login_id, password_hash=hash_pin(password), created_at=now, updated_at=now))
+        raise ProblemError(422, "setup_invalid", reason, hint="아이디는 영문·숫자 4~20자, 비밀번호는 8~64자로 입력하세요.")
+    account = AdminAccount(login_id=login_id, password_hash=hash_pin(password), created_at=now, updated_at=now, last_login_at=now)
+    db.add(account)
+    db.flush()
+    return account
+
+
+def reset_admin(db: Session) -> int:
+    """비밀번호를 잊었을 때(reset-admin 스크립트): 계정·세션·실패 잠금을 지운다. 지운 계정 수를 돌려준다."""
+    n = db.execute(delete(AdminAccount)).rowcount or 0
     db.execute(delete(SessionRow))
     obj = db.get(SettingKV, FAIL_KEY)
     if obj is not None:
         db.delete(obj)
     db.flush()
-    return status
+    return n
 
 
 def admin_login_id(db: Session) -> str | None:

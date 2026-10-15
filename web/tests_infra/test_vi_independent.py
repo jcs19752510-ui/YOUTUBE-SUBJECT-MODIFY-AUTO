@@ -171,8 +171,8 @@ def test_tc_vi_008_secrets_only_by_file_never_in_env_command_or_build_args(cfg, 
         assert "args" not in (s.get("build") or {}), n
     assert all(set(v) == {"file"} and v["file"].startswith("./secrets/") for v in cfg["secrets"].values())
     # 최소 권한: 각 서비스는 자기가 쓰는 비밀만 받는다
-    assert set(svc["db"]["secrets"]) == set(cfg["secrets"]) - {"admin_login_id", "admin_login_password"}  # 관리자 비밀은 api 에만(DEC-055)
-    assert svc["api"]["secrets"] == ["db_app_password", "admin_login_id", "admin_login_password"]
+    assert set(svc["db"]["secrets"]) == set(cfg["secrets"])  # 관리자 비밀 파일 없음(웹 화면에서 계정 생성)
+    assert svc["api"]["secrets"] == ["db_app_password"]
     assert svc["worker"]["secrets"] == ["db_app_password"]
     assert svc["migrate"]["secrets"] == ["db_owner_password"]
     assert "secrets" not in svc["web"]
@@ -477,7 +477,7 @@ def test_tc_vi_026_ytweb_db_cli_rejects_bad_names_and_unknown_commands(tmp_path)
 
 def test_tc_vi_027_powershell_scripts_encoding_and_dangerous_commands():
     files = sorted(SCRIPTS.glob("*.ps1"))
-    assert [f.name for f in files] == sorted(["_common.ps1", "backup.ps1", "e2e.ps1", "gemini-on.ps1", "live-allow-all.ps1", "live-check.ps1", "live-off.ps1", "live-on.ps1", "logs.ps1", "pin-digests.ps1", "reset-demo.ps1", "restore.ps1", "set-admin.ps1", "start.ps1", "status.ps1", "stop.ps1"])
+    assert [f.name for f in files] == sorted(["_common.ps1", "backup.ps1", "e2e.ps1", "gemini-on.ps1", "live-allow-all.ps1", "live-check.ps1", "live-off.ps1", "live-on.ps1", "logs.ps1", "pin-digests.ps1", "reset-demo.ps1", "reset-admin.ps1", "restore.ps1", "start.ps1", "status.ps1", "stop.ps1"])
     for f in files:
         raw = f.read_bytes()
         assert raw.startswith(b"\xef\xbb\xbf"), f.name

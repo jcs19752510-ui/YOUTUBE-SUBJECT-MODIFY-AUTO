@@ -22,8 +22,6 @@ $YtwebUrl         = 'http://127.0.0.1:8080'
 # 테스트용으로 다른 프로젝트 이름을 쓸 때만 YTWEB_PROJECT 환경변수를 지정한다(운영 데이터와 분리).
 $YtwebProject     = if ($env:YTWEB_PROJECT) { $env:YTWEB_PROJECT } else { 'ytweb' }
 $YtwebSecretNames = @('db_superuser_password', 'db_owner_password', 'db_app_password')
-$YtwebAdminIdFile = Join-Path $YtwebWebDir 'secrets\admin_login_id'
-$YtwebAdminPwFile = Join-Path $YtwebWebDir 'secrets\admin_login_password'
 $YtwebServices    = @('db', 'migrate', 'api', 'worker', 'web')
 
 function Write-Info { param([string]$Message) Write-Host "[안내] $Message" -ForegroundColor Cyan }
@@ -215,82 +213,6 @@ function Initialize-Secrets {
         Write-Ok "비밀 파일을 만들었습니다: web\secrets\$n (내용은 표시하지 않습니다)"
     }
     Write-Warn 'web\secrets 폴더는 데이터베이스 비밀번호입니다. 지우거나 다른 곳에 올리지 마세요. 저장소(git)에서는 제외되어 있습니다.'
-}
-
-# ---- 관리자 로그인(DEC-055) ----
-# 아이디·비밀번호 파일이 둘 다 있고 비어 있지 않은지 확인한다. 값은 읽지 않는다.
-function Test-AdminLoginPresent {
-    foreach ($p in @($YtwebAdminIdFile, $YtwebAdminPwFile)) {
-        if (-not (Test-Path -LiteralPath $p) -or (Get-Item -LiteralPath $p).Length -eq 0) { return $false }
-    }
-    return $true
-}
-
-function Test-InputInteractive {
-    try { return ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) } catch { return $false }
-}
-
-function ConvertFrom-SecureToPlain {
-    param([System.Security.SecureString]$Secure)
-    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
-    try { return [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
-    finally { [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-}
-
-# 아이디(영문·숫자 4~20자)와 비밀번호(8~64자, 한 번 더 확인)를 물어 web\secrets 에 저장한다.
-# 값은 화면·로그·명령줄 인수에 나타나지 않는다. 파일은 UTF-8(BOM 없음), 끝에 줄바꿈 없음.
-function Save-AdminLoginInteractive {
-    if (-not (Test-InputInteractive)) {
-        Stop-Script '관리자 아이디·비밀번호 파일이 없는데 입력을 받을 수 없는 환경입니다(비대화형).' 'PowerShell 창에서 직접 .\web\scripts\set-admin.ps1 (또는 web\scripts\set-admin.bat 더블클릭)을 실행해 아이디·비밀번호를 정한 뒤 start.ps1 을 다시 실행하세요.'
-    }
-    Write-Host ''
-    Write-Host '관리자 로그인 아이디와 비밀번호를 정합니다. (이 PC 의 web\secrets 에만 저장되며 저장소에는 올라가지 않습니다.)'
-    Write-Host '  아이디: 영문·숫자 4~20자 (예: admin1234)   비밀번호: 8~64자'
-    $loginId = ''
-    for ($i = 0; $i -lt 5; $i++) {
-        $loginId = (Read-Host '관리자 아이디').Trim()
-        if ($loginId -match '^[A-Za-z0-9]{4,20}$') { break }
-        Write-Warn '아이디는 영문·숫자만 4~20자여야 합니다. 다시 입력하세요.'
-        $loginId = ''
-    }
-    if (-not $loginId) { Stop-Script '아이디 입력이 5번 올바르지 않아 중단합니다.' '.\web\scripts\set-admin.ps1 을 다시 실행하세요(영문·숫자 4~20자).' }
-    $plain = ''
-    for ($i = 0; $i -lt 5; $i++) {
-        $s1 = Read-Host '비밀번호 (8~64자, 화면에 보이지 않습니다)' -AsSecureString
-        $s2 = Read-Host '비밀번호 한 번 더' -AsSecureString
-        $a = ConvertFrom-SecureToPlain $s1
-        $b = ConvertFrom-SecureToPlain $s2
-        $okLen = ($a.Length -ge 8 -and $a.Length -le 64)
-        if (-not $okLen) { Write-Warn '비밀번호는 8~64자여야 합니다. 다시 입력하세요.' }
-        elseif ($a -match '[\r\n]') { Write-Warn '비밀번호에 줄바꿈은 쓸 수 없습니다. 다시 입력하세요.' }
-        elseif ($a -cne $b) { Write-Warn '두 번 입력한 비밀번호가 서로 다릅니다. 다시 입력하세요.' }
-        else { $plain = $a; break }
-    }
-    if (-not $plain) { Stop-Script '비밀번호 입력이 5번 올바르지 않아 중단합니다.' '.\web\scripts\set-admin.ps1 을 다시 실행하세요(8~64자, 두 번 같게).' }
-    try {
-        if (-not (Test-Path -LiteralPath $YtwebSecretsDir)) { New-Item -ItemType Directory -Path $YtwebSecretsDir -Force | Out-Null }
-        [void](Set-OwnerOnlyAcl $YtwebSecretsDir)
-        $enc = New-Object System.Text.UTF8Encoding($false)
-        [System.IO.File]::WriteAllText($YtwebAdminIdFile, $loginId, $enc)
-        [System.IO.File]::WriteAllText($YtwebAdminPwFile, $plain, $enc)
-        [void](Set-OwnerOnlyAcl $YtwebAdminIdFile)
-        [void](Set-OwnerOnlyAcl $YtwebAdminPwFile)
-    } catch {
-        Stop-Script "관리자 파일을 저장하지 못했습니다: $($_.Exception.Message)" 'web\secrets 폴더의 쓰기 권한과 디스크 여유 공간을 확인한 뒤 .\web\scripts\set-admin.ps1 을 다시 실행하세요.'
-    } finally {
-        $plain = $null; $a = $null; $b = $null
-    }
-    Write-Ok '관리자 로그인 정보를 저장했습니다: web\secrets\admin_login_id, web\secrets\admin_login_password (내용은 표시하지 않습니다)'
-}
-
-# start.ps1 에서 호출: 파일이 없거나 비어 있으면 입력을 받아 만든다(로그인이 필수라 없으면 아무도 로그인할 수 없다).
-function Initialize-AdminLogin {
-    if (Test-AdminLoginPresent) {
-        Write-Ok '관리자 로그인 정보가 이미 있습니다(바꾸려면 set-admin.bat).'
-        return
-    }
-    Write-Warn '관리자 로그인 정보(아이디·비밀번호)가 아직 없습니다. 로그인이 필수이므로 지금 정합니다.'
-    Save-AdminLoginInteractive
 }
 
 # 서비스 상태가 모두 준비될 때까지 기다린다. 실패하면 원인 로그 일부를 보여 주고 $false 를 돌려준다.

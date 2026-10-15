@@ -28,7 +28,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned   # 이 창에�
 
 `start.ps1` 이 알아서 하는 일: Docker 확인 → 비밀번호 파일 생성(`web\secrets\`, 처음 한 번, 값은 화면에 표시하지 않음) → 포트 확인 → 이미지 빌드·시작 → 준비 대기. **첫 실행은 5~15분** 걸릴 수 있습니다. 끝나면 아래 주소가 표시됩니다.
 
-**관리자 로그인(필수)**: 화면에 들어가려면 아이디·비밀번호 로그인이 필요합니다. 최초 `start.ps1` 실행 때 아이디(영문·숫자 4~20자, 예: `admin1234`)와 비밀번호(8~64자, `<새 비밀번호>`)를 묻고 `web\secrets\` 에 저장합니다(저장소에는 올라가지 않음). 바꾸거나 **비밀번호를 잊었을 때는 `web\scripts\set-admin.bat`** 을 더블클릭해 다시 정하세요(저장 후 서버를 자동으로 다시 시작). 마지막 조작 후 **60분이 지나면 자동 로그아웃**됩니다(`YTWEB_SESSION_IDLE_MINUTES`, 기본 60). 비대화형 환경에서 파일이 없으면 시작이 중단되고 `.\web\scripts\set-admin.ps1` 안내가 나옵니다.
+**관리자 로그인(필수)**: 화면에 들어가려면 로그인이 필요합니다. **처음 접속하면 브라우저의 "관리자 계정 만들기" 화면에서 아이디와 비밀번호를 직접 정합니다**(터미널에서 묻지 않으며, 비밀번호는 데이터베이스에 해시로만 저장되고 PC에 비밀번호 파일이 남지 않습니다). 마지막 조작 후 **60분이 지나면 자동 로그아웃**됩니다(`YTWEB_SESSION_IDLE_MINUTES`, 기본 60). **비밀번호를 잊었을 때만** `web\scripts\reset-admin.bat` 을 더블클릭하고 `관리자초기화` 를 입력하면 관리자 계정이 지워지니, 브라우저에서 새 계정을 만드세요.
 
 **접속 주소: <http://127.0.0.1:8080>** (이 PC에서만 접속됩니다. 같은 와이파이의 다른 기기에서는 열리지 않습니다.)
 
@@ -37,7 +37,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned   # 이 창에�
 | 하고 싶은 일 | 명령 |
 |---|---|
 | 시작 | `.\web\scripts\start.ps1` (코드를 바꾸지 않았다면 `-NoBuild` 로 빠르게) |
-| 관리자 아이디·비밀번호 변경/재설정 | `web\scripts\set-admin.bat` (또는 `.\web\scripts\set-admin.ps1`, 저장만 하려면 `-NoRestart`) |
+| 관리자 비밀번호를 잊었을 때 | `web\scripts\reset-admin.bat` (또는 `.\web\scripts\reset-admin.ps1`, 확인 문구 `관리자초기화`) → 브라우저에서 새 계정 만들기 |
 | 종료 (데이터 보존) | `.\web\scripts\stop.ps1` |
 | 상태·보안 점검 | `.\web\scripts\status.ps1` (`-Detail` 로 컨테이너 보안 설정까지) |
 | 로그 보기 | `.\web\scripts\logs.ps1` / `-Service api` / `-Follow` |

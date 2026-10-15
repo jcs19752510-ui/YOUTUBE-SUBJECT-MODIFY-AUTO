@@ -165,7 +165,7 @@ def test_get_routes_do_not_change_state(client, csrf, engine):
 def test_me_endpoint_does_not_create_session_and_does_not_leak_csrf_without_cookie(client):
     r = client.get("/api/v1/auth/me")
     assert r.json() == {"authenticated": False, "pin_required": False, "csrf_token": None,
-                        "login_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}  # DEC-055 필드 3개 추가
+                        "login_required": False, "setup_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}  # DEC-055 필드 3개 추가
     assert "set-cookie" not in r.headers
 
 

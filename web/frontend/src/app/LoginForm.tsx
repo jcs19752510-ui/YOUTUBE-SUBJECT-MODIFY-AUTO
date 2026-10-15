@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '../api/client';
 import { useApiClient } from '../api/context';
-import { Button, Callout, Field } from '../components';
+import { Button, Callout } from '../components';
 import { describeError } from '../components/ErrorPanel';
 import { ko } from '../i18n/ko';
+import { AuthCard } from './AuthCard';
 
 function message(err: unknown): string {
   if (err instanceof ApiError) {
@@ -16,7 +17,7 @@ function message(err: unknown): string {
   return v.detail || v.title;
 }
 
-/** 관리자 아이디·비밀번호 로그인 폼. 입력값은 상태에만 두고 console·URL·저장소에 남기지 않는다. */
+/** 관리자 아이디·비밀번호 로그인 카드. 입력값은 상태에만 두고 console·URL·저장소에 남기지 않는다. */
 export function LoginForm({ onDone, expired }: { onDone?: () => void; expired?: boolean }) {
   const client = useApiClient();
   const [loginId, setLoginId] = useState('');
@@ -41,18 +42,33 @@ export function LoginForm({ onDone, expired }: { onDone?: () => void; expired?: 
     }
   };
 
+  const hasErr = err !== null;
+  const msg = hasErr ? message(err) : !loginId ? ko.login.promptId : !password ? ko.login.promptPassword : '';
+
   return (
-    <form onSubmit={(e) => void submit(e)} className="stack" noValidate>
-      {expired && err === null && (
-        <Callout tone="warning" role="status">
-          <p>{ko.login.expired}</p>
-        </Callout>
-      )}
-      <Field label={ko.login.idLabel}>
+    <AuthCard title={ko.login.title}>
+      <form onSubmit={(e) => void submit(e)} className="stack" noValidate>
+        {expired && !hasErr && (
+          <Callout tone="warning" role="status">
+            <p>{ko.login.expired}</p>
+          </Callout>
+        )}
+        <p
+          id="login-msg"
+          className="auth-card__msg"
+          role={hasErr ? 'alert' : undefined}
+          aria-live={hasErr ? undefined : 'polite'}
+        >
+          {msg}
+        </p>
         <input
           className="input"
           type="text"
+          id="login-id"
           name="username"
+          aria-label={ko.login.idLabel}
+          placeholder={ko.login.idPlaceholder}
+          aria-describedby="login-msg"
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
@@ -61,26 +77,24 @@ export function LoginForm({ onDone, expired }: { onDone?: () => void; expired?: 
           data-autofocus=""
           onChange={(e) => setLoginId(e.target.value)}
         />
-      </Field>
-      <Field label={ko.login.passwordLabel}>
         <input
           className="input"
           type="password"
+          id="login-password"
           name="password"
+          aria-label={ko.login.passwordLabel}
+          placeholder={ko.login.passwordPlaceholder}
+          aria-describedby="login-msg"
+          aria-invalid={hasErr ? true : undefined}
           autoComplete="current-password"
           maxLength={128}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-      </Field>
-      {err !== null && (
-        <Callout tone="danger" role="alert">
-          <p>{message(err)}</p>
-        </Callout>
-      )}
-      <Button type="submit" variant="primary" busy={busy} disabled={!loginId || !password}>
-        {ko.login.submit}
-      </Button>
-    </form>
+        <Button type="submit" variant="primary" busy={busy} disabled={!loginId || !password}>
+          {ko.login.submit}
+        </Button>
+      </form>
+    </AuthCard>
   );
 }

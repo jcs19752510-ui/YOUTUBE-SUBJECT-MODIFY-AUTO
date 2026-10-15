@@ -195,7 +195,7 @@ def test_tc_wi_018_db_password_from_file_and_utf8(svc):
     assert "POSTGRES_PASSWORD" not in env
     assert "--encoding=UTF8" in env["POSTGRES_INITDB_ARGS"]
     assert set(svc["db"]["secrets"]) == {"db_superuser_password", "db_owner_password", "db_app_password"}
-    assert svc["api"]["secrets"] == ["db_app_password", "admin_login_id", "admin_login_password"]  # 관리자 로그인(DEC-055): api 에만
+    assert svc["api"]["secrets"] == ["db_app_password"]  # 관리자 계정은 웹 화면에서 만들고 비밀 파일 없음
     assert svc["worker"]["secrets"] == ["db_app_password"]
     assert svc["migrate"]["secrets"] == ["db_owner_password"]
 

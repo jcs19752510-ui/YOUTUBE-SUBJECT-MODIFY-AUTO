@@ -2,7 +2,7 @@
 .SYNOPSIS
   유튜브 제목 웹(데모 모드)을 시작합니다. 처음 한 번 실행하면 필요한 준비를 모두 합니다.
 .DESCRIPTION
-  1) Docker 설치·실행 확인  2) 비밀번호 파일 생성(없을 때만, 관리자 로그인 아이디·비밀번호는 없으면 입력받음)  3) 포트 8080 점검
+  1) Docker 설치·실행 확인  2) 비밀번호 파일 생성(없을 때만)  3) 포트 8080 점검
   4) 이미지 빌드와 컨테이너 시작  5) 준비될 때까지 대기  6) 접속 주소 안내
 .PARAMETER OpenBrowser
   준비가 끝나면 기본 브라우저로 접속 주소를 엽니다.
@@ -29,7 +29,6 @@ Test-DockerReady
 
 Write-Info '2/5 비밀 파일 확인'
 Initialize-Secrets
-Initialize-AdminLogin
 
 Write-Info '3/5 포트 확인'
 $own = @(Get-ComposeServices | Where-Object { (Get-Prop $_ 'Service') -eq 'web' -and (Get-Prop $_ 'State') -eq 'running' })
@@ -67,6 +66,7 @@ Write-Host ''
 Write-Host '=============================================' -ForegroundColor Green
 Write-Host " 준비 완료!  브라우저에서 열기:  $YtwebUrl" -ForegroundColor Green
 Write-Host '=============================================' -ForegroundColor Green
+Write-Host '처음 접속하면 브라우저에서 관리자 계정을 만드세요(아이디·비밀번호는 웹 화면에서만 정합니다).'
 Write-Host '상태 확인  .\web\scripts\status.ps1'
 Write-Host '로그 보기  .\web\scripts\logs.ps1'
 Write-Host '종료       .\web\scripts\stop.ps1   (데이터는 보존됩니다)'

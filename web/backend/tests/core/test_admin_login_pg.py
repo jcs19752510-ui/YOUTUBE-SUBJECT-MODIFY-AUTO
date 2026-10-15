@@ -5,11 +5,10 @@ import threading
 from datetime import datetime, timezone
 
 import pytest
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import sessionmaker
 
 from tests.core.test_postgres import pg  # noqa: F401  (픽스처 재사용: 스키마 초기화 + upgrade head)
-from ytweb.config import WebSettings
 from ytweb.core import admin_account
 from ytweb.core.errors import ProblemError
 from ytweb.db.models import AdminAccount
@@ -29,15 +28,9 @@ def test_migration_0003_creates_admin_accounts_and_is_head(pg):  # noqa: F811
 
 def test_concurrent_wrong_guesses_cannot_bypass_lockout(pg, tmp_path):  # noqa: F811
     """TC-AL-102 동시에 20개 틀린 추측을 보내도 실제 비밀번호 검증은 4번(401)뿐이고 나머지는 잠금(429)."""
-    sec = tmp_path / "s"
-    sec.mkdir()
-    (sec / "i").write_text(ID, encoding="utf-8")
-    (sec / "p").write_text(PW, encoding="utf-8")
-    settings = WebSettings(mode="demo", database_url="x", base_dir=tmp_path, secrets_dir=tmp_path, allowed_hosts=("127.0.0.1:8080",),
-                           admin_login=True, admin_id_file=sec / "i", admin_password_file=sec / "p")
     factory = sessionmaker(pg)
     with factory() as db:
-        assert admin_account.sync_admin_from_files(db, settings, now=T0) == "created"
+        admin_account.create_admin(db, ID, PW, now=T0)
         db.commit()
     codes: list[str] = []
     lock = threading.Lock()
@@ -62,3 +55,29 @@ def test_concurrent_wrong_guesses_cannot_bypass_lockout(pg, tmp_path):  # noqa: 
             admin_account.authenticate(db, ID, PW, now=T0)  # 잠금 중에는 맞는 비밀번호도 거부
         assert ei.value.code == "login_locked"
         assert db.get(AdminAccount, ID) is not None
+
+
+def test_concurrent_setup_creates_exactly_one_account(pg):  # noqa: F811
+    """TC-AL-103 동시에 최초 설정 20개를 보내도 계정은 정확히 1개(나머지는 setup_closed)."""
+    factory = sessionmaker(pg)
+    results: list[str] = []
+    lock = threading.Lock()
+
+    def attempt(i: int):
+        with factory() as db:
+            try:
+                admin_account.create_admin(db, f"admin{i:04d}", PW, now=T0)
+                db.commit()
+                out = "ok"
+            except ProblemError as e:
+                db.rollback()
+                out = e.code
+        with lock:
+            results.append(out)
+
+    ts = [threading.Thread(target=attempt, args=(i,)) for i in range(20)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert results.count("ok") == 1 and results.count("setup_closed") == 19
+    with factory() as db:
+        assert len(db.scalars(select(AdminAccount)).all()) == 1

@@ -1,4 +1,4 @@
-"""관리자 로그인(DEC-055): 로그인·실패 잠금·60분 무활동 만료·계정 반영·감사 기록. 값은 모두 시험용 가짜다."""
+"""관리자 로그인(DEC-055) + 웹 최초 설정(DEC-056): 로그인·실패 잠금·60분 무활동 만료·최초 계정 만들기·감사 기록. 값은 모두 시험용 가짜다."""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -20,17 +20,9 @@ ROUTERS = ["ytweb.routers.health", "ytweb.routers.auth", "ytweb.routers.settings
 H = {"Origin": ORIGIN}
 
 
-def _write(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
-
-
 @pytest.fixture
-def login_settings(web_settings: WebSettings, tmp_path: Path) -> WebSettings:
-    sec = tmp_path / "sec"
-    _write(sec / "id", ID)
-    _write(sec / "pw", PW)
-    return replace(web_settings, admin_login=True, session_idle_minutes=60, admin_id_file=sec / "id", admin_password_file=sec / "pw")
+def login_settings(web_settings: WebSettings) -> WebSettings:
+    return replace(web_settings, admin_login=True, session_idle_minutes=60)
 
 
 def _make(settings, clock, fake_time, monkeypatch, **limits):
@@ -47,7 +39,11 @@ def lapp(login_settings, engine, clock, fake_time, monkeypatch):
 
 @pytest.fixture
 def lc(lapp):
-    with TestClient(lapp, base_url=ORIGIN) as c:  # with: 시작 시 비밀 파일 → 계정 반영(lifespan)
+    """계정이 이미 있는 상태(웹 최초 설정을 마친 뒤)의 클라이언트. 로그인 쿠키는 없다."""
+    with TestClient(lapp, base_url=ORIGIN) as c:
+        with lapp.state.session_factory() as db:
+            admin_account.create_admin(db, ID, PW, now=lapp.state.clock())
+            db.commit()
         yield c
 
 
@@ -196,17 +192,11 @@ def test_login_rate_limit_applies(login_settings, engine, clock, fake_time, monk
     """TC-AL-015 로그인 요청에도 분당 속도 제한(auth_per_min)이 걸린다."""
     app = _make(login_settings, clock, fake_time, monkeypatch, auth=3)
     with TestClient(app, base_url=ORIGIN) as c:
+        with app.state.session_factory() as db:
+            admin_account.create_admin(db, ID, PW, now=clock())
+            db.commit()
         codes = [_login(c, password="bad-password-1").status_code for _ in range(4)]
     assert codes == [401, 401, 401, 429]
-
-
-def test_not_configured_when_no_secret_files(web_settings, engine, clock, fake_time, monkeypatch, tmp_path):
-    """TC-AL-016 비밀 파일이 없으면 아무도 로그인할 수 없다(닫힘). 계정 없음은 409 안내."""
-    s = replace(web_settings, admin_login=True, session_idle_minutes=60, admin_id_file=tmp_path / "none1", admin_password_file=tmp_path / "none2")
-    with TestClient(_make(s, clock, fake_time, monkeypatch), base_url=ORIGIN) as c:
-        r = _login(c)
-        assert r.status_code == 409 and r.json()["code"] == "login_not_configured"
-        assert c.get("/api/v1/settings").status_code == 401
 
 
 def test_login_disabled_when_mode_off(app, client):
@@ -217,37 +207,6 @@ def test_login_disabled_when_mode_off(app, client):
     assert client.post("/api/v1/auth/session", json={}, headers=H).status_code == 200
 
 
-def test_sync_created_unchanged_updated_missing_invalid(login_settings, factory, clock, tmp_path):
-    """TC-AL-018 파일 → 계정 반영: 생성·변경 없음·비밀번호 변경(세션 종료·잠금 초기화)·파일 없음·형식 오류."""
-    now = clock()
-    with factory() as db:
-        assert admin_account.sync_admin_from_files(db, login_settings, now=now) == "created"
-        db.commit()
-        assert admin_account.sync_admin_from_files(db, login_settings, now=now) == "unchanged"
-        db.add(SessionRow(id="x" * 64, csrf_token="c", created_at=now, expires_at=now, last_seen=now))
-        db.commit()
-        _write(login_settings.admin_password_file, "Another-Passw0rd!")
-        assert admin_account.sync_admin_from_files(db, login_settings, now=now) == "updated"
-        db.commit()
-        assert db.scalars(select(SessionRow)).all() == []
-        assert admin_account.authenticate(db, ID, "Another-Passw0rd!", now=now).login_id == ID
-        _write(login_settings.admin_password_file, "short")
-        assert admin_account.sync_admin_from_files(db, login_settings, now=now) == "invalid"
-        _write(login_settings.admin_id_file, "ab")
-        _write(login_settings.admin_password_file, PW)
-        assert admin_account.sync_admin_from_files(db, login_settings, now=now) == "invalid"
-        assert admin_account.sync_admin_from_files(db, replace(login_settings, admin_id_file=tmp_path / "gone"), now=now) == "missing"
-
-
-def test_password_with_special_chars_and_bom_and_newline(login_settings, factory, clock):
-    """TC-AL-019 비밀번호 끝 줄바꿈·BOM 은 무시, 특수문자(예: **)는 그대로 쓴다."""
-    login_settings.admin_password_file.write_bytes(b"\xef\xbb\xbfStar**Passw0rd\r\n")
-    now = clock()
-    with factory() as db:
-        assert admin_account.sync_admin_from_files(db, login_settings, now=now) == "created"
-        assert admin_account.authenticate(db, ID, "Star**Passw0rd", now=now).login_id == ID
-
-
 def test_format_validation():
     """TC-AL-020 아이디 영숫자 4~20자, 비밀번호 8~64자."""
     f = admin_account.validate_credentials_format
@@ -256,11 +215,123 @@ def test_format_validation():
     assert f("abcd", "1234567") and f("abcd", "p" * 65)
 
 
-def test_config_login_defaults(monkeypatch):
-    """TC-AL-021 YTWEB_ADMIN_LOGIN=1 이면 무활동 만료 기본 60분, 파일 경로를 읽는다. 꺼져 있으면 30분(기존)."""
-    base = {"YTWEB_DATABASE_URL": "sqlite://", "YTWEB_ADMIN_LOGIN": "1", "YTWEB_ADMIN_ID_FILE": "/run/secrets/a", "YTWEB_ADMIN_PASSWORD_FILE": "/run/secrets/b"}
+def test_config_login_defaults():
+    """TC-AL-021 YTWEB_ADMIN_LOGIN=1 이면 무활동 만료 기본 60분. 꺼져 있으면 30분(기존). 비밀 파일 설정은 더 이상 없다(DEC-056)."""
+    base = {"YTWEB_DATABASE_URL": "sqlite://", "YTWEB_ADMIN_LOGIN": "1"}
     s = load_web_settings(base)
-    assert s.admin_login and s.session_idle_minutes == 60 and str(s.admin_id_file) == "/run/secrets/a"
+    assert s.admin_login and s.session_idle_minutes == 60
     assert load_web_settings({**base, "YTWEB_SESSION_IDLE_MINUTES": "15"}).session_idle_minutes == 15
     off = load_web_settings({"YTWEB_DATABASE_URL": "sqlite://"})
-    assert off.admin_login is False and off.session_idle_minutes == 30 and off.admin_id_file is None
+    assert off.admin_login is False and off.session_idle_minutes == 30
+    assert not hasattr(s, "admin_id_file") and not hasattr(s, "admin_password_file")
+
+
+# ───────────── 웹 최초 설정(DEC-056) ─────────────
+
+@pytest.fixture
+def sc(lapp):
+    """계정이 아직 없는 상태(서버를 처음 띄운 직후)의 클라이언트."""
+    with TestClient(lapp, base_url=ORIGIN) as c:
+        yield c
+
+
+def _setup(c, login_id=ID, password=PW, headers=H):
+    return c.post("/api/v1/auth/setup", json={"login_id": login_id, "password": password}, headers=headers)
+
+
+def test_me_says_setup_required_when_no_account(sc):
+    """TC-AL-201 계정이 없으면 setup_required=true, login_required=false(화면이 '계정 만들기'를 보여 준다)."""
+    body = sc.get("/api/v1/auth/me").json()
+    assert body["setup_required"] is True and body["login_required"] is False and body["authenticated"] is False
+
+
+def test_setup_creates_account_logs_in_and_closes_forever(sc, lapp):
+    """TC-AL-202 최초 설정: 계정 생성 + 바로 로그인(쿠키) + 이후 setup 은 409 setup_closed, me 는 login_required."""
+    r = _setup(sc)
+    assert r.status_code == 200 and r.json()["admin_login_id"] == ID and r.json()["idle_timeout_seconds"] == 3600
+    assert sc.get("/api/v1/settings").status_code == 200
+    again = _setup(TestClient(lapp, base_url=ORIGIN), "other123", "Another-Passw0rd!")
+    assert again.status_code == 409 and again.json()["code"] == "setup_closed"
+    other = TestClient(lapp, base_url=ORIGIN)
+    me = other.get("/api/v1/auth/me").json()
+    assert me["login_required"] is True and me["setup_required"] is False
+    with lapp.state.session_factory() as db:
+        acc = db.scalars(select(AdminAccount)).one()
+    assert acc.login_id == ID and acc.password_hash.startswith("scrypt$") and PW not in acc.password_hash
+
+
+def test_setup_validates_format_and_does_not_echo(sc):
+    """TC-AL-203 아이디·비밀번호 규칙 위반은 422 setup_invalid, 입력한 비밀번호는 응답에 없음, 계정은 만들어지지 않음."""
+    for lid, pw in (("abc", PW), ("ab-cd", PW), ("a" * 21, PW), (ID, "short"), (ID, "p" * 65)):
+        r = _setup(sc, lid, pw)
+        assert r.status_code == 422 and r.json()["code"] == "setup_invalid" and pw not in r.text, (lid, pw)
+    assert sc.get("/api/v1/auth/me").json()["setup_required"] is True
+
+
+def test_setup_needs_allowed_origin_before_body(sc):
+    """TC-AL-204 출처가 없거나 다르면 403(본문이 틀려도 출처가 먼저), same-site 도 거부."""
+    assert _setup(sc, headers={}).status_code == 403
+    assert _setup(sc, headers={"Origin": "http://evil.example"}).status_code == 403
+    assert sc.post("/api/v1/auth/setup", json={}, headers={"Origin": "http://evil.example"}).status_code == 403
+    assert _setup(sc, headers={"Origin": ORIGIN, "Sec-Fetch-Site": "same-site"}).status_code == 403
+    assert sc.get("/api/v1/auth/me").json()["setup_required"] is True
+
+
+def test_setup_rate_limited(login_settings, engine, clock, fake_time, monkeypatch):
+    """TC-AL-205 최초 설정 요청에도 분당 속도 제한이 걸린다."""
+    app = _make(login_settings, clock, fake_time, monkeypatch, auth=3)
+    with TestClient(app, base_url=ORIGIN) as c:
+        codes = [_setup(c, "ab", PW).status_code for _ in range(4)]
+    assert codes == [422, 422, 422, 429]
+
+
+def test_setup_disabled_when_login_mode_off(app, client):
+    """TC-AL-206 로그인 모드가 꺼져 있으면 setup 은 409 login_disabled."""
+    r = _setup(client)
+    assert r.status_code == 409 and r.json()["code"] == "login_disabled"
+
+
+def test_setup_audit_records_without_secrets(sc, lapp):
+    """TC-AL-207 admin.setup / admin.setup_denied 가 감사 기록에 남고 아이디·비밀번호 값은 없다."""
+    _setup(sc, "ab", PW)
+    _setup(sc)
+    with lapp.state.session_factory() as db:
+        rows = db.scalars(select(AuditLog).where(AuditLog.action.like("admin.setup%")).order_by(AuditLog.id)).all()
+    assert [r.action for r in rows] == ["admin.setup_denied", "admin.setup"]
+    dump = " ".join(f"{r.detail} {r.target_id}" for r in rows)
+    assert PW not in dump and ID not in dump
+
+
+def test_login_before_setup_says_not_configured(sc):
+    """TC-AL-208 계정이 없을 때 로그인 요청은 409 login_not_configured(화면은 setup 으로 안내)."""
+    r = _login(sc)
+    assert r.status_code == 409 and r.json()["code"] == "login_not_configured"
+
+
+def test_reset_clears_account_sessions_and_lock(lc, lapp, factory_url=None):
+    """TC-AL-209 reset: 계정·세션·실패 잠금을 지우면 다시 setup_required, 잠금 상태도 초기화."""
+    for _ in range(5):
+        _login(lc, password="bad-password-1")
+    assert _login(lc).status_code == 429
+    with lapp.state.session_factory() as db:
+        assert admin_account.reset_admin(db) == 1
+        db.commit()
+    assert lc.get("/api/v1/auth/me").json()["setup_required"] is True
+    assert _setup(lc).status_code == 200  # 새 계정은 잠금 없이 바로 가능
+    other = TestClient(lapp, base_url=ORIGIN)
+    assert _login(other).status_code == 200
+
+
+def test_admin_cli_reset_runs_and_audits(login_settings, engine, monkeypatch, capsys, factory, clock):
+    """TC-AL-210 `python -m ytweb.admin_cli reset` 이 계정을 지우고 감사 기록(admin.reset)을 남기며, 잘못된 인자는 종료코드 2."""
+    from ytweb import admin_cli
+    with factory() as db:
+        admin_account.create_admin(db, ID, PW, now=clock())
+        db.commit()
+    monkeypatch.setenv("YTWEB_DATABASE_URL", login_settings.database_url)
+    assert admin_cli.main(["reset"]) == 0
+    assert "초기화했습니다" in capsys.readouterr().out and PW not in capsys.readouterr().out
+    with factory() as db:
+        assert db.scalars(select(AdminAccount)).all() == []
+        assert [r.action for r in db.scalars(select(AuditLog).where(AuditLog.action == "admin.reset")).all()] == ["admin.reset"]
+    assert admin_cli.main([]) == 2 and admin_cli.main(["x"]) == 2

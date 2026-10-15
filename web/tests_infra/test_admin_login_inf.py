@@ -1,5 +1,6 @@
-"""관리자 로그인(DEC-055) 인프라 정적 점검. 도커 데몬 불필요. PowerShell 은 Windows 에서 실행하지 못하므로 문자열·구조 검사만 한다.
-`docker compose config` 렌더링은 docker CLI 가 없으면 건너뛴다. 실제 자격 증명은 쓰지 않는다(가짜 자리표시자만)."""
+"""관리자 로그인 인프라 정적 점검(웹 화면 계정 생성 방식). 도커 데몬 불필요. PowerShell 은 Windows 에서 실행하지 못하므로 문자열·구조 검사만 한다.
+계약: 아이디·비밀번호는 웹 화면에서만 정한다. 비밀번호는 DB 에 scrypt 해시로만 저장되고 PC 에 평문 파일이 없다.
+api 비밀은 db_app_password 하나뿐이며 admin 비밀 파일·*_FILE 환경 변수는 없다. 초기화는 reset-admin 만 쓴다. 실제 자격 증명은 쓰지 않는다."""
 from __future__ import annotations
 
 import re
@@ -13,7 +14,7 @@ import yaml
 WEB = Path(__file__).resolve().parents[1]
 ROOT = WEB.parent
 SCRIPTS = WEB / "scripts"
-ADMIN_SECRETS = ["admin_login_id", "admin_login_password"]
+OLD_SECRETS = ["admin_login_id", "admin_login_password"]
 needs_docker = pytest.mark.skipif(shutil.which("docker") is None, reason="docker CLI 없음")
 
 
@@ -30,33 +31,37 @@ def _secret_names(s: dict) -> list:
     return [x if isinstance(x, str) else x.get("source") for x in s.get("secrets", [])]
 
 
-def test_tc_adm_001_api_has_login_env(compose):
+def _env_keys(s: dict):
+    env = s.get("environment", {}) or {}
+    return list(env.keys()) if isinstance(env, dict) else [e.split("=")[0] for e in env]
+
+
+def test_tc_adm_001_api_has_login_env_and_no_file_env(compose):
     env = compose["services"]["api"]["environment"]
     assert str(env["YTWEB_ADMIN_LOGIN"]) == "1"
-    assert env["YTWEB_ADMIN_ID_FILE"] == "/run/secrets/admin_login_id"
-    assert env["YTWEB_ADMIN_PASSWORD_FILE"] == "/run/secrets/admin_login_password"
     assert str(env["YTWEB_SESSION_IDLE_MINUTES"]) == "60"
+    assert not [k for k in env if k.startswith("YTWEB_ADMIN_") and k != "YTWEB_ADMIN_LOGIN"]
+    assert not [k for k in env if k.endswith("_FILE") and "ADMIN" in k]
 
 
-def test_tc_adm_002_api_mounts_admin_secrets(compose):
-    names = _secret_names(compose["services"]["api"])
-    for n in ADMIN_SECRETS:
-        assert n in names
-    assert "db_app_password" in names
+def test_tc_adm_002_api_only_db_app_password(compose):
+    assert _secret_names(compose["services"]["api"]) == ["db_app_password"]
+    assert _secret_names(compose["services"]["worker"]) == ["db_app_password"]
 
 
-@pytest.mark.parametrize("svc", ["db", "migrate", "worker", "web"])
-def test_tc_adm_003_other_services_have_no_admin_secret_or_env(compose, svc):
+@pytest.mark.parametrize("svc", ["db", "migrate", "worker", "web", "api"])
+def test_tc_adm_003_no_service_has_admin_secret_or_file_env(compose, svc):
     s = compose["services"][svc]
-    assert not set(ADMIN_SECRETS) & set(_secret_names(s))
-    env = s.get("environment", {}) or {}
-    keys = env.keys() if isinstance(env, dict) else [e.split("=")[0] for e in env]
-    assert not [k for k in keys if k.startswith("YTWEB_ADMIN") or k == "YTWEB_SESSION_IDLE_MINUTES"]
+    assert not set(OLD_SECRETS) & set(_secret_names(s))
+    assert not [k for k in _env_keys(s) if k.startswith("YTWEB_ADMIN_") and k != "YTWEB_ADMIN_LOGIN"]
+    if svc != "api":
+        assert "YTWEB_ADMIN_LOGIN" not in _env_keys(s) and "YTWEB_SESSION_IDLE_MINUTES" not in _env_keys(s)
 
 
-def test_tc_adm_004_top_level_secrets_are_files_under_secrets_dir(compose):
-    for n in ADMIN_SECRETS:
-        assert compose["secrets"][n] == {"file": f"./secrets/{n}"}
+def test_tc_adm_004_no_top_level_admin_secrets(compose):
+    for n in OLD_SECRETS:
+        assert n not in compose["secrets"]
+    assert "admin_login" not in _t(WEB / "compose.yaml").replace("YTWEB_ADMIN_LOGIN", "")
 
 
 def test_tc_adm_005_hardening_and_networks_unchanged(compose):
@@ -70,117 +75,121 @@ def test_tc_adm_005_hardening_and_networks_unchanged(compose):
 
 def test_tc_adm_006_no_literal_credentials_in_compose_or_env_example():
     for p in (WEB / "compose.yaml", WEB / ".env.example"):
-        txt = _t(p)
-        assert not re.search(r"YTWEB_ADMIN_(ID|PASSWORD)\s*[:=]", txt), p  # 값 직접 주입 금지(파일 경로 변수만 허용)
+        assert not re.search(r"YTWEB_ADMIN_(ID|PASSWORD)\s*[:=]", _t(p)), p
 
 
-def test_tc_adm_007_set_admin_exists_with_bat_wrapper():
-    assert (SCRIPTS / "set-admin.ps1").exists() and (SCRIPTS / "set-admin.bat").exists()
-    bat = (SCRIPTS / "set-admin.bat").read_text(encoding="utf-8")
-    assert "set-admin.ps1" in bat and "-NoProfile" in bat
-    assert (SCRIPTS / "set-admin.ps1").read_bytes()[:3] == b"\xef\xbb\xbf"  # PS 5.1 한글 안전
+def test_tc_adm_007_set_admin_removed():
+    assert not (SCRIPTS / "set-admin.ps1").exists() and not (SCRIPTS / "set-admin.bat").exists()
+    for p in SCRIPTS.iterdir():
+        if p.suffix in (".ps1", ".bat"):
+            assert not re.search(r"(?<!re)set-admin", _t(p)), p
+    for n in ("README.md", ".env.example"):
+        assert not re.search(r"(?<!re)set-admin", _t(WEB / n))
 
 
-def test_tc_adm_008_set_admin_has_no_value_parameters():
-    ps = _t(SCRIPTS / "set-admin.ps1")
-    m = re.search(r"param\(([^)]*)\)", ps, re.S)
-    assert m and "NoRestart" in m.group(1)
-    assert not re.search(r"\$(Password|Pass|Pw|Id|LoginId|Secret)\b", m.group(1), re.I)
+def test_tc_adm_008_start_and_common_have_no_admin_input_code():
+    for n in ("start.ps1", "_common.ps1"):
+        t = _t(SCRIPTS / n)
+        assert not re.search(r"admin_login|AdminLogin|AdminId|AdminPw|Save-Admin|Initialize-Admin", t), n
+        assert "AsSecureString" not in t and "SecureString" not in t, n
+        for line in t.splitlines():
+            if "Read-Host" in line:
+                assert "관리자" not in line and "아이디" not in line and "비밀번호" not in line, line
 
 
-def _save_fn() -> str:
-    c = _t(SCRIPTS / "_common.ps1")
-    i = c.index("function Save-AdminLoginInteractive")
-    return c[i:c.index("# start.ps1 에서 호출", i)]
-
-
-def test_tc_adm_009_validation_rules_present():
-    f = _save_fn()
-    assert "^[A-Za-z0-9]{4,20}$" in f
-    assert "-ge 8" in f and "-le 64" in f
-    assert "-cne" in f and "-AsSecureString" in f
-    assert f.count("-AsSecureString") >= 2  # 확인 입력
-
-
-def test_tc_adm_010_write_utf8_no_bom_no_newline():
-    f = _save_fn()
-    assert "UTF8Encoding($false)" in f
-    assert f.count("WriteAllText") == 2
-    assert not re.search(r"Set-Content|Out-File|Add-Content|\[IO\.File\]::WriteAllLines|Write-Output\s+\$plain", f)
-    assert "WriteAllText($YtwebAdminIdFile, $loginId" in f and "WriteAllText($YtwebAdminPwFile, $plain" in f
-    assert "Set-OwnerOnlyAcl $YtwebAdminPwFile" in f and "Set-OwnerOnlyAcl $YtwebAdminIdFile" in f
-
-
-def test_tc_adm_011_values_never_printed_or_passed_as_args():
-    f = _save_fn() + _t(SCRIPTS / "set-admin.ps1")
-    for line in f.splitlines():
-        if re.match(r"\s*(Write-Host|Write-Info|Write-Ok|Write-Warn|Stop-Script|Write-Output|Out-Host)\b", line):
-            assert not re.search(r"\$(plain|loginId|a|b|s1|s2)\b", line), line
-    assert "Start-Process" not in f and "Invoke-Native" not in f and "Invoke-Compose" not in f
-    assert "start.ps1" in _t(SCRIPTS / "set-admin.ps1")
-    assert not re.search(r"start\.ps1'\)\s+-\w+\s+\$", _t(SCRIPTS / "set-admin.ps1"))
-    assert "admin_login" not in _t(SCRIPTS / "logs.ps1")
-
-
-def test_tc_adm_012_set_admin_restart_and_failure_guidance():
-    ps = _t(SCRIPTS / "set-admin.ps1")
-    assert "-NoRestart" in ps and "start.ps1" in ps
-    assert "[조치]" in _t(SCRIPTS / "_common.ps1") and "Stop-Script" in _save_fn()
-    assert ".\\web\\scripts\\set-admin.ps1" in _save_fn()
-
-
-def test_tc_adm_013_start_calls_admin_init_after_secrets_before_up():
+def test_tc_adm_009_start_guides_browser_account_creation():
     s = _t(SCRIPTS / "start.ps1")
-    i = [s.index(x) for x in ("Initialize-Secrets", "Initialize-AdminLogin", "Test-PortInUse $YtwebPort", "'up', '-d'")]
+    assert "관리자 계정을 만드세요" in s
+    assert s.index("관리자 계정을 만드세요") > s.index("준비 완료")
+
+
+def test_tc_adm_010_start_flow_order():
+    s = _t(SCRIPTS / "start.ps1")
+    i = [s.index(x) for x in ("Initialize-Secrets", "Test-PortInUse $YtwebPort", "'up', '-d'", "Wait-ForStack")]
     assert i == sorted(i)
-    c = _t(SCRIPTS / "_common.ps1")
-    assert "function Test-AdminLoginPresent" in c and "function Initialize-AdminLogin" in c
 
 
-def test_tc_adm_014_noninteractive_stops_with_guidance():
-    c = _t(SCRIPTS / "_common.ps1")
-    f = _save_fn()
-    assert "IsInputRedirected" in c
-    assert f.index("Test-InputInteractive") < f.index("Read-Host")
-    assert "비대화형" in f
-
-
-def test_tc_adm_015_db_secret_names_unchanged_and_admin_separate():
+def test_tc_adm_011_db_secret_names_unchanged():
     c = _t(SCRIPTS / "_common.ps1")
     names = re.search(r"\$YtwebSecretNames\s*=\s*@\(([^)]*)\)", c).group(1)
     assert "admin" not in names and names.count("'") == 6
 
 
-def test_tc_adm_016_backup_excludes_secrets_files():
-    b = _t(SCRIPTS / "backup.ps1")
-    assert "secrets" not in re.sub(r"#.*|\.SYNOPSIS.*?\n", "", b.split("#>")[1]) or "pg_dump" in b
-    assert "admin_login" not in b and "YtwebSecretsDir" not in b
-    assert "admin_login" not in _t(SCRIPTS / "restore.ps1") and "admin_login" not in _t(SCRIPTS / "status.ps1")
+def _reset() -> str:
+    return _t(SCRIPTS / "reset-admin.ps1")
 
 
-def test_tc_adm_017_gitignore_and_check_ignore():
+def test_tc_adm_012_reset_admin_exists_with_bat_wrapper():
+    assert (SCRIPTS / "reset-admin.ps1").exists() and (SCRIPTS / "reset-admin.bat").exists()
+    bat = (SCRIPTS / "reset-admin.bat").read_text(encoding="utf-8")
+    assert "reset-admin.ps1" in bat and "-NoProfile" in bat and "pause" in bat
+    assert (SCRIPTS / "reset-admin.ps1").read_bytes()[:3] == b"\xef\xbb\xbf"  # PS 5.1 한글 안전
+
+
+def test_tc_adm_013_reset_admin_confirm_phrase_before_exec():
+    ps = _reset()
+    assert "관리자초기화" in ps and "Read-ConfirmText" in ps
+    assert ps.index("Read-ConfirmText") < ps.index("'ytweb.admin_cli'")
+    assert "exit 2" in ps
+
+
+def test_tc_adm_014_reset_admin_runs_cli_noninteractive_in_api():
+    ps = _reset()
+    m = re.search(r"@\('exec', '-T', 'api', 'python', '-m', 'ytweb\.admin_cli', 'reset'\)", ps)
+    assert m, "compose exec -T api python -m ytweb.admin_cli reset"
+    assert "Invoke-Compose" in ps
+
+
+def test_tc_adm_015_reset_admin_requires_running_api_with_guidance():
+    ps = _reset()
+    assert "'api'" in ps and "running" in ps and "start.ps1" in ps
+    assert ps.index("running") < ps.index("'ytweb.admin_cli'")
+
+
+def test_tc_adm_016_reset_admin_handles_no_password_values():
+    ps = _reset()
+    m = re.search(r"param\(([^)]*)\)", ps, re.S)
+    assert m and "ConfirmText" in m.group(1)
+    assert not re.search(r"\$(Password|Pass|Pw|Id|LoginId|Secret)\b", m.group(1), re.I)
+    assert "Read-Host" not in ps and "SecureString" not in ps and "WriteAllText" not in ps
+    for line in ps.splitlines():
+        if "admin_cli" in line:
+            assert "$" not in line.split("admin_cli")[1].split(")")[0], line
+    assert "초기화했습니다" in ps and "새 관리자 계정" in ps
+
+
+def test_tc_adm_017_reset_admin_failure_has_cause_and_action():
+    ps = _reset()
+    assert "ExitCode -ne 0" in ps and "Stop-Script" in ps
+    assert "logs.ps1" in ps
+
+
+def test_tc_adm_018_gitignore_and_check_ignore():
     ig = (ROOT / ".gitignore").read_text(encoding="utf-8")
     assert "web/secrets/" in ig
-    r = subprocess.run(["git", "check-ignore", "-v"] + [f"web/secrets/{n}" for n in ADMIN_SECRETS], cwd=ROOT, capture_output=True, text=True)
-    assert r.returncode == 0 and r.stdout.count("web/secrets/") >= 2
-    tracked = subprocess.run(["git", "ls-files", "web/secrets"], cwd=ROOT, capture_output=True, text=True).stdout
-    assert tracked.strip() == ""
-    di = (ROOT / ".dockerignore").read_text(encoding="utf-8")
-    assert "web/secrets/" in di
+    r = subprocess.run(["git", "check-ignore", "-v", "web/secrets/db_app_password"], cwd=ROOT, capture_output=True, text=True)
+    assert r.returncode == 0
+    assert subprocess.run(["git", "ls-files", "web/secrets"], cwd=ROOT, capture_output=True, text=True).stdout.strip() == ""
+    assert "web/secrets/" in (ROOT / ".dockerignore").read_text(encoding="utf-8")
 
 
-def test_tc_adm_018_docs_mention_login_without_real_values():
-    for p in (WEB / "README.md", WEB / ".env.example"):
-        t = _t(p)
-        assert "set-admin" in t and "60" in t and "YTWEB_SESSION_IDLE_MINUTES" in t or p.name == "README.md"
-    r = _t(WEB / "README.md")
-    assert "set-admin.bat" in r and "<새 비밀번호>" in r and "admin1234" in r
+def test_tc_adm_019_docs_describe_web_account_creation():
+    r, e = _t(WEB / "README.md"), _t(WEB / ".env.example")
+    assert "관리자 계정 만들기" in r and "reset-admin.bat" in r and "60분" in r and "YTWEB_SESSION_IDLE_MINUTES" in r
+    assert "reset-admin.bat" in e and "60분" in e
+    for t in (r, e):
+        assert "admin_login_id" not in t and "admin_login_password" not in t
+
+
+def test_tc_adm_020_restore_and_reset_demo_need_no_admin_secret():
+    for n in ("restore.ps1", "reset-demo.ps1", "start.ps1"):
+        assert "admin_login" not in _t(SCRIPTS / n)
+    assert "admin_login" not in _t(WEB / "compose.yaml") and "admin_login" not in _t(WEB / "compose.online.yaml")
 
 
 @needs_docker
-def test_tc_adm_019_docker_compose_config_renders_admin_only_on_api(tmp_path):
+def test_tc_adm_021_docker_compose_config_renders_without_admin_secrets():
     import json
-    sec = WEB / "secrets"
     out = subprocess.run(["docker", "compose", "-f", str(WEB / "compose.yaml"), "config", "--format", "json"], capture_output=True, text=True, timeout=60)
     if out.returncode != 0 and "secrets" in out.stderr:
         pytest.skip("secrets 파일 없음으로 렌더링 불가: " + out.stderr[:120])
@@ -188,7 +197,5 @@ def test_tc_adm_019_docker_compose_config_renders_admin_only_on_api(tmp_path):
     cfg = json.loads(out.stdout)
     for name, s in cfg["services"].items():
         have = {x["source"] for x in s.get("secrets", [])}
-        if name == "api":
-            assert set(ADMIN_SECRETS) <= have
-        else:
-            assert not set(ADMIN_SECRETS) & have, name
+        assert not set(OLD_SECRETS) & have, name
+    assert {x["source"] for x in cfg["services"]["api"]["secrets"]} == {"db_app_password"}

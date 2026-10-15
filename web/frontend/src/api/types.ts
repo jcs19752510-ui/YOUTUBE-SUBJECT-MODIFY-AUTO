@@ -22,6 +22,8 @@ export interface AuthMe {
   pin_required: boolean;
   csrf_token: string | null;
   login_required?: boolean;
+  /** 로그인 모드이고 관리자 계정이 아직 없으면 true (최초 계정 만들기 화면) */
+  setup_required?: boolean;
   admin_login_id?: string | null;
   idle_timeout_seconds?: number | null;
 }

@@ -143,15 +143,11 @@ services:
       <<: *app-env
       YTWEB_DB_USER: ytweb_app
       YTWEB_DB_PASSWORD_FILE: /run/secrets/db_app_password
-      # 관리자 로그인(DEC-055): 로그인 필수. 아이디·비밀번호는 api 에만 비밀 파일로 주어진다(worker·migrate·db 에는 없음).
+      # 관리자 로그인: 로그인 필수. 계정은 처음 접속할 때 웹 화면에서 만들며 비밀번호는 DB 에 scrypt 해시로만 저장된다(PC 에 평문 파일 없음).
       YTWEB_ADMIN_LOGIN: "1"
-      YTWEB_ADMIN_ID_FILE: /run/secrets/admin_login_id
-      YTWEB_ADMIN_PASSWORD_FILE: /run/secrets/admin_login_password
       YTWEB_SESSION_IDLE_MINUTES: "60"
     secrets:
       - db_app_password
-      - admin_login_id
-      - admin_login_password
     volumes:
       - app_secrets:/var/lib/ytweb/secrets
     tmpfs:
@@ -278,8 +274,3 @@ secrets:
     file: ./secrets/db_owner_password
   db_app_password:
     file: ./secrets/db_app_password
-  # 관리자 로그인 아이디·비밀번호(set-admin.ps1 또는 start.ps1 이 만든다). api 서비스에만 마운트한다.
-  admin_login_id:
-    file: ./secrets/admin_login_id
-  admin_login_password:
-    file: ./secrets/admin_login_password

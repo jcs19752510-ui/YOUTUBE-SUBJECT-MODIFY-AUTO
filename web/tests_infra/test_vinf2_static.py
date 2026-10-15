@@ -152,7 +152,7 @@ def test_vif_006_network_membership_matrix(base):
 def test_vif_007_secrets_files_and_allocation(base):
     """TC-VIF-007 비밀 3개는 ./secrets/<이름> 파일, 서비스별 최소 권한 분배."""
     sec = base["secrets"]
-    ADM = {"admin_login_id", "admin_login_password"}   # 관리자 로그인(DEC-055): api 에만
+    ADM = set()   # 관리자 비밀 파일 없음(웹 화면에서 계정 생성)
     assert set(sec) == {"db_superuser_password", "db_owner_password", "db_app_password"} | ADM
     for k, v in sec.items():
         assert v == {"file": f"./secrets/{k}"}, k
@@ -272,7 +272,7 @@ def test_vif_023_google_secret_scope(base, overlay):
     assert holders == ["api", "worker"]
     for n in ("api", "worker"):
         assert _env(m["services"][n])["YTWEB_GOOGLE_CLIENT_FILE"] == "/run/secrets/google_client"
-        assert _names(m["services"][n]["secrets"]) == ({"db_app_password", "google_client"} | ({"admin_login_id", "admin_login_password"} if n == "api" else set()))
+        assert _names(m["services"][n]["secrets"]) == {"db_app_password", "google_client"}
     # 기존 환경변수 보존(덮어쓰기로 모드·허용 호스트가 바뀌지 않음)
     for n in ("api", "worker"):
         for k, v in _env(base["services"][n]).items():
@@ -303,7 +303,7 @@ def test_vif_026_docker_compose_config_cross_check(tmp_path):
     """TC-VIF-026 `docker compose config` 로 실제 병합한 결과를 독립 확인(내 병합 함수와 같은 결론인지)."""
     w = tmp_path / "web"
     (w / "secrets").mkdir(parents=True)
-    for f in ("db_superuser_password", "db_owner_password", "db_app_password", "admin_login_id", "admin_login_password", "google_client.json"):
+    for f in ("db_superuser_password", "db_owner_password", "db_app_password", "google_client.json"):
         (w / "secrets" / f).write_text("x")
     shutil.copy(COMPOSE, w / "compose.yaml")
     shutil.copy(ONLINE, w / "compose.online.yaml")
@@ -325,7 +325,7 @@ def test_vif_026_docker_compose_config_cross_check(tmp_path):
     assert set(o["services"]["api"]["networks"]) == {"front", "back", "egress"}
     assert set(o["services"]["worker"]["networks"]) == {"back", "egress"}
     assert set(o["services"]["db"]["networks"]) == {"back"}
-    assert set(o["services"]["api"]["secrets"][i]["source"] for i in range(len(o["services"]["api"]["secrets"]))) == {"db_app_password", "google_client", "admin_login_id", "admin_login_password"}
+    assert set(o["services"]["api"]["secrets"][i]["source"] for i in range(len(o["services"]["api"]["secrets"]))) == {"db_app_password", "google_client"}
     assert "egress" not in b["networks"]
     assert o["networks"]["front"]["internal"] is True and o["networks"]["back"]["internal"] is True
 
@@ -557,7 +557,7 @@ def test_vif_053_ps_constants_match_compose(base):
     assert "$YtwebPort        = 8080" in ps or re.search(r"\$YtwebPort\s*=\s*8080", ps)
     assert re.search(r"\$YtwebUrl\s*=\s*'http://127\.0\.0\.1:8080'", ps)
     names = re.search(r"\$YtwebSecretNames\s*=\s*@\(([^)]*)\)", ps).group(1)
-    assert re.findall(r"'([^']+)'", names) == sorted((k for k in base["secrets"] if not k.startswith("admin_login_")), key=lambda x: ["db_superuser_password", "db_owner_password", "db_app_password"].index(x))
+    assert re.findall(r"'([^']+)'", names) == sorted(base["secrets"], key=lambda x: ["db_superuser_password", "db_owner_password", "db_app_password"].index(x))
     svcs = re.search(r"\$YtwebServices\s*=\s*@\(([^)]*)\)", ps).group(1)
     assert re.findall(r"'([^']+)'", svcs) == SERVICES
     assert set(re.findall(r"'([^']+)'", svcs)) == set(base["services"])

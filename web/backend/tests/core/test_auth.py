@@ -23,7 +23,7 @@ def test_me_unauthenticated(client):
     r = client.get("/api/v1/auth/me")
     assert r.status_code == 200
     assert r.json() == {"authenticated": False, "pin_required": False, "csrf_token": None,
-                        "login_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}
+                        "login_required": False, "setup_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}
 
 
 def test_session_cookie_attributes(client, web_settings):

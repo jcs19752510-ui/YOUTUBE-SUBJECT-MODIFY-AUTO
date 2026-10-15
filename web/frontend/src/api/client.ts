@@ -6,6 +6,7 @@ export type ConnectionState =
   | 'offline' // 서버에 닿지 않음
   | 'pin_required' // PIN 입력 필요
   | 'login_required' // 관리자 로그인 필요
+  | 'setup_required' // 관리자 계정이 아직 없음 → 최초 계정 만들기
   | 'loggedout' // 사용자가 로그아웃함
   | 'error'; // 세션 시작 실패(PIN 외)
 
@@ -163,6 +164,27 @@ export class ApiClient {
     this.set({ state: 'online', expired: false, error: null });
   }
 
+  /** 최초 관리자 계정 만들기. 성공하면 자동 로그인(online). 409 setup_closed 는 로그인 화면으로 전환한 뒤 ApiError 로 던진다. */
+  async setup(loginId: string, password: string): Promise<void> {
+    try {
+      const res = await this.raw<LoginResponse>('POST', '/api/v1/auth/setup', {
+        body: { login_id: loginId, password },
+      });
+      this.loginMode = true;
+      this.csrf = res.csrf_token;
+      this.loginId = res.admin_login_id;
+      this.idleSeconds = res.idle_timeout_seconds ?? null;
+      this.set({ state: 'online', expired: false, error: null });
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'setup_closed') {
+        this.loginMode = true;
+        this.csrf = null;
+        this.set({ state: 'login_required', expired: false, error: null });
+      }
+      throw e;
+    }
+  }
+
   /** 화면 타이머가 무활동 한도에 도달했을 때: 로그인 화면으로 돌리고 만료 안내를 켠다. */
   markExpired(): void {
     this.csrf = null;
@@ -180,6 +202,18 @@ export class ApiClient {
   private async ensureSession(pin?: string): Promise<void> {
     try {
       const me = await this.raw<AuthMe>('GET', '/api/v1/auth/me');
+      if (me.setup_required) {
+        // 관리자 계정이 아직 없음: 익명 세션 없이 계정 만들기 화면으로
+        this.loginMode = true;
+        this.csrf = null;
+        this.loginId = null;
+        this.set({ state: 'setup_required', error: null });
+        throw new ApiError({
+          status: 401,
+          code: 'setup_required',
+          title: '관리자 계정을 먼저 만들어야 합니다',
+        });
+      }
       if (me.login_required) {
         // 로그인 모드: 익명 세션을 만들지 않고 로그인 화면으로
         this.loginMode = true;
@@ -222,6 +256,7 @@ export class ApiClient {
         else if (
           e.code !== 'pin_required' &&
           e.code !== 'login_required' &&
+          e.code !== 'setup_required' &&
           this.snapshot.state !== 'pin_required'
         )
           this.set({ state: 'error', error: e });
