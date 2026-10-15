@@ -36,13 +36,11 @@ def _env_keys(s: dict):
     return list(env.keys()) if isinstance(env, dict) else [e.split("=")[0] for e in env]
 
 
-def test_tc_adm_001_api_has_login_env_from_dotenv_and_no_file_env(compose):
+def test_tc_adm_001_api_has_login_mode_and_no_credential_env(compose):
+    """TC-ADM-001 (DEC-058) api 는 로그인 필수·60분 무활동만 켜고, 아이디·비밀번호는 환경 변수로 받지 않는다."""
     env = compose["services"]["api"]["environment"]
-    assert str(env["YTWEB_ADMIN_LOGIN"]) == "1"
-    assert str(env["YTWEB_SESSION_IDLE_MINUTES"]) == "60"
-    assert env["YTWEB_ADMIN_ID"] == "${YTWEB_ADMIN_ID:-}"
-    assert env["YTWEB_ADMIN_PASSWORD"] == "${YTWEB_ADMIN_PASSWORD:-}"
-    assert not [k for k in env if k.endswith("_FILE") and "ADMIN" in k]
+    assert env["YTWEB_ADMIN_LOGIN"] == "1" and env["YTWEB_SESSION_IDLE_MINUTES"] == "60"
+    assert not [k for k in env if k.startswith("YTWEB_ADMIN_") and k != "YTWEB_ADMIN_LOGIN"]
 
 
 def test_tc_adm_002_api_only_db_app_password(compose):
@@ -74,13 +72,11 @@ def test_tc_adm_005_hardening_and_networks_unchanged(compose):
     assert compose["services"]["web"]["ports"] == ["127.0.0.1:8080:8080"]
 
 
-def test_tc_adm_006_no_literal_credentials_in_compose_or_env_example():
-    env = yaml.safe_load(_t(WEB / "compose.yaml"))["services"]["api"]["environment"]
-    assert env["YTWEB_ADMIN_ID"] == "${YTWEB_ADMIN_ID:-}" and env["YTWEB_ADMIN_PASSWORD"] == "${YTWEB_ADMIN_PASSWORD:-}"
-    for line in _t(WEB / ".env.example").splitlines():  # 예시 파일의 값 줄은 비어 있어야 한다(실제 값 없음)
-        m = re.match(r"\s*YTWEB_ADMIN_(ID|PASSWORD)\s*=(.*)$", line)
-        if m:
-            assert m.group(2).strip() == "", line
+def test_tc_adm_006_no_credentials_anywhere_in_compose_or_env_example():
+    """TC-ADM-006 compose·.env.example 에 관리자 아이디·비밀번호 변수가 없다(DEC-058: 평문은 어디에도 두지 않는다)."""
+    for f in (WEB / "compose.yaml", WEB / ".env.example"):
+        text = f.read_text(encoding="utf-8")
+        assert "YTWEB_ADMIN_ID" not in text and "YTWEB_ADMIN_PASSWORD" not in text, f.name
 
 
 def test_tc_adm_007_set_admin_removed():
@@ -102,19 +98,10 @@ def test_tc_adm_008_start_and_common_have_no_admin_input_code():
                 assert "관리자" not in line and "아이디" not in line and "비밀번호" not in line, line
 
 
-def test_tc_adm_009_start_checks_env_without_printing_values_or_asking():
-    s = _t(SCRIPTS / "start.ps1")
-    assert "YTWEB_ADMIN_ID" in s and "YTWEB_ADMIN_PASSWORD" in s and "Write-Warn" in s and "start.ps1" in s
-    assert "Read-Host" not in s and "Get-Credential" not in s and "SecureString" not in s
-    assert "관리자 계정을 만드세요" not in s and "브라우저에서 로그인하세요" in s
-    assert s.index("브라우저에서 로그인하세요") > s.index("준비 완료")
-    # 값을 담는 변수 출력 금지: Write-* 줄에는 환경 파일에서 읽은 줄/값 변수가 없어야 한다
-    for line in s.splitlines():
-        if re.search(r"Write-(Host|Ok|Info|Warn|Output)", line):
-            assert "$envLine" not in line and "$Matches" not in line, line
-    # 설정이 없어도 중단하지 않는다(해당 블록에 exit/Stop-Script 없음)
-    blk = s[s.index("$adminEnvFile"):s.index("Write-Info '3/5")]
-    assert "exit" not in blk and "Stop-Script" not in blk and "Copy-Item" not in blk
+def test_tc_adm_009_start_never_asks_or_prints_credentials():
+    """TC-ADM-009 start.ps1 은 아이디·비밀번호를 묻지도 읽지도 않는다."""
+    t = (SCRIPTS / "start.ps1").read_text(encoding="utf-8")
+    assert "Read-Host" not in t and "SecureString" not in t and "YTWEB_ADMIN_PASSWORD" not in t and ".env" not in t.split("Initialize-Secrets")[0]
 
 
 def test_tc_adm_010_start_flow_order():
@@ -129,12 +116,17 @@ def test_tc_adm_011_db_secret_names_unchanged():
     assert "admin" not in names and names.count("'") == 6
 
 
-def test_tc_adm_012_reset_admin_and_set_admin_files_removed():
+def test_tc_adm_012_register_admin_exists_and_old_scripts_removed():
+    """TC-ADM-012 register-admin(ps1/bat)이 있고 reset-admin·set-admin 은 없다. register 는 비밀번호를 다루지 않고 컨테이너 안 프로그램에 입력을 맡긴다."""
+    for n in ("register-admin.ps1", "register-admin.bat"):
+        assert (SCRIPTS / n).exists(), n
     for n in ("reset-admin.ps1", "reset-admin.bat", "set-admin.ps1", "set-admin.bat"):
         assert not (SCRIPTS / n).exists(), n
-    for p in list(SCRIPTS.iterdir()) + [WEB / "README.md", WEB / ".env.example", WEB / "compose.yaml"]:
-        if p.is_file():
-            assert "reset-admin" not in _t(p) and "admin_cli" not in _t(p), p
+    t = (SCRIPTS / "register-admin.ps1").read_text(encoding="utf-8")
+    assert "ytweb.admin_cli register" in t
+    code = "\n".join(l for l in t.splitlines() if not l.lstrip().startswith("#"))
+    assert "Read-Host" not in code and "SecureString" not in code and "ConvertFrom-SecureString" not in code
+    assert not re.search(r"exec\s+-T", code)  # 대화형(TTY)이어야 비밀번호가 숨김 입력된다
 
 
 def test_tc_adm_018_gitignore_and_check_ignore():
@@ -149,14 +141,10 @@ def test_tc_adm_018_gitignore_and_check_ignore():
     assert "web/secrets/" in (ROOT / ".dockerignore").read_text(encoding="utf-8")
 
 
-def test_tc_adm_019_docs_describe_dotenv_login():
-    r, e = _t(WEB / "README.md"), _t(WEB / ".env.example")
-    for k in ("YTWEB_ADMIN_ID=admin1234", "<8~64자 비밀번호>", "60분", "YTWEB_SESSION_IDLE_MINUTES", "start.ps1", "계정을 만들 수 없"):
-        assert k in r, k
-    assert "4~20자" in r and "8~64자" in r and "#" in r
-    assert "YTWEB_ADMIN_ID=" in e and "YTWEB_ADMIN_PASSWORD=" in e and "60분" in e and "8~64자" in e
-    for tx in (r, e):
-        assert "admin_login_id" not in tx and "admin_login_password" not in tx and "관리자 계정 만들기" not in tx
+def test_tc_adm_019_readme_describes_register_admin():
+    """TC-ADM-019 README 가 register-admin 한 번 실행·DB 해시 저장을 설명하고 .env 관리자 설정은 없다."""
+    t = (WEB / "README.md").read_text(encoding="utf-8")
+    assert "register-admin" in t and "YTWEB_ADMIN_PASSWORD" not in t
 
 
 def test_tc_adm_020_restore_and_reset_demo_need_no_admin_secret():

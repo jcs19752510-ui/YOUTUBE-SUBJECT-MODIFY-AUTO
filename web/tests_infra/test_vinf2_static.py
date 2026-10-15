@@ -531,11 +531,13 @@ def test_vif_050_ps_bom_and_balance(f):
 def test_vif_051_invoke_compose_overlay_logic():
     """TC-VIF-051 Invoke-Compose: 구글 파일이 있을 때만 기본 파일 다음에 오버레이를 붙이고, 프로젝트 이름을 -p 로 전달한다."""
     ps = rd(SCRIPTS / "_common.ps1")
-    fn = blocks(ps, r"function\s+Invoke-Compose[^{]*")[0][1]
+    inv = blocks(ps, r"function\s+Invoke-Compose[^{]*")[0][1]
+    fn = blocks(ps, r"function\s+Get-ComposeBaseArgs[^{]*")[0][1]  # 파일 목록 조립은 Get-ComposeBaseArgs 한 곳(register-admin 이 같은 목록을 재사용)
+    assert "Get-ComposeBaseArgs" in inv
     assert re.search(r"\$files\s*=\s*@\('-f',\s*\$YtwebComposeFile\)", fn)
     assert re.search(r"if\s*\(Test-Path\s+\$YtwebGoogleClient\)\s*\{\s*\$files\s*\+=\s*@\('-f',\s*\$YtwebOnlineFile\)\s*\}", fn)
     assert fn.index("$YtwebComposeFile") < fn.index("$YtwebOnlineFile")
-    assert re.search(r"@\('compose',\s*'-p',\s*\$YtwebProject\)\s*\+\s*\$files\s*\+\s*\$ArgList", fn)
+    assert re.search(r"@\('compose',\s*'-p',\s*\$YtwebProject\)\s*\+\s*\$files", fn)
     # Gemini 오버레이(compose.gemini.yaml): 키 파일이 있고 길이가 0 보다 클 때만, 구글 파일 유무와 독립적으로 붙는다(외부망은 키가 있을 때만 열림).
     assert re.search(r"if\s*\(\(Test-Path\s+\$YtwebGeminiKey\)\s*-and\s*\(\(Get-Item\s+\$YtwebGeminiKey\)\.Length\s*-gt\s*0\)\)\s*\{\s*\$files\s*\+=\s*@\('-f',\s*\$YtwebGeminiFile\)\s*\}", fn)
     assert fn.index("$YtwebOnlineFile") < fn.index("$YtwebGeminiFile")
