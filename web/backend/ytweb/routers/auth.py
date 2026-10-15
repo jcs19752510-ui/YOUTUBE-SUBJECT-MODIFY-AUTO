@@ -73,7 +73,12 @@ def me(
     }
 
 
-@router.post("/login")
+def _origin_first(request: Request, settings: WebSettings = Depends(get_web_settings)) -> None:
+    """본문 검증(422)보다 먼저 출처를 검사한다(비허용 출처에는 어떤 형식 정보도 알리지 않음)."""
+    verify_same_origin(request, settings)
+
+
+@router.post("/login", dependencies=[Depends(_origin_first)])
 def login(
     request: Request,
     response: Response,

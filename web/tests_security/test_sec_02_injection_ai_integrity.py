@@ -222,8 +222,8 @@ def test_csv_notes_and_titles_from_any_source_are_neutralized(client, csrf, monk
     import ytweb.domain.reports as rep
     real = rep.build_reports
 
-    def fake(session, env, video_id=None):
-        data = real(session, env, video_id)
+    def fake(*args, **kwargs):  # 조회 기간·영상 구분 인자가 늘었어도 그대로 전달(이전 커밋의 시험 깨짐 복구)
+        data = real(*args, **kwargs)
         data["notes"] = ["=HYPERLINK(\"http://evil\")", "+1+1", "@SUM(1)", "-2+3", "정상 주석"]
         data["items"] = [{"video_id": "demoVid0001", "title": "=1+1", "status": "ok", "label": None, "baseline_missing": False, "reasons": ["=cmd", "+x"], "notes": ["@a"],
                           "changes": [], "target": {"at": "t", "previous_title": "-x", "new_title": "@y", "id": 1, "change_type": "apply", "result": "success", "approver": "a"},

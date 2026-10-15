@@ -205,7 +205,8 @@ def test_compose_secrets_are_files_and_env_has_no_plain_credentials():
                 assert str(v).startswith("/run/secrets/"), (n, k, v)
     api = c["services"]["api"]
     assert api["environment"]["YTWEB_ENABLE_DOCS"] == "0"
-    assert c["services"]["api"]["secrets"] == ["db_app_password"] and c["services"]["worker"]["secrets"] == ["db_app_password"]
+    # DEC-055: 관리자 로그인 비밀 2개는 api 에만(worker 는 DB 비밀 하나뿐)
+    assert c["services"]["api"]["secrets"] == ["db_app_password", "admin_login_id", "admin_login_password"] and c["services"]["worker"]["secrets"] == ["db_app_password"]
     assert c["services"]["migrate"]["secrets"] == ["db_owner_password"]
     assert "secrets" not in c["services"]["web"]
     cmd = " ".join(c["services"]["db"]["command"])
