@@ -112,13 +112,14 @@ def test_cookie_flags(client):
 # ───────────── [TW-01] CSRF: 모든 상태 변경 라우트 전수 ─────────────
 
 def test_every_state_changing_route_rejects_missing_csrf(client, csrf):
-    mutating = [(m, p) for m, p in api_routes(client.app) if m in ("POST", "PUT", "PATCH", "DELETE") and p not in ("/api/v1/auth/session", "/api/v1/auth/login") or (m == "DELETE")]
+    mutating = [(m, p) for m, p in api_routes(client.app) if m in ("POST", "PUT", "PATCH", "DELETE") and p not in ("/api/v1/auth/session", "/api/v1/auth/login", "/api/v1/auth/setup") or (m == "DELETE")]
     # 로그인(DEC-055)은 세션 발급과 같이 CSRF 토큰이 아직 없는 요청이다: 대신 출처·same-site 검사를 아래에서 따로 확인한다.
-    for hdrs, code in (({}, "origin_not_allowed"), ({"Origin": "http://evil.com"}, "origin_not_allowed"), ({"Origin": ORIGIN, "Sec-Fetch-Site": "same-site"}, "cross_site_request")):
-        r = client.post("/api/v1/auth/login", headers=hdrs, json={"login_id": "abcd", "password": "12345678"})
-        assert r.status_code == 403 and r.json()["code"] == code, (hdrs, r.status_code)
-    r = client.post("/api/v1/auth/login", headers={"Origin": "http://evil.com"}, json={})  # 본문이 틀려도 출처 거부가 먼저
-    assert r.status_code == 403
+    for path in ("/api/v1/auth/login", "/api/v1/auth/setup"):  # 최초 설정(DEC-056)도 로그인 전 요청이라 같은 방식으로 확인
+        for hdrs, code in (({}, "origin_not_allowed"), ({"Origin": "http://evil.com"}, "origin_not_allowed"), ({"Origin": ORIGIN, "Sec-Fetch-Site": "same-site"}, "cross_site_request")):
+            r = client.post(path, headers=hdrs, json={"login_id": "abcd", "password": "12345678"})
+            assert r.status_code == 403 and r.json()["code"] == code, (path, hdrs, r.status_code)
+        r = client.post(path, headers={"Origin": "http://evil.com"}, json={})  # 본문이 틀려도 출처 거부가 먼저
+        assert r.status_code == 403, path
     assert len(mutating) >= 11, mutating
     for m, p in mutating:
         # 올바른 세션 쿠키 + 올바른 Origin 이지만 CSRF 헤더 없음
