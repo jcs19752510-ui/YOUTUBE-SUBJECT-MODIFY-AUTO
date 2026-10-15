@@ -115,11 +115,11 @@ def test_alembic_0001_matches_models_py(both_schemas, part):
 
 
 def test_alembic_table_set_equals_model_tables_plus_version(both_schemas, pg):
-    """TC-VA-115 [S-W13a] 테이블 집합이 모델 14개와 일치하고(alembic_version 제외) 누락/잉여 테이블이 없다."""
+    """TC-VA-115 [S-W13a] 테이블 집합이 모델 15개(0003 admin_accounts 포함)와 일치하고(alembic_version 제외) 누락/잉여 테이블이 없다."""
     mig, mod = both_schemas
     t_mig = {r[0] for r in mig["columns"]}
     assert t_mig == {t.name for t in Base.metadata.sorted_tables} == {r[0] for r in mod["columns"]}
-    assert len(t_mig) == 14
+    assert len(t_mig) == 15
 
 
 def test_upgrade_twice_and_downgrade_upgrade_cycle_are_safe(pg_url, pg):
@@ -127,14 +127,14 @@ def test_upgrade_twice_and_downgrade_upgrade_cycle_are_safe(pg_url, pg):
     from alembic import command
     migrate.upgrade(pg_url)
     with pg.connect() as c:
-        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0003"
     command.downgrade(migrate.alembic_config(pg_url), "base")
     with pg.connect() as c:
         left = c.execute(text("select count(*) from information_schema.tables where table_schema='public' and table_name <> 'alembic_version'")).scalar_one()
     assert left == 0
     migrate.upgrade(pg_url)
     with pg.connect() as c:
-        assert c.execute(text("select count(*) from information_schema.tables where table_schema='public'")).scalar_one() == 15
+        assert c.execute(text("select count(*) from information_schema.tables where table_schema='public'")).scalar_one() == 16
 
 
 def test_check_constraints_and_partial_unique_indexes_actually_reject_bad_rows(pg):
@@ -507,7 +507,7 @@ def test_app_role_cannot_modify_alembic_version_on_new_database(app_role):
     su = app_role
     with su.connect() as c:
         c.execute(text(f"SET ROLE {APP_ROLE}"))
-        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"  # SELECT 는 허용
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0003"  # SELECT 는 허용
         c.execute(text("RESET ROLE"))
         for priv in ("INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"):
             assert not c.execute(text("select has_table_privilege(:r,'alembic_version',:p)"), {"r": APP_ROLE, "p": priv}).scalar_one(), priv
@@ -515,7 +515,7 @@ def test_app_role_cannot_modify_alembic_version_on_new_database(app_role):
         c.execute(text("select 1"))
     assert all(ok for _, ok in _as_app(su, stmts_denied=VERSION_DENIED)), _as_app(su, stmts_denied=VERSION_DENIED)
     with su.connect() as c:
-        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"  # 거부된 문장은 아무것도 바꾸지 못했다
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0003"  # 거부된 문장은 아무것도 바꾸지 못했다
     assert all(ok for _, ok in _as_app(su, stmts_denied=["UPDATE audit_log SET actor='x'", "DELETE FROM audit_log", "TRUNCATE audit_log"]))
     _as_app(su, stmts_ok=["insert into settings_kv(key,value,updated_at) values ('k','1',now())", "update settings_kv set value='2'"])
 
@@ -541,7 +541,7 @@ def test_upgrade_existing_0001_database_revokes_version_table_dml(pg_url):
         migrate.upgrade(pg_url)
         migrate.upgrade(pg_url)  # 다시 실행해도 안전
         with su.connect() as c:
-            assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"
+            assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0003"
             assert c.execute(text("select count(*) from settings_kv where key='keep'")).scalar_one() == 1
             assert not c.execute(text("select has_table_privilege(:r,'alembic_version','UPDATE') or has_table_privilege(:r,'alembic_version','DELETE') or has_table_privilege(:r,'alembic_version','INSERT')"), {"r": APP_ROLE}).scalar_one()
         assert all(ok for _, ok in _as_app(su, stmts_denied=VERSION_DENIED))

@@ -247,7 +247,7 @@ def test_alembic_cli_offline_upgrade_and_downgrade_render():
     """TC-VA-173 [S-W13a] 운영자가 쓰는 실제 CLI(`alembic upgrade head --sql` / `downgrade 0001:base --sql`)가 DB 없이 성공하고,
     14개 테이블 생성 + audit_log 변경 권한 회수(REVOKE)를 포함하며, 데이터를 읽는 쪽 권한을 새로 주는 GRANT 는 없다."""
     up = _alembic_cli("upgrade", "head", "--sql")
-    assert up.count("CREATE TABLE ") == 15 and "CREATE TABLE alembic_version" in up  # 모델 14 + alembic_version
+    assert up.count("CREATE TABLE ") == 16 and "CREATE TABLE alembic_version" in up  # 모델 15(0003 admin_accounts 포함) + alembic_version
     assert "REVOKE UPDATE, DELETE, TRUNCATE ON audit_log FROM ytweb_app" in up
     assert "GRANT" not in up.upper().replace("INTEGRITY", "")
     down = _alembic_cli("downgrade", "0001:base", "--sql")
@@ -358,4 +358,4 @@ def test_alembic_offline_render_revokes_version_table_privileges():
     assert "REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON alembic_version FROM ytweb_app" in up
     assert "REVOKE SELECT" not in up and "ON alembic_version FROM PUBLIC" not in up
     assert up.count("INSERT INTO alembic_version") == 1 and "UPDATE alembic_version SET version_num='0002'" in up
-    assert _alembic_cli("heads").split()[0] == "0002"
+    assert _alembic_cli("heads").split()[0] == "0003"  # 0003 은 admin_accounts(DEC-055)
