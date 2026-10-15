@@ -44,7 +44,7 @@ class RateLimiter:
         windows = [self._g]
         if method in ("POST", "PUT", "PATCH", "DELETE"):
             windows.append(self._w)
-        if method == "POST" and path.rstrip("/") in ("/api/v1/auth/session", "/api/v1/auth/login", "/api/v1/auth/setup"):
+        if method == "POST" and path.rstrip("/") in ("/api/v1/auth/session", "/api/v1/auth/login"):
             windows.append(self._a)
         waits = [w.peek() for w in windows]
         if any(waits):

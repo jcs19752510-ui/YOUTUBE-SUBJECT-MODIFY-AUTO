@@ -30,6 +30,28 @@ Test-DockerReady
 Write-Info '2/5 비밀 파일 확인'
 Initialize-Secrets
 
+# 관리자 로그인 설정 확인(값은 화면·로그에 출력하지 않고 있다/없다만 안내한다. 입력을 받지 않는다. 없어도 계속 진행한다 = 로그인 불가로 닫힘)
+$adminEnvFile = Join-Path $YtwebWebDir '.env'
+$adminIdSet = $false
+$adminPwSet = $false
+if (Test-Path $adminEnvFile) {
+    foreach ($envLine in [System.IO.File]::ReadAllLines($adminEnvFile)) {
+        if ($envLine -match '^\s*YTWEB_ADMIN_ID\s*=\s*\S') { $adminIdSet = $true }
+        if ($envLine -match '^\s*YTWEB_ADMIN_PASSWORD\s*=\s*\S') { $adminPwSet = $true }
+    }
+}
+if ($adminIdSet -and $adminPwSet) {
+    Write-Ok '관리자 로그인 설정이 있습니다(web\.env 의 아이디·비밀번호; 값은 표시하지 않음)'
+} else {
+    Write-Warn '관리자 로그인 설정이 없습니다. 이대로 시작하면 서버는 뜨지만 로그인할 수 없습니다.'
+    Write-Host '  해결 방법:' -ForegroundColor Yellow
+    Write-Host '   1) 메모장으로 web\.env 파일을 엽니다(없으면 새로 만듭니다; 저장소 맨 위 폴더 아래 web 폴더).' -ForegroundColor Yellow
+    Write-Host '   2) 아래 두 줄을 추가합니다(아이디 영문·숫자 4~20자, 비밀번호 8~64자; # 과 따옴표는 쓰지 마세요).' -ForegroundColor Yellow
+    Write-Host '        YTWEB_ADMIN_ID=원하는아이디' -ForegroundColor Yellow
+    Write-Host '        YTWEB_ADMIN_PASSWORD=원하는비밀번호' -ForegroundColor Yellow
+    Write-Host '   3) 저장한 뒤 .\web\scripts\start.ps1 을 다시 실행합니다.' -ForegroundColor Yellow
+}
+
 Write-Info '3/5 포트 확인'
 $own = @(Get-ComposeServices | Where-Object { (Get-Prop $_ 'Service') -eq 'web' -and (Get-Prop $_ 'State') -eq 'running' })
 if ($own.Count -eq 0 -and (Test-PortInUse $YtwebPort)) {
@@ -66,7 +88,7 @@ Write-Host ''
 Write-Host '=============================================' -ForegroundColor Green
 Write-Host " 준비 완료!  브라우저에서 열기:  $YtwebUrl" -ForegroundColor Green
 Write-Host '=============================================' -ForegroundColor Green
-Write-Host '처음 접속하면 브라우저에서 관리자 계정을 만드세요(아이디·비밀번호는 웹 화면에서만 정합니다).'
+Write-Host '브라우저에서 로그인하세요(아이디·비밀번호는 web\.env 에 적은 값입니다. 웹에서 계정을 만들 수 없습니다).'
 Write-Host '상태 확인  .\web\scripts\status.ps1'
 Write-Host '로그 보기  .\web\scripts\logs.ps1'
 Write-Host '종료       .\web\scripts\stop.ps1   (데이터는 보존됩니다)'

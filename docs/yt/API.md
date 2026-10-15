@@ -97,11 +97,11 @@ curl -b jar.txt -X POST -H 'Origin: http://127.0.0.1:8080' -H 'X-CSRF-Token: uQo
 세션 확인(쿠키 없이도 호출 가능). 응답 200
 ```json
 {"authenticated": false, "pin_required": false, "csrf_token": null,
- "login_required": false, "setup_required": false, "admin_login_id": null, "idle_timeout_seconds": 1800}
+ "login_required": false, "admin_login_id": null, "idle_timeout_seconds": 1800}
 ```
-세션이 유효하면 `authenticated:true`와 `csrf_token`을 돌려준다(새로고침한 화면이 토큰을 복구하는 용도). **로그인 중이면 이 호출이 마지막 사용 시각을 갱신한다**(화면의 "계속 사용"). 관리자 로그인 모드(`YTWEB_ADMIN_LOGIN=1`, DEC-055·056)에서는 미인증이고 **계정이 있으면** `login_required:true`(그리고 `pin_required:false`), **계정이 아직 없으면** `setup_required:true`(이때 `login_required:false`, 화면은 "관리자 계정 만들기"를 보여 준다; DEC-056), 인증 상태에서는 `admin_login_id`가 로그인 아이디다. `idle_timeout_seconds`는 무활동 자동 로그아웃 시간(초, 끄면 null; 로그인 모드 기본 3600).
+세션이 유효하면 `authenticated:true`와 `csrf_token`을 돌려준다(새로고침한 화면이 토큰을 복구하는 용도). **로그인 중이면 이 호출이 마지막 사용 시각을 갱신한다**(화면의 "계속 사용"). 관리자 로그인 모드(`YTWEB_ADMIN_LOGIN=1`, DEC-055·057)에서는 미인증이면 `login_required:true`(그리고 `pin_required:false`)이며 화면은 로그인 화면을 보여 준다(`setup_required` 는 없다: 계정을 만드는 화면·API 가 없다; DEC-057), 인증 상태에서는 `admin_login_id`가 로그인 아이디다. `idle_timeout_seconds`는 무활동 자동 로그아웃 시간(초, 끄면 null; 로그인 모드 기본 3600).
 
-### EVT-W06a `POST /api/v1/auth/login` (관리자 로그인 모드, DEC-055)
+### EVT-W06a `POST /api/v1/auth/login` (관리자 로그인 모드, DEC-055·057)
 본문 `{"login_id": "<1~40자>", "password": "<1~128자>"}`(알 수 없는 필드는 422, 입력값은 오류 응답에 되돌리지 않음). Origin 필수. 응답 200 `{"csrf_token", "admin_login_id", "idle_timeout_seconds"}` + `Set-Cookie: ytw_session=...; HttpOnly; SameSite=Strict; Path=/api`. 성공하면 **이전 세션이 모두 종료**된다.
 | 오류 | 의미 |
 |---|---|
@@ -109,20 +109,12 @@ curl -b jar.txt -X POST -H 'Origin: http://127.0.0.1:8080' -H 'X-CSRF-Token: uQo
 | 401 `login_invalid` | 아이디 또는 비밀번호 불일치(어느 쪽인지 알리지 않음, 같은 문구) |
 | 429 `login_locked` | 5회 연속 실패 → 5분 잠금, 반복할 때마다 2배(최대 1시간). 잠금 중에는 맞는 비밀번호도 거부. `Retry-After` 초 |
 | 429 `rate_limited` | 로그인·세션 발급 합쳐 분당 10회 초과 |
-| 409 `login_not_configured` | 관리자 계정이 아직 없음. 화면은 이 응답이 아니라 `me.setup_required` 로 "관리자 계정 만들기"(`POST /auth/setup`)로 안내한다(DEC-056) |
+| 409 `login_not_configured` | 선생님 PC 의 `web\.env` 에 `YTWEB_ADMIN_ID`·`YTWEB_ADMIN_PASSWORD` 가 설정되지 않았거나 형식이 틀림(닫힘: 아무도 로그인할 수 없음). 화면이 `.env` 설정 방법을 안내한다(DEC-057). 계정을 만드는 API 는 없다 |
 | 409 `login_disabled` | 서버가 로그인 모드가 아님(`YTWEB_ADMIN_LOGIN` 꺼짐) |
 감사 로그: 성공 `login.success`, 실패·잠금 `login.denied`(코드만, 아이디·비밀번호 값 없음). 세션 무활동 시간이 `YTWEB_SESSION_IDLE_MINUTES`(로그인 모드 기본 60)를 넘으면 보호 API 가 401 `session_required`.
 
-### EVT-W06b `POST /api/v1/auth/setup` (최초 관리자 계정 만들기, DEC-056)
-관리자 계정이 **하나도 없을 때 단 한 번**만 쓸 수 있다. 본문 `{"login_id": "<영문·숫자 4~20자>", "password": "<8~64자>"}`(비밀번호 확인 입력은 화면에서만 대조, 알 수 없는 필드는 422, 입력값은 오류 응답에 되돌리지 않음). Origin 필수(출처 검사가 먼저). 로그인과 같은 속도 제한(분당 10회). 성공하면 계정을 scrypt 해시로 `admin_accounts` 에 저장하고 **바로 로그인된 상태**로 200 `{"csrf_token", "admin_login_id", "idle_timeout_seconds"}` + `Set-Cookie: ytw_session=...; HttpOnly; SameSite=Strict; Path=/api` 를 돌려준다.
-| 오류 | 의미 |
-|---|---|
-| 403 `origin_not_allowed` / `cross_site_request` | Origin 없음·불일치 / 다른 사이트 요청 |
-| 422 | 아이디(영문·숫자 4~20자)·비밀번호(8~64자) 형식 위반, 알 수 없는 필드 |
-| 429 `rate_limited` | 분당 10회 초과 |
-| 409 `setup_closed` | 계정이 이미 있음. **영구히 닫힘**(초기화 `reset-admin.bat` 전까지). 동시에 두 요청이 와도 한 건만 성공(DB 잠금) |
-| 409 `login_disabled` | 서버가 로그인 모드가 아님(`YTWEB_ADMIN_LOGIN` 꺼짐) |
-감사 로그: 성공 `admin.setup`(아이디만, 비밀번호 값 없음). 실패(규칙 위반·이미 있음) `admin.setup_denied`(코드만). 계정을 지우는 `reset-admin` 은 API 가 아니라 컨테이너 CLI(`python -m ytweb.admin_cli reset`)이며 감사 로그(해시 체인)에 `admin.reset`(삭제된 계정 수만, 값 없음)을 남긴다(`threat_model.md` TW-59).
+### (삭제됨) 관리자 계정 만들기 API
+DEC-056 의 `POST /api/v1/auth/setup` 은 선생님 거부로 **삭제**되었다(DEC-057). 웹/API 로 계정을 만들거나 초기화하는 경로는 없고, 계정은 `web\.env` 값으로 api 시작 때 준비된다(`ADMIN_LOGIN_DESIGN.md`).
 
 ### EVT-W06 `POST /api/v1/auth/session`
 세션 발급. **로그인 모드에서는 403 `login_required`(익명 발급 금지).** 본문 `{"pin": "<숫자 4~12자리>"}`(PIN이 설정된 경우만 필요, 그 외 `{}` 또는 본문 없음, 알 수 없는 필드는 422). 응답 200 `{"csrf_token": "..."}` + `Set-Cookie`.

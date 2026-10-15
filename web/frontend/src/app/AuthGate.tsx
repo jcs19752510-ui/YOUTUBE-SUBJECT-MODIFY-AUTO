@@ -8,7 +8,6 @@ import { ko } from '../i18n/ko';
 import { IdleLogout } from './IdleLogout';
 import { LoginForm } from './LoginForm';
 import { PinForm } from './PinForm';
-import { SetupForm } from './SetupForm';
 
 function Center({ children }: { children: ReactNode }) {
   return (
@@ -30,8 +29,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [client]);
   if (conn.state === 'online' && !everOnline) setEverOnline(true);
 
-  const needSetup = conn.state === 'setup_required';
-  const needLogin = conn.state === 'login_required' || needSetup;
+  const needLogin = conn.state === 'login_required';
   useEffect(() => {
     // 로그인 화면이 뜨면 이전 사용자의 데이터가 캐시에 남지 않게 지운다
     if (needLogin) qc.clear();
@@ -46,7 +44,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (needSetup) return <SetupForm onDone={() => void qc.invalidateQueries()} />;
   if (needLogin) return <LoginForm expired={conn.expired} onDone={() => void qc.invalidateQueries()} />;
 
   if (everOnline) {

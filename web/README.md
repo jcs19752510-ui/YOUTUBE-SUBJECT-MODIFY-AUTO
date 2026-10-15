@@ -28,7 +28,17 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned   # 이 창에�
 
 `start.ps1` 이 알아서 하는 일: Docker 확인 → 비밀번호 파일 생성(`web\secrets\`, 처음 한 번, 값은 화면에 표시하지 않음) → 포트 확인 → 이미지 빌드·시작 → 준비 대기. **첫 실행은 5~15분** 걸릴 수 있습니다. 끝나면 아래 주소가 표시됩니다.
 
-**관리자 로그인(필수)**: 화면에 들어가려면 로그인이 필요합니다. **처음 접속하면 브라우저의 "관리자 계정 만들기" 화면에서 아이디와 비밀번호를 직접 정합니다**(터미널에서 묻지 않으며, 비밀번호는 데이터베이스에 해시로만 저장되고 PC에 비밀번호 파일이 남지 않습니다). 마지막 조작 후 **60분이 지나면 자동 로그아웃**됩니다(`YTWEB_SESSION_IDLE_MINUTES`, 기본 60). **비밀번호를 잊었을 때만** `web\scripts\reset-admin.bat` 을 더블클릭하고 `관리자초기화` 를 입력하면 관리자 계정이 지워지니, 브라우저에서 새 계정을 만드세요.
+**관리자 로그인(필수)**: 화면에 들어가려면 로그인이 필요하며, **웹 화면에서는 계정을 만들 수 없습니다**(로그인 화면만 있습니다). 아이디와 비밀번호는 이 PC의 `web\.env`(저장소에 올라가지 않는 파일)에 두 줄로 적으면, 서버가 시작할 때 그 값으로 계정을 준비합니다.
+
+1. 메모장으로 `web\.env` 를 엽니다(없으면 `web\.env.example` 을 복사해 `web\.env` 로 만들거나 새로 만듭니다).
+2. 아래 두 줄을 적고 저장합니다(예시 값입니다. 본인 값으로 바꾸세요).
+   ```
+   YTWEB_ADMIN_ID=admin1234
+   YTWEB_ADMIN_PASSWORD=<8~64자 비밀번호>
+   ```
+   - 아이디는 영문·숫자 4~20자, 비밀번호는 8~64자입니다. 값 안에 `#`·따옴표(`"` `'`)는 쓰지 마세요(`.env` 에서 값이 잘리거나 틀어집니다).
+3. `.\web\scripts\start.ps1` 을 실행합니다(바꾼 뒤에도 같은 방법으로 다시 실행). 두 값이 없으면 start.ps1 이 노란 주의문으로 방법을 알려 주고, 서버는 뜨지만 로그인할 수 없습니다(닫힘).
+4. 브라우저에서 로그인합니다. 마지막 조작 후 **60분이 지나면 자동 로그아웃**됩니다(`YTWEB_SESSION_IDLE_MINUTES`, 기본 60).
 
 **접속 주소: <http://127.0.0.1:8080>** (이 PC에서만 접속됩니다. 같은 와이파이의 다른 기기에서는 열리지 않습니다.)
 
@@ -37,7 +47,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned   # 이 창에�
 | 하고 싶은 일 | 명령 |
 |---|---|
 | 시작 | `.\web\scripts\start.ps1` (코드를 바꾸지 않았다면 `-NoBuild` 로 빠르게) |
-| 관리자 비밀번호를 잊었을 때 | `web\scripts\reset-admin.bat` (또는 `.\web\scripts\reset-admin.ps1`, 확인 문구 `관리자초기화`) → 브라우저에서 새 계정 만들기 |
+| 관리자 아이디·비밀번호를 바꾸거나 잊었을 때 | `web\.env` 의 `YTWEB_ADMIN_ID`·`YTWEB_ADMIN_PASSWORD` 를 고치고 `.\web\scripts\start.ps1` 다시 실행 |
 | 종료 (데이터 보존) | `.\web\scripts\stop.ps1` |
 | 상태·보안 점검 | `.\web\scripts\status.ps1` (`-Detail` 로 컨테이너 보안 설정까지) |
 | 로그 보기 | `.\web\scripts\logs.ps1` / `-Service api` / `-Follow` |

@@ -75,7 +75,7 @@ def test_tc_wbx_023_http_idle_session_gets_401_and_activity_keeps_it_alive(clien
 def test_tc_wbx_024_http_me_and_csrf_paths_also_honor_idle(client, clock, csrf):
     clock.advance(minutes=31)
     assert client.get("/api/v1/auth/me").json() == {"authenticated": False, "pin_required": False, "csrf_token": None,
-                                                              "login_required": False, "setup_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}
+                                                              "login_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}
     r = client.patch("/api/v1/settings", json={"daily_apply_cap": 3}, headers=hdr(csrf))
     assert r.status_code == 401 and r.json()["code"] == "session_required"
     assert login(client)  # 다시 로그인하면 새 세션

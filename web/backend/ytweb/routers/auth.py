@@ -37,12 +37,6 @@ class SessionRequest(BaseModel):
     pin: str | None = Field(default=None, max_length=64)
 
 
-class SetupRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    login_id: str = Field(min_length=1, max_length=40)
-    password: str = Field(min_length=1, max_length=128)
-
-
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     login_id: str = Field(min_length=1, max_length=40)
@@ -73,8 +67,7 @@ def me(
         "authenticated": info is not None,
         "pin_required": False if login_mode else pin_required(db),
         "csrf_token": info.csrf_token if info else None,
-        "login_required": login_mode and info is None and admin_account.has_admin(db),
-        "setup_required": login_mode and info is None and not admin_account.has_admin(db),
+        "login_required": login_mode and info is None,
         "admin_login_id": admin_account.admin_login_id(db) if login_mode and info else None,
         "idle_timeout_seconds": _idle_seconds(settings),
     }
@@ -83,31 +76,6 @@ def me(
 def _origin_first(request: Request, settings: WebSettings = Depends(get_web_settings)) -> None:
     """본문 검증(422)보다 먼저 출처를 검사한다(비허용 출처에는 어떤 형식 정보도 알리지 않음)."""
     verify_same_origin(request, settings)
-
-
-@router.post("/setup", dependencies=[Depends(_origin_first)])
-def setup(
-    response: Response,
-    body: SetupRequest,
-    db: Session = Depends(get_session),
-    clock: Callable[[], datetime] = Depends(get_clock),
-    settings: WebSettings = Depends(get_web_settings),
-) -> dict:
-    """최초 관리자 계정 만들기(웹, DEC-056). 계정이 없을 때 한 번만 되고 만들면 바로 로그인된다."""
-    if not settings.admin_login:
-        raise ProblemError(409, "login_disabled", "이 서버는 로그인 기능이 꺼져 있습니다.", hint="로그인 없이 바로 사용할 수 있습니다.")
-    now = clock()
-    try:
-        account = admin_account.create_admin(db, body.login_id, body.password, now=now)
-    except ProblemError as exc:
-        audit.record(db, actor="owner", action="admin.setup_denied", target_type="admin", detail={"code": exc.code}, now=now)
-        db.commit()
-        raise
-    token, info = create_session(db, now=now, ttl_hours=settings.session_ttl_hours, idle_timeout=settings.session_idle_timeout)
-    delete_other_sessions(db, info.session_id)
-    audit.record(db, actor="owner", action="admin.setup", target_type="admin", detail={}, now=now)
-    _set_cookie(response, token, settings.session_ttl_hours)
-    return {"csrf_token": info.csrf_token, "admin_login_id": account.login_id, "idle_timeout_seconds": _idle_seconds(settings)}
 
 
 @router.post("/login", dependencies=[Depends(_origin_first)])
@@ -124,6 +92,9 @@ def login(
         raise ProblemError(409, "login_disabled", "이 서버는 로그인 기능이 꺼져 있습니다.",
                            hint="로그인 없이 바로 사용할 수 있습니다.")
     now = clock()
+    if not admin_account.has_admin(db):  # 시작 때 DB 가 준비되지 않았을 수 있어 한 번 더 반영을 시도한다
+        admin_account.sync_admin_from_env(db, settings, now=now)
+        db.flush()
     try:
         account = admin_account.authenticate(db, body.login_id, body.password, now=now)
     except ProblemError as exc:

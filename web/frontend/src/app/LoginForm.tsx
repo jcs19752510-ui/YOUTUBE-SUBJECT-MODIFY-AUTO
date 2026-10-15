@@ -11,7 +11,8 @@ function message(err: unknown): string {
     if (err.isNetwork) return ko.login.network;
     if (err.status === 401) return ko.login.invalid;
     if (err.status === 429) return err.hint || err.detail || ko.login.lockedFallback;
-    if (err.code === 'login_not_configured') return ko.login.notConfigured;
+    if (err.code === 'login_not_configured')
+      return [err.title, err.hint].filter(Boolean).join(' ') || ko.login.notConfigured;
   }
   const v = describeError(err);
   return v.detail || v.title;
