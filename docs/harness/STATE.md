@@ -141,3 +141,5 @@
 - 2026-10-15: **관리자 로그인 설계 변경(DEC-056)**: 비밀 파일·start.ps1 입력·set-admin 폐기, 웹 최초 계정 만들기(`/auth/setup`)·`reset-admin.bat` 로 대체. 문서 개정 완료(결과서 `admin-login-docs2-test.md`), 선생님 PC 확인 전. 위 DEC-055 줄의 set-admin 언급은 과거 기록.
 
 - 2026-10-15 03:03 UTC: **관리자 로그인 개정 2(DEC-056) 구현·시험 완료**: 웹 최초 "관리자 계정 만들기"+toyo식 로그인 화면, start.ps1 입력·비밀 파일·set-admin 폐기, reset-admin.bat 추가. 백엔드 1138·프런트 967·인프라 228·보안 310 통과, 실패 0(결과서 `admin-login-test.md` 7절). 안 한 것: Windows·브라우저·실제 스택 확인. 선생님 몫: `git pull` → `start.ps1`(입력 없음) → 브라우저에서 계정 만들기.
+
+- 2026-10-15 03:15 UTC: **관리자 로그인 개정 3(DEC-057) 구현·시험 완료**(DEC-056 웹 계정 만들기 폐기): 웹엔 로그인 화면만, 계정은 선생님 PC `web\.env` 의 YTWEB_ADMIN_ID/PASSWORD 로 api 시작 때 준비, reset-admin·/auth/setup 삭제, 로그인 카드 화면 고정 가운데. 백엔드 1135·프런트 955·인프라+보안 532 통과, 실패 0(결과서 `admin-login-test.md` 8절). 안 한 것: Windows·Docker 스택·실제 백엔드 연동 확인. 선생님 몫: `web\.env` 에 두 줄 추가 → git pull → start.ps1.
