@@ -5,6 +5,8 @@ import { Button, Card, Modal, Skeleton } from '../components';
 import { describeError } from '../components/ErrorPanel';
 import { ErrorPanel } from '../components/ErrorPanel';
 import { ko } from '../i18n/ko';
+import { IdleLogout } from './IdleLogout';
+import { LoginForm } from './LoginForm';
 import { PinForm } from './PinForm';
 
 function Center({ children }: { children: ReactNode }) {
@@ -27,7 +29,30 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [client]);
   if (conn.state === 'online' && !everOnline) setEverOnline(true);
 
-  if (conn.state === 'online') return <>{children}</>;
+  const needLogin = conn.state === 'login_required';
+  useEffect(() => {
+    // 로그인 화면이 뜨면 이전 사용자의 데이터가 캐시에 남지 않게 지운다
+    if (needLogin) qc.clear();
+  }, [needLogin, qc]);
+
+  if (conn.state === 'online') {
+    return (
+      <>
+        {children}
+        <IdleLogout />
+      </>
+    );
+  }
+
+  if (needLogin) {
+    return (
+      <Center>
+        <h1>{ko.login.title}</h1>
+        <p>{ko.login.body}</p>
+        <LoginForm expired={conn.expired} onDone={() => void qc.invalidateQueries()} />
+      </Center>
+    );
+  }
 
   if (everOnline) {
     if (conn.state === 'pin_required') {

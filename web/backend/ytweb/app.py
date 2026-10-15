@@ -84,6 +84,18 @@ def _mount_static(app: FastAPI, static_dir: Path) -> None:
         raise StarletteHTTPException(404)
 
 
+def _sync_admin(app: FastAPI) -> None:
+    """시작할 때 비밀 파일의 관리자 아이디·비밀번호를 DB 에 해시로 반영한다. 실패해도 서버는 뜨고(로그인 시 재시도, 계정이 없으면 로그인 불가 = 닫힘)."""
+    from ytweb.core import admin_account  # 순환 import 방지
+    try:
+        with app.state.session_factory() as db:
+            status = admin_account.sync_admin_from_files(db, app.state.web_settings, now=app.state.clock())
+            db.commit()
+        log.info("admin account sync: %s", status)
+    except Exception:  # noqa: BLE001 - DB 가 아직 준비되지 않았을 수 있음. 비밀값은 로그에 없다.
+        log.warning("관리자 계정 반영을 건너뜀(로그인 시 다시 시도)", exc_info=True)
+
+
 def create_app(
     settings: WebSettings | None = None,
     *,
@@ -101,6 +113,8 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
+        if settings.admin_login:
+            _sync_admin(app)
         yield
         engine.dispose()
 

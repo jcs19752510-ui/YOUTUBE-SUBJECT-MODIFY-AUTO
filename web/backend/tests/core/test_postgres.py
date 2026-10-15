@@ -44,7 +44,7 @@ def test_alembic_upgrade_head_creates_all_model_tables(pg):
     names = set(inspect(pg).get_table_names())
     assert set(Base.metadata.tables) <= names and "alembic_version" in names
     with pg.connect() as c:
-        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0002"
+        assert c.execute(text("select version_num from alembic_version")).scalar_one() == "0003"
 
 
 def test_migrated_schema_matches_models_columns(pg):

@@ -104,6 +104,11 @@ export function Layout() {
             <span aria-hidden="true">{online ? '●' : '○'}</span>
             {statusLabel}
           </span>
+          {client.adminLoginId && (
+            <span className="conn" data-testid="admin-id">
+              {ko.login.signedInAs(client.adminLoginId)}
+            </span>
+          )}
           <Button size="sm" onClick={logout}>
             {ko.conn.logout}
           </Button>

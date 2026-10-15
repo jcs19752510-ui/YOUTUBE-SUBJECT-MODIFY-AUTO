@@ -343,6 +343,18 @@ class SessionRow(Base):
     last_seen: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
 
 
+class AdminAccount(Base):
+    """관리자 로그인 계정(1명). 비밀번호는 scrypt 해시만 저장한다(원문 저장 금지, DEC-055)."""
+
+    __tablename__ = "admin_accounts"
+
+    login_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    last_login_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+
+
 class IdempotencyKey(Base):
     __tablename__ = "idempotency_keys"
 

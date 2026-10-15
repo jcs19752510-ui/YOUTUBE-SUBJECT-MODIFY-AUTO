@@ -33,6 +33,9 @@ class WebSettings:
     port: int = 8080
     session_ttl_hours: int = 12
     session_idle_minutes: int = 30      # 마지막 사용 뒤 이 시간이 지나면 세션 만료(0 이면 유휴 만료 끔, 절대 만료 session_ttl_hours 만 적용)
+    admin_login: bool = False           # True 면 아이디·비밀번호 로그인이 필수(익명 세션 발급 금지, DEC-055). compose 기본은 켬
+    admin_id_file: Path | None = None   # 관리자 아이디 비밀 파일(Docker secret). 파일 값은 시작 시 admin_accounts 에 해시로 반영
+    admin_password_file: Path | None = None
     enable_docs: bool = False           # /docs 는 개발 프로필에서만
     log_json: bool = True
     extra: dict = field(default_factory=dict)
@@ -59,6 +62,7 @@ def load_web_settings(env: dict[str, str] | None = None) -> WebSettings:
         name = e.get("YTWEB_DB_NAME", "ytweb")
         from sqlalchemy.engine import URL
         url = URL.create("postgresql+psycopg", username=user, password=pw, host=host, port=5432, database=name).render_as_string(hide_password=False)
+    admin_login = e.get("YTWEB_ADMIN_LOGIN", "0") == "1"
     return WebSettings(
         mode=mode,
         database_url=url,
@@ -67,7 +71,10 @@ def load_web_settings(env: dict[str, str] | None = None) -> WebSettings:
         allowed_hosts=hosts,
         port=port,
         session_ttl_hours=int(e.get("YTWEB_SESSION_TTL_HOURS", "12")),
-        session_idle_minutes=_non_negative_int(e, "YTWEB_SESSION_IDLE_MINUTES", 30),
+        session_idle_minutes=_non_negative_int(e, "YTWEB_SESSION_IDLE_MINUTES", 60 if admin_login else 30),
+        admin_login=admin_login,
+        admin_id_file=Path(e["YTWEB_ADMIN_ID_FILE"]) if e.get("YTWEB_ADMIN_ID_FILE") else None,
+        admin_password_file=Path(e["YTWEB_ADMIN_PASSWORD_FILE"]) if e.get("YTWEB_ADMIN_PASSWORD_FILE") else None,
         enable_docs=e.get("YTWEB_ENABLE_DOCS", "0") == "1",
         log_json=e.get("YTWEB_LOG_JSON", "1") == "1",
     )

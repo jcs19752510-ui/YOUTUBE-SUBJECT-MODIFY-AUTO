@@ -53,13 +53,14 @@ def test_migration_is_frozen_sql_not_model_import():
     src = VERSION_FILE.read_text(encoding="utf-8")
     assert "ytweb" not in src.replace("ytweb_app", "").replace("ytweb_owner", "")
     assert "metadata" not in src and "create_all" not in src
-    assert src.count('"""CREATE TABLE') == len(Base.metadata.tables)
+    # 0003(admin_accounts, DEC-055)은 op.create_table 로 만들어 0001 의 고정 SQL 개수에서 1 적다.
+    assert src.count('"""CREATE TABLE') == len(Base.metadata.tables) - 1
 
 
 def test_single_head_revision():
-    """TC-WA-119 마이그레이션 헤드는 하나(0002)다."""
+    """TC-WA-119 마이그레이션 헤드는 하나(0003)다."""
     from alembic.script import ScriptDirectory
-    assert ScriptDirectory.from_config(migrate.alembic_config()).get_heads() == ["0002"]
+    assert ScriptDirectory.from_config(migrate.alembic_config()).get_heads() == ["0003"]
 
 
 def test_owner_url_from_explicit_env():

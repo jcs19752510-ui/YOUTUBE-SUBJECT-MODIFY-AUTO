@@ -1,10 +1,11 @@
-import type { AuthMe, ProblemJson, SessionResponse } from './types';
+import type { AuthMe, LoginResponse, ProblemJson, SessionResponse } from './types';
 
 export type ConnectionState =
   | 'starting' // 첫 확인 중
   | 'online'
   | 'offline' // 서버에 닿지 않음
   | 'pin_required' // PIN 입력 필요
+  | 'login_required' // 관리자 로그인 필요
   | 'loggedout' // 사용자가 로그아웃함
   | 'error'; // 세션 시작 실패(PIN 외)
 
@@ -96,6 +97,9 @@ export class ApiClient {
   private snapshot: ConnectionSnapshot = { state: 'starting', expired: false, error: null };
   private listeners = new Set<() => void>();
   private ensuring: Promise<void> | null = null;
+  private loginMode = false;
+  private idleSeconds: number | null = null;
+  private loginId: string | null = null;
   private readonly fetchImpl: typeof fetch;
   private readonly baseUrl: string;
 
@@ -138,17 +142,62 @@ export class ApiClient {
     await this.ensureSession(pin);
   }
 
+  /** 서버가 알려 준 무활동 한도(초). 로그인 모드가 아니면 null. */
+  get idleTimeoutSeconds(): number | null {
+    return this.idleSeconds;
+  }
+  /** 로그인한 관리자 아이디(비밀번호는 보관하지 않는다). */
+  get adminLoginId(): string | null {
+    return this.loginId;
+  }
+
+  /** 관리자 아이디·비밀번호 로그인. 실패(401 login_invalid, 429 login_locked 등)는 ApiError 로 던진다. */
+  async login(loginId: string, password: string): Promise<void> {
+    const res = await this.raw<LoginResponse>('POST', '/api/v1/auth/login', {
+      body: { login_id: loginId, password },
+    });
+    this.loginMode = true;
+    this.csrf = res.csrf_token;
+    this.loginId = res.admin_login_id;
+    this.idleSeconds = res.idle_timeout_seconds ?? null;
+    this.set({ state: 'online', expired: false, error: null });
+  }
+
+  /** 화면 타이머가 무활동 한도에 도달했을 때: 로그인 화면으로 돌리고 만료 안내를 켠다. */
+  markExpired(): void {
+    this.csrf = null;
+    this.set({ state: 'login_required', expired: true, error: null });
+  }
+
   async logout(): Promise<void> {
     // 서버에 닿지 못한 채 "로그아웃됨"으로 보이면 세션이 서버에 남아 있는데 사용자가 모르게 되므로 성공했을 때만 상태를 바꾼다
     await this.request<void>('DELETE', '/api/v1/auth/session');
     this.csrf = null;
-    this.set({ state: 'loggedout', expired: false, error: null });
+    if (this.loginMode) this.set({ state: 'login_required', expired: false, error: null });
+    else this.set({ state: 'loggedout', expired: false, error: null });
   }
 
   private async ensureSession(pin?: string): Promise<void> {
     try {
       const me = await this.raw<AuthMe>('GET', '/api/v1/auth/me');
+      if (me.login_required) {
+        // 로그인 모드: 익명 세션을 만들지 않고 로그인 화면으로
+        this.loginMode = true;
+        this.csrf = null;
+        this.loginId = null;
+        this.set({ state: 'login_required', error: null });
+        throw new ApiError({
+          status: 401,
+          code: 'login_required',
+          title: '로그인이 필요합니다',
+        });
+      }
       if (me.authenticated && me.csrf_token) {
+        if (me.admin_login_id) {
+          this.loginMode = true;
+          this.loginId = me.admin_login_id;
+          this.idleSeconds = me.idle_timeout_seconds ?? null;
+        }
         this.csrf = me.csrf_token;
         this.set({ state: 'online', expired: false, error: null });
         return;
@@ -170,7 +219,11 @@ export class ApiClient {
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.isNetwork) this.set({ state: 'offline', error: e });
-        else if (e.code !== 'pin_required' && this.snapshot.state !== 'pin_required')
+        else if (
+          e.code !== 'pin_required' &&
+          e.code !== 'login_required' &&
+          this.snapshot.state !== 'pin_required'
+        )
           this.set({ state: 'error', error: e });
       }
       throw e;
@@ -185,6 +238,18 @@ export class ApiClient {
     try {
       return await this.raw<T>(method, path, { ...opts, key, csrf: mutating });
     } catch (e) {
+      if (e instanceof ApiError && this.loginMode && this.isAuthFailure(e)) {
+        // 로그인 모드: 조용히 재발급하지 않고 로그인 화면으로 돌린다
+        this.csrf = null;
+        this.set({ state: 'login_required', expired: true, error: null });
+        throw new ApiError({
+          status: 401,
+          code: 'session_expired',
+          title: '로그인 시간이 지났습니다',
+          detail: '로그인 시간이 지나 자동 로그아웃되었습니다.',
+          hint: '다시 로그인해 주세요.',
+        });
+      }
       if (e instanceof ApiError && this.isAuthFailure(e)) {
         // 세션 만료: 조용히 재발급 1회 → 같은 멱등키로 재시도
         this.csrf = null;

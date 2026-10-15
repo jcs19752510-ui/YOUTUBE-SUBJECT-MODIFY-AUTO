@@ -159,6 +159,8 @@
 - `서버구동-계정정보.md` 같은 비공개 안내 파일의 내용은 이 문서에 옮기지 않았습니다.
 - 비밀번호 교체 절차는 문서화·검증되지 않았습니다. 유출이 의심되면 5-3 방식(백업 → `reset-demo.ps1 -DeleteVolumes` → `web\secrets` 새로 생성 → 복원)이 후보이나 **검증되지 않았으니 시도 전에 개발 담당과 상의**하세요 [확인 필요].
 
+**관리자 로그인 비밀(2026-10-15, DEC-055)**: `web\secrets\admin_login_id`, `web\secrets\admin_login_password`(저장소 제외, api 컨테이너에만 Docker secret 으로 전달). API 가 시작할 때 DB `admin_accounts` 에 **scrypt 해시만** 반영하고 값이 바뀌면 기존 세션을 모두 종료한다. 변경·분실 재설정은 `web\scripts\set-admin.bat`(입력 후 재시작). 파일이 없으면 아무도 로그인할 수 없다(닫힘). 로그인 실패 5회 → 5분 잠금(최대 1시간), 무활동 60분 자동 로그아웃(`YTWEB_SESSION_IDLE_MINUTES`, 절대 만료 12시간). 감사 로그에 `login.success`/`login.denied`. 주의: 이 비밀 파일이 없으면 `restore.ps1`·`reset-demo.ps1` 의 컨테이너 시작도 실패하므로 `start.ps1`(또는 `set-admin.bat`)을 먼저 한 번 실행한다.
+
 ## 9. 정기 점검 (권장 주기 — 모두 결정 전 제안값)
 | 주기 | 할 일 |
 |---|---|

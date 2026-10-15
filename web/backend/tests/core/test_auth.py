@@ -19,10 +19,11 @@ def _set_pin(client, csrf, pin="1234", current=None):
 
 
 def test_me_unauthenticated(client):
-    """TC-WA-024 세션이 없으면 authenticated=false, csrf_token=null, pin_required=false."""
+    """TC-WA-024 세션이 없으면 authenticated=false, csrf_token=null, pin_required=false. (DEC-055: 로그인 관련 필드 3개 추가 — 로그인 모드가 아니면 login_required=false)"""
     r = client.get("/api/v1/auth/me")
     assert r.status_code == 200
-    assert r.json() == {"authenticated": False, "pin_required": False, "csrf_token": None}
+    assert r.json() == {"authenticated": False, "pin_required": False, "csrf_token": None,
+                        "login_required": False, "admin_login_id": None, "idle_timeout_seconds": 1800}
 
 
 def test_session_cookie_attributes(client, web_settings):

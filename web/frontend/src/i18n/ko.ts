@@ -63,6 +63,23 @@ export const ko = {
     reportsNote:
       '이 숫자는 참고용입니다. CSV 파일로 내려받아 다른 곳에 전달할 때도 같은 안내가 적용됩니다.',
   },
+  login: {
+    title: '로그인',
+    body: '관리자 아이디와 비밀번호를 입력해 주세요.',
+    idLabel: '아이디',
+    passwordLabel: '비밀번호',
+    submit: '로그인',
+    invalid: '아이디 또는 비밀번호가 올바르지 않습니다.',
+    lockedFallback: '로그인 시도가 너무 많아 잠시 잠겼습니다. 잠시 뒤에 다시 시도해 주세요.',
+    network: '서버에 연결할 수 없습니다. 서버가 켜져 있는지 확인한 뒤 다시 시도해 주세요.',
+    notConfigured: '관리자 계정이 아직 설정되지 않았습니다.',
+    expired: '로그인 시간이 지나 자동 로그아웃되었습니다. 다시 로그인해 주세요.',
+    signedInAs: (id: string) => `관리자: ${id}`,
+    idleTitle: '곧 자동 로그아웃됩니다',
+    idleBody: (min: number, sec: number) =>
+      `${min > 0 ? `${min}분 ` : ''}${sec}초 뒤 자동 로그아웃됩니다. 계속 사용하려면 아래 버튼을 눌러 주세요.`,
+    idleContinue: '계속 사용',
+  },
   conn: {
     online: '서버 연결됨',
     offline: '서버 연결 끊김',

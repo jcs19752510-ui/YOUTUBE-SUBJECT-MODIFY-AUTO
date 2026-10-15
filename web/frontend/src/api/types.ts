@@ -21,6 +21,14 @@ export interface AuthMe {
   authenticated: boolean;
   pin_required: boolean;
   csrf_token: string | null;
+  login_required?: boolean;
+  admin_login_id?: string | null;
+  idle_timeout_seconds?: number | null;
+}
+export interface LoginResponse {
+  csrf_token: string;
+  admin_login_id: string;
+  idle_timeout_seconds: number | null;
 }
 export interface SessionResponse {
   csrf_token: string;
